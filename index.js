@@ -5,6 +5,19 @@ sizeInput.type = 'number';
 sizeInput.value = 10; // on safari on mac, sizes up to 181 are not antialiased, then from 182 onwards are anti-aliased
 document.body.appendChild(sizeInput);
 
+// add a dropdown with the font family options
+const fontFamilySelect = document.createElement('select');
+fontFamilySelect.id = 'font-family-select';
+const fontFamilies = ['Arial', 'Courier New', 'Times New Roman', 'Verdana', 'Georgia', 'Comic Sans MS', 'Impact', 'Lucida Console', 'Lucida Sans Unicode', 'Tahoma', 'Trebuchet MS'];
+for (let i = 0; i < fontFamilies.length; i++) {
+  const option = document.createElement('option');
+  option.value = fontFamilies[i];
+  option.textContent = fontFamilies[i];
+  fontFamilySelect.appendChild(option);
+}
+document.body.appendChild(fontFamilySelect);
+
+
 const runButton = document.createElement('button');
 runButton.id = 'run-button';
 runButton.textContent = 'Run';
@@ -19,6 +32,11 @@ runButton.addEventListener('click', () => {
   const size = parseInt(sizeInput.value);
   if (!isNaN(size)) {
     // remove all canvases and divs from the page
+    removeAllCanvasesAndDivs();
+    showCharsAndDataForSize(size, fontFamilySelect.value);
+  }
+
+  function removeAllCanvasesAndDivs() {
     const canvases = document.querySelectorAll('canvas');
     for (let i = 0; i < canvases.length; i++) {
       canvases[i].remove();
@@ -27,46 +45,41 @@ runButton.addEventListener('click', () => {
     for (let i = 0; i < divs.length; i++) {
       divs[i].remove();
     }
-
-
-    showCharsAndDataForSize(size);
   }
 });
 
 
 
-
-
-function showCharsAndDataForSize(size) {
-  showCanvasAndCompressedDataForStringAtSize('█', size);
+function showCharsAndDataForSize(size, fontFamily) {
+  showCanvasAndCompressedDataForStringAtSize('█', size, fontFamily);
 
   // run showCanvasAndCompressedDataForStringAtSize for all lower case letters
   for (let i = 97; i < 123; i++) {
     const letter = String.fromCharCode(i);
-    showCanvasAndCompressedDataForStringAtSize(letter, size);
+    showCanvasAndCompressedDataForStringAtSize(letter, size, fontFamily);
   }
 
   // run showCanvasAndCompressedDataForStringAtSize for all upper case letters
   for (let i = 65; i < 91; i++) {
     const letter = String.fromCharCode(i);
-    showCanvasAndCompressedDataForStringAtSize(letter, size);
+    showCanvasAndCompressedDataForStringAtSize(letter, size, fontFamily);
   }
 
   // run showCanvasAndCompressedDataForStringAtSize for all numbers
   for (let i = 48; i < 58; i++) {
     const letter = String.fromCharCode(i);
-    showCanvasAndCompressedDataForStringAtSize(letter, size);
+    showCanvasAndCompressedDataForStringAtSize(letter, size, fontFamily);
   }
 
   allOtherChars = '!"#$%&€\'()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
   // run showCanvasAndCompressedDataForStringAtSize for all chars in allOtherChars
   for (let i = 0; i < allOtherChars.length; i++) {
     const letter = allOtherChars[i];
-    showCanvasAndCompressedDataForStringAtSize(letter, size);
+    showCanvasAndCompressedDataForStringAtSize(letter, size, fontFamily);
   }
 }
 
-function showCanvasAndCompressedDataForStringAtSize(text, fontSize) {
+function showCanvasAndCompressedDataForStringAtSize(text, fontSize, fontFamily) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
@@ -75,7 +88,7 @@ function showCanvasAndCompressedDataForStringAtSize(text, fontSize) {
 
   document.body.appendChild(canvas);
 
-  ctx.font = fontSize + 'px Arial';
+  ctx.font = fontSize + 'px ' + fontFamily;
 
   // size the canvas so it fits the text
   canvas.width = ctx.measureText(text).width;
@@ -91,7 +104,7 @@ function showCanvasAndCompressedDataForStringAtSize(text, fontSize) {
   //ctx.fillText(text, 10, 30);
   // draw the text so that it fits in the canvas
   ctx.textBaseline = 'top';
-  ctx.font = fontSize + 'px Arial';
+  ctx.font = fontSize + 'px ' + fontFamily;
   ctx.fillText(text, 0, 0);
 
   // get the image data
