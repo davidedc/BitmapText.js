@@ -333,9 +333,29 @@ function showCharsAndDataForSize(size, fontFamily) {
     crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
 
-  var testText = 'Hello World ÀÇ█gM';
+  var testText = 'Hello World ÀÇ█gMffAVA';
 
   // add a canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
+  const canvas3 = document.createElement('canvas');
+  canvas3.width = 1000;
+  canvas3.height = 100;
+  const ctx3 = canvas3.getContext('2d');
+  ctx3.fillStyle = 'white';
+  ctx3.fillRect(0, 0, canvas3.width, canvas3.height);
+  ctx3.fillStyle = 'black';
+  ctx3.font = size + 'px ' + fontFamily;
+  ctx3.textBaseline = 'bottom';
+  ctx3.fillText( testText , 0, 100);
+  // add to DOM after drawing the text so
+  // the CSS property to make it crisp doesn't work
+  document.body.insertBefore(canvas3, document.body.firstChild);
+  // add some text above the canvas to say what it is
+  const div3 = document.createElement('div');
+  div3.textContent = 'Standard Canvas Text Drawing with smoothing:';
+  document.body.insertBefore(div3, document.body.firstChild);
+  
+
+  // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas2 = document.createElement('canvas');
   canvas2.width = 1000;
   canvas2.height = 100;
@@ -351,9 +371,8 @@ function showCharsAndDataForSize(size, fontFamily) {
   ctx2.fillText( testText , 0, 100);
   // add some text above the canvas to say what it is
   const div2 = document.createElement('div');
-  div2.textContent = 'Standard Canvas Text Drawing:';
+  div2.textContent = 'Standard Canvas Text Drawing with no smoothing:';
   document.body.insertBefore(div2, document.body.firstChild);
-
 
 
   // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapTextDrawer
