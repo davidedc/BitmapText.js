@@ -1,15 +1,71 @@
-class Glyph {
+// a class to store all the crispBitmapGlyphs
+// so that we can retrieve them by font family, font size and letter
+
+class CrispBitmapGlyphStore {
+  constructor() {
+    this.glyphs = {};
+  }
+
+    addGlyph(glyph) {
+      if (!this.glyphs[glyph.fontFamily]) {
+        this.glyphs[glyph.fontFamily] = {};
+      }
+      if (!this.glyphs[glyph.fontFamily][glyph.fontSize]) {
+        this.glyphs[glyph.fontFamily][glyph.fontSize] = {};
+      }
+      if (!this.glyphs[glyph.fontFamily][glyph.fontSize][glyph.letter]) {
+        this.glyphs[glyph.fontFamily][glyph.fontSize][glyph.letter] = glyph;
+      }
+    }
+
+    getGlyph(fontFamily, fontSize, letter) {
+      if (this.glyphs[fontFamily] && this.glyphs[fontFamily][fontSize] && this.glyphs[fontFamily][fontSize][letter]) {
+        return this.glyphs[fontFamily][fontSize][letter];
+      }
+      return null;
+    }
+}
+
+// a class CrispBitmpTextDrawer, constructed with a CrispBitmapGlyphStore
+// has a method to draw text on a canvas
+// the text is drawn by looking up the glyphs in the CrispBitmapGlyphStore
+// and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
+// the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
+
+class CrispBitmapTextDrawer {
+  constructor(glyphStore) {
+    this.glyphStore = glyphStore;
+  }
+
+  drawText(ctx, text, x, y, fontSize, fontFamily) {
+    for (let i = 0; i < text.length; i++) {
+      const letter = text[i];
+      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter);
+      
+
+      if (glyph) {
+        ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+        x += glyph.letterMeasures.width;
+      }
+    }
+  }
+}
+
+
+
+class CrispBitmapGlyph {
   constructor(letter, fontSize, fontFamily) {
     this.letter = letter;
     this.fontSize = fontSize;
     this.fontFamily = fontFamily;
 
-    var returned = this.createCanvasesAndCompressedData();
+    var returned = this.createCanvasesAndCompressedPixels();
     // unpack the returned stuff into class properties
     this.compressedPixels = returned.compressedPixels;
     this.canvas = returned.canvas;
     this.tightCanvas = returned.tightCanvas;
     this.tightCanvasBox = returned.tightCanvasBox;
+    this.letterMeasures = returned.letterMeasures;
 
     this.displayCanvasesAndData();
   }
@@ -49,8 +105,9 @@ class Glyph {
     ctx.font = this.fontSize + 'px ' + this.fontFamily;
   
     // size the canvas so it fits the this.letter
-    canvas.width = ctx.measureText(this.letter).width;
-    canvas.height = this.fontSize * 1.5;
+    var letterMeasures = ctx.measureText(this.letter);
+    canvas.width = letterMeasures.width;
+    canvas.height = letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent;
 
     // make the background white
     ctx.fillStyle = 'white';
@@ -60,10 +117,10 @@ class Glyph {
   
     // draw the text so that it fits in the canvas
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
-    ctx.textBaseline = 'top';
+    ctx.textBaseline = 'bottom';
   
     ctx.font = this.fontSize + 'px ' + this.fontFamily;
-    ctx.fillText(this.letter, 0, 0);
+    ctx.fillText(this.letter, 0, canvas.height-1);
 
     // now can remove the canvas from the page
     canvas.remove();
@@ -82,14 +139,16 @@ class Glyph {
     const tightCanvas = document.createElement('canvas');
     tightCanvas.width = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1;
     tightCanvas.height = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1;
+    tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y;
     const tightCanvasBoxCtx = tightCanvas.getContext('2d');
   
     tightCanvasBoxCtx.drawImage(canvas, tightCanvasBox.topLeftCorner.x, tightCanvasBox.topLeftCorner.y, tightCanvas.width, tightCanvas.height, 0, 0, tightCanvas.width, tightCanvas.height);
     return {tightCanvas, tightCanvasBox};
   }
 
-  createCanvasesAndCompressedData() {
+  createCanvasesAndCompressedPixels() {
     var canvas = this. createCanvasWithLetter();
+    var letterMeasures = {width: canvas.width, height: canvas.height};
     const ctx = canvas.getContext('2d');
 
     var returned = this.getBoundingBoxOfBlackPixels(canvas);
@@ -109,7 +168,8 @@ class Glyph {
       compressedPixels,
       canvas,
       tightCanvas,
-      tightCanvasBox
+      tightCanvasBox,
+      letterMeasures
     };
   
   }
@@ -243,33 +303,74 @@ runButton.addEventListener('click', () => {
 
 
 function showCharsAndDataForSize(size, fontFamily) {
-  // create a new Glyph object
-  var glyph
+  // create a new CrispBitmapGlyph object
+  var crispBitmapGlyphStore = new CrispBitmapGlyphStore();
   
-  glyph = new Glyph('█', size, fontFamily);
+  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', size, fontFamily));
 
   // lower case letters
   for (let i = 97; i < 123; i++) {
     const letter = String.fromCharCode(i);
-    glyph = new Glyph(letter, size, fontFamily);
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
 
   // upper case letters
   for (let i = 65; i < 91; i++) {
     const letter = String.fromCharCode(i);
-    glyph = new Glyph(letter, size, fontFamily);
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
 
   // numbers
   for (let i = 48; i < 58; i++) {
     const letter = String.fromCharCode(i);
-    glyph = new Glyph(letter, size, fontFamily);
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
 
   allOtherChars = '!"#$%&€\'()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
   // all chars in allOtherChars
   for (let i = 0; i < allOtherChars.length; i++) {
     const letter = allOtherChars[i];
-    glyph = new Glyph(letter, size, fontFamily);
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
+
+  var testText = 'Hello World ÀÇ█gM';
+
+  // add a canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
+  const canvas2 = document.createElement('canvas');
+  canvas2.width = 1000;
+  canvas2.height = 100;
+  // add to DOM before drawing the text otherwise
+  // the CSS property to make it crisp doesn't work
+  document.body.insertBefore(canvas2, document.body.firstChild);
+  const ctx2 = canvas2.getContext('2d');
+  ctx2.fillStyle = 'white';
+  ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
+  ctx2.fillStyle = 'black';
+  ctx2.font = size + 'px ' + fontFamily;
+  ctx2.textBaseline = 'bottom';
+  ctx2.fillText( testText , 0, 100);
+  // add some text above the canvas to say what it is
+  const div2 = document.createElement('div');
+  div2.textContent = 'Standard Canvas Text Drawing:';
+  document.body.insertBefore(div2, document.body.firstChild);
+
+
+
+  // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapTextDrawer
+  const canvas = document.createElement('canvas');
+  canvas.width = 1000;
+  canvas.height = 100;
+  document.body.insertBefore(canvas, document.body.firstChild);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'black';
+  const crispBitmapTextDrawer = new CrispBitmapTextDrawer(crispBitmapGlyphStore);
+  crispBitmapTextDrawer.drawText(ctx, testText, 0, 100, size, fontFamily);
+  // add some text above the canvas to say what it is
+  const div = document.createElement('div');
+  div.textContent = 'Crisp Bitmap Text Drawing:';
+  document.body.insertBefore(div, document.body.firstChild);
+  
+
 }
