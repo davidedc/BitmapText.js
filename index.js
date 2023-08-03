@@ -44,9 +44,11 @@ class CrispBitmapTextDrawer {
       
 
       if (glyph) {
-        if (glyph.tightCanvas)
+        if (glyph.tightCanvas) {
           ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
-        x += glyph.letterMeasures.width;
+        }
+        x += Math.ceil(glyph.letterMeasures.width);
+        
       }
     }
   }
@@ -109,9 +111,31 @@ class CrispBitmapGlyph {
     ctx.font = this.fontSize + 'px ' + this.fontFamily;
   
     // size the canvas so it fits the this.letter
-    var letterMeasures = ctx.measureText(this.letter);
-    canvas.width = letterMeasures.width;
-    canvas.height = letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent;
+    var letterMeasuresOrig = ctx.measureText(this.letter);
+
+    // let's make a copy of letterMeasuresOrig into letterMeasures
+    // so we can modify it
+    var letterMeasures = {};
+    for (var key in letterMeasuresOrig) {
+      letterMeasures[key] = letterMeasuresOrig[key];
+    }
+
+    // Don't understand why, but for some letters the actualBoundingBoxLeft + actualBoundingBoxRight
+    // is not enough to fit the letter in the canvas...
+    //
+    // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight
+    if (this.letter === 'W' && this.fontFamily === 'Arial' && this.fontSize === 80) {
+      letterMeasures.actualBoundingBoxRight += 2;
+    }
+
+    canvas.width = Math.ceil(letterMeasures.actualBoundingBoxLeft) + Math.ceil(letterMeasures.actualBoundingBoxRight);
+
+    // add a div with letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight
+    const div = document.createElement('div');
+    div.textContent = this.letter + " " + letterMeasures.actualBoundingBoxLeft + " " + letterMeasures.actualBoundingBoxRight;
+    document.body.appendChild(div);
+
+    canvas.height = Math.ceil(letterMeasures.fontBoundingBoxAscent) + Math.ceil(letterMeasures.fontBoundingBoxDescent);
 
     // make the background white
     //ctx.fillStyle = 'white';
@@ -124,12 +148,12 @@ class CrispBitmapGlyph {
     ctx.textBaseline = 'bottom';
   
     ctx.font = this.fontSize + 'px ' + this.fontFamily;
-    ctx.fillText(this.letter, 0, canvas.height-1);
+    ctx.fillText(this.letter, Math.ceil(letterMeasures.actualBoundingBoxLeft), canvas.height-1);
 
     // now can remove the canvas from the page
     canvas.remove();
 
-    return canvas;
+    return {canvas, letterMeasures};
   }
 
   getBoundingBoxOfBlackPixels(canvas) {
@@ -156,8 +180,10 @@ class CrispBitmapGlyph {
   }
 
   createCanvasesAndCompressedPixels() {
-    var canvas = this. createCanvasWithLetter();
-    var letterMeasures = {width: canvas.width, height: canvas.height};
+    var returned = this. createCanvasWithLetter();
+    var canvas = returned.canvas;
+    var letterMeasures = returned.letterMeasures;
+    
     const ctx = canvas.getContext('2d');
 
     var returned = this.getBoundingBoxOfBlackPixels(canvas);
@@ -372,8 +398,8 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add a canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas3 = document.createElement('canvas');
-  canvas3.width = testTextMeasures.width; // todo not entirely correct to use width
-  canvas3.height = testTextMeasures.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent;
+  canvas3.width = Math.ceil(testTextMeasures.actualBoundingBoxLeft) + Math.ceil(testTextMeasures.actualBoundingBoxRight);
+  canvas3.height = Math.ceil(testTextMeasures.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
 
   const ctx3 = canvas3.getContext('2d');
   ctx3.fillStyle = 'white';
@@ -394,8 +420,8 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas2 = document.createElement('canvas');
-  canvas2.width = testTextMeasuresCrisp.width; // todo not entirely correct to use width
-  canvas2.height = testTextMeasuresCrisp.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent;
+  canvas2.width = Math.ceil(testTextMeasuresCrisp.actualBoundingBoxLeft) + Math.ceil(testTextMeasuresCrisp.actualBoundingBoxRight);
+  canvas2.height = Math.ceil(testTextMeasuresCrisp.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
   // add to DOM before drawing the text otherwise
   // the CSS property to make it crisp doesn't work
   document.body.insertBefore(canvas2, document.body.firstChild);
@@ -414,10 +440,9 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapTextDrawer
   const canvas = document.createElement('canvas');
-  // TODO not entirely correct to use width, plus
   // TODO need to use own measureText method of the Crisp kind
-  canvas.width = testTextMeasuresCrisp.width + 20;
-  canvas.height = testTextMeasuresCrisp.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent;
+  canvas.width = Math.ceil(testTextMeasuresCrisp.actualBoundingBoxLeft) + Math.ceil(testTextMeasuresCrisp.actualBoundingBoxRight) + 50;
+  canvas.height = Math.ceil(testTextMeasuresCrisp.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
   document.body.insertBefore(canvas, document.body.firstChild);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
