@@ -49,6 +49,16 @@ class CrispBitmapTextDrawer {
         }
         x += Math.ceil(glyph.letterMeasures.width);
         
+        // BASIC KERNING
+        // if this letter is "V" and next is "A" then we need to remove 10% of the glyph.letterMeasures.width
+        if (letter === 'V' && i < text.length - 1 && text[i+1] === 'A') {
+          x -= Math.ceil(glyph.letterMeasures.width * 0.17);
+        }
+        // if this letter is "A" and next is "V" then we need to remove 10% of the glyph.letterMeasures.width
+        if (letter === 'A' && i < text.length - 1 && text[i+1] === 'V') {
+          x -= Math.ceil(glyph.letterMeasures.width * 0.17);
+        }
+
       }
     }
   }
