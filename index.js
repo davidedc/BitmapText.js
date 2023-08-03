@@ -352,17 +352,36 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   var testText = 'Hello World ÀÇ█gMffAVAWWW';
 
+  // create a canvas just to find the text measures for the antialiased version (easy: don't add it to the DOM)
+  const canvas4 = document.createElement('canvas');
+  const ctx4 = canvas4.getContext('2d');
+  ctx4.font = size + 'px ' + fontFamily;
+  const testTextMeasures = ctx4.measureText(testText);
+
+  // create a canvas to find the text measures for the crisp version (we need to add it to the DOM for the CSS properties to be applied)
+  const canvas5 = document.createElement('canvas');
+  canvas5.width = 1;
+  canvas5.height = 1;
+  document.body.insertBefore(canvas5, document.body.firstChild);
+  const ctx5 = canvas5.getContext('2d');
+  ctx5.font = size + 'px ' + fontFamily;
+  const testTextMeasuresCrisp = ctx5.measureText(testText);
+
+
+
   // add a canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas3 = document.createElement('canvas');
-  canvas3.width = 1200;
-  canvas3.height = 100;
+  canvas3.width = testTextMeasures.width; // todo not entirely correct to use width
+  canvas3.height = testTextMeasures.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent;
+
   const ctx3 = canvas3.getContext('2d');
   ctx3.fillStyle = 'white';
   ctx3.fillRect(0, 0, canvas3.width, canvas3.height);
   ctx3.fillStyle = 'black';
   ctx3.font = size + 'px ' + fontFamily;
   ctx3.textBaseline = 'bottom';
-  ctx3.fillText( testText , 0, 100);
+
+  ctx3.fillText( testText , 0, canvas3.height-1);
   // add to DOM after drawing the text so
   // the CSS property to make it crisp doesn't work
   document.body.insertBefore(canvas3, document.body.firstChild);
@@ -374,8 +393,8 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas2 = document.createElement('canvas');
-  canvas2.width = 1200;
-  canvas2.height = 100;
+  canvas2.width = testTextMeasuresCrisp.width; // todo not entirely correct to use width
+  canvas2.height = testTextMeasuresCrisp.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent;
   // add to DOM before drawing the text otherwise
   // the CSS property to make it crisp doesn't work
   document.body.insertBefore(canvas2, document.body.firstChild);
@@ -385,7 +404,7 @@ function showCharsAndDataForSize(size, fontFamily) {
   ctx2.fillStyle = 'black';
   ctx2.font = size + 'px ' + fontFamily;
   ctx2.textBaseline = 'bottom';
-  ctx2.fillText( testText , 0, 100);
+  ctx2.fillText( testText , 0, canvas2.height-1);
   // add some text above the canvas to say what it is
   const div2 = document.createElement('div');
   div2.textContent = 'Standard Canvas Text Drawing with no smoothing:';
@@ -394,15 +413,17 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapTextDrawer
   const canvas = document.createElement('canvas');
-  canvas.width = 1200;
-  canvas.height = 100;
+  // TODO not entirely correct to use width, plus
+  // TODO need to use own measureText method of the Crisp kind
+  canvas.width = testTextMeasuresCrisp.width + 20;
+  canvas.height = testTextMeasuresCrisp.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent;
   document.body.insertBefore(canvas, document.body.firstChild);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'black';
   const crispBitmapTextDrawer = new CrispBitmapTextDrawer(crispBitmapGlyphStore);
-  crispBitmapTextDrawer.drawText(ctx, testText, 0, 100, size, fontFamily);
+  crispBitmapTextDrawer.drawText(ctx, testText, 0, canvas.height-1, size, fontFamily);
   // add some text above the canvas to say what it is
   const div = document.createElement('div');
   div.textContent = 'Crisp Bitmap Text Drawing:';
