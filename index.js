@@ -114,8 +114,8 @@ class CrispBitmapGlyph {
     canvas.height = letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent;
 
     // make the background white
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    //ctx.fillStyle = 'white';
+    //ctx.fillRect(0, 0, canvas.width, canvas.height);
   
     ctx.fillStyle = 'black';
   
@@ -234,7 +234,11 @@ getBlackAndWhitePixelsArray(canvas) {
   // create a new array with a boolean for each pixel to represent whether it is black or not
   const pixels = [];
   for (let i = 0; i < data.length; i += 4) {
-    const isBlack = data[i] === 0;
+    // isBlack is when any of the components is 0 AND the alpha is not 0
+    // that's because we are working with canvases with transparent backgrounds
+    // because glyphs often have are painted on top of other content AND also
+    // because glyphs actually often have to overlap with each other e.g. in the case of "ff" in Times New Roman
+    const isBlack = data[i] === 0 && data[i+3] !== 0;
     pixels.push(isBlack);
   }
   return pixels;
