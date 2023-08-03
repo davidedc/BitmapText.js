@@ -44,7 +44,8 @@ class CrispBitmapTextDrawer {
       
 
       if (glyph) {
-        ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+        if (glyph.tightCanvas)
+          ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
         x += glyph.letterMeasures.width;
       }
     }
@@ -71,8 +72,14 @@ class CrispBitmapGlyph {
   }
 
   displayCanvasesAndData() {
-    this.drawBoundingBox();
     document.body.appendChild(this.canvas);
+    if (this.tightCanvas === null) {
+      // append a new line
+      const div = document.createElement('div');
+      document.body.appendChild(div);
+        return;
+    }
+    this.drawBoundingBox();
     document.body.appendChild(this.tightCanvas);
     const div = document.createElement('div');
     div.textContent = this.compressedPixels;
@@ -135,8 +142,13 @@ class CrispBitmapGlyph {
     // draw the bounding box of the text
     const tightCanvasBox = this.getBoundingBox(canvas, blackWhitePxsArray);
   
-    // copy the bounding box to a new canvas and add it to the page
     const tightCanvas = document.createElement('canvas');
+
+    if (tightCanvasBox.topLeftCorner === null || tightCanvasBox.bottomRightCorner === null) {
+      return {tightCanvas: null, tightCanvasBox: null}
+    }
+
+    // copy the bounding box to a new canvas and add it to the page
     tightCanvas.width = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1;
     tightCanvas.height = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1;
     tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y;
@@ -152,6 +164,10 @@ class CrispBitmapGlyph {
     const ctx = canvas.getContext('2d');
 
     var returned = this.getBoundingBoxOfBlackPixels(canvas);
+    if (returned.tightCanvas === null) {
+      return {compressedPixels: null, canvas, tightCanvas: null, tightCanvasBox: null, letterMeasures};
+    }
+
     var tightCanvas = returned.tightCanvas;
     var tightCanvasBox = returned.tightCanvasBox;
     
@@ -306,6 +322,7 @@ function showCharsAndDataForSize(size, fontFamily) {
   // create a new CrispBitmapGlyph object
   var crispBitmapGlyphStore = new CrispBitmapGlyphStore();
   
+  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(' ', size, fontFamily));
   crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', size, fontFamily));
 
   // lower case letters
