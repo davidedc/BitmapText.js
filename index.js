@@ -272,7 +272,7 @@ getBlackAndWhitePixelsArray(canvas) {
 const sizeInput = document.createElement('input');
 sizeInput.id = 'size-input';
 sizeInput.type = 'number';
-sizeInput.value = 10; // on safari on mac, sizes up to 181 are not anti-aliased, then from 182 onwards are anti-aliased
+sizeInput.value = 80; // on safari on mac, sizes up to 181 are not anti-aliased, then from 182 onwards are anti-aliased
 document.body.appendChild(sizeInput);
 
 // add a dropdown with the font family options
@@ -290,7 +290,7 @@ document.body.appendChild(fontFamilySelect);
 
 const runButton = document.createElement('button');
 runButton.id = 'run-button';
-runButton.textContent = 'Run';
+runButton.textContent = 'Build and Show Glyphs';
 document.body.appendChild(runButton);
 
 // append a line break
@@ -350,11 +350,11 @@ function showCharsAndDataForSize(size, fontFamily) {
     crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
 
-  var testText = 'Hello World ÀÇ█gMffAVA';
+  var testText = 'Hello World ÀÇ█gMffAVAWWW';
 
   // add a canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas3 = document.createElement('canvas');
-  canvas3.width = 1000;
+  canvas3.width = 1200;
   canvas3.height = 100;
   const ctx3 = canvas3.getContext('2d');
   ctx3.fillStyle = 'white';
@@ -374,7 +374,7 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas2 = document.createElement('canvas');
-  canvas2.width = 1000;
+  canvas2.width = 1200;
   canvas2.height = 100;
   // add to DOM before drawing the text otherwise
   // the CSS property to make it crisp doesn't work
@@ -394,7 +394,7 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapTextDrawer
   const canvas = document.createElement('canvas');
-  canvas.width = 1000;
+  canvas.width = 1200;
   canvas.height = 100;
   document.body.insertBefore(canvas, document.body.firstChild);
   const ctx = canvas.getContext('2d');
