@@ -79,7 +79,7 @@ class CrispBitmapGlyph {
       document.body.appendChild(div);
         return;
     }
-    this.drawBoundingBox();
+    // this.drawBoundingBox();
     document.body.appendChild(this.tightCanvas);
     const div = document.createElement('div');
     div.textContent = this.compressedPixels;
