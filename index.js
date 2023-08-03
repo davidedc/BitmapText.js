@@ -105,9 +105,6 @@ class CrispBitmapGlyph {
     // but it didn't work
     document.body.appendChild(canvas);
 
-    canvas.width = 200;
-    canvas.height = 50;
-  
     const ctx = canvas.getContext('2d');
     ctx.font = this.fontSize + 'px ' + this.fontFamily;
   
