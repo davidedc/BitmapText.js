@@ -32,9 +32,106 @@ class CrispBitmapGlyphStore {
 // and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
 // the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
 
-class CrispBitmapTextDrawer {
+class CrispBitmapText {
   constructor(glyphStore) {
     this.glyphStore = glyphStore;
+  }
+
+  measureText(text, fontSize, fontFamily) {
+    var width = 0;
+    for (let i = 0; i < text.length; i++) {
+      const letter = text[i];
+
+      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter);
+
+      width += this.getAdvanceWidth(i, text, glyph, fontFamily, letter);
+    }
+    // get the height of the text by looking at the height of 'a' - they are all the same height
+    const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a');
+    return {width, height: Math.ceil(glyph.letterMeasures.fontBoundingBoxAscent) + Math.ceil(glyph.letterMeasures.fontBoundingBoxDescent)};
+  }
+
+  hasSpaceAtBottomRight(letter) {
+    return ['V', 'W', '7', '9', '/', 'T', 'Y', 'P', 'f'].indexOf(letter) !== -1;
+  }
+
+  hasSpaceAtTopRight(letter) {
+    return ['A', '\\', 'L', 'h'].indexOf(letter) !== -1;
+  }
+
+  protrudesBottomLeft(letter) {
+    return ['A', '/'].indexOf(letter) !== -1;
+  }
+
+  protrudesTopLeft(letter) {
+    return ['V', 'W', '\\', 'T', 'Y'].indexOf(letter) !== -1;
+  }
+
+  isShortCharacter(letter) {
+    return ['a', 'c', 'e', 'g', 'i', 'j', 'm', 'n', 'o', 'p', 'q', 'r', 's', 'u', 'v', 'w', 'x', 'y', 'z', '.', ',', ':', ';', '—', '·', 'Ç', 'à', 'ç', '•'].indexOf(letter) !== -1;
+  }
+  
+
+  getKerningCorrection(fontFamily, letter, nextLetter) {
+
+    // monospace fonts don't need kerning
+    if (fontFamily === 'Courier New') {
+      return 0;
+    }
+
+
+    if ( this.hasSpaceAtBottomRight(letter) && this.protrudesBottomLeft(nextLetter)) {
+      if (fontFamily === 'Arial') {
+        return 0.15;
+      }
+      else if (fontFamily === 'Times New Roman') {
+        return 0.2;
+      }
+      else {
+        return 0.1;
+      }
+    }
+    if ( this.hasSpaceAtTopRight(letter) && this.protrudesTopLeft(nextLetter)) {
+      if (fontFamily === 'Times New Roman') {
+        return 0.2;
+      }
+      else {
+        return 0.13;
+      }
+    }
+    if ( this.hasSpaceAtBottomRight(letter) && this.isShortCharacter(nextLetter)) {
+      if (fontFamily === 'Arial') {
+        return 0.025;
+      }
+      else if (fontFamily === 'Times New Roman') {
+        return 0.1;
+      }
+      else {
+        return 0.1;
+      }
+    }
+    if ( this.isShortCharacter(letter) && this.protrudesTopLeft(nextLetter)) {
+      return 0.03;
+    }
+    return 0;
+  }
+
+
+  getAdvanceWidth(i, text, glyph, fontFamily, letter) {
+    var x = 0;
+    if (i < text.length - 1){
+      console.log(glyph.letterMeasures.width + " " + x);
+      x = Math.ceil(glyph.letterMeasures.width);
+      const nextLetter = text[i+1];
+      const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter);
+      x -= Math.ceil(glyph.letterMeasures.width * kerningCorrection);
+    }
+    else {
+      // with the last character you don't just advance by the advance with,
+      // rather you need to add the actualBoundingBoxLeft and actualBoundingBoxRight
+      x = Math.ceil(glyph.letterMeasures.actualBoundingBoxLeft) + Math.ceil(glyph.letterMeasures.actualBoundingBoxRight);
+    }
+    return x;
   }
 
   drawText(ctx, text, x, y, fontSize, fontFamily) {
@@ -47,17 +144,8 @@ class CrispBitmapTextDrawer {
         if (glyph.tightCanvas) {
           ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
         }
-        x += Math.ceil(glyph.letterMeasures.width);
         
-        // BASIC KERNING
-        // if this letter is "V" and next is "A" then we need to remove 10% of the glyph.letterMeasures.width
-        if (letter === 'V' && i < text.length - 1 && text[i+1] === 'A') {
-          x -= Math.ceil(glyph.letterMeasures.width * 0.17);
-        }
-        // if this letter is "A" and next is "V" then we need to remove 10% of the glyph.letterMeasures.width
-        if (letter === 'A' && i < text.length - 1 && text[i+1] === 'V') {
-          x -= Math.ceil(glyph.letterMeasures.width * 0.17);
-        }
+        x += this.getAdvanceWidth(i, text, glyph, fontFamily, letter);
 
       }
     }
@@ -387,7 +475,7 @@ function showCharsAndDataForSize(size, fontFamily) {
     crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
 
-  var testText = 'Hello World ÀÇ█gMffAVAWWW';
+  var testText = 'Hello World ÀÇ█gMffAVAWWVafa';
 
   // create a canvas just to find the text measures for the antialiased version (easy: don't add it to the DOM)
   const canvas4 = document.createElement('canvas');
@@ -427,6 +515,25 @@ function showCharsAndDataForSize(size, fontFamily) {
   div3.textContent = 'Standard Canvas Text Drawing with smoothing:';
   document.body.insertBefore(div3, document.body.firstChild);
   
+  // add another canvas at the top of the page and draw "xxxxxxxxxxxx" on it using the standard canvas text drawing methods
+  const canvas6 = document.createElement('canvas');
+  canvas6.width = Math.ceil(testTextMeasuresCrisp.actualBoundingBoxLeft) + Math.ceil(testTextMeasuresCrisp.actualBoundingBoxRight);
+  canvas6.height = Math.ceil(testTextMeasuresCrisp.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
+  // add to DOM before drawing the text otherwise
+  // the CSS property to make it crisp doesn't work
+  document.body.insertBefore(canvas6, document.body.firstChild);
+  const ctx6 = canvas6.getContext('2d');
+  ctx6.fillStyle = 'white';
+  ctx6.fillRect(0, 0, canvas6.width, canvas6.height);
+  ctx6.fillStyle = 'black';
+  ctx6.font = size + 'px ' + fontFamily;
+  ctx6.textBaseline = 'bottom';
+  ctx6.fillText( '|||||||||||||||||||||||||||||||||||||' , 0, canvas6.height-1);
+  // add some text above the canvas to say what it is
+  const div6 = document.createElement('div');
+  div6.textContent = 'Standard Canvas Text Drawing with no smoothing - thin characters to see monospaced fonts:';
+  document.body.insertBefore(div6, document.body.firstChild);
+
 
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas2 = document.createElement('canvas');
@@ -448,22 +555,22 @@ function showCharsAndDataForSize(size, fontFamily) {
   document.body.insertBefore(div2, document.body.firstChild);
 
 
-  // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapTextDrawer
+  // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapText
   const canvas = document.createElement('canvas');
   // TODO need to use own measureText method of the Crisp kind
-  canvas.width = Math.ceil(testTextMeasuresCrisp.actualBoundingBoxLeft) + Math.ceil(testTextMeasuresCrisp.actualBoundingBoxRight) + 50;
-  canvas.height = Math.ceil(testTextMeasuresCrisp.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
+  // get the measures of the text from the CrispBitmapText measureText method
+  const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
+  const crispTestTextMeasures = crispBitmapText.measureText(testText, size, fontFamily);
+  canvas.width = crispTestTextMeasures.width;
+  canvas.height = crispTestTextMeasures.height;
   document.body.insertBefore(canvas, document.body.firstChild);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'black';
-  const crispBitmapTextDrawer = new CrispBitmapTextDrawer(crispBitmapGlyphStore);
-  crispBitmapTextDrawer.drawText(ctx, testText, 0, canvas.height-1, size, fontFamily);
+  crispBitmapText.drawText(ctx, testText, 0, canvas.height-1, size, fontFamily);
   // add some text above the canvas to say what it is
   const div = document.createElement('div');
   div.textContent = 'Crisp Bitmap Text Drawing:';
   document.body.insertBefore(div, document.body.firstChild);
-  
-
 }
