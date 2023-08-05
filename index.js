@@ -271,15 +271,16 @@ class CrispBitmapGlyph {
     // START OF LETTER-LEVEL RENDERING CORRECTIONS
     //////////////////////////////////////////////
 
-    // These corrections can be spotted by disabling all the kerning corrections and
-    // rendering at size 12 (pretty much the smallest legible size ) and looking
-    // for defects like letters that touch, letters that miss a pixel, etc.
+    // The defects to be corrected can be spotted by disabling all the kerning corrections and
+    // rendering at size 12 (pretty much the smallest legible size) and looking
+    // for problems like letters that touch, letters that miss a pixel, letter that
+    // are systematically too far/close to the previous/next, etc.
     // These corrections are specific to the font, and also
     // likely specific to the OS, browser and possibly
     // depend on other factors like the screen resolution, etc.
     // HOWEVER once we fix them, we bake the letters and their sizes and
-    // the kerning into a format that we re-use pixel-perfectly in all
-    // OSs and browsers, so the pixel corrections only need to be done in
+    // the kerning info into a format that we re-use pixel-perfectly in all
+    // OSs and browsers, so these corrections only need to be done in
     // one place to get a good rendering everywhere.
 
     // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...
