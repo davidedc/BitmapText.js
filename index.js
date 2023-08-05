@@ -271,6 +271,8 @@ class CrispBitmapGlyph {
     // START OF LETTER-LEVEL RENDERING CORRECTIONS
     //////////////////////////////////////////////
 
+    // These defects we are fixing are visible at small sizes (12px or so), however
+    // that's a crucial use case for a crisp text renderer.
     // The defects to be corrected can be spotted by disabling all the kerning corrections and
     // rendering at size 12 (pretty much the smallest legible size) and looking
     // for problems like letters that touch, letters that miss a pixel, letter that
