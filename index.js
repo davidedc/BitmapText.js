@@ -48,11 +48,24 @@ class CrispBitmapText {
     }
     // get the height of the text by looking at the height of 'a' - they are all the same height
     const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a');
-    return {width, height: Math.ceil(glyph.letterMeasures.fontBoundingBoxAscent) + Math.ceil(glyph.letterMeasures.fontBoundingBoxDescent)};
+    return {width, height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent)};
   }
 
-  hasSpaceAtBottomRight(letter) {
-    return ['V', 'W', '7', '9', '/', 'T', 'Y', 'P', 'f'].indexOf(letter) !== -1;
+  hasLotsOfSpaceAtBottomRight(letter) {
+    return ['V', '7', '/', 'T', 'Y'].indexOf(letter) !== -1;
+  }
+
+  hasLotsOfSpaceAtBottomLeft(letter) {
+    return ['V', '\\', 'T', 'Y'].indexOf(letter) !== -1;
+  }
+
+  hasSomeSpaceAtBottomLeft(letter) {
+    return ['W', '7'].indexOf(letter) !== -1;
+  }
+
+
+  hasSomeSpaceAtBottomRight(letter) {
+    return ['W', 'f', 'P'].indexOf(letter) !== -1;
   }
 
   hasSpaceAtTopRight(letter) {
@@ -61,6 +74,10 @@ class CrispBitmapText {
 
   protrudesBottomLeft(letter) {
     return ['A', '/'].indexOf(letter) !== -1;
+  }
+
+  protrudesBottomRight(letter) {
+    return ['A', '\\', 'L'].indexOf(letter) !== -1;
   }
 
   protrudesTopLeft(letter) {
@@ -74,13 +91,33 @@ class CrispBitmapText {
 
   getKerningCorrection(fontFamily, letter, nextLetter) {
 
+    
+    //return 0;
+    
     // monospace fonts don't need kerning
     if (fontFamily === 'Courier New') {
       return 0;
     }
 
+    // in my OS and my browser, the crisp rendering of consecutive V and W are joined together at the top,
+    // which makes things like "WWW" just look like single zipgzag. Note that this doesn't happen in the
+    // antialiased render. At any rate, we are going to correct the spacing between those pairs here.
+    if (fontFamily === 'Arial' && (letter === 'W' || letter === 'V') && (nextLetter === 'W' || nextLetter === 'V')) {
+      return -0.04;
+    }
 
-    if ( this.hasSpaceAtBottomRight(letter) && this.protrudesBottomLeft(nextLetter)) {
+    if ((this.protrudesBottomRight(letter) && this.hasSomeSpaceAtBottomLeft(nextLetter)) || ( this.hasSomeSpaceAtBottomRight(letter) && this.protrudesBottomLeft(nextLetter))) {
+      if (fontFamily === 'Arial') {
+        return 0.1;
+      }
+      else if (fontFamily === 'Times New Roman') {
+        return 0.1;
+      }
+      else {
+        return 0.1;
+      }
+    }
+    if (( this.hasLotsOfSpaceAtBottomRight(letter) && this.protrudesBottomLeft(nextLetter)) || ( this.protrudesBottomRight(letter) && this.hasLotsOfSpaceAtBottomLeft(nextLetter))) {
       if (fontFamily === 'Arial') {
         return 0.15;
       }
@@ -91,6 +128,7 @@ class CrispBitmapText {
         return 0.1;
       }
     }
+
     if ( this.hasSpaceAtTopRight(letter) && this.protrudesTopLeft(nextLetter)) {
       if (fontFamily === 'Times New Roman') {
         return 0.2;
@@ -99,12 +137,23 @@ class CrispBitmapText {
         return 0.13;
       }
     }
-    if ( this.hasSpaceAtBottomRight(letter) && this.isShortCharacter(nextLetter)) {
+    if ((this.isShortCharacter(letter) && this.hasSomeSpaceAtBottomLeft(nextLetter)) || (this.hasSomeSpaceAtBottomRight(letter) && this.isShortCharacter(nextLetter))) {
       if (fontFamily === 'Arial') {
-        return 0.025;
+        return 0.02;
       }
       else if (fontFamily === 'Times New Roman') {
         return 0.1;
+      }
+      else {
+        return 0.1;
+      }
+    }
+    if ((this.hasLotsOfSpaceAtBottomRight(letter) && this.isShortCharacter(nextLetter)) || ( this.isShortCharacter(letter) && this.hasLotsOfSpaceAtBottomLeft(nextLetter)) ) {
+      if (fontFamily === 'Arial') {
+        return 0.15;
+      }
+      else if (fontFamily === 'Times New Roman') {
+        return 0.15;
       }
       else {
         return 0.1;
@@ -121,17 +170,17 @@ class CrispBitmapText {
     var x = 0;
     if (i < text.length - 1){
       console.log(glyph.letterMeasures.width + " " + x);
-      x = Math.ceil(glyph.letterMeasures.width);
+      x = glyph.letterMeasures.width;
       const nextLetter = text[i+1];
       const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter);
-      x -= Math.ceil(glyph.letterMeasures.width * kerningCorrection);
+      x -= glyph.letterMeasures.width * kerningCorrection;
     }
     else {
       // with the last character you don't just advance by the advance with,
       // rather you need to add the actualBoundingBoxLeft and actualBoundingBoxRight
-      x = Math.ceil(glyph.letterMeasures.actualBoundingBoxLeft) + Math.ceil(glyph.letterMeasures.actualBoundingBoxRight);
+      x = glyph.letterMeasures.actualBoundingBoxLeft + glyph.letterMeasures.actualBoundingBoxRight;
     }
-    return x;
+    return Math.round(x);
   }
 
   drawText(ctx, text, x, y, fontSize, fontFamily) {
@@ -218,22 +267,53 @@ class CrispBitmapGlyph {
       letterMeasures[key] = letterMeasuresOrig[key];
     }
 
-    // Don't understand why, but for some letters the actualBoundingBoxLeft + actualBoundingBoxRight
-    // is not enough to fit the letter in the canvas...
-    //
-    // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight
-    if (this.letter === 'W' && this.fontFamily === 'Arial' && this.fontSize === 80) {
-      letterMeasures.actualBoundingBoxRight += 2;
+    //////////////////////////////////////////////
+    // START OF LETTER-LEVEL RENDERING CORRECTIONS
+    //////////////////////////////////////////////
+
+    // These corrections can be spotted by disabling all the kerning corrections and
+    // rendering at size 12 (pretty much the smallest legible size ) and looking
+    // for defects like letters that touch, letters that miss a pixel, etc.
+    // These corrections are specific to the font, and also
+    // likely specific to the OS, browser and possibly
+    // depend on other factors like the screen resolution, etc.
+    // HOWEVER once we fix them, we bake the letters and their sizes and
+    // the kerning into a format that we re-use pixel-perfectly in all
+    // OSs and browsers, so the pixel corrections only need to be done in
+    // one place to get a good rendering everywhere.
+
+    // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...
+    // ...don't understand why, but the actualBoundingBoxLeft + actualBoundingBoxRight
+    // is not enough to fit the letter in the canvas and the top-right gets ever so slightly clipped...
+    if (this.letter === 'W' && this.fontFamily === 'Arial') {
+      letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/20);
     }
 
-    canvas.width = Math.ceil(letterMeasures.actualBoundingBoxLeft) + Math.ceil(letterMeasures.actualBoundingBoxRight);
+    // the s needs 1 pixel more to the right
+    if (this.letter === 's' && this.fontFamily === 'Arial') {
+      letterMeasures.actualBoundingBoxRight += 1;
+      letterMeasures.width += 1;
+    }
+
+    // similarly, if you turn the kerning off, at size 12 (pretty much the smallest legible size ) you can see that some letters are just too much to the right
+    if ((this.letter === 'A' || this.letter === 'j') && this.fontFamily === 'Arial') {
+      letterMeasures.actualBoundingBoxLeft -= 1;
+    }
+    if (this.letter === 'y' && this.fontFamily === 'Arial') {
+      letterMeasures.actualBoundingBoxLeft += 1;
+    }
+
+    // END OF LETTER-LEVEL RENDERING CORRECTIONS
+    /////////////////////////////////////////////
+
+    canvas.width = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
 
     // add a div with letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight
     const div = document.createElement('div');
     div.textContent = this.letter + " " + letterMeasures.actualBoundingBoxLeft + " " + letterMeasures.actualBoundingBoxRight;
     document.body.appendChild(div);
 
-    canvas.height = Math.ceil(letterMeasures.fontBoundingBoxAscent) + Math.ceil(letterMeasures.fontBoundingBoxDescent);
+    canvas.height = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);
 
     // make the background white
     //ctx.fillStyle = 'white';
@@ -246,7 +326,7 @@ class CrispBitmapGlyph {
     ctx.textBaseline = 'bottom';
   
     ctx.font = this.fontSize + 'px ' + this.fontFamily;
-    ctx.fillText(this.letter, Math.ceil(letterMeasures.actualBoundingBoxLeft), canvas.height-1);
+    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft), canvas.height-1);
 
     // now can remove the canvas from the page
     canvas.remove();
@@ -475,7 +555,9 @@ function showCharsAndDataForSize(size, fontFamily) {
     crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
   }
 
-  var testText = 'Hello World ÀÇ█gMffAVAWWVafa';
+  var testText = 'Document Hello World ÀÇ█gMffAVAWWVaWa7a9a/aTaYaPafa information is provided have WorldWideWeb responsability';
+  //var testText = 'project does not take responsability for the accuracy of information provided by others.';
+  
 
   // create a canvas just to find the text measures for the antialiased version (easy: don't add it to the DOM)
   const canvas4 = document.createElement('canvas');
@@ -496,8 +578,8 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add a canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas3 = document.createElement('canvas');
-  canvas3.width = Math.ceil(testTextMeasures.actualBoundingBoxLeft) + Math.ceil(testTextMeasures.actualBoundingBoxRight);
-  canvas3.height = Math.ceil(testTextMeasures.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
+  canvas3.width = Math.round(testTextMeasures.actualBoundingBoxLeft + testTextMeasures.actualBoundingBoxRight);
+  canvas3.height = Math.round(testTextMeasures.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent);
 
   const ctx3 = canvas3.getContext('2d');
   ctx3.fillStyle = 'white';
@@ -517,8 +599,8 @@ function showCharsAndDataForSize(size, fontFamily) {
   
   // add another canvas at the top of the page and draw "xxxxxxxxxxxx" on it using the standard canvas text drawing methods
   const canvas6 = document.createElement('canvas');
-  canvas6.width = Math.ceil(testTextMeasuresCrisp.actualBoundingBoxLeft) + Math.ceil(testTextMeasuresCrisp.actualBoundingBoxRight);
-  canvas6.height = Math.ceil(testTextMeasuresCrisp.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
+  canvas6.width = Math.round(testTextMeasuresCrisp.actualBoundingBoxLeft + testTextMeasuresCrisp.actualBoundingBoxRight);
+  canvas6.height = Math.round(testTextMeasuresCrisp.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent);
   // add to DOM before drawing the text otherwise
   // the CSS property to make it crisp doesn't work
   document.body.insertBefore(canvas6, document.body.firstChild);
@@ -537,8 +619,8 @@ function showCharsAndDataForSize(size, fontFamily) {
 
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   const canvas2 = document.createElement('canvas');
-  canvas2.width = Math.ceil(testTextMeasuresCrisp.actualBoundingBoxLeft) + Math.ceil(testTextMeasuresCrisp.actualBoundingBoxRight);
-  canvas2.height = Math.ceil(testTextMeasuresCrisp.fontBoundingBoxAscent) + Math.ceil(testTextMeasures.fontBoundingBoxDescent);
+  canvas2.width = Math.round(testTextMeasuresCrisp.actualBoundingBoxLeft + testTextMeasuresCrisp.actualBoundingBoxRight);
+  canvas2.height = Math.round(testTextMeasuresCrisp.fontBoundingBoxAscent + testTextMeasures.fontBoundingBoxDescent);
   // add to DOM before drawing the text otherwise
   // the CSS property to make it crisp doesn't work
   document.body.insertBefore(canvas2, document.body.firstChild);
