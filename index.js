@@ -195,21 +195,28 @@ class CrispBitmapText {
   getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize) {
     var x = 0;
 
-
     if (i < text.length - 1){
       console.log(glyph.letterMeasures.width + " " + x);
 
+      // deal with the size of the " " character
       if (fontFamily === 'Arial') {
-        if (fontSize > 11 && fontSize <= 20) {
-          if (glyph.letter === " ")
+        if (glyph.letter === " ") {
+          if (fontSize >= 15 && fontSize <= 20)
+            return 5;
+          else if (fontSize >= 14 && fontSize < 15)
+            return 4;
+          else if (fontSize >= 12 && fontSize < 14)
             return 3;
-          x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
-        }
-        else if (fontSize <= 11) {
-          if (glyph.letter === " ")
+          else if (fontSize < 12)
             return 2;
-          x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
         }
+      }
+
+      if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20) {
+        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
+      }
+      else if (fontFamily === 'Arial' && fontSize <= 11) {
+        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
       }
       else {
         x = glyph.letterMeasures.width;
