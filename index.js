@@ -413,8 +413,6 @@ class CrispBitmapGlyph {
     //ctx.fillStyle = 'white';
     //ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-    ctx.fillStyle = 'black';
-  
     // draw the text so that it fits in the canvas
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
     ctx.textBaseline = 'bottom';
@@ -428,12 +426,12 @@ class CrispBitmapGlyph {
     return {canvas, letterMeasures};
   }
 
-  getBoundingBoxOfBlackPixels(canvas) {
+  getBoundingBoxOfOnPixels(canvas) {
     // get the image data
-    const blackWhitePxsArray = this.getBlackAndWhitePixelsArray(canvas);
+    const onPixelsArray = this.getOnPixelsArray(canvas);
   
     // draw the bounding box of the text
-    const tightCanvasBox = this.getBoundingBox(canvas, blackWhitePxsArray);
+    const tightCanvasBox = this.getBoundingBox(canvas, onPixelsArray);
   
     const tightCanvas = document.createElement('canvas');
 
@@ -458,7 +456,7 @@ class CrispBitmapGlyph {
     
     const ctx = canvas.getContext('2d');
 
-    var returned = this.getBoundingBoxOfBlackPixels(canvas);
+    var returned = this.getBoundingBoxOfOnPixels(canvas);
     if (returned.tightCanvas === null) {
       return {compressedPixels: null, canvas, tightCanvas: null, tightCanvasBox: null, letterMeasures};
     }
@@ -468,10 +466,10 @@ class CrispBitmapGlyph {
     
   
     // get the image data
-    const blackWhitePxsArrayBoundingBox = this.getBlackAndWhitePixelsArray(tightCanvas);
+    const onPixelsArrayBoundingBox = this.getOnPixelsArray(tightCanvas);
   
     // do a simple compression of the data by looking for runs of zeros and ones
-    const compressedPixels = this.compressPixels(blackWhitePxsArrayBoundingBox).join(',');
+    const compressedPixels = this.compressPixels(onPixelsArrayBoundingBox).join(',');
   
   
     // return the compressedPixels and the teo canvases
@@ -486,14 +484,14 @@ class CrispBitmapGlyph {
   }
 
 // function that gets the bounding box of the text and its position, by looking at the pixels
- getBoundingBox(canvas, blackWhitePxsArray) {
+ getBoundingBox(canvas, onPixelsArray) {
 
   // find the top left and bottom right corners of the text
   let topLeftCorner = null;
   let bottomRightCorner = null;
 
-  for (let i = 0; i < blackWhitePxsArray.length; i++) {
-    if (blackWhitePxsArray[i]) {
+  for (let i = 0; i < onPixelsArray.length; i++) {
+    if (onPixelsArray[i]) {
       const x = i % canvas.width;
       const y = Math.floor(i / canvas.width);
 
@@ -524,20 +522,22 @@ class CrispBitmapGlyph {
 
 
 
-getBlackAndWhitePixelsArray(canvas) {
+getOnPixelsArray(canvas) {
   var ctx = canvas.getContext('2d');
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  // create a new array with a boolean for each pixel to represent whether it is black or not
+  // create a new array with a boolean for each pixel to represent whether it is on or not
+  // note that the color in which the character is painted doesn't matter, we are just looking
+  // for pixels that are not transparent
   const pixels = [];
   for (let i = 0; i < data.length; i += 4) {
-    // isBlack is when any of the components is 0 AND the alpha is not 0
+    // isOn is when any of the components is 0 AND the alpha is not 0
     // that's because we are working with canvases with transparent backgrounds
     // because glyphs often have are painted on top of other content AND also
     // because glyphs actually often have to overlap with each other e.g. in the case of "ff" in Times New Roman
-    const isBlack = data[i] === 0 && data[i+3] !== 0;
-    pixels.push(isBlack);
+    const isOn = data[i+3] !== 0;
+    pixels.push(isOn);
   }
   return pixels;
 }
@@ -751,7 +751,6 @@ function showCharsAndDataForSize(fontSize, fontFamily) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'black';
   crispBitmapText.drawText(ctx, testText, 0, Math.round(canvas.height - 6 * crispTestTextMeasures.height -1), fontSize, fontFamily);
   crispBitmapText.drawText(ctx, testText2, 0, Math.round(canvas.height - 5 * crispTestTextMeasures.height -1), fontSize, fontFamily);
   crispBitmapText.drawText(ctx, testText3, 0, Math.round(canvas.height - 4 * crispTestTextMeasures.height -1), fontSize, fontFamily);
