@@ -90,7 +90,11 @@ class CrispBitmapText {
   
 
   getKerningCorrection(fontFamily, letter, nextLetter, fontSize) {
-    
+
+    if (fontFamily === 'Arial' && fontSize <= 11) {
+      return 0;
+    }
+
     if (fontFamily === 'Arial' && fontSize <= 20) {
       if ((['f','t','v','y'].indexOf(letter) !== -1) || (['f','t','v','y'].indexOf(nextLetter) !== -1)){
         return 0.1;
@@ -195,10 +199,17 @@ class CrispBitmapText {
     if (i < text.length - 1){
       console.log(glyph.letterMeasures.width + " " + x);
 
-      if (fontFamily === 'Arial' && fontSize <= 20) {
-        if (glyph.letter === " ")
-          return 3;
-        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
+      if (fontFamily === 'Arial') {
+        if (fontSize > 11 && fontSize <= 20) {
+          if (glyph.letter === " ")
+            return 3;
+          x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
+        }
+        else if (fontSize <= 11) {
+          if (glyph.letter === " ")
+            return 2;
+          x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
+        }
       }
       else {
         x = glyph.letterMeasures.width;
