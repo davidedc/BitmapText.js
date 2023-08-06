@@ -44,7 +44,7 @@ class CrispBitmapText {
 
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter);
 
-      width += this.getAdvanceWidth(i, text, glyph, fontFamily, letter);
+      width += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize);
     }
     // get the height of the text by looking at the height of 'a' - they are all the same height
     const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a');
@@ -89,11 +89,33 @@ class CrispBitmapText {
   }
   
 
-  getKerningCorrection(fontFamily, letter, nextLetter) {
+  getKerningCorrection(fontFamily, letter, nextLetter, fontSize) {
+    
+    if (fontFamily === 'Arial' && fontSize <= 20) {
+      if ((['f','t','v','y'].indexOf(letter) !== -1) || (['f','t','v','y'].indexOf(nextLetter) !== -1)){
+        return 0.1;
+      }
+      if (['j'].indexOf(nextLetter) !== -1){
+        return 0.1;
+      }
+      if (['r','k'].indexOf(letter) !== -1){
+        return 0.1;
+      }
 
-    
-    //return 0;
-    
+      if (letter === 'p' && nextLetter === 'a') {
+        return 0.1;
+      }
+
+      if (letter === 'c' && nextLetter === 'y') {
+        return 0.1;
+      }
+
+      //if (letter === 'c' && nextLetter === 'c') {
+      //  return 0.1;
+      //}
+
+    }
+
     // monospace fonts don't need kerning
     if (fontFamily === 'Courier New') {
       return 0;
@@ -139,7 +161,7 @@ class CrispBitmapText {
     }
     if ((this.isShortCharacter(letter) && this.hasSomeSpaceAtBottomLeft(nextLetter)) || (this.hasSomeSpaceAtBottomRight(letter) && this.isShortCharacter(nextLetter))) {
       if (fontFamily === 'Arial') {
-        return 0.02;
+        return 0.01;
       }
       else if (fontFamily === 'Times New Roman') {
         return 0.1;
@@ -166,19 +188,47 @@ class CrispBitmapText {
   }
 
 
-  getAdvanceWidth(i, text, glyph, fontFamily, letter) {
+  getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize) {
     var x = 0;
+
+
     if (i < text.length - 1){
       console.log(glyph.letterMeasures.width + " " + x);
-      x = glyph.letterMeasures.width;
+
+      if (fontFamily === 'Arial' && fontSize <= 20) {
+        if (glyph.letter === " ")
+          return 3;
+        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
+      }
+      else {
+        x = glyph.letterMeasures.width;
+      }
+
       const nextLetter = text[i+1];
-      const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter);
-      x -= glyph.letterMeasures.width * kerningCorrection;
+      const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize);
+      
+      console.log("kerningCorrection: " + kerningCorrection);
+      if (fontFamily === 'Arial' && fontSize <= 20) {
+        if (kerningCorrection > 0 && kerningCorrection < 0.145){
+          x -= 1;
+        }
+        else if (kerningCorrection > 0.145){
+          x -= 2;
+        }
+      }
+      else {
+        x -= glyph.letterMeasures.width * kerningCorrection;
+      }
     }
     else {
       // with the last character you don't just advance by the advance with,
       // rather you need to add the actualBoundingBoxLeft and actualBoundingBoxRight
-      x = glyph.letterMeasures.actualBoundingBoxLeft + glyph.letterMeasures.actualBoundingBoxRight;
+      if (fontFamily === 'Arial' && fontSize <= 20) {
+        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
+      }
+      else {
+        x = glyph.letterMeasures.actualBoundingBoxLeft + glyph.letterMeasures.actualBoundingBoxRight;
+      }
     }
     return Math.round(x);
   }
@@ -191,10 +241,15 @@ class CrispBitmapText {
 
       if (glyph) {
         if (glyph.tightCanvas) {
-          ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+          if (fontFamily === 'Arial' && fontSize <= 20) {
+            ctx.drawImage(glyph.tightCanvas, x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+          }
+          else {
+            ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+          }
         }
         
-        x += this.getAdvanceWidth(i, text, glyph, fontFamily, letter);
+        x += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize);
 
       }
     }
@@ -288,12 +343,29 @@ class CrispBitmapGlyph {
     // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...
     // ...don't understand why, but the actualBoundingBoxLeft + actualBoundingBoxRight
     // is not enough to fit the letter in the canvas and the top-right gets ever so slightly clipped...
-    if (this.letter === 'W' && this.fontFamily === 'Arial') {
-      letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/20);
+    if (this.fontFamily === 'Arial') {
+      if (this.fontSize <= 20) {
+        if ((this.letter === 'W' || this.letter === 'w')) {
+          letterMeasures.actualBoundingBoxRight += 5;
+          letterMeasures.actualBoundingBoxLeft += 2;
+        }
+      }
+      else {
+        if ((this.letter === 'W')) {
+          letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/30);
+          letterMeasures.width += Math.ceil(this.fontSize/30);
+        }
+        if ((this.letter === 'j')) {
+          letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/20);
+          letterMeasures.actualBoundingBoxLeft -= Math.ceil(this.fontSize/30);
+          //letterMeasures.width += Math.ceil(this.fontSize/10);
+        }
+      }
     }
 
+    /*
     // the s needs 1 pixel more to the right
-    if (this.letter === 's' && this.fontFamily === 'Arial') {
+    if ((this.letter === 's' || this.letter === 'V' || this.letter === 'W') && this.fontFamily === 'Arial') {
       letterMeasures.actualBoundingBoxRight += 1;
       letterMeasures.width += 1;
     }
@@ -305,6 +377,7 @@ class CrispBitmapGlyph {
     if (this.letter === 'y' && this.fontFamily === 'Arial') {
       letterMeasures.actualBoundingBoxLeft += 1;
     }
+    */
 
     // END OF LETTER-LEVEL RENDERING CORRECTIONS
     /////////////////////////////////////////////
@@ -506,11 +579,11 @@ document.body.appendChild(document.createElement('br'));
 
 
 runButton.addEventListener('click', () => {
-  const size = parseInt(sizeInput.value);
-  if (!isNaN(size)) {
+  const fontSize = parseInt(sizeInput.value);
+  if (!isNaN(fontSize)) {
     // remove all canvases and divs from the page
     removeAllCanvasesAndDivs();
-    showCharsAndDataForSize(size, fontFamilySelect.value);
+    showCharsAndDataForSize(fontSize, fontFamilySelect.value);
   }
 
   function removeAllCanvasesAndDivs() {
@@ -526,46 +599,54 @@ runButton.addEventListener('click', () => {
 });
 
 
-function showCharsAndDataForSize(size, fontFamily) {
+function showCharsAndDataForSize(fontSize, fontFamily) {
   // create a new CrispBitmapGlyph object
   var crispBitmapGlyphStore = new CrispBitmapGlyphStore();
   
-  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(' ', size, fontFamily));
-  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', size, fontFamily));
+  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(' ', fontSize, fontFamily));
+  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', fontSize, fontFamily));
 
   // lower case letters
   for (let i = 97; i < 123; i++) {
     const letter = String.fromCharCode(i);
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
   }
 
   // upper case letters
   for (let i = 65; i < 91; i++) {
     const letter = String.fromCharCode(i);
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
   }
 
   // numbers
   for (let i = 48; i < 58; i++) {
     const letter = String.fromCharCode(i);
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
   }
 
   allOtherChars = '!"#$%&€\'()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
   // all chars in allOtherChars
   for (let i = 0; i < allOtherChars.length; i++) {
     const letter = allOtherChars[i];
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, size, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
   }
 
-  var testText = 'Document Hello World ÀÇ█gMffAVAWWVaWa7a9a/aTaYaPafa information is provided have WorldWideWeb responsability';
+  //var testText = 'Document Hello World ÀÇ█gMffAVAWWVaWa7a9a/aTaYaPafa information is provided as part of the WorldWideWeb project responsability';
+  var testText = 'Access to this information is provided as part of the WorldWideWeb project. The WWW';
+  var testText2 = 'project does not take responsability for the accuracy of information provided by others';
+  var testText3 = 'References to other information are represented like this. Double-click on it to jump to';
+  var testText4 = 'related information.';
+  var testText5 = 'Now choose an area in which you would like to start browsing. The system currently has';
+  var testText6 = 'access to three sources of information. With the indexes, you should use the keyword';
+  var testText7 = 'search option on your browser.';
+
   //var testText = 'project does not take responsability for the accuracy of information provided by others.';
   
 
   // create a canvas just to find the text measures for the antialiased version (easy: don't add it to the DOM)
   const canvas4 = document.createElement('canvas');
   const ctx4 = canvas4.getContext('2d');
-  ctx4.font = size + 'px ' + fontFamily;
+  ctx4.font = fontSize + 'px ' + fontFamily;
   const testTextMeasures = ctx4.measureText(testText);
 
   // create a canvas to find the text measures for the crisp version (we need to add it to the DOM for the CSS properties to be applied)
@@ -574,7 +655,7 @@ function showCharsAndDataForSize(size, fontFamily) {
   canvas5.height = 1;
   document.body.insertBefore(canvas5, document.body.firstChild);
   const ctx5 = canvas5.getContext('2d');
-  ctx5.font = size + 'px ' + fontFamily;
+  ctx5.font = fontSize + 'px ' + fontFamily;
   const testTextMeasuresCrisp = ctx5.measureText(testText);
 
 
@@ -588,7 +669,7 @@ function showCharsAndDataForSize(size, fontFamily) {
   ctx3.fillStyle = 'white';
   ctx3.fillRect(0, 0, canvas3.width, canvas3.height);
   ctx3.fillStyle = 'black';
-  ctx3.font = size + 'px ' + fontFamily;
+  ctx3.font = fontSize + 'px ' + fontFamily;
   ctx3.textBaseline = 'bottom';
 
   ctx3.fillText( testText , 0, canvas3.height-1);
@@ -611,7 +692,7 @@ function showCharsAndDataForSize(size, fontFamily) {
   ctx6.fillStyle = 'white';
   ctx6.fillRect(0, 0, canvas6.width, canvas6.height);
   ctx6.fillStyle = 'black';
-  ctx6.font = size + 'px ' + fontFamily;
+  ctx6.font = fontSize + 'px ' + fontFamily;
   ctx6.textBaseline = 'bottom';
   ctx6.fillText( '|||||||||||||||||||||||||||||||||||||' , 0, canvas6.height-1);
   // add some text above the canvas to say what it is
@@ -631,7 +712,7 @@ function showCharsAndDataForSize(size, fontFamily) {
   ctx2.fillStyle = 'white';
   ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
   ctx2.fillStyle = 'black';
-  ctx2.font = size + 'px ' + fontFamily;
+  ctx2.font = fontSize + 'px ' + fontFamily;
   ctx2.textBaseline = 'bottom';
   ctx2.fillText( testText , 0, canvas2.height-1);
   // add some text above the canvas to say what it is
@@ -645,15 +726,21 @@ function showCharsAndDataForSize(size, fontFamily) {
   // TODO need to use own measureText method of the Crisp kind
   // get the measures of the text from the CrispBitmapText measureText method
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
-  const crispTestTextMeasures = crispBitmapText.measureText(testText, size, fontFamily);
+  const crispTestTextMeasures = crispBitmapText.measureText(testText, fontSize, fontFamily);
   canvas.width = crispTestTextMeasures.width;
-  canvas.height = crispTestTextMeasures.height;
+  canvas.height = crispTestTextMeasures.height * 7;
   document.body.insertBefore(canvas, document.body.firstChild);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'black';
-  crispBitmapText.drawText(ctx, testText, 0, canvas.height-1, size, fontFamily);
+  crispBitmapText.drawText(ctx, testText, 0, Math.round(canvas.height - 6 * crispTestTextMeasures.height -1), fontSize, fontFamily);
+  crispBitmapText.drawText(ctx, testText2, 0, Math.round(canvas.height - 5 * crispTestTextMeasures.height -1), fontSize, fontFamily);
+  crispBitmapText.drawText(ctx, testText3, 0, Math.round(canvas.height - 4 * crispTestTextMeasures.height -1), fontSize, fontFamily);
+  crispBitmapText.drawText(ctx, testText4, 0, Math.round(canvas.height - 3 * crispTestTextMeasures.height -1), fontSize, fontFamily);
+  crispBitmapText.drawText(ctx, testText5, 0, Math.round(canvas.height - 2 * crispTestTextMeasures.height -1), fontSize, fontFamily);
+  crispBitmapText.drawText(ctx, testText6, 0, Math.round(canvas.height - 1 * crispTestTextMeasures.height -1), fontSize, fontFamily);
+  crispBitmapText.drawText(ctx, testText7, 0, Math.round(canvas.height - 0 * crispTestTextMeasures.height -1), fontSize, fontFamily);
   // add some text above the canvas to say what it is
   const div = document.createElement('div');
   div.textContent = 'Crisp Bitmap Text Drawing:';
