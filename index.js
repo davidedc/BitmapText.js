@@ -10,17 +10,20 @@ class CrispBitmapGlyphStore {
       if (!this.glyphs[glyph.fontFamily]) {
         this.glyphs[glyph.fontFamily] = {};
       }
-      if (!this.glyphs[glyph.fontFamily][glyph.fontSize]) {
-        this.glyphs[glyph.fontFamily][glyph.fontSize] = {};
+      if (!this.glyphs[glyph.fontFamily][glyph.fontEmphasis]) {
+        this.glyphs[glyph.fontFamily][glyph.fontEmphasis] = {};
       }
-      if (!this.glyphs[glyph.fontFamily][glyph.fontSize][glyph.letter]) {
-        this.glyphs[glyph.fontFamily][glyph.fontSize][glyph.letter] = glyph;
+      if (!this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize]) {
+        this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize] = {};
+      }
+      if (!this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize][glyph.letter]) {
+        this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize][glyph.letter] = glyph;
       }
     }
 
-    getGlyph(fontFamily, fontSize, letter) {
-      if (this.glyphs[fontFamily] && this.glyphs[fontFamily][fontSize] && this.glyphs[fontFamily][fontSize][letter]) {
-        return this.glyphs[fontFamily][fontSize][letter];
+    getGlyph(fontFamily, fontSize, letter, fontEmphasis) {
+      if (this.glyphs[fontFamily] && this.glyphs[fontFamily][fontEmphasis] && this.glyphs[fontFamily][fontEmphasis][fontSize] && this.glyphs[fontFamily][fontEmphasis][fontSize][letter]) {
+        return this.glyphs[fontFamily][fontEmphasis][fontSize][letter];
       }
       return null;
     }
@@ -37,17 +40,17 @@ class CrispBitmapText {
     this.glyphStore = glyphStore;
   }
 
-  measureText(text, fontSize, fontFamily) {
+  measureText(text, fontSize, fontFamily, fontEmphasis) {
     var width = 0;
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
 
-      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter);
+      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
 
-      width += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize);
+      width += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
     }
     // get the height of the text by looking at the height of 'a' - they are all the same height
-    const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a');
+    const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontEmphasis);
     return {width, height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent)};
   }
 
@@ -89,7 +92,7 @@ class CrispBitmapText {
   }
   
 
-  getKerningCorrection(fontFamily, letter, nextLetter, fontSize) {
+  getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
 
     if (fontFamily === 'Arial' && fontSize <= 11) {
       return 0;
@@ -192,7 +195,7 @@ class CrispBitmapText {
   }
 
 
-  getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize) {
+  getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     var x = 0;
 
     if (i < text.length - 1){
@@ -223,7 +226,7 @@ class CrispBitmapText {
       }
 
       const nextLetter = text[i+1];
-      const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize);
+      const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis);
       
       console.log("kerningCorrection: " + kerningCorrection);
       if (fontFamily === 'Arial' && fontSize <= 20) {
@@ -251,10 +254,10 @@ class CrispBitmapText {
     return Math.round(x);
   }
 
-  drawText(ctx, text, x, y, fontSize, fontFamily) {
+  drawText(ctx, text, x, y, fontSize, fontFamily, fontEmphasis) {
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
-      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter);
+      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
       
 
       if (glyph) {
@@ -267,7 +270,7 @@ class CrispBitmapText {
           }
         }
         
-        x += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize);
+        x += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
 
       }
     }
@@ -277,10 +280,11 @@ class CrispBitmapText {
 
 
 class CrispBitmapGlyph {
-  constructor(letter, fontSize, fontFamily) {
+  constructor(letter, fontSize, fontFamily, fontEmphasis) {
     this.letter = letter;
     this.fontSize = fontSize;
     this.fontFamily = fontFamily;
+    this.fontEmphasis = fontEmphasis;
 
     var returned = this.createCanvasesAndCompressedPixels();
     // unpack the returned stuff into class properties
@@ -328,7 +332,7 @@ class CrispBitmapGlyph {
     document.body.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
-    ctx.font = this.fontSize + 'px ' + this.fontFamily;
+    ctx.font = this.fontEmphasis + " " + this.fontSize + 'px ' + this.fontFamily;
   
     // size the canvas so it fits the this.letter
     var letterMeasuresOrig = ctx.measureText(this.letter);
@@ -338,6 +342,13 @@ class CrispBitmapGlyph {
     var letterMeasures = {};
     for (var key in letterMeasuresOrig) {
       letterMeasures[key] = letterMeasuresOrig[key];
+    }
+
+    // for the space character, Chrome gives actualBoundingBoxLeft == actualBoundingBoxRight == 0
+    // even if the width is not 0. Since we are going to use the actualBoundingBoxLeft and actualBoundingBoxRight
+    // to size the canvas, we need to fix that.
+    if (letterMeasures.actualBoundingBoxLeft === 0 && letterMeasures.actualBoundingBoxRight === 0) {
+      letterMeasures.actualBoundingBoxRight = letterMeasures.width;
     }
 
     //////////////////////////////////////////////
@@ -417,7 +428,7 @@ class CrispBitmapGlyph {
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
     ctx.textBaseline = 'bottom';
   
-    ctx.font = this.fontSize + 'px ' + this.fontFamily;
+    ctx.font = this.fontEmphasis + " " + this.fontSize + 'px ' + this.fontFamily;
     ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft), canvas.height-1);
 
     // now can remove the canvas from the page
@@ -586,6 +597,19 @@ for (let i = 0; i < fontFamilies.length; i++) {
 }
 document.body.appendChild(fontFamilySelect);
 
+// add a dropdown with the font emphasis options
+const fontEmphasisSelect = document.createElement('select');
+fontEmphasisSelect.id = 'font-emphasis-select';
+const fontEmphases = ['normal', 'bold', 'italic', 'bold italic'];
+for (let i = 0; i < fontEmphases.length; i++) {
+  const option = document.createElement('option');
+  option.value = fontEmphases[i];
+  option.textContent = fontEmphases[i];
+  fontEmphasisSelect.appendChild(option);
+}
+document.body.appendChild(fontEmphasisSelect);
+
+
 
 const runButton = document.createElement('button');
 runButton.id = 'run-button';
@@ -601,7 +625,7 @@ runButton.addEventListener('click', () => {
   if (!isNaN(fontSize)) {
     // remove all canvases and divs from the page
     removeAllCanvasesAndDivs();
-    showCharsAndDataForSize(fontSize, fontFamilySelect.value);
+    showCharsAndDataForSize(fontSize, fontFamilySelect.value, fontEmphasisSelect.value);
   }
 
   function removeAllCanvasesAndDivs() {
@@ -617,36 +641,36 @@ runButton.addEventListener('click', () => {
 });
 
 
-function showCharsAndDataForSize(fontSize, fontFamily) {
+function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   // create a new CrispBitmapGlyph object
   var crispBitmapGlyphStore = new CrispBitmapGlyphStore();
   
-  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(' ', fontSize, fontFamily));
-  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', fontSize, fontFamily));
+  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(' ', fontSize, fontFamily, fontEmphasis));
+  crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', fontSize, fontFamily, fontEmphasis));
 
   // lower case letters
   for (let i = 97; i < 123; i++) {
     const letter = String.fromCharCode(i);
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily, fontEmphasis));
   }
 
   // upper case letters
   for (let i = 65; i < 91; i++) {
     const letter = String.fromCharCode(i);
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily, fontEmphasis));
   }
 
   // numbers
   for (let i = 48; i < 58; i++) {
     const letter = String.fromCharCode(i);
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily, fontEmphasis));
   }
 
   allOtherChars = '!"#$%&€\'()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
   // all chars in allOtherChars
   for (let i = 0; i < allOtherChars.length; i++) {
     const letter = allOtherChars[i];
-    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily));
+    crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily, fontEmphasis));
   }
 
   //var testText = 'Document Hello World ÀÇ█gMffAVAWWVaWa7a9a/aTaYaPafa information is provided as part of the WorldWideWeb project responsability';
@@ -664,7 +688,7 @@ function showCharsAndDataForSize(fontSize, fontFamily) {
   // create a canvas just to find the text measures for the antialiased version (easy: don't add it to the DOM)
   const canvas4 = document.createElement('canvas');
   const ctx4 = canvas4.getContext('2d');
-  ctx4.font = fontSize + 'px ' + fontFamily;
+  ctx4.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   const testTextMeasures = ctx4.measureText(testText);
 
   // create a canvas to find the text measures for the crisp version (we need to add it to the DOM for the CSS properties to be applied)
@@ -673,7 +697,7 @@ function showCharsAndDataForSize(fontSize, fontFamily) {
   canvas5.height = 1;
   document.body.insertBefore(canvas5, document.body.firstChild);
   const ctx5 = canvas5.getContext('2d');
-  ctx5.font = fontSize + 'px ' + fontFamily;
+  ctx5.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   const testTextMeasuresCrisp = ctx5.measureText(testText);
 
 
@@ -687,7 +711,7 @@ function showCharsAndDataForSize(fontSize, fontFamily) {
   ctx3.fillStyle = 'white';
   ctx3.fillRect(0, 0, canvas3.width, canvas3.height);
   ctx3.fillStyle = 'black';
-  ctx3.font = fontSize + 'px ' + fontFamily;
+  ctx3.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx3.textBaseline = 'bottom';
 
   ctx3.fillText( testText , 0, canvas3.height-1);
@@ -710,7 +734,7 @@ function showCharsAndDataForSize(fontSize, fontFamily) {
   ctx6.fillStyle = 'white';
   ctx6.fillRect(0, 0, canvas6.width, canvas6.height);
   ctx6.fillStyle = 'black';
-  ctx6.font = fontSize + 'px ' + fontFamily;
+  ctx6.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx6.textBaseline = 'bottom';
   ctx6.fillText( '|||||||||||||||||||||||||||||||||||||' , 0, canvas6.height-1);
   // add some text above the canvas to say what it is
@@ -730,7 +754,7 @@ function showCharsAndDataForSize(fontSize, fontFamily) {
   ctx2.fillStyle = 'white';
   ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
   ctx2.fillStyle = 'black';
-  ctx2.font = fontSize + 'px ' + fontFamily;
+  ctx2.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx2.textBaseline = 'bottom';
   ctx2.fillText( testText , 0, canvas2.height-1);
   // add some text above the canvas to say what it is
@@ -744,20 +768,20 @@ function showCharsAndDataForSize(fontSize, fontFamily) {
   // TODO need to use own measureText method of the Crisp kind
   // get the measures of the text from the CrispBitmapText measureText method
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
-  const crispTestTextMeasures = crispBitmapText.measureText(testText, fontSize, fontFamily);
+  const crispTestTextMeasures = crispBitmapText.measureText(testText, fontSize, fontFamily, fontEmphasis);
   canvas.width = crispTestTextMeasures.width;
   canvas.height = crispTestTextMeasures.height * 7;
   document.body.insertBefore(canvas, document.body.firstChild);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  crispBitmapText.drawText(ctx, testText, 0, Math.round(canvas.height - 6 * crispTestTextMeasures.height -1), fontSize, fontFamily);
-  crispBitmapText.drawText(ctx, testText2, 0, Math.round(canvas.height - 5 * crispTestTextMeasures.height -1), fontSize, fontFamily);
-  crispBitmapText.drawText(ctx, testText3, 0, Math.round(canvas.height - 4 * crispTestTextMeasures.height -1), fontSize, fontFamily);
-  crispBitmapText.drawText(ctx, testText4, 0, Math.round(canvas.height - 3 * crispTestTextMeasures.height -1), fontSize, fontFamily);
-  crispBitmapText.drawText(ctx, testText5, 0, Math.round(canvas.height - 2 * crispTestTextMeasures.height -1), fontSize, fontFamily);
-  crispBitmapText.drawText(ctx, testText6, 0, Math.round(canvas.height - 1 * crispTestTextMeasures.height -1), fontSize, fontFamily);
-  crispBitmapText.drawText(ctx, testText7, 0, Math.round(canvas.height - 0 * crispTestTextMeasures.height -1), fontSize, fontFamily);
+  crispBitmapText.drawText(ctx, testText, 0, Math.round(canvas.height - 6 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText2, 0, Math.round(canvas.height - 5 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText3, 0, Math.round(canvas.height - 4 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText4, 0, Math.round(canvas.height - 3 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText5, 0, Math.round(canvas.height - 2 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText6, 0, Math.round(canvas.height - 1 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText7, 0, Math.round(canvas.height - 0 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
   // add some text above the canvas to say what it is
   const div = document.createElement('div');
   div.textContent = 'Crisp Bitmap Text Drawing:';
