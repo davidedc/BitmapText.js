@@ -629,11 +629,63 @@ runButton.id = 'run-button';
 runButton.textContent = 'Build and Show Glyphs';
 document.getElementById("selectors").appendChild(runButton);
 
+
+document.getElementById("selectors").appendChild(document.createElement('br'));
+
+// add to the "selectors" div a multiline textbox input where we have some settings related to the rendering.
+// and buildAndShowGlyphs() when the user clicks out of it
+const settingsTextarea = document.createElement('textarea');
+settingsTextarea.id = 'settings-textarea';
+settingsTextarea.value = 'Arial'+"\n"+
+'normal'+"\n"+
+'some setting here'+"\n"+
+'---------'+"\n"+
+'Arial'+"\n"+
+'bold'+"\n"+
+'some other\nsetting here';
+document.getElementById("selectors").appendChild(settingsTextarea);
+// settingsTextarea.addEventListener('change', buildAndShowGlyphs);
+settingsTextarea.style.height = '200px';
+
+
+
 // append a line break
 document.body.appendChild(document.createElement('br'));
 
 function buildAndShowGlyphs() {
   const fontSize = parseInt(sizeInput.value);
+
+  // get the contents of the settings-textarea and split the contents by the --------- separator
+  const settings = settingsTextarea.value.split('---------');
+  console.dir(settings);
+  // build an object that will contain each of the settings, the key is the first line after the separator
+  // and the value is the rest of the lines after the separator
+  const settingsObject = {};
+  for (let i = 0; i < settings.length; i++) {
+    const setting = settings[i];
+    const lines = setting.split('\n');
+
+    // remove all the empty lines
+    for (let j = 0; j < lines.length; j++) {
+      if (lines[j] === '') {
+        lines.splice(j, 1);
+        j--;
+      }
+    }
+
+    if (lines.length > 1) {
+      const key = lines[0];
+      const key2 = lines[1];
+      const innerObject = {};
+      if (settingsObject[key] === undefined) {
+        settingsObject[key] = {};
+      }
+      settingsObject[key][key2] = lines.slice(2).join('\n');
+    }
+  }
+  console.dir(settingsObject);
+  
+
   if (!isNaN(fontSize)) {
     // remove all canvases and divs from the page
     removeAllCanvasesAndDivs();
