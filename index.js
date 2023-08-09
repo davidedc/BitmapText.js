@@ -199,7 +199,7 @@ class CrispBitmapText {
     var x = 0;
 
     if (i < text.length - 1){
-      console.log(glyph.letterMeasures.width + " " + x);
+      // console.log(glyph.letterMeasures.width + " " + x);
 
       // deal with the size of the " " character
       if (fontFamily === 'Arial') {
@@ -228,7 +228,7 @@ class CrispBitmapText {
       const nextLetter = text[i+1];
       const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis);
       
-      console.log("kerningCorrection: " + kerningCorrection);
+      // console.log("kerningCorrection: " + kerningCorrection);
       if (fontFamily === 'Arial' && fontSize <= 20) {
         if (kerningCorrection > 0 && kerningCorrection < 0.145){
           x -= 1;
