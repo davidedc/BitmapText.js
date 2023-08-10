@@ -636,13 +636,26 @@ document.getElementById("selectors").appendChild(document.createElement('br'));
 // and buildAndShowGlyphs() when the user clicks out of it
 const settingsTextarea = document.createElement('textarea');
 settingsTextarea.id = 'settings-textarea';
-settingsTextarea.value = 'Arial'+"\n"+
-'normal'+"\n"+
-'some setting here'+"\n"+
-'---------'+"\n"+
-'Arial'+"\n"+
-'bold'+"\n"+
-'some other\nsetting here';
+settingsTextarea.value = `Arial
+normal
+--
+setting one
+ssd
+sdasdas
+--
+setting two
+dasdasd
+asdas
+---------
+Arial
+bold
+--
+setting three
+setting 3 here
+--
+setting four
+setting 4 here
+`;
 document.getElementById("selectors").appendChild(settingsTextarea);
 // settingsTextarea.addEventListener('change', buildAndShowGlyphs);
 settingsTextarea.style.height = '200px';
@@ -680,7 +693,30 @@ function buildAndShowGlyphs() {
       if (settingsObject[key] === undefined) {
         settingsObject[key] = {};
       }
-      settingsObject[key][key2] = lines.slice(2).join('\n');
+
+      // these are all the settings for fontfamily, fontemphasis
+      var settingsOfFontFamilyFontEmphasis = lines.slice(2).join('\n');
+      // split the settingOfFontFamilyFontEmphasis by the -- separator
+      var settingsOfFontFamilyFontEmphasisSplit = settingsOfFontFamilyFontEmphasis.split('--');
+      for (let k = 0; k < settingsOfFontFamilyFontEmphasisSplit.length; k++) {
+        const settingOfFontFamilyFontEmphasis = settingsOfFontFamilyFontEmphasisSplit[k];
+        const linesOfSettingOfFontFamilyFontEmphasis = settingOfFontFamilyFontEmphasis.split('\n');
+        // remove all the empty lines
+        for (let j = 0; j < linesOfSettingOfFontFamilyFontEmphasis.length; j++) {
+          if (linesOfSettingOfFontFamilyFontEmphasis[j] === '') {
+            linesOfSettingOfFontFamilyFontEmphasis.splice(j, 1);
+            j--;
+          }
+        }
+        if (linesOfSettingOfFontFamilyFontEmphasis.length > 1) {
+          const keyOfSettingOfFontFamilyFontEmphasis = linesOfSettingOfFontFamilyFontEmphasis[0];
+          const valueOfSettingOfFontFamilyFontEmphasis = linesOfSettingOfFontFamilyFontEmphasis.slice(1).join('\n');
+          innerObject[keyOfSettingOfFontFamilyFontEmphasis] = valueOfSettingOfFontFamilyFontEmphasis;
+        }
+      }
+
+
+      settingsObject[key][key2] = innerObject;
     }
   }
   console.dir(settingsObject);
