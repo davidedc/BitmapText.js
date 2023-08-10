@@ -636,6 +636,8 @@ document.getElementById("selectors").appendChild(document.createElement('br'));
 // and buildAndShowGlyphs() when the user clicks out of it
 const settingsTextarea = document.createElement('textarea');
 settingsTextarea.id = 'settings-textarea';
+settingsTextarea.style.float = 'left';
+
 settingsTextarea.value = `Arial
 normal
 --
@@ -659,6 +661,40 @@ setting 4 here
 document.getElementById("selectors").appendChild(settingsTextarea);
 // settingsTextarea.addEventListener('change', buildAndShowGlyphs);
 settingsTextarea.style.height = '200px';
+
+// add to the selectors div 81 square buttons numbered from 0 to 80,
+// and when the user hovers over them, set the size input to the number
+
+// create a new div "hoverButtons" where we will put the buttons
+const hoverButtonsDiv = document.createElement('div');
+hoverButtonsDiv.id = 'hoverButtons';
+document.getElementById("selectors").appendChild(hoverButtonsDiv);
+
+
+for (let i = 0; i < 81; i++) {
+  const button = document.createElement('button');
+  button.textContent = i;
+  button.style.width = '30px';
+  button.style.height = '30px';
+  button.style.margin = '2px';
+  button.style.padding = '0px';
+  button.style.border = '0px';
+  button.style.backgroundColor = 'white';
+  button.style.color = 'black';
+  button.style.fontSize = '12px';
+  button.style.fontWeight = 'normal';
+  button.style.fontStyle = 'normal';
+  button.style.fontFamily = 'Arial';
+  button.style.textAlign = 'center';
+  button.style.verticalAlign = 'middle';
+  button.style.lineHeight = '30px';
+  button.style.cursor = 'pointer';
+  button.addEventListener('mouseover', function() {
+    sizeInput.value = i;
+    buildAndShowGlyphs();
+  });
+  hoverButtonsDiv.appendChild(button);
+}
 
 
 
@@ -736,7 +772,7 @@ function buildAndShowGlyphs() {
     const divs = document.querySelectorAll('div');
     for (let i = 0; i < divs.length; i++) {
       // remove all divs that don't have the id "selectors"
-      if (divs[i].id !== 'selectors' && divs[i].id !== 'testTextCanvases')
+      if (divs[i].id !== 'selectors' && divs[i].id !== 'testTextCanvases' && divs[i].id !== 'hoverButtons')
         divs[i].remove();
     }
   }
