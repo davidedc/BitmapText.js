@@ -641,9 +641,19 @@ settingsTextarea.style.float = 'left';
 settingsTextarea.value = `Arial
 normal
 --
-setting one
-ssd
-sdasdas
+letter extra space and pull px
+-
+0 to 20
+  vw: right 5 left 9
+20 to 1000
+  vw: right 9 left 12
+--
+letter extra space and pull proportionsl
+-
+0 to 20
+  vw: right 30 left 0
+21 to 1000
+  ww: right 40 left 0
 --
 setting two
 dasdasd
