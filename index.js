@@ -98,11 +98,14 @@ class CrispBitmapText {
       return 0;
     }
 
-    if (fontFamily === 'Arial' && fontSize <= 20) {
-      if ((['f','t','v','y'].indexOf(letter) !== -1) || (['f','t','v','y'].indexOf(nextLetter) !== -1)){
+    if (fontFamily === 'Arial' && fontSize <= 21) {
+      if (letter === 'A' && this.isShortCharacter(nextLetter)){
         return 0.1;
       }
-      if (['j'].indexOf(nextLetter) !== -1){
+    }
+
+    if (fontFamily === 'Arial' && fontSize <= 20) {
+      if ((['f','t','v','y'].indexOf(letter) !== -1) || (['f','t','v','y'].indexOf(nextLetter) !== -1)){
         return 0.1;
       }
       if (['r','k'].indexOf(letter) !== -1){
@@ -120,7 +123,15 @@ class CrispBitmapText {
       //if (letter === 'c' && nextLetter === 'c') {
       //  return 0.1;
       //}
+    }
 
+    // the j at sizes 21-23 is too close to the previous letter
+    // and I can't fix this any other way, so I'm using this
+    // anti-kerning hack here
+    if (fontFamily === 'Arial' && (fontSize >= 21 && fontSize <= 23)) {
+      if (['j'].indexOf(nextLetter) !== -1){
+      return -0.15;
+     }
     }
 
     // monospace fonts don't need kerning
@@ -198,6 +209,7 @@ class CrispBitmapText {
   getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     var x = 0;
 
+
     if (i < text.length - 1){
       // console.log(glyph.letterMeasures.width + " " + x);
 
@@ -215,14 +227,18 @@ class CrispBitmapText {
         }
       }
 
+      if (i==0) {
+        x = glyph.letterMeasures.actualBoundingBoxLeft;
+      }
+  
       if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20) {
-        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
+        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
       }
       else if (fontFamily === 'Arial' && fontSize <= 11) {
-        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
+        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
       }
       else {
-        x = glyph.letterMeasures.width;
+        x += glyph.letterMeasures.width;
       }
 
       const nextLetter = text[i+1];
@@ -243,12 +259,12 @@ class CrispBitmapText {
     }
     else {
       // with the last character you don't just advance by the advance with,
-      // rather you need to add the actualBoundingBoxLeft and actualBoundingBoxRight
+      // rather you need to add the actualBoundingBoxRight
       if (fontFamily === 'Arial' && fontSize <= 20) {
-        x = (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
+        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
       }
       else {
-        x = glyph.letterMeasures.actualBoundingBoxLeft + glyph.letterMeasures.actualBoundingBoxRight;
+        x += glyph.letterMeasures.actualBoundingBoxRight;
       }
     }
     return Math.round(x);
@@ -262,11 +278,21 @@ class CrispBitmapText {
 
       if (glyph) {
         if (glyph.tightCanvas) {
-          if (fontFamily === 'Arial' && fontSize <= 20) {
-            ctx.drawImage(glyph.tightCanvas, x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+          
+          // some letters protrude to the left, i.e. the so called actualBoundingBoxLeft
+          // is positive, for example it's quite large for the italic f in Times New Roman.
+          // For these characters you basically draw them at x - actualBoundingBoxLeft
+          // but for the first character you don't want to do that, because it would be
+          // drawn outside the canvas. So for the first character you draw it at x.
+          var slightlyToTheLeft = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
+          if (i == 0)
+            slightlyToTheLeft = 0;
+          
+            if (fontFamily === 'Arial' && fontSize <= 20) {
+            ctx.drawImage(glyph.tightCanvas, x - slightlyToTheLeft, y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
           }
           else {
-            ctx.drawImage(glyph.tightCanvas, x + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+            ctx.drawImage(glyph.tightCanvas, x  - slightlyToTheLeft + glyph.tightCanvasBox.topLeftCorner.x , y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
           }
         }
         
@@ -373,22 +399,31 @@ class CrispBitmapGlyph {
     // ...don't understand why, but the actualBoundingBoxLeft + actualBoundingBoxRight
     // is not enough to fit the letter in the canvas and the top-right gets ever so slightly clipped...
     if (this.fontFamily === 'Arial') {
-      if (this.fontSize <= 20) {
+      if (this.fontSize <= 12) {
+        // the j needs to be 1 pixel more to the right, let's kill its actualBoundingBoxLeft
+        // so it's drawn in the same space, but 1 pixel more to the right
+        if ((this.letter === 'j')) {
+          letterMeasures.actualBoundingBoxLeft = 0;
+        }
+      }
+      else if (this.fontSize <= 20) {
         if ((this.letter === 'W' || this.letter === 'w')) {
           letterMeasures.actualBoundingBoxRight += 5;
-          letterMeasures.actualBoundingBoxLeft += 2;
+          //ßletterMeasures.actualBoundingBoxLeft += 9;
         }
       }
       else {
+
         if ((this.letter === 'W')) {
           letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/30);
           letterMeasures.width += Math.ceil(this.fontSize/30);
         }
-        if ((this.letter === 'j')) {
-          letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/20);
-          letterMeasures.actualBoundingBoxLeft -= Math.ceil(this.fontSize/30);
-          //letterMeasures.width += Math.ceil(this.fontSize/10);
-        }
+        // the j needs to be 1 pixel more to the right
+        //if ((this.letter === 'j')) {
+        //  //letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/20);
+        //  letterMeasures.actualBoundingBoxLeft = -2;
+        //  //letterMeasures.width += Math.ceil(this.fontSize/10);
+        //}
       }
     }
 
@@ -415,7 +450,13 @@ class CrispBitmapGlyph {
 
     // add a div with letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight
     const div = document.createElement('div');
-    div.textContent = this.letter + " " + letterMeasures.actualBoundingBoxLeft + " " + letterMeasures.actualBoundingBoxRight;
+    div.textContent = this.letter + " bbox left: " + letterMeasures.actualBoundingBoxLeft + " bbox right:" + letterMeasures.actualBoundingBoxRight;
+
+    // add to the textcontent the actualBoundingBoxLeft in red if it's not 0
+    if (letterMeasures.actualBoundingBoxLeft !== 0) {
+      div.style.color = "red";
+    }
+
     document.body.appendChild(div);
 
     canvas.height = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);
@@ -937,7 +978,7 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   var testText4 = 'related information.';
   var testText5 = 'Now choose an area in which you would like to start browsing. The system currently has';
   var testText6 = 'access to three sources of information. With the indexes, you should use the keyword';
-  var testText7 = 'search option on your browser.';
+  var testText7 = 'f to check actualBoundingBoxLeft doesn\t cause f to be drawn outside the canvas.';
 
   //var testText = 'project does not take responsability for the accuracy of information provided by others.';
   
