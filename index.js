@@ -578,20 +578,7 @@ getOnPixelsArray(canvas) {
 //
 /////////////////////////////////////////////////////
 
-// add the size input and run button to the page
-const sizeInput = document.createElement('input');
-sizeInput.id = 'size-input';
-sizeInput.type = 'number';
-sizeInput.value = 80; // on safari on mac, sizes up to 181 are not anti-aliased, then from 182 onwards are anti-aliased
-//put inside the "selectors" div
-document.getElementById("selectors").appendChild(sizeInput);
-// run the buildAndShowGlyphs function when the user presses enter in the size input or when the user changes the value
-sizeInput.addEventListener('keyup', function(event) {
-  if (event.keyCode === 13) {
-    buildAndShowGlyphs();
-  }
-});
-sizeInput.addEventListener('change', buildAndShowGlyphs);
+var selectedFontSize = 80;
 
 
 // add a dropdown with the font family options
@@ -684,9 +671,12 @@ const hoverButtonsDiv = document.createElement('div');
 hoverButtonsDiv.id = 'hoverButtons';
 document.getElementById("selectors").appendChild(hoverButtonsDiv);
 
+var hoverFontSize = null;
 
 for (let i = 0; i < 81; i++) {
   const button = document.createElement('button');
+  // set the id to "button-size-<i>"
+  button.id = 'button-size-' + i;
   button.textContent = i;
   button.style.width = '30px';
   button.style.height = '30px';
@@ -703,12 +693,47 @@ for (let i = 0; i < 81; i++) {
   button.style.verticalAlign = 'middle';
   button.style.lineHeight = '30px';
   button.style.cursor = 'pointer';
+
   button.addEventListener('mouseover', function() {
-    sizeInput.value = i;
+    hoverFontSize = i;
+    // set the button background color to light gray
+    if (selectedFontSize !== i) {
+      button.style.backgroundColor = 'lightgray';
+    }
     buildAndShowGlyphs();
   });
+
+  // when the mouse exits the button, set the hoverFontSize to null
+  button.addEventListener('mouseout', function() {
+    hoverFontSize = null;
+    // set the button background color to white unless it is the selectedFontSize
+    if (selectedFontSize !== i) {
+      button.style.backgroundColor = 'white';
+    }
+    buildAndShowGlyphs();
+  });
+
+
+  // when you click on the button, you set the selectedFontSize to the number of the button
+  // and color the button dark gray
+  button.addEventListener('click', function() {
+
+    if (selectedFontSize !== null) {
+      const oldButton = document.getElementById('button-size-' + selectedFontSize);
+      oldButton.style.backgroundColor = 'white';
+    }
+
+    selectedFontSize = i;
+    button.style.backgroundColor = 'darkgray';
+  });
+
+
   hoverButtonsDiv.appendChild(button);
 }
+
+// make the button of the default selectedFontSize dark gray
+const defaultSizeButton = document.getElementById('button-size-' + selectedFontSize);
+defaultSizeButton.style.backgroundColor = 'darkgray';
 
 
 
@@ -716,7 +741,16 @@ for (let i = 0; i < 81; i++) {
 document.body.appendChild(document.createElement('br'));
 
 function buildAndShowGlyphs() {
-  const fontSize = parseInt(sizeInput.value);
+
+  var fontSize;
+
+  if (hoverFontSize !== null) {
+    fontSize = hoverFontSize;
+  }
+  else {
+    fontSize = selectedFontSize;
+  }
+
 
   // get the contents of the settings-textarea and split the contents by the --------- separator
   const settings = settingsTextarea.value.split('---------');
