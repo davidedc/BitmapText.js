@@ -1,11 +1,15 @@
 function parseSpecs() {
-  const specsOfFontFamilyAndFontEmphasys = settingsTextarea.value.split('---------');
-  console.dir(specsOfFontFamilyAndFontEmphasys);
-  // build an object that will contain each of the settings, the key is the first line after the separator
-  // and the value is the rest of the lines after the separator
+ 
+  const specsForFontFamilyAndFontEmphasisPair = settingsTextarea.value.split('---------');
+  console.dir(specsForFontFamilyAndFontEmphasisPair);
+
+  // build an object that will contain the specs, which is object keyed by font family,
+  // then by font emphasis, then by sub-spec name
   const specs = {};
-  for (let i = 0; i < specsOfFontFamilyAndFontEmphasys.length; i++) {
-    const setting = specsOfFontFamilyAndFontEmphasys[i];
+
+  // go through the specs for each font family and font emphasis pair
+  for (let i = 0; i < specsForFontFamilyAndFontEmphasisPair.length; i++) {
+    const setting = specsForFontFamilyAndFontEmphasisPair[i];
     const lines = setting.split('\n');
 
     // remove all the empty lines
@@ -17,21 +21,35 @@ function parseSpecs() {
     }
 
     if (lines.length > 1) {
-      const key = lines[0];
-      const key2 = lines[1];
-      const innerObject = {};
-      if (specs[key] === undefined) {
-        specs[key] = {};
+      
+      // parse the first two lines, which are the font family and font emphasis
+      const fontFamily = lines[0];
+      const fontEmphasis = lines[1];
+
+      // make the keys for font family and emphasis
+      // in the specs object if they don't exist yet
+      if (specs[fontFamily] === undefined) {
+        specs[fontFamily] = {};
       }
 
-      // these are all the settings for fontfamily, fontemphasis
-      var specsContentsOfFontFamilyAndFontEmphasys = lines.slice(2).join('\n');
-      // split the sub-specs for the FontFamilyFontEmphasis by the -- separator
-      var specsContentsOfFontFamilyAndFontEmphasysSplit = specsContentsOfFontFamilyAndFontEmphasys.split('--');
-      for (let k = 0; k < specsContentsOfFontFamilyAndFontEmphasysSplit.length; k++) {
-        const subSpecOfFontFamilyFontEmphasis = specsContentsOfFontFamilyAndFontEmphasysSplit[k];
-        const linesOfSubSpecOfFontFamilyFontEmphasis = subSpecOfFontFamilyFontEmphasis.split('\n');
+      // the object that will hold the specs for the current
+      // font family and font emphasis pair
+      const specsForFontFamilyAndEmphasisPair = {};
+
+      // these are all the specs for a specific fontfamily and fontemphasis
+      var specsContentsOfFontFamilyAndFontEmphasis = lines.slice(2).join('\n');
+      // these contain several sub-specs, each of which is separated by a line with two dashes,
+      // so split the sub-specs by the -- separator
+      var subSpecsOfFontFamilyAndFontEmphasisArray = specsContentsOfFontFamilyAndFontEmphasis.split('--');
+      
+      // go through each sub-spec and parse it
+
+      // for each sub-spec...
+      for (let k = 0; k < subSpecsOfFontFamilyAndFontEmphasisArray.length; k++) {
+        const subSpecOfFontFamilyFontEmphasis = subSpecsOfFontFamilyAndFontEmphasisArray[k];        
+
         // remove all the empty lines
+        const linesOfSubSpecOfFontFamilyFontEmphasis = subSpecOfFontFamilyFontEmphasis.split('\n');
         for (let j = 0; j < linesOfSubSpecOfFontFamilyFontEmphasis.length; j++) {
           if (linesOfSubSpecOfFontFamilyFontEmphasis[j] === '') {
             linesOfSubSpecOfFontFamilyFontEmphasis.splice(j, 1);
@@ -39,34 +57,38 @@ function parseSpecs() {
           }
         }
 
+        // get the name and content of the sub-spec.
         if (linesOfSubSpecOfFontFamilyFontEmphasis.length > 1) {
-          const keyOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis[0];
-          const valueOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis.slice(1).join('\n');
+          
+          // the name is the first line...
+          const nameOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis[0];
+          // ... the rest is the content (starting with a line with a dash)
+          const contentOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis.slice(1).join('\n');
 
-          // check the sub-spec name
-          if (keyOfSubSpecOfFontFamilyFontEmphasis === "letters extra space and pull px") {
-            const lettersExtraSpaceAndPullPxArray = parseLettersExtraSpaceAndPullPX(valueOfSubSpecOfFontFamilyFontEmphasis);
-            //console.dir(lettersExtraSpaceAndPullPxArray);
-            innerObject[keyOfSubSpecOfFontFamilyFontEmphasis] = lettersExtraSpaceAndPullPxArray;
+          // check the sub-spec name and parse it accordingly
+          if (nameOfSubSpecOfFontFamilyFontEmphasis === "letters extra space and pull px") {
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseLettersExtraSpaceAndPullPX(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
+          // if we don't have a parser for the sub-spec, just put its string content in the object as it is
           else {
-            innerObject[keyOfSubSpecOfFontFamilyFontEmphasis] = valueOfSubSpecOfFontFamilyFontEmphasis;
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = contentOfSubSpecOfFontFamilyFontEmphasis;
           }
         }
       }
 
 
-      specs[key][key2] = innerObject;
+      specs[fontFamily][fontEmphasis] = specsForFontFamilyAndEmphasisPair;
     }
   }
   console.dir(specs);
 }
 
 
-function parseLettersExtraSpaceAndPullPX(valueOfSettingOfFontFamilyFontEmphasis) {
-  console.log("have to parse" + valueOfSettingOfFontFamilyFontEmphasis);
-  // remove the first line
-  const linesOfSubSpecOfFontFamilyFontEmphasis = valueOfSettingOfFontFamilyFontEmphasis.split('\n');
+function parseLettersExtraSpaceAndPullPX(contentOfSubSpec) {
+  console.log("have to parse" + contentOfSubSpec);
+
+  // remove the first line as it's a dash
+  const linesOfSubSpecOfFontFamilyFontEmphasis = contentOfSubSpec.split('\n');
   linesOfSubSpecOfFontFamilyFontEmphasis.splice(0, 1);
 
   // linesOfSubSpecOfFontFamilyFontEmphasis in in the form:
