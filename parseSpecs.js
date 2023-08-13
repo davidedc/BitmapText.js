@@ -45,9 +45,9 @@ function parseSpecs() {
 
           // check the sub-spec name
           if (keyOfSubSpecOfFontFamilyFontEmphasis === "letters extra space and pull px") {
-            const sections = parseLettersExtraSpaceAndPullPX(valueOfSubSpecOfFontFamilyFontEmphasis);
-            //console.dir(sections);
-            innerObject[keyOfSubSpecOfFontFamilyFontEmphasis] = sections;
+            const lettersExtraSpaceAndPullPxArray = parseLettersExtraSpaceAndPullPX(valueOfSubSpecOfFontFamilyFontEmphasis);
+            //console.dir(lettersExtraSpaceAndPullPxArray);
+            innerObject[keyOfSubSpecOfFontFamilyFontEmphasis] = lettersExtraSpaceAndPullPxArray;
           }
           else {
             innerObject[keyOfSubSpecOfFontFamilyFontEmphasis] = valueOfSubSpecOfFontFamilyFontEmphasis;
@@ -82,53 +82,69 @@ function parseLettersExtraSpaceAndPullPX(valueOfSettingOfFontFamilyFontEmphasis)
   // until the next line with
   //   [number] to [number]
   // into an array
-  const sections = [];
+  const lettersExtraSpaceAndPullPxArray = [];
   for (let i = 0; i < linesOfSubSpecOfFontFamilyFontEmphasis.length; i++) {
     const line = linesOfSubSpecOfFontFamilyFontEmphasis[i];
 
     // there can be multiple parts covering different ranges of sizes
     // so you have to constantly look out for the next range
     // i.e. a line matching "[number] to [number]""
-    if (/^\d+\s+to\s+\d+$/.test(line)) {
+    if (isSizeRange(line)) {
       // this is a line with " to " in it
       // so it's the start of a new section
       // put the two numbers in the line into an object with keys "from" and "to"
-      const sizeRangeLine = line.split(' to ');
-      const from = parseInt(sizeRangeLine[0]);
-      const to = parseInt(sizeRangeLine[1]);
+      const sizeRangeObj = parseSizeRange(line);
 
-      sections.push({ sizeRange: {}, charsAndOffsets: [] });
-      sections[sections.length - 1].sizeRange = { from: from, to: to };
-
+      // add to the lettersExtraSpaceAndPullPxArray array the new size range and the charAndOffsets objects array
+      lettersExtraSpaceAndPullPxArray.push({ sizeRange: {}, charsAndOffsets: [] });
+      
+      lettersExtraSpaceAndPullPxArray[lettersExtraSpaceAndPullPxArray.length - 1].sizeRange = sizeRangeObj;
     }
     else {
-      // each line after the size range looks like:
-      //
-      //   vw: right 5 left 9
-      //
-      // so:
-      // 1. ignore the first two spaces
-      // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-      // 3. keep as a number the number after "right"
-      // 4. keep as a number the number after "left"
-      // 5. pack the string and the two numbers into an object
-
-      // 1. ignore the first two spaces
-      const line2 = line.substring(2);
-
-      // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-      const line3 = line2.substring(0, line2.lastIndexOf(':'));
-
-      // 3. keep as a number the number after "right"
-      const right = parseInt(line2.substring(line2.indexOf('right') + 6, line2.indexOf('left') - 1));
-
-      // 4. keep as a number the number after "left"
-      const left = parseInt(line2.substring(line2.indexOf('left') + 5));
-
-
-      // 5. pack the string and the two numbers into an object
-      sections[sections.length - 1].charsAndOffsets.push({ string: line3, right: right, left: left });
+      const parseCharsAndOffsetsObj = parseCharsAndOffsetsLine(line);
+      lettersExtraSpaceAndPullPxArray[lettersExtraSpaceAndPullPxArray.length - 1].charsAndOffsets.push(parseCharsAndOffsetsObj);
     }
   }
-  return sections;
+  return lettersExtraSpaceAndPullPxArray;
 }
+function parseCharsAndOffsetsLine(line) {
+  // each line after the size range looks like:
+  //
+  //   vw: right 5 left 9
+  //
+  // so:
+  // 1. ignore the first two spaces
+  // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
+  // 3. keep as a number the number after "right"
+  // 4. keep as a number the number after "left"
+  // 5. pack the string and the two numbers into an object
+
+  // 1. ignore the first two spaces
+  const line2 = line.substring(2);
+
+  // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
+  const line3 = line2.substring(0, line2.lastIndexOf(':'));
+
+  // 3. keep as a number the number after "right"
+  const right = parseInt(line2.substring(line2.indexOf('right') + 6, line2.indexOf('left') - 1));
+
+  // 4. keep as a number the number after "left"
+  const left = parseInt(line2.substring(line2.indexOf('left') + 5));
+
+  // 5. pack the string and the two numbers into an object
+  return { string: line3, right: right, left: left };
+
+}
+
+function parseSizeRange(line) {
+  const sizeRangeLine = line.split(' to ');
+  const from = parseInt(sizeRangeLine[0]);
+  const to = parseInt(sizeRangeLine[1]);
+
+  return { from: from, to: to };
+}
+
+function isSizeRange(line) {
+  return /^\d+\s+to\s+\d+$/.test(line);
+}
+
