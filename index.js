@@ -794,65 +794,7 @@ function buildAndShowGlyphs() {
 
 
   // get the contents of the settings-textarea and split the contents by the --------- separator
-  const settings = settingsTextarea.value.split('---------');
-  console.dir(settings);
-  // build an object that will contain each of the settings, the key is the first line after the separator
-  // and the value is the rest of the lines after the separator
-  const settingsObject = {};
-  for (let i = 0; i < settings.length; i++) {
-    const setting = settings[i];
-    const lines = setting.split('\n');
-
-    // remove all the empty lines
-    for (let j = 0; j < lines.length; j++) {
-      if (lines[j] === '') {
-        lines.splice(j, 1);
-        j--;
-      }
-    }
-
-    if (lines.length > 1) {
-      const key = lines[0];
-      const key2 = lines[1];
-      const innerObject = {};
-      if (settingsObject[key] === undefined) {
-        settingsObject[key] = {};
-      }
-
-      // these are all the settings for fontfamily, fontemphasis
-      var settingsOfFontFamilyFontEmphasis = lines.slice(2).join('\n');
-      // split the settingOfFontFamilyFontEmphasis by the -- separator
-      var settingsOfFontFamilyFontEmphasisSplit = settingsOfFontFamilyFontEmphasis.split('--');
-      for (let k = 0; k < settingsOfFontFamilyFontEmphasisSplit.length; k++) {
-        const settingOfFontFamilyFontEmphasis = settingsOfFontFamilyFontEmphasisSplit[k];
-        const linesOfSettingOfFontFamilyFontEmphasis = settingOfFontFamilyFontEmphasis.split('\n');
-        // remove all the empty lines
-        for (let j = 0; j < linesOfSettingOfFontFamilyFontEmphasis.length; j++) {
-          if (linesOfSettingOfFontFamilyFontEmphasis[j] === '') {
-            linesOfSettingOfFontFamilyFontEmphasis.splice(j, 1);
-            j--;
-          }
-        }
-        if (linesOfSettingOfFontFamilyFontEmphasis.length > 1) {
-          const keyOfSettingOfFontFamilyFontEmphasis = linesOfSettingOfFontFamilyFontEmphasis[0];
-          const valueOfSettingOfFontFamilyFontEmphasis = linesOfSettingOfFontFamilyFontEmphasis.slice(1).join('\n');
-
-          if (keyOfSettingOfFontFamilyFontEmphasis === "letters extra space and pull px"){
-            const sections = parseLettersExtraSpaceAndPullPX(valueOfSettingOfFontFamilyFontEmphasis);
-            //console.dir(sections);
-            innerObject[keyOfSettingOfFontFamilyFontEmphasis] = sections;
-          }
-          else {
-            innerObject[keyOfSettingOfFontFamilyFontEmphasis] = valueOfSettingOfFontFamilyFontEmphasis;
-          }
-        }
-      }
-
-
-      settingsObject[key][key2] = innerObject;
-    }
-  }
-  console.dir(settingsObject);
+  parseSpecs();
   
 
   if (!isNaN(fontSize)) {
@@ -877,67 +819,6 @@ function buildAndShowGlyphs() {
 
 runButton.addEventListener('click', buildAndShowGlyphs);
 
-
-function parseLettersExtraSpaceAndPullPX(valueOfSettingOfFontFamilyFontEmphasis) {
-  console.log("have to parse" + valueOfSettingOfFontFamilyFontEmphasis);
-  // remove the first line
-  const linesOfSettingOfFontFamilyFontEmphasis2 = valueOfSettingOfFontFamilyFontEmphasis.split('\n');
-  linesOfSettingOfFontFamilyFontEmphasis2.splice(0, 1);
-
-  // linesOfSettingOfFontFamilyFontEmphasis2 in in the form:
-  // 0 to 20
-  //   [something]
-  //   ...
-  // 20 to 1000
-  //   [something]
-  //   ...
-  // ...
-  // let's put each section starting with
-  //   [number] to [number]
-  // until the next line with
-  //   [number] to [number]
-  // into an array
-  const sections = [];
-  for (let i = 0; i < linesOfSettingOfFontFamilyFontEmphasis2.length; i++) {
-    const line = linesOfSettingOfFontFamilyFontEmphasis2[i];
-    if (line.indexOf(' to ') !== -1) {
-      // this is a line with " to " in it
-      // so it's the start of a new section
-      // put the two numbers in the line into an object with keys "from" and "to"
-      const sizeRangeLine = line.split(' to ');
-      const from = parseInt(sizeRangeLine[0]);
-      const to = parseInt(sizeRangeLine[1]);
-
-      sections.push({ sizeRange: {}, charsAndOffsets: [] });
-      sections[sections.length - 1].sizeRange = { from: from, to: to };
-
-    }
-    else {
-      // each line here looks like:
-      //   vw: right 5 left 9
-      // 1. so let's ignore the first two spaces
-      // 2. let's keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-      // 3. let's keep as a number the number after "right"
-      // 4. let's keep as a number the number after "left"
-      // 1. so let's ignore the first two spaces
-      const line2 = line.substring(2);
-
-      // 2. let's keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-      const line3 = line2.substring(0, line2.lastIndexOf(':'));
-
-      // 3. let's keep as a number the number after "right"
-      const right = parseInt(line2.substring(line2.indexOf('right') + 6, line2.indexOf('left') - 1));
-
-      // 4. let's keep as a number the number after "left"
-      const left = parseInt(line2.substring(line2.indexOf('left') + 5));
-
-
-      // let's put the string and the two numbers into an object
-      sections[sections.length - 1].charsAndOffsets.push({ string: line3, right: right, left: left });
-    }
-  }
-  return sections;
-}
 
 function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   // create a new CrispBitmapGlyph object
