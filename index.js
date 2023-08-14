@@ -94,7 +94,14 @@ class CrispBitmapText {
 
   getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
 
-    if (fontFamily === 'Arial' && fontSize <= 11) {
+    // pick the kerning cutoff from the specs object wit the key fontFamily and fontEmphasis
+    // if it's not there, use the default value
+    var kerningCutoff = null;
+    if (specs[fontFamily] && specs[fontFamily][fontEmphasis] && specs[fontFamily][fontEmphasis]["kerning cutoff"]) {
+      kerningCutoff = specs[fontFamily][fontEmphasis]["kerning cutoff"];
+    }
+
+    if (fontSize <= kerningCutoff) {
       return 0;
     }
 
@@ -668,6 +675,10 @@ settingsTextarea.style.float = 'left';
 
 settingsTextarea.value = `Arial
 normal
+--
+kerning cutoff
+-
+11
 --
 letters extra space and pull px
 -

@@ -1,11 +1,11 @@
+// build an object that will contain the specs, which is object keyed by font family,
+// then by font emphasis, then by sub-spec name
+const specs = {};
+
 function parseSpecs() {
  
   const specsForFontFamilyAndFontEmphasisPair = settingsTextarea.value.split('---------');
   console.dir(specsForFontFamilyAndFontEmphasisPair);
-
-  // build an object that will contain the specs, which is object keyed by font family,
-  // then by font emphasis, then by sub-spec name
-  const specs = {};
 
   // go through the specs for each font family and font emphasis pair
   for (let i = 0; i < specsForFontFamilyAndFontEmphasisPair.length; i++) {
@@ -69,6 +69,9 @@ function parseSpecs() {
           if (nameOfSubSpecOfFontFamilyFontEmphasis === "letters extra space and pull px") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseLettersExtraSpaceAndPullPX(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
+          if (nameOfSubSpecOfFontFamilyFontEmphasis === "kerning cutoff") {
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontEmphasis);
+          }
           // if we don't have a parser for the sub-spec, just put its string content in the object as it is
           else {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = contentOfSubSpecOfFontFamilyFontEmphasis;
@@ -129,6 +132,19 @@ function parseLettersExtraSpaceAndPullPX(contentOfSubSpec) {
   }
   return lettersExtraSpaceAndPullPxArray;
 }
+
+function parseKerningCutoff(contentOfSubSpec) {
+  console.log("have to parse" + contentOfSubSpec);
+
+  // remove the first line as it's a dash
+  const linesOfSubSpecOfFontFamilyFontEmphasis = contentOfSubSpec.split('\n');
+  linesOfSubSpecOfFontFamilyFontEmphasis.splice(0, 1);
+
+  // just parse a number in the next line
+  return parseInt(linesOfSubSpecOfFontFamilyFontEmphasis[0]);
+}
+
+
 function parseCharsAndOffsetsLine(line) {
   // each line after the size range looks like:
   //
