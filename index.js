@@ -94,7 +94,7 @@ class CrispBitmapText {
 
   getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
 
-    if (fontSize <= specs[fontFamily][fontEmphasis]["kerning cutoff"]) {
+    if (fontSize <= specs[fontFamily][fontEmphasis]["Kerning cutoff"]) {
       return 0;
     }
 
