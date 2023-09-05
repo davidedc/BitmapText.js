@@ -673,6 +673,17 @@ Kerning cutoff
 -
 11
 --
+Kerning
+-
+0 to 20
+  absvds followed by dshkjshdfjhsdfsdfjkh: 0.1
+  sdfslksdf followed by *any*: 0.2
+  *any* followed by LKJLKJF: 0.2
+21 to 22
+  absvds followed by dshkjshdfjhsdfsdfjkh: 0.1
+  sdfslksdf followed by *any*: 0.2
+  *any* followed by LKJLKJF: 0.2
+--
 Letters extra space and pull px
 -
 0 to 20
