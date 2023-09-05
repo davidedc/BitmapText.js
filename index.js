@@ -874,7 +874,7 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   var testText4 = 'related information.';
   var testText5 = 'Now choose an area in which you would like to start browsing. The system currently has';
   var testText6 = 'access to three sources of information. With the indexes, you should use the keyword';
-  var testText7 = 'f to check actualBoundingBoxLeft doesn\t cause f to be drawn outside the canvas.';
+  var testText7 = 'f to check actualBoundingBoxLeft doesn\'t cause f to be drawn outside the canvas.';
 
   //var testText = 'project does not take responsability for the accuracy of information provided by others.';
   
