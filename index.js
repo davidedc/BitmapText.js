@@ -673,7 +673,7 @@ Kerning cutoff
 -
 11
 --
-letters extra space and pull px
+Letters extra space and pull px
 -
 0 to 20
   v:w: right 5 left 9
