@@ -94,14 +94,7 @@ class CrispBitmapText {
 
   getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
 
-    // pick the kerning cutoff from the specs object wit the key fontFamily and fontEmphasis
-    // if it's not there, use the default value
-    var kerningCutoff = null;
-    if (specs[fontFamily] && specs[fontFamily][fontEmphasis] && specs[fontFamily][fontEmphasis]["kerning cutoff"]) {
-      kerningCutoff = specs[fontFamily][fontEmphasis]["kerning cutoff"];
-    }
-
-    if (fontSize <= kerningCutoff) {
+    if (fontSize <= specs[fontFamily][fontEmphasis]["kerning cutoff"]) {
       return 0;
     }
 
