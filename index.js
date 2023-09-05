@@ -669,7 +669,7 @@ settingsTextarea.style.float = 'left';
 settingsTextarea.value = `Arial
 normal
 --
-kerning cutoff
+Kerning cutoff
 -
 11
 --
@@ -684,7 +684,7 @@ letters extra space and pull px
   ef: right 11 left 12
   gh: right 13 left 14
 --
-letters extra space and pull proportional
+Letters extra space and pull proportional
 -
 1 to 21
   hk: right 30 left 0

@@ -66,10 +66,10 @@ function parseSpecs() {
           const contentOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis.slice(1).join('\n');
 
           // check the sub-spec name and parse it accordingly
-          if (nameOfSubSpecOfFontFamilyFontEmphasis === "letters extra space and pull px") {
+          if (nameOfSubSpecOfFontFamilyFontEmphasis === "Letters extra space and pull px") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseLettersExtraSpaceAndPullPX(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
-          if (nameOfSubSpecOfFontFamilyFontEmphasis === "kerning cutoff") {
+          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
           // if we don't have a parser for the sub-spec, just put its string content in the object as it is
