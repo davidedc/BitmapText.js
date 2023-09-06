@@ -93,10 +93,34 @@ class CrispBitmapText {
   
 
   getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
+    const USE_KERNING_FROM_SPECS = true;
 
     if (fontSize <= specs[fontFamily][fontEmphasis]["Kerning cutoff"]) {
       return 0;
     }
+  
+    if (USE_KERNING_FROM_SPECS) {
+      // for all entries in the Kerning array with a sizeRange that includes the current font size
+      //   get the kerning array and for each one:
+      //     if letter matches any of the letters in the "left" object or the "left" object is "*any*" and the nextLetter matches any of the letters in the "right" object or the "right" object is "*any*"
+      //       return the value of the "adjustment" property
+      for (let i = 0; i < specs[fontFamily][fontEmphasis]["Kerning"].length; i++) {
+        const kerningEntry = specs[fontFamily][fontEmphasis]["Kerning"][i];
+        if (kerningEntry.sizeRange.from <= fontSize && kerningEntry.sizeRange.to >= fontSize) {
+          // scan the kerningEntry.kerning array
+          for (let j = 0; j < kerningEntry.kerning.length; j++) {
+            const kerning = kerningEntry.kerning[j];
+            if ((kerning.left.indexOf(letter) !== -1 || kerning.left.indexOf("*any*") !== -1) && (kerning.right.indexOf(nextLetter) !== -1 || kerning.right.indexOf("*any*") !== -1)) {
+              console.log("kerning correction for " + letter + " " + nextLetter + " is " + kerning.adjustment);
+              return kerning.adjustment;
+            }
+          }
+        }
+      }
+      
+      return 0;
+    }
+
 
     if (fontFamily === 'Arial' && fontSize <= 21) {
       if (letter === 'A' && this.isShortCharacter(nextLetter)){
