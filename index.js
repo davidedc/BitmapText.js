@@ -715,6 +715,7 @@ settingsTextarea.value = specsText;
 document.getElementById("selectors").appendChild(settingsTextarea);
 // settingsTextarea.addEventListener('change', buildAndShowGlyphs);
 settingsTextarea.style.height = '200px';
+settingsTextarea.style.width = '333px';
 
 // add to the selectors div 81 square buttons numbered from 0 to 80,
 // and when the user hovers over them, set the size input to the number
