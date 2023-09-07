@@ -12,6 +12,8 @@ function parseSpecs() {
   // also remove empty lines
   const settingsTextareaContentsWithoutCommentsAndEmptyLines = settingsTextareaContentsWithoutComments.replace(/^\s*\n/gm, '');
 
+  console.log("have to parse" + settingsTextareaContentsWithoutCommentsAndEmptyLines);
+
   const specsForFontFamilyAndFontEmphasisPair = settingsTextareaContentsWithoutCommentsAndEmptyLines.split('---------');
   console.dir(specsForFontFamilyAndFontEmphasisPair);
 
@@ -99,8 +101,6 @@ function parseSpecs() {
 
 
 function parseLettersExtraSpaceAndPullPX(contentOfSubSpec) {
-  console.log("have to parse" + contentOfSubSpec);
-
   // remove the first line as it's a dash
   const linesOfSubSpecOfFontFamilyFontEmphasis = contentOfSubSpec.split('\n');
   linesOfSubSpecOfFontFamilyFontEmphasis.splice(0, 1);
