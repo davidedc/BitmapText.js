@@ -93,7 +93,6 @@ class CrispBitmapText {
   
 
   getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
-    const USE_KERNING_FROM_SPECS = true;
 
     if (fontSize <= specs[fontFamily][fontEmphasis]["Kerning cutoff"]) {
       return 0;
@@ -680,6 +679,28 @@ const runButton = document.createElement('button');
 runButton.id = 'run-button';
 runButton.textContent = 'Build and Show Glyphs';
 document.getElementById("selectors").appendChild(runButton);
+
+// create a global USE_KERNING_FROM_SPECS boolean vailable and
+var USE_KERNING_FROM_SPECS = true;
+
+// add a checkbox that controls it
+const useKerningFromSpecsCheckbox = document.createElement('input');
+useKerningFromSpecsCheckbox.type = 'checkbox';
+useKerningFromSpecsCheckbox.id = 'use-kerning-from-specs-checkbox';
+useKerningFromSpecsCheckbox.checked = USE_KERNING_FROM_SPECS;
+document.getElementById("selectors").appendChild(useKerningFromSpecsCheckbox);
+// run the buildAndShowGlyphs function when the user changes the value of the font emphasis select
+useKerningFromSpecsCheckbox.addEventListener('change', function() {
+
+  USE_KERNING_FROM_SPECS = useKerningFromSpecsCheckbox.checked;
+  buildAndShowGlyphs();
+});
+// add a label for the checkbox
+const useKerningFromSpecsCheckboxLabel = document.createElement('label');
+useKerningFromSpecsCheckboxLabel.textContent = 'Use kerning from specs';
+useKerningFromSpecsCheckboxLabel.htmlFor = 'use-kerning-from-specs-checkbox';
+document.getElementById("selectors").appendChild(useKerningFromSpecsCheckboxLabel);
+
 
 
 document.getElementById("selectors").appendChild(document.createElement('br'));
