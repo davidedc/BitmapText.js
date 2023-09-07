@@ -7,13 +7,14 @@ Kerning cutoff
 --
 Kerning
 -
+12 to 21
+  // letter === 'A' && this.isShortCharacter(nextLetter)
+  A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
 12 to 20
   ftvy followed by ftvy: 0.1
   rk followed by *any*: 0.1
   p followed by a: 0.1
   c followed by y: 0.1
-21 to 21
-  A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
 21 to 23
   *any* followed by j: -0.15
 12 to 100

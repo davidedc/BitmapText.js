@@ -4,7 +4,15 @@ const specs = {};
 
 function parseSpecs() {
  
-  const specsForFontFamilyAndFontEmphasisPair = settingsTextarea.value.split('---------');
+  // get contents of the settingsTextarea and remove all the lines containing double slashes (we'll treat them as comments)
+  const settingsTextareaContents = settingsTextarea.value;
+  // double shashes can be anywhere in the line, so we have to remove the whole line
+  const settingsTextareaContentsWithoutComments = settingsTextareaContents.replace(/.*\/\/.*/g, '');
+
+  // also remove empty lines
+  const settingsTextareaContentsWithoutCommentsAndEmptyLines = settingsTextareaContentsWithoutComments.replace(/^\s*\n/gm, '');
+
+  const specsForFontFamilyAndFontEmphasisPair = settingsTextareaContentsWithoutCommentsAndEmptyLines.split('---------');
   console.dir(specsForFontFamilyAndFontEmphasisPair);
 
   // go through the specs for each font family and font emphasis pair
