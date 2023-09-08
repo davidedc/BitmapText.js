@@ -3,10 +3,13 @@ normal
 --
 Kerning cutoff
 -
-11
+0
 --
 Kerning
 -
+0 to 11
+  // letter === 'A' && this.isShortCharacter(nextLetter)
+  A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
 12 to 21
   // letter === 'A' && this.isShortCharacter(nextLetter)
   A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
