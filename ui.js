@@ -349,5 +349,3 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   document.getElementById("testTextCanvases").appendChild(canvas3);
 
 }
-
-buildAndShowGlyphs();
