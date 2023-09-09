@@ -64,7 +64,7 @@ useKerningFromSpecsCheckboxLabel.textContent = 'Use kerning from specs';
 useKerningFromSpecsCheckboxLabel.htmlFor = 'use-kerning-from-specs-checkbox';
 document.getElementById("selectors").appendChild(useKerningFromSpecsCheckboxLabel);
 
-
+addRadioButtonsToSelectText();
 
 document.getElementById("selectors").appendChild(document.createElement('br'));
 
@@ -229,6 +229,11 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   }
 
   //var testText = 'Document Hello World ÀÇ█gMffAVAWWVaWa7a9a/aTaYaPafa information is provided as part of the WorldWideWeb project responsability';
+  drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore);
+
+}
+
+function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
   var testText = 'Access to this information is provided as part of the WorldWideWeb project. The WWW';
   var testText2 = 'project does not take responsability for the accuracy of information provided by others';
   var testText3 = 'References to other information are represented like this. Double-click on it to jump to';
@@ -238,8 +243,6 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   var testText7 = 'f to check actualBoundingBoxLeft doesn\'t cause f to be drawn outside the canvas.';
 
   //var testText = 'project does not take responsability for the accuracy of information provided by others.';
-  
-
   // create a canvas just to find the text measures for the antialiased version (easy: don't add it to the DOM)
   const canvas4 = document.createElement('canvas');
   const ctx4 = canvas4.getContext('2d');
@@ -274,13 +277,13 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  crispBitmapText.drawText(ctx, testText, 0, Math.round(canvas.height - 6 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
-  crispBitmapText.drawText(ctx, testText2, 0, Math.round(canvas.height - 5 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
-  crispBitmapText.drawText(ctx, testText3, 0, Math.round(canvas.height - 4 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
-  crispBitmapText.drawText(ctx, testText4, 0, Math.round(canvas.height - 3 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
-  crispBitmapText.drawText(ctx, testText5, 0, Math.round(canvas.height - 2 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
-  crispBitmapText.drawText(ctx, testText6, 0, Math.round(canvas.height - 1 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
-  crispBitmapText.drawText(ctx, testText7, 0, Math.round(canvas.height - 0 * crispTestTextMeasures.height -1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText, 0, Math.round(canvas.height - 6 * crispTestTextMeasures.height - 1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText2, 0, Math.round(canvas.height - 5 * crispTestTextMeasures.height - 1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText3, 0, Math.round(canvas.height - 4 * crispTestTextMeasures.height - 1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText4, 0, Math.round(canvas.height - 3 * crispTestTextMeasures.height - 1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText5, 0, Math.round(canvas.height - 2 * crispTestTextMeasures.height - 1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText6, 0, Math.round(canvas.height - 1 * crispTestTextMeasures.height - 1), fontSize, fontFamily, fontEmphasis);
+  crispBitmapText.drawText(ctx, testText7, 0, Math.round(canvas.height - 0 * crispTestTextMeasures.height - 1), fontSize, fontFamily, fontEmphasis);
 
 
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
@@ -300,10 +303,10 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   ctx2.fillStyle = 'black';
   ctx2.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx2.textBaseline = 'bottom';
-  ctx2.fillText( testText , 0, canvas2.height-1);
+  ctx2.fillText(testText, 0, canvas2.height - 1);
 
 
-  
+
   // add another canvas at the top of the page and draw "xxxxxxxxxxxx" on it using the standard canvas text drawing methods
   // add some text above the canvas to say what it is
   const div6 = document.createElement('div');
@@ -321,7 +324,7 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   ctx6.fillStyle = 'black';
   ctx6.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx6.textBaseline = 'bottom';
-  ctx6.fillText( '|||||||||||||||||||||||||||||||||||||' , 0, canvas6.height-1);
+  ctx6.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas6.height - 1);
 
 
 
@@ -343,9 +346,8 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   ctx3.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx3.textBaseline = 'bottom';
 
-  ctx3.fillText( testText , 0, canvas3.height-1);
+  ctx3.fillText(testText, 0, canvas3.height - 1);
   // add to DOM after drawing the text so
   // the CSS property to make it crisp doesn't work
   document.getElementById("testTextCanvases").appendChild(canvas3);
-
 }
