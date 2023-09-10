@@ -201,6 +201,11 @@ class CrispBitmapText {
     var x = 0;
 
 
+    // if glyph doesn't contain the letter, log out an error with the missing letter
+    if (!glyph) {
+      console.log("glyph doesn't contain the letter " + letter);
+    }
+
     if (i < text.length - 1) {
       // console.log(glyph.letterMeasures.width + " " + x);
       // deal with the size of the " " character
