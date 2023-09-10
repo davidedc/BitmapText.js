@@ -1,5 +1,16 @@
   function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
-  var testText = testText1;
+  
+  // depending on the radio button selected, choose the test text form the
+  // testText1, kernKingPart1, or kernKingPart2 variables defined in test-text.js
+  // and put it in the testText variable
+  let testText = '';
+  if (document.getElementById('next-text-radio-button').checked) {
+    testText = testText1;
+  } else if (document.getElementById('kern-kind-part-1-radio-button').checked) {
+    testText = kernKingPart1;
+  } else if (document.getElementById('kern-kind-part-2-radio-button').checked) {
+    testText = kernKingPart2;
+  }
 
   // put the test Text into an array of lines
   const testTextLines = testText.split("\n");

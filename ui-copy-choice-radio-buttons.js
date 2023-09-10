@@ -1,4 +1,4 @@
-// add three radio buttons, one labelled "Next text", one labelled "Kern Kind Part 1", and one labelled "Kern Kind Part 2"
+// add three radio buttons, one labelled "Test text 1", one labelled "Kern King Part 1", and one labelled "Kern King Part 2"
 // these will control which test text is shown
 
 function addRadioButtonsToSelectText() {
@@ -10,7 +10,7 @@ function addRadioButtonsToSelectText() {
     document.getElementById("selectors").appendChild(nextTextRadioButton);
     // add a label for the radio button
     const nextTextRadioButtonLabel = document.createElement('label');
-    nextTextRadioButtonLabel.textContent = 'Next text';
+    nextTextRadioButtonLabel.textContent = 'Test text 1';
     nextTextRadioButtonLabel.htmlFor = 'next-text-radio-button';
     document.getElementById("selectors").appendChild(nextTextRadioButtonLabel);
     const kernKindPart1RadioButton = document.createElement('input');
@@ -20,7 +20,7 @@ function addRadioButtonsToSelectText() {
     document.getElementById("selectors").appendChild(kernKindPart1RadioButton);
     // add a label for the radio button
     const kernKindPart1RadioButtonLabel = document.createElement('label');
-    kernKindPart1RadioButtonLabel.textContent = 'Kern Kind Part 1';
+    kernKindPart1RadioButtonLabel.textContent = 'Kern King Part 1';
     kernKindPart1RadioButtonLabel.htmlFor = 'kern-kind-part-1-radio-button';
     document.getElementById("selectors").appendChild(kernKindPart1RadioButtonLabel);
     const kernKindPart2RadioButton = document.createElement('input');
@@ -30,14 +30,18 @@ function addRadioButtonsToSelectText() {
     document.getElementById("selectors").appendChild(kernKindPart2RadioButton);
     // add a label for the radio button
     const kernKindPart2RadioButtonLabel = document.createElement('label');
-    kernKindPart2RadioButtonLabel.textContent = 'Kern Kind Part 2';
+    kernKindPart2RadioButtonLabel.textContent = 'Kern King Part 2';
     kernKindPart2RadioButtonLabel.htmlFor = 'kern-kind-part-2-radio-button';
     document.getElementById("selectors").appendChild(kernKindPart2RadioButtonLabel);
 
-    // if the radio button is clicked, call the drawTestText function
-    nextTextRadioButton.addEventListener('click', drawTestText);
-    kernKindPart1RadioButton.addEventListener('click', drawTestText);
-    kernKindPart2RadioButton.addEventListener('click', drawTestText);
-    
+    // if the radio button is clicked, call the buildAndShowGlyphs function
+    // TODO you should do less work here, you should
+    // 1. remove all the test text canvases
+    // 2. re-add them
+    // 3. call drawTestText
+    nextTextRadioButton.addEventListener('click', buildAndShowGlyphs);
+    kernKindPart1RadioButton.addEventListener('click', buildAndShowGlyphs);
+    kernKindPart2RadioButton.addEventListener('click', buildAndShowGlyphs);
+
 }
 

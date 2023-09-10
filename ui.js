@@ -221,7 +221,8 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
     crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily, fontEmphasis));
   }
 
-  allOtherChars = '!"#$%&€\'()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
+  // note that the special charachter ’ below is NOT the single quote character '
+  allOtherChars = 'ß!"#$%&€\'’()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
   // all chars in allOtherChars
   for (let i = 0; i < allOtherChars.length; i++) {
     const letter = allOtherChars[i];
