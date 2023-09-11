@@ -1,5 +1,5 @@
 
-const testText1 = 'Access to this information is provided as part of the WorldWideWeb project. The WWW' + "\n" +
+const testCopy1 = 'Access to this information is provided as part of the WorldWideWeb project. The WWW' + "\n" +
   'project does not take responsability for the accuracy of information provided by others' + "\n" +
   'References to other information are represented like this. Double-click on it to jump to' + "\n" +
   'related information.' + "\n" +
@@ -9,7 +9,7 @@ const testText1 = 'Access to this information is provided as part of the WorldWi
 
 // note that the special charachter ’ below is NOT the single quote character '
 
-const kernKingPart1 = 'lynx tuft frogs, dolphins abduct by proxy the ever awkward klutz, dud,' + "\n" +
+const kernKingCopyPart1 = 'lynx tuft frogs, dolphins abduct by proxy the ever awkward klutz, dud,' + "\n" +
   'dummkopf, jinx snubnose filmgoer, orphan sgt. renfruw grudgek reyfus, md. sikh psych if halt' + "\n" +
   'tympany jewelry sri heh! twyer vs jojo pneu fylfot alcaaba son of nonplussed halfbreed bubbly' + "\n" +
   'playboy guggenheim daddy coccyx sgraffito effect, vacuum dirndle impossible attempt to' + "\n" +
@@ -31,7 +31,7 @@ const kernKingPart1 = 'lynx tuft frogs, dolphins abduct by proxy the ever awkwar
   'dpt. headquarter burkhardt xerxes atkins govt. ebenezer lg. lhama amtrak amway fixity axmen' + "\n" +
   'quumbabda upjohn hrumpf'
 
-const kernKingPart2 = 'Aaron Abraham Adam Aeneas Agfa Ahoy Aileen Akbar Alanon Americanism' + "\n" +
+const kernKingCopyPart2 = 'Aaron Abraham Adam Aeneas Agfa Ahoy Aileen Akbar Alanon Americanism' + "\n" +
   'Anglican Aorta April Fool’s Day Aqua Lung (Tm.) Arabic Ash Wednesday Authorized Version Ave' + "\n" +
   'Maria Away Axel Ay Aztec Bhutan Bill Bjorn Bk Btu. Bvart Bzonga California Cb Cd Cervantes' + "\n" +
   'Chicago Clute City, Tx. Cmdr. Cnossus Coco Cracker State, Georgia Cs Ct. Cwacker Cyrano David' + "\n" +

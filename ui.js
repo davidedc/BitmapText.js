@@ -41,7 +41,7 @@ useKerningFromSpecsCheckboxLabel.textContent = 'Use kerning from specs';
 useKerningFromSpecsCheckboxLabel.htmlFor = 'use-kerning-from-specs-checkbox';
 document.getElementById("selectors").appendChild(useKerningFromSpecsCheckboxLabel);
 
-addRadioButtonsToSelectText();
+addCopyChoiceRadioButtons();
 
 document.getElementById("selectors").appendChild(document.createElement('br'));
 

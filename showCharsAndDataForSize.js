@@ -31,7 +31,7 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
     crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily, fontEmphasis));
   }
 
-  //var testText = 'Document Hello World ÀÇ█gMffAVAWWVaWa7a9a/aTaYaPafa information is provided as part of the WorldWideWeb project responsability';
+  //var testCopy = 'Document Hello World ÀÇ█gMffAVAWWVaWa7a9a/aTaYaPafa information is provided as part of the WorldWideWeb project responsability';
   drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore);
 
 }
