@@ -45,7 +45,7 @@ addRadioButtonsToSelectText();
 
 document.getElementById("selectors").appendChild(document.createElement('br'));
 
-// add to the "selectors" div a multiline textbox input where we have some settings related to the rendering.
+// add to the "selectors" div a multiline textbox input where we have the specs related to the rendering.
 // and buildAndShowGlyphs() when the user clicks out of it
 const settingsTextarea = document.createElement('textarea');
 settingsTextarea.id = 'settings-textarea';
