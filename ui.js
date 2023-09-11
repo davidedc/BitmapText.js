@@ -5,7 +5,6 @@
 //
 /////////////////////////////////////////////////////
 
-var selectedFontSize = 80;
 
 
 // add a dropdown with the font family options
@@ -62,73 +61,9 @@ settingsTextarea.style.width = '333px';
 // and when the user hovers over them, set the size input to the number
 
 // create a new div "hoverButtons" where we will put the buttons
-const hoverButtonsDiv = document.createElement('div');
-hoverButtonsDiv.id = 'hoverButtons';
-document.getElementById("selectors").appendChild(hoverButtonsDiv);
-
 var hoverFontSize = null;
-
-for (let i = 0; i < 81; i++) {
-  const button = document.createElement('button');
-  // set the id to "button-size-<i>"
-  button.id = 'button-size-' + i;
-  button.textContent = i;
-  button.style.width = '30px';
-  button.style.height = '30px';
-  button.style.margin = '2px';
-  button.style.padding = '0px';
-  button.style.border = '0px';
-  button.style.backgroundColor = 'white';
-  button.style.color = 'black';
-  button.style.fontSize = '12px';
-  button.style.fontWeight = 'normal';
-  button.style.fontStyle = 'normal';
-  button.style.fontFamily = 'Arial';
-  button.style.textAlign = 'center';
-  button.style.verticalAlign = 'middle';
-  button.style.lineHeight = '30px';
-  button.style.cursor = 'pointer';
-
-  button.addEventListener('mouseover', function() {
-    hoverFontSize = i;
-    // set the button background color to light gray
-    if (selectedFontSize !== i) {
-      button.style.backgroundColor = 'lightgray';
-    }
-    buildAndShowGlyphs();
-  });
-
-  // when the mouse exits the button, set the hoverFontSize to null
-  button.addEventListener('mouseout', function() {
-    hoverFontSize = null;
-    // set the button background color to white unless it is the selectedFontSize
-    if (selectedFontSize !== i) {
-      button.style.backgroundColor = 'white';
-    }
-    buildAndShowGlyphs();
-  });
-
-
-  // when you click on the button, you set the selectedFontSize to the number of the button
-  // and color the button dark gray
-  button.addEventListener('click', function() {
-
-    if (selectedFontSize !== null) {
-      const oldButton = document.getElementById('button-size-' + selectedFontSize);
-      oldButton.style.backgroundColor = 'white';
-    }
-
-    selectedFontSize = i;
-    button.style.backgroundColor = 'darkgray';
-  });
-
-
-  hoverButtonsDiv.appendChild(button);
-}
-
-// make the button of the default selectedFontSize dark gray
-const defaultSizeButton = document.getElementById('button-size-' + selectedFontSize);
-defaultSizeButton.style.backgroundColor = 'darkgray';
+var selectedFontSize = 80;
+hoverFontSize = addSizeButtons();
 
 
 
