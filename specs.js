@@ -32,6 +32,8 @@ Kerning
   acegijmnopqrsuvwxyz.,:;—·Çàç• followed by V\\TY: 0.15
   acegijmnopqrsuvwxyz.,:;—·Çàç• followed by VW\\TY: 0.03
 --
+// this is when a character has a ActualBoundingBoxLeft != 0
+// (highlighted in red) AND the character clearly looks too much to the left
 ActualBoundingBoxLeft correction px
 -
 0 to 12
