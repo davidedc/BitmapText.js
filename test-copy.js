@@ -7,8 +7,9 @@ const testCopy1 = 'Access to this information is provided as part of the WorldWi
   'access to three sources of information. With the indexes, you should use the keyword' + "\n" +
   'f to check actualBoundingBoxLeft doesn\'t cause f to be drawn outside the canvas.';
 
-// note that the special charachter ’ below is NOT the single quote character '
 
+// from https://web.archive.org/web/20180621013020/http://www.logofontandlettering.com/kernking.html
+// note that the special charachter ’ below is NOT the single quote character '
 const kernKingCopyPart1 = 'lynx tuft frogs, dolphins abduct by proxy the ever awkward klutz, dud,' + "\n" +
   'dummkopf, jinx snubnose filmgoer, orphan sgt. renfruw grudgek reyfus, md. sikh psych if halt' + "\n" +
   'tympany jewelry sri heh! twyer vs jojo pneu fylfot alcaaba son of nonplussed halfbreed bubbly' + "\n" +
