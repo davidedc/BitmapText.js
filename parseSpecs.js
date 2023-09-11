@@ -76,8 +76,8 @@ function parseSpecs() {
           const contentOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis.slice(1).join('\n');
 
           // check the sub-spec name and parse it accordingly
-          if (nameOfSubSpecOfFontFamilyFontEmphasis === "Letters extra space and pull px") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseLettersExtraSpaceAndPullPX(contentOfSubSpecOfFontFamilyFontEmphasis);
+          if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxLeft correction px") {
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseActualBoundingBoxLeftPxCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontEmphasis);
@@ -99,50 +99,6 @@ function parseSpecs() {
   console.dir(specs);
 }
 
-
-function parseLettersExtraSpaceAndPullPX(contentOfSubSpec) {
-  // remove the first line as it's a dash
-  const linesOfSubSpecOfFontFamilyFontEmphasis = contentOfSubSpec.split('\n');
-  linesOfSubSpecOfFontFamilyFontEmphasis.splice(0, 1);
-
-  // linesOfSubSpecOfFontFamilyFontEmphasis in in the form:
-  // 0 to 20
-  //   [something]
-  //   ...
-  // 20 to 1000
-  //   [something]
-  //   ...
-  // ...
-  // let's put each section starting with
-  //   [number] to [number]
-  // until the next line with
-  //   [number] to [number]
-  // into an array
-  const lettersExtraSpaceAndPullPxArray = [];
-  for (let i = 0; i < linesOfSubSpecOfFontFamilyFontEmphasis.length; i++) {
-    const line = linesOfSubSpecOfFontFamilyFontEmphasis[i];
-
-    // there can be multiple parts covering different ranges of sizes
-    // so you have to constantly look out for the next range
-    // i.e. a line matching "[number] to [number]""
-    if (isSizeRange(line)) {
-      // this is a line with " to " in it
-      // so it's the start of a new section
-      // put the two numbers in the line into an object with keys "from" and "to"
-      const sizeRangeObj = parseSizeRange(line);
-
-      // add to the lettersExtraSpaceAndPullPxArray array the new size range and the charAndOffsets objects array
-      lettersExtraSpaceAndPullPxArray.push({ sizeRange: {}, charsAndOffsets: [] });
-      
-      lettersExtraSpaceAndPullPxArray[lettersExtraSpaceAndPullPxArray.length - 1].sizeRange = sizeRangeObj;
-    }
-    else {
-      const parseCharsAndOffsetsObj = parseCharsAndOffsetsLine(line);
-      lettersExtraSpaceAndPullPxArray[lettersExtraSpaceAndPullPxArray.length - 1].charsAndOffsets.push(parseCharsAndOffsetsObj);
-    }
-  }
-  return lettersExtraSpaceAndPullPxArray;
-}
 
 function parseKerningCutoff(contentOfSubSpec) {
   console.log("have to parse" + contentOfSubSpec);
@@ -223,6 +179,19 @@ function parseKerning(contentOfSubSpec) {
   return kerningArray;
 }
 
+function parseSizeRange(line) {
+  const sizeRangeLine = line.split(' to ');
+  const from = parseInt(sizeRangeLine[0]);
+  const to = parseInt(sizeRangeLine[1]);
+
+  return { from: from, to: to };
+}
+
+function isSizeRange(line) {
+  return /^\d+\s+to\s+\d+$/.test(line);
+}
+
+
 // The function parseKerningLine takes as input a line of the form:
 //
 //   [letters or "*any*"] followed by [letters or "*any*"]: [float]
@@ -267,46 +236,3 @@ function parseKerningLine(line) {
   // 5. pack the two strings and the number into an object
   return { left: left, right: right, adjustment: adjustment };
 }
-
-
-function parseCharsAndOffsetsLine(line) {
-  // each line after the size range looks like:
-  //
-  //   vw: right 5 left 9
-  //
-  // so:
-  // 1. ignore the first two spaces
-  // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-  // 3. keep as a number the number after "right"
-  // 4. keep as a number the number after "left"
-  // 5. pack the string and the two numbers into an object
-
-  // 1. ignore the first two spaces
-  const line2 = line.substring(2);
-
-  // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-  const line3 = line2.substring(0, line2.lastIndexOf(':'));
-
-  // 3. keep as a number the number after "right"
-  const right = parseInt(line2.substring(line2.indexOf('right') + 6, line2.indexOf('left') - 1));
-
-  // 4. keep as a number the number after "left"
-  const left = parseInt(line2.substring(line2.indexOf('left') + 5));
-
-  // 5. pack the string and the two numbers into an object
-  return { string: line3, right: right, left: left };
-
-}
-
-function parseSizeRange(line) {
-  const sizeRangeLine = line.split(' to ');
-  const from = parseInt(sizeRangeLine[0]);
-  const to = parseInt(sizeRangeLine[1]);
-
-  return { from: from, to: to };
-}
-
-function isSizeRange(line) {
-  return /^\d+\s+to\s+\d+$/.test(line);
-}
-

@@ -32,16 +32,12 @@ Kerning
   acegijmnopqrsuvwxyz.,:;—·Çàç• followed by V\\TY: 0.15
   acegijmnopqrsuvwxyz.,:;—·Çàç• followed by VW\\TY: 0.03
 --
-Letters extra space and pull px
+ActualBoundingBoxLeft correction px
 -
-0 to 20
-  v:w: right 5 left 9
-  xy: right 6 left 10  
-21 to 22
-  po: right 11 left 12
-23 to 1000
-  ef: right 11 left 12
-  gh: right 13 left 14
+0 to 12
+  // the j needs to be 1 pixel more to the right, keeping the same advancement (width)
+  // so let's shrink its ActualBoundingBoxLeft
+  j: -1
 --
 Letters extra space and pull proportional
 -

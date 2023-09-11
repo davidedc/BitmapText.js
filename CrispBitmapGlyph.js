@@ -37,6 +37,33 @@ class CrispBitmapGlyph {
     ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.topLeftCorner.y, this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y);
   }
 
+  getActualBoundingBoxLeftPxCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
+
+    if (fontSize <= specs[fontFamily][fontEmphasis]["ActualBoundingBoxLeft correction px"]) {
+      return 0;
+    }
+
+      // for all entries in the ActualBoundingBoxLeft correction px array with a sizeRange that includes the current font size
+      //   get the charsAndOffsets array and for each one:
+      //     if letter matches any of the letters in the "string" object
+      //       return the value of the "adjustment" property
+      for (let i = 0; i < specs[fontFamily][fontEmphasis]["ActualBoundingBoxLeft correction px"].length; i++) {
+        const ActualBoundingBoxLeftCorrectionPxEntry = specs[fontFamily][fontEmphasis]["ActualBoundingBoxLeft correction px"][i];
+        if (ActualBoundingBoxLeftCorrectionPxEntry.sizeRange.from <= fontSize && ActualBoundingBoxLeftCorrectionPxEntry.sizeRange.to >= fontSize) {
+          // scan the ActualBoundingBoxLeftCorrectionPxEntry.charsAndOffsets array
+          for (let j = 0; j < ActualBoundingBoxLeftCorrectionPxEntry.charsAndOffsets.length; j++) {
+            const charAndOffset = ActualBoundingBoxLeftCorrectionPxEntry.charsAndOffsets[j];
+           // if charAndOffset.string contains the letter
+            if (charAndOffset.string.indexOf(letter) !== -1) {
+              return charAndOffset.adjustment;
+            }
+          }
+        }
+      }
+
+      return 0;
+  }
+
   createCanvasWithLetter() {
     const canvas = document.createElement('canvas');
 
@@ -89,13 +116,17 @@ class CrispBitmapGlyph {
     // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...
     // ...don't understand why, but the actualBoundingBoxLeft + actualBoundingBoxRight
     // is not enough to fit the letter in the canvas and the top-right gets ever so slightly clipped...
+
+    // get the specs for "ActualBoundingBoxLeft correction px" of this
+    // font family and emphasis and size
+    
+
+    letterMeasures.actualBoundingBoxLeft += this.getActualBoundingBoxLeftPxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis);
+  
+
+
     if (this.fontFamily === 'Arial') {
       if (this.fontSize <= 12) {
-        // the j needs to be 1 pixel more to the right, let's kill its actualBoundingBoxLeft
-        // so it's drawn in the same space, but 1 pixel more to the right
-        if ((this.letter === 'j')) {
-          letterMeasures.actualBoundingBoxLeft = 0;
-        }
         //if ((this.letter === 'A')) {
         //  letterMeasures.actualBoundingBoxRight -= 2;
         //}
@@ -106,7 +137,7 @@ class CrispBitmapGlyph {
           //ßletterMeasures.actualBoundingBoxLeft += 9;
         }
       }
-      else {
+      else { // fontSize > 20
 
         if ((this.letter === 'W')) {
           letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize / 30);
