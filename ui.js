@@ -13,18 +13,7 @@ const fontFamilySelect = addDropdownWithFontFamilies();
 
 
 // add a dropdown with the font emphasis options
-const fontEmphasisSelect = document.createElement('select');
-fontEmphasisSelect.id = 'font-emphasis-select';
-const fontEmphases = ['normal', 'bold', 'italic', 'bold italic'];
-for (let i = 0; i < fontEmphases.length; i++) {
-  const option = document.createElement('option');
-  option.value = fontEmphases[i];
-  option.textContent = fontEmphases[i];
-  fontEmphasisSelect.appendChild(option);
-}
-document.getElementById("selectors").appendChild(fontEmphasisSelect);
-// run the buildAndShowGlyphs function when the user changes the value of the font emphasis select
-fontEmphasisSelect.addEventListener('change', buildAndShowGlyphs);
+const fontEmphasisSelect = addFontEmphasisDropdown();
 
 
 const runButton = document.createElement('button');
