@@ -41,6 +41,11 @@ ActualBoundingBoxLeft correction px
   // so let's shrink its ActualBoundingBoxLeft
   j: -1
 --
+ActualBoundingBoxRight correction px
+-
+0 to 20
+  Ww: 5
+--
 Letters extra space and pull proportional
 -
 1 to 21
