@@ -129,7 +129,9 @@ class CrispBitmapGlyph {
       else { // fontSize > 20
 
         if ((this.letter === 'W')) {
+          // this avoids W being clipped for sizes > 20
           letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize / 30);
+          // this is so that WWW next to each other don't touch
           letterMeasures.width += Math.ceil(this.fontSize / 30);
         }
         // the j needs to be 1 pixel more to the right
