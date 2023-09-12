@@ -37,58 +37,25 @@ class CrispBitmapGlyph {
     ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.topLeftCorner.y, this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y);
   }
 
-  getActualBoundingBoxLeftPxCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
-
-    if (fontSize <= specs[fontFamily][fontEmphasis]["ActualBoundingBoxLeft correction px"]) {
+  getActualBoundingBoxCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis, side, typePxOrProportional) {
+    const correctionKey = `ActualBoundingBox${side} correction ${typePxOrProportional}`;
+    if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
       return 0;
     }
-
-      // for all entries in the ActualBoundingBoxLeft correction px array with a sizeRange that includes the current font size
-      //   get the charsAndOffsets array and for each one:
-      //     if letter matches any of the letters in the "string" object
-      //       return the value of the "adjustment" property
-      for (let i = 0; i < specs[fontFamily][fontEmphasis]["ActualBoundingBoxLeft correction px"].length; i++) {
-        const ActualBoundingBoxLeftCorrectionPxEntry = specs[fontFamily][fontEmphasis]["ActualBoundingBoxLeft correction px"][i];
-        if (ActualBoundingBoxLeftCorrectionPxEntry.sizeRange.from <= fontSize && ActualBoundingBoxLeftCorrectionPxEntry.sizeRange.to >= fontSize) {
-          // scan the ActualBoundingBoxLeftCorrectionPxEntry.charsAndOffsets array
-          for (let j = 0; j < ActualBoundingBoxLeftCorrectionPxEntry.charsAndOffsets.length; j++) {
-            const charAndOffset = ActualBoundingBoxLeftCorrectionPxEntry.charsAndOffsets[j];
-           // if charAndOffset.string contains the letter
-            if (charAndOffset.string.indexOf(letter) !== -1) {
-              return charAndOffset.adjustment;
-            }
+  
+    for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
+      const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
+      if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
+        for (let j = 0; j < correctionEntry.charsAndOffsets.length; j++) {
+          const charAndOffset = correctionEntry.charsAndOffsets[j];
+          if (charAndOffset.string.indexOf(letter) !== -1) {
+            return charAndOffset.adjustment;
           }
         }
       }
-
-      return 0;
-  }
-
-  getActualBoundingBoxRightPxCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
-
-    if (fontSize <= specs[fontFamily][fontEmphasis]["ActualBoundingBoxRight correction px"]) {
-      return 0;
     }
-
-      // for all entries in the ActualBoundingBox correction px array with a sizeRange that includes the current font size
-      //   get the charsAndOffsets array and for each one:
-      //     if letter matches any of the letters in the "string" object
-      //       return the value of the "adjustment" property
-      for (let i = 0; i < specs[fontFamily][fontEmphasis]["ActualBoundingBoxRight correction px"].length; i++) {
-        const ActualBoundingBoxRightCorrectionPxEntry = specs[fontFamily][fontEmphasis]["ActualBoundingBoxRight correction px"][i];
-        if (ActualBoundingBoxRightCorrectionPxEntry.sizeRange.from <= fontSize && ActualBoundingBoxRightCorrectionPxEntry.sizeRange.to >= fontSize) {
-          // scan the ActualBoundingBoxRightCorrectionPxEntry.charsAndOffsets array
-          for (let j = 0; j < ActualBoundingBoxRightCorrectionPxEntry.charsAndOffsets.length; j++) {
-            const charAndOffset = ActualBoundingBoxRightCorrectionPxEntry.charsAndOffsets[j];
-           // if charAndOffset.string contains the letter
-            if (charAndOffset.string.indexOf(letter) !== -1) {
-              return charAndOffset.adjustment;
-            }
-          }
-        }
-      }
-
-      return 0;
+  
+    return 0;
   }
 
   createCanvasWithLetter() {
@@ -148,8 +115,8 @@ class CrispBitmapGlyph {
     // font family and emphasis and size
     
 
-    letterMeasures.actualBoundingBoxLeft += this.getActualBoundingBoxLeftPxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis);
-    letterMeasures.actualBoundingBoxRight += this.getActualBoundingBoxRightPxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis);
+    letterMeasures.actualBoundingBoxLeft += this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Left", "px");
+    letterMeasures.actualBoundingBoxRight += this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Right", "px");
   
 
 
