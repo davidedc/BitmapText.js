@@ -226,12 +226,14 @@ class CrispBitmapText {
         x = glyph.letterMeasures.actualBoundingBoxLeft;
       }
 
+      // for small sizes we create our own advancement (width)
       if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20) {
         x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
       }
       else if (fontFamily === 'Arial' && fontSize <= 11) {
         x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
       }
+      // for bigger size we obey what originally came from the browser
       else {
         x += glyph.letterMeasures.width;
       }

@@ -195,6 +195,9 @@ class CrispBitmapGlyph {
     ctx.textBaseline = 'bottom';
 
     ctx.font = this.fontEmphasis + " " + this.fontSize + 'px ' + this.fontFamily;
+
+    // you have to start painting the letter at actualBoundingBoxLeft because that's how much
+    // TO THE LEFT OF THAT POINT that letter will ALSO extend
     ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft), canvas.height - 1);
 
     // now can remove the canvas from the page
