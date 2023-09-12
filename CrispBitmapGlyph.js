@@ -37,9 +37,7 @@ class CrispBitmapGlyph {
     ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.topLeftCorner.y, this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y);
   }
 
-  getActualBoundingBoxCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis, side, typePxOrProportional) {
-
-    const correctionKey = `ActualBoundingBox${side} correction ${typePxOrProportional}`;
+  getSingleFloatCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey) {
 
     // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
     if (!specs[fontFamily][fontEmphasis][correctionKey]) {
@@ -122,13 +120,13 @@ class CrispBitmapGlyph {
     // font family and emphasis and size
     
 
-    letterMeasures.actualBoundingBoxLeft += this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Left", "px");
+    letterMeasures.actualBoundingBoxLeft += this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction px");
     //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Right", "px");
+    letterMeasures.actualBoundingBoxRight += this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction px");
     //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
-    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Left", "proportional"));
+    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction proportional"));
     //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Right", "proportional"));
+    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction proportional"));
     //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
   
 
