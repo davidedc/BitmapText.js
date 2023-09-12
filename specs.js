@@ -46,6 +46,12 @@ ActualBoundingBoxRight correction px
 0 to 20
   Ww: 5
 --
+ActualBoundingBoxRight correction proportional
+-
+21 to 1000
+  // this avoids W being clipped for sizes > 20
+  W: 0.03333333333333333
+--
 Letters extra space and pull proportional
 -
 1 to 21

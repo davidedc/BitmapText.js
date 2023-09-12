@@ -38,7 +38,14 @@ class CrispBitmapGlyph {
   }
 
   getActualBoundingBoxCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis, side, typePxOrProportional) {
+
     const correctionKey = `ActualBoundingBox${side} correction ${typePxOrProportional}`;
+
+    // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
+    if (!specs[fontFamily][fontEmphasis][correctionKey]) {
+      return 0;
+    }
+
     if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
       return 0;
     }
@@ -116,7 +123,13 @@ class CrispBitmapGlyph {
     
 
     letterMeasures.actualBoundingBoxLeft += this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Left", "px");
+    //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
     letterMeasures.actualBoundingBoxRight += this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Right", "px");
+    //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
+    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Left", "proportional"));
+    //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
+    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getActualBoundingBoxCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Right", "proportional"));
+    //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
   
 
 
@@ -129,9 +142,8 @@ class CrispBitmapGlyph {
       else { // fontSize > 20
 
         if ((this.letter === 'W')) {
-          // this avoids W being clipped for sizes > 20
-          letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize / 30);
           // this is so that WWW next to each other don't touch
+          // TODO IN SPECS
           letterMeasures.width += Math.ceil(this.fontSize / 30);
         }
         // the j needs to be 1 pixel more to the right

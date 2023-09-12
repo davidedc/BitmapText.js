@@ -82,6 +82,9 @@ function parseSpecs() {
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction px") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseActualBoundingBoxCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
+          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction proportional") {
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseActualBoundingBoxCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
+          }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontEmphasis);
           }

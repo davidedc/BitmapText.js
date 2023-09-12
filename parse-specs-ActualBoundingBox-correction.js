@@ -60,7 +60,7 @@ function parseCharsAndCorrectionLine(line) {
   const line3 = line2.substring(0, line2.lastIndexOf(':'));
 
   // 3. keep as a number the number after the last colon
-  const correction = parseInt(line2.substring(line2.lastIndexOf(':') + 1));
+  const correction = parseFloat(line2.substring(line2.lastIndexOf(':') + 1));
 
   // 4. pack the string and the two numbers into an object
   return { string: line3, adjustment: correction };
