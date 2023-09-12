@@ -77,13 +77,13 @@ function parseSpecs() {
 
           // check the sub-spec name and parse it accordingly
           if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxLeft correction px") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseActualBoundingBoxCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction px") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseActualBoundingBoxCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction proportional") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseActualBoundingBoxCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontEmphasis);

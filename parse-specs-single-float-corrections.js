@@ -1,4 +1,4 @@
-function parseActualBoundingBoxCorrection(contentOfSubSpec) {
+function parseSingleFloatCorrections(contentOfSubSpec) {
   // remove the first line as it's a dash
   const linesOfSubSpecOfFontFamilyFontEmphasis = contentOfSubSpec.split('\n');
   linesOfSubSpecOfFontFamilyFontEmphasis.splice(0, 1);
@@ -16,7 +16,7 @@ function parseActualBoundingBoxCorrection(contentOfSubSpec) {
   // until the next line with
   //   [number] to [number]
   // into an array
-  const lettersExtraSpaceAndPullPxArray = [];
+  const correctionsBySizeArray = [];
   for (let i = 0; i < linesOfSubSpecOfFontFamilyFontEmphasis.length; i++) {
     const line = linesOfSubSpecOfFontFamilyFontEmphasis[i];
 
@@ -29,17 +29,17 @@ function parseActualBoundingBoxCorrection(contentOfSubSpec) {
       // put the two numbers in the line into an object with keys "from" and "to"
       const sizeRangeObj = parseSizeRange(line);
 
-      // add to the lettersExtraSpaceAndPullPxArray array the new size range and the charAndOffsets objects array
-      lettersExtraSpaceAndPullPxArray.push({ sizeRange: {}, charsAndOffsets: [] });
+      // add to the correctionsBySizeArray array the new size range and the correctionsBySizeArray objects array
+      correctionsBySizeArray.push({ sizeRange: {}, lettersAndTheirCorrections: [] });
 
-      lettersExtraSpaceAndPullPxArray[lettersExtraSpaceAndPullPxArray.length - 1].sizeRange = sizeRangeObj;
+      correctionsBySizeArray[correctionsBySizeArray.length - 1].sizeRange = sizeRangeObj;
     }
     else {
       const parseCharsAndOffsetsObj = parseCharsAndCorrectionLine(line);
-      lettersExtraSpaceAndPullPxArray[lettersExtraSpaceAndPullPxArray.length - 1].charsAndOffsets.push(parseCharsAndOffsetsObj);
+      correctionsBySizeArray[correctionsBySizeArray.length - 1].lettersAndTheirCorrections.push(parseCharsAndOffsetsObj);
     }
   }
-  return lettersExtraSpaceAndPullPxArray;
+  return correctionsBySizeArray;
 }
 
 function parseCharsAndCorrectionLine(line) {

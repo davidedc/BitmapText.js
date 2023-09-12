@@ -53,8 +53,8 @@ class CrispBitmapGlyph {
     for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
       const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
-        for (let j = 0; j < correctionEntry.charsAndOffsets.length; j++) {
-          const charAndOffset = correctionEntry.charsAndOffsets[j];
+        for (let j = 0; j < correctionEntry.lettersAndTheirCorrections.length; j++) {
+          const charAndOffset = correctionEntry.lettersAndTheirCorrections[j];
           if (charAndOffset.string.indexOf(letter) !== -1) {
             return charAndOffset.adjustment;
           }
