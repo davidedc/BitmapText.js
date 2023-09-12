@@ -40,6 +40,11 @@ ActualBoundingBoxLeft correction px
   // the j needs to be 1 pixel more to the right, keeping the same advancement (width)
   // so let's shrink its ActualBoundingBoxLeft
   j: -1
+  // W is clipped on the left, so let's expand the ActualBoundingBoxLeft
+  // as the mini-canvas it's painted on has a width of Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
+  // TODO THIS ALSO HAS THE EFFECT OF PAINTING THE W 1 PIXEL MORE TO THE LEFT (WHEN IN TEXT)
+  // SO WE SHOULD RATHER JUST HAVE A CORRECTION ONLY FOR THE PAINTING IN THE CANVAS WHICH EXTENDS THE CANVAS AND PAINTS THE W 1 PIXEL MORE TO THE RIGHT
+  W: 1
 --
 ActualBoundingBoxRight correction px
 -
