@@ -45,9 +45,9 @@ ActualBoundingBoxLeft correction px
 CropLeft correction px
 -
 11 to 11
-  // W is clipped on the left, this correction will simply paint the W
+  // W and j are clipped on the left, this correction will simply paint them
   // 1 pixel more to the right in the mini canvas
-  W: 1
+  Wj: 1
 --
 ActualBoundingBoxRight correction px
 -
