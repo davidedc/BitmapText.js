@@ -79,6 +79,9 @@ function parseSpecs() {
           if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxLeft correction px") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
+          if (nameOfSubSpecOfFontFamilyFontEmphasis === "CropLeft correction px") {
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
+          }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction px") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
