@@ -76,16 +76,11 @@ function parseSpecs() {
           const contentOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis.slice(1).join('\n');
 
           // check the sub-spec name and parse it accordingly
-          if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxLeft correction px") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
-          }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "CropLeft correction px") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
-          }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction px") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
-          }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction proportional") {
+          if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxLeft correction px" ||
+              nameOfSubSpecOfFontFamilyFontEmphasis === "CropLeft correction px" ||
+              nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction px" ||
+              nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction proportional"
+              ) {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
