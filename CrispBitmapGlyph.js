@@ -134,28 +134,6 @@ class CrispBitmapGlyph {
   
 
 
-    if (this.fontFamily === 'Arial') {
-      if (this.fontSize <= 12) {
-        //if ((this.letter === 'A')) {
-        //  letterMeasures.actualBoundingBoxRight -= 2;
-        //}
-      }
-      else { // fontSize > 20
-
-        //if ((this.letter === 'W')) {
-          // this is so that WWW next to each other don't touch
-          // TODO IN SPECS
-        //  letterMeasures.width += Math.ceil(this.fontSize / 30);
-        //}
-        // the j needs to be 1 pixel more to the right
-        //if ((this.letter === 'j')) {
-        //  //letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/20);
-        //  letterMeasures.actualBoundingBoxLeft = -2;
-        //  //letterMeasures.width += Math.ceil(this.fontSize/10);
-        //}
-      }
-    }
-
     /*
     // the s needs 1 pixel more to the right
     if ((this.letter === 's' || this.letter === 'V' || this.letter === 'W') && this.fontFamily === 'Arial') {
