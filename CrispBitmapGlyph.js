@@ -129,6 +129,8 @@ class CrispBitmapGlyph {
     //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
     letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction proportional"));
     //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
+    letterMeasures.width += Math.floor(this.fontSize * this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Advancement correction proportional"));
+    //console.log ("letterMeasures.width: " + letterMeasures.width);
   
 
 
@@ -140,11 +142,11 @@ class CrispBitmapGlyph {
       }
       else { // fontSize > 20
 
-        if ((this.letter === 'W')) {
+        //if ((this.letter === 'W')) {
           // this is so that WWW next to each other don't touch
           // TODO IN SPECS
-          letterMeasures.width += Math.ceil(this.fontSize / 30);
-        }
+        //  letterMeasures.width += Math.ceil(this.fontSize / 30);
+        //}
         // the j needs to be 1 pixel more to the right
         //if ((this.letter === 'j')) {
         //  //letterMeasures.actualBoundingBoxRight += Math.ceil(this.fontSize/20);

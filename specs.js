@@ -56,8 +56,15 @@ ActualBoundingBoxRight correction px
 --
 ActualBoundingBoxRight correction proportional
 -
-21 to 1000
+13 to 1000
   // this avoids W being clipped for sizes > 20
+  W: 0.03333333333333333
+--
+Advancement correction proportional
+-
+12 to 1000
+  // this is so that WWW next to each other don't touch
+  // can be seen clearly at size 30
   W: 0.03333333333333333
 --
 Letters extra space and pull proportional

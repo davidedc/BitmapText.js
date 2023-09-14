@@ -79,7 +79,8 @@ function parseSpecs() {
           if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxLeft correction px" ||
               nameOfSubSpecOfFontFamilyFontEmphasis === "CropLeft correction px" ||
               nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction px" ||
-              nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction proportional"
+              nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction proportional" ||
+              nameOfSubSpecOfFontFamilyFontEmphasis === "Advancement correction proportional"
               ) {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrections(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
