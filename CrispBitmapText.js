@@ -197,7 +197,7 @@ class CrispBitmapText {
   }
 
 
-  // get the advancement neede for the i-th character i.e. needed after the i-th character
+  // get the advancement needed for the i-th character i.e. needed after the i-th character
   // so that the i+1-th character is drawn at the right place
   getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     var x = 0;
