@@ -15,7 +15,7 @@ class CrispBitmapText {
 
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
 
-      width += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
+      width += this.calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
     }
     // get the height of the text by looking at the height of 'a' - they are all the same height
     const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontEmphasis);
@@ -199,7 +199,7 @@ class CrispBitmapText {
 
   // get the advancement needed for the i-th character i.e. needed after the i-th character
   // so that the i+1-th character is drawn at the right place
-  getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
+  calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     var x = 0;
 
 
@@ -232,7 +232,7 @@ class CrispBitmapText {
       }
 
       // I THINK WE SHOULD ADD THE actualBoundingBoxLeft NOT HERE BUT OUTSIDE
-      // WHERE YOU CALL getAdvanceWidth
+      // WHERE YOU CALL calculateAdvancement
       // for the first character you need to further advance by the actualBoundingBoxLeft
       // because the first character is not drawn at x, but at x - actualBoundingBoxLeft
       if (i == 0) {
@@ -310,7 +310,7 @@ class CrispBitmapText {
 
         // I think we should add the actualBoundingBoxLeft right here i.e. doing
         // x += slightlyToTheLeft + all this below
-        x += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
+        x += this.calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
 
       }
     }
