@@ -270,7 +270,10 @@ class CrispBitmapText {
         x -= glyph.letterMeasures.width * kerningCorrection;
       }
     }
+    // if it is the last character
     else {
+      // TODO IF THE LAST CHARACTER IS A SPACE, THERE IS NO tightCanvasBox SO
+      // THE CODE BELOW IS GOING TO BREAK.
       // with the last character you don't just advance by the advance with,
       // rather you need to add the actualBoundingBoxRight
       if (fontFamily === 'Arial' && fontSize <= 20) {
