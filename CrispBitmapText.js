@@ -197,6 +197,8 @@ class CrispBitmapText {
   }
 
 
+  // get the advancement neede for the i-th character i.e. needed after the i-th character
+  // so that the i+1-th character is drawn at the right place
   getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     var x = 0;
 
@@ -206,7 +208,14 @@ class CrispBitmapText {
       console.log("glyph doesn't contain the letter " + letter);
     }
 
+    // if it's not the last character
     if (i < text.length - 1) {
+
+      // You could add the space advancement as we got it from the browser
+      // (remember that the space doesn't have the tightCanvasBox)
+      // but since at small sizes we meddle with kerning quite a bit, we want
+      // to also meddle with this to try to make the width of text
+      // similar to what the browser paints normally.
       // console.log(glyph.letterMeasures.width + " " + x);
       // deal with the size of the " " character
       if (fontFamily === 'Arial') {
@@ -222,18 +231,23 @@ class CrispBitmapText {
         }
       }
 
+      // I THINK WE SHOULD ADD THE actualBoundingBoxLeft NOT HERE BUT OUTSIDE
+      // WHERE YOU CALL getAdvanceWidth
+      // for the first character you need to further advance by the actualBoundingBoxLeft
+      // because the first character is not drawn at x, but at x - actualBoundingBoxLeft
       if (i == 0) {
         x = glyph.letterMeasures.actualBoundingBoxLeft;
       }
 
       // for small sizes we create our own advancement (width)
-      if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20) {
+      // also in the case of space there is no tightCanvasBox
+      if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20 && letter !== ' ') {
         x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
       }
-      else if (fontFamily === 'Arial' && fontSize <= 11) {
+      else if (fontFamily === 'Arial' && fontSize <= 11 && letter !== ' ') {
         x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
       }
-      // for bigger size we obey what originally came from the browser
+      // for the space (which doesn't have the tightCanvasBox) and bigger sizes we obey what originally came from the browser
       else {
         x += glyph.letterMeasures.width;
       }
@@ -281,6 +295,7 @@ class CrispBitmapText {
           // For these characters you basically draw them at x - actualBoundingBoxLeft
           // but for the first character you don't want to do that, because it would be
           // drawn outside the canvas. So for the first character you draw it at x.
+          // TODO SURELY THERE IS A BETTER NAME FOR THIS VARIABLE THAN "slightlyToTheLeft"
           var slightlyToTheLeft = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
           if (i == 0)
             slightlyToTheLeft = 0;
@@ -293,6 +308,8 @@ class CrispBitmapText {
           }
         }
 
+        // I think we should add the actualBoundingBoxLeft right here i.e. doing
+        // x += slightlyToTheLeft + all this below
         x += this.getAdvanceWidth(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
 
       }
