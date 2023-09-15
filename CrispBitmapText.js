@@ -197,8 +197,10 @@ class CrispBitmapText {
   }
 
 
-  // get the advancement needed for the i-th character i.e. needed after the i-th character
+  // Get the advancement of the i-th character i.e. needed AFTER the i-th character
   // so that the i+1-th character is drawn at the right place
+  // This depends on both the advancement specified by the glyph of the i-th character
+  // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     var x = 0;
 
