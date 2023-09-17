@@ -35,8 +35,8 @@ function parseSingleFloatCorrectionsForLettersSet(contentOfSubSpec) {
       correctionsBySizeArray[correctionsBySizeArray.length - 1].sizeRange = sizeRangeObj;
     }
     else {
-      const parseCharsAndOffsetsObj = parseCharsAndCorrectionLine(line);
-      correctionsBySizeArray[correctionsBySizeArray.length - 1].lettersAndTheirCorrections.push(parseCharsAndOffsetsObj);
+      const parseCharsAndCorrectionObj = parseCharsAndCorrectionLine(line);
+      correctionsBySizeArray[correctionsBySizeArray.length - 1].lettersAndTheirCorrections.push(parseCharsAndCorrectionObj);
     }
   }
   return correctionsBySizeArray;
