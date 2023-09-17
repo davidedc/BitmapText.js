@@ -41,6 +41,19 @@ ActualBoundingBoxLeft correction px
   // so let's shrink its ActualBoundingBoxLeft
   j: -1
 --
+Space advancement px
+-
+15 to 20
+  5
+14 to 14
+  4
+12 to 13
+  3
+10 to 11
+  3
+0 to 9
+  1
+--
 // Happens at small sizes due to a browser rendering
 CropLeft correction px
 -

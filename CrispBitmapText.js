@@ -220,16 +220,10 @@ class CrispBitmapText {
       // similar to what the browser paints normally.
       // console.log(glyph.letterMeasures.width + " " + x);
       // deal with the size of the " " character
-      if (fontFamily === 'Arial') {
-        if (glyph.letter === " ") {
-          if (fontSize >= 15 && fontSize <= 20)
-            return 5;
-          else if (fontSize >= 14 && fontSize < 15)
-            return 4;
-          else if (fontSize >= 12 && fontSize < 14)
-            return 3;
-          else if (fontSize < 12)
-            return 2;
+      if (glyph.letter === " ") {
+        const spaceAdvancement = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement px");
+        if (spaceAdvancement !== 0) {
+          return spaceAdvancement;
         }
       }
 

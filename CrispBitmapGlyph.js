@@ -37,7 +37,7 @@ class CrispBitmapGlyph {
     ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.topLeftCorner.y, this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y);
   }
 
-  getSingleFloatCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey) {
+  getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey) {
 
     // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
     if (!specs[fontFamily][fontEmphasis][correctionKey]) {
@@ -58,6 +58,28 @@ class CrispBitmapGlyph {
             return charAndOffset.adjustment;
           }
         }
+      }
+    }
+  
+    return 0;
+  }
+
+  getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, correctionKey) {
+
+    // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
+    if (!specs[fontFamily][fontEmphasis][correctionKey]) {
+      return 0;
+    }
+
+    if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
+      return 0;
+    }
+  
+    for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
+      const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
+      if (correctionEntry.sizeRange == undefined) return 0;
+      if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
+        return correctionEntry.correction;
       }
     }
   
@@ -121,15 +143,15 @@ class CrispBitmapGlyph {
     // font family and emphasis and size
     
 
-    letterMeasures.actualBoundingBoxLeft += this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction px");
+    letterMeasures.actualBoundingBoxLeft += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction px");
     //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction px");
+    letterMeasures.actualBoundingBoxRight += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction px");
     //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
-    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction proportional"));
+    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction proportional"));
     //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction proportional"));
+    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction proportional"));
     //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
-    letterMeasures.width += Math.floor(this.fontSize * this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Advancement correction proportional"));
+    letterMeasures.width += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Advancement correction proportional"));
     //console.log ("letterMeasures.width: " + letterMeasures.width);
   
 
@@ -155,7 +177,7 @@ class CrispBitmapGlyph {
     // Happens at small sizes due to a browser rendering defect.
     // This correction will simply paint the letter
     // n pixel more to the right in the mini canvas
-    const cropLeftCorrection = this.getSingleFloatCorrection(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "CropLeft correction px");
+    const cropLeftCorrection = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "CropLeft correction px");
 
     canvas.width = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
 
