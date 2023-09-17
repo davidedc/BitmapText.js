@@ -1,4 +1,4 @@
-function parseSingleFloatCorrections(contentOfSubSpec) {
+function parseSingleFloatCorrectionsForLettersSet(contentOfSubSpec) {
   // remove the first line as it's a dash
   const linesOfSubSpecOfFontFamilyFontEmphasis = contentOfSubSpec.split('\n');
   linesOfSubSpecOfFontFamilyFontEmphasis.splice(0, 1);
