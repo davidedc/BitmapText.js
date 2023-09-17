@@ -244,6 +244,10 @@ class CrispBitmapGlyph {
     const ctx = canvas.getContext('2d');
 
     var returned = this.getBoundingBoxOfOnPixels(canvas);
+    //if (this.letter === ' ') {
+    //  console.log("for space:");
+    //  console.dir(returned);
+    //}
     if (returned.tightCanvas === null) {
       return { compressedPixels: null, canvas, tightCanvas: null, tightCanvasBox: null, letterMeasures };
     }

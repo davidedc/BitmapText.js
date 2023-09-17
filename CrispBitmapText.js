@@ -202,6 +202,7 @@ class CrispBitmapText {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
+    // if (letter === ' ') debugger
     var x = 0;
 
 
