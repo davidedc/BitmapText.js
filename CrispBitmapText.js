@@ -221,9 +221,9 @@ class CrispBitmapText {
       // console.log(glyph.letterMeasures.width + " " + x);
       // deal with the size of the " " character
       if (glyph.letter === " ") {
-        const spaceAdvancement = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement px");
-        if (spaceAdvancement !== 0) {
-          return spaceAdvancement;
+        const spaceAdvancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement override for small sizes in px");
+        if (spaceAdvancementOverrideForSmallSizesInPx !== 0) {
+          return spaceAdvancementOverrideForSmallSizesInPx;
         }
       }
 

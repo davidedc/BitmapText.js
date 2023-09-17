@@ -41,7 +41,7 @@ ActualBoundingBoxLeft correction px
   // so let's shrink its ActualBoundingBoxLeft
   j: -1
 --
-Space advancement px
+Space advancement override for small sizes in px
 -
 15 to 20
   5

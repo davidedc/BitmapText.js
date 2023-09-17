@@ -84,7 +84,7 @@ function parseSpecs() {
               ) {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrectionsForLettersSet(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Space advancement px") {
+          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Space advancement override for small sizes in px") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
