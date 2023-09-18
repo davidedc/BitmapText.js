@@ -100,7 +100,7 @@ class CrispBitmapGlyph {
   
     for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
       const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
-      if (correctionEntry.sizeRange == undefined) return 0;
+      if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
         for (let j = 0; j < correctionEntry.sizeBracketAndItsCorrection.length; j++) {
           // get the two floats representing the size range
