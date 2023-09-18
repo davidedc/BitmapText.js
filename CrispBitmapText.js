@@ -317,6 +317,8 @@ class CrispBitmapText {
             slightlyToTheLeft = 0;
 
           if (fontFamily === 'Arial' && fontSize <= 20) {
+            // for small sizes we insert predefined space between letters, we don't really care about the spacing
+            // added to the left and right of the glyph by the browser.
             ctx.drawImage(glyph.tightCanvas, x - slightlyToTheLeft, y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
           }
           else {
