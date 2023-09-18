@@ -37,6 +37,7 @@ class CrispBitmapGlyph {
     ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.topLeftCorner.y, this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y);
   }
 
+  // this method can be refactored with the next two
   getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey) {
 
     // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
