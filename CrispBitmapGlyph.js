@@ -86,6 +86,38 @@ class CrispBitmapGlyph {
     return 0;
   }
 
+  getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, correctionKey, kerning) {
+
+    // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
+    if (!specs[fontFamily][fontEmphasis][correctionKey]) {
+      return null;
+    }
+
+    if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
+      return null;
+    }
+  
+    for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
+      const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
+      if (correctionEntry.sizeRange == undefined) return 0;
+      if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
+        for (let j = 0; j < correctionEntry.sizeBracketAndItsCorrection.length; j++) {
+          // get the two floats representing the size range
+          // from something like:
+          //    { kernG: 0, kernLE: 0.145, adjustment: -1 }
+          const sizeRangeLower = correctionEntry.sizeBracketAndItsCorrection[j].kernLE;
+          const sizeRangeUpper = correctionEntry.sizeBracketAndItsCorrection[j].kernG;
+          if (sizeRangeLower < kerning && sizeRangeUpper >= kerning) {
+            return correctionEntry.sizeBracketAndItsCorrection[j].adjustment;
+          }
+        }
+      }
+    }
+  
+    return null;
+  }
+
+
   createCanvasWithLetter() {
     const canvas = document.createElement('canvas');
 

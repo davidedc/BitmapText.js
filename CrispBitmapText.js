@@ -252,14 +252,22 @@ class CrispBitmapText {
       const nextLetter = text[i + 1];
       const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis);
 
-      // console.log("kerningCorrection: " + kerningCorrection);
-      if (fontFamily === 'Arial' && fontSize <= 20) {
-        if (kerningCorrection > 0 && kerningCorrection < 0.145) {
-          x -= 1;
-        }
-        else if (kerningCorrection > 0.145) {
-          x -= 2;
-        }
+      // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontEmphasis, correctionKey, kerning)
+      
+      // We apply kerning in two ways depending on the size of the font.
+      //  * For large sizes we multiply the advancement of the letter by the kerning
+      //  * For small sizes basically kerning means to decide whether to shorten the
+      //    distance of two letters by 0, 1 or 2 pixels, so instead of multiplying the
+      //    advancement of a letter by the kerning as we do for big sizes, we just
+      //    discretise the kerning into a small number like 0,1 or 2.
+      //
+      //if (fontSize === 16) {
+      //  debugger
+      //}
+      const kerningDiscretisationForSmallSizes = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, "Kerning discretisation for small sizes", kerningCorrection);
+      if (kerningDiscretisationForSmallSizes !== null) {
+        //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
+        x -= kerningDiscretisationForSmallSizes;
       }
       else {
         x -= glyph.letterMeasures.width * kerningCorrection;

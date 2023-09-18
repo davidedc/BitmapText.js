@@ -87,6 +87,9 @@ function parseSpecs() {
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Space advancement override for small sizes in px") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
+          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning discretisation for small sizes") {
+            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrectionsForSizeBrackets(contentOfSubSpecOfFontFamilyFontEmphasis);
+          }
           else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
             specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontEmphasis);
           }
