@@ -298,11 +298,16 @@ class CrispBitmapText {
       if (glyph) {
         if (glyph.tightCanvas) {
 
-          // some letters protrude to the left, i.e. the so called actualBoundingBoxLeft
-          // is positive, for example it's quite large for the italic f in Times New Roman.
-          // For these characters you basically draw them at x - actualBoundingBoxLeft
-          // but for the first character you don't want to do that, because it would be
-          // drawn outside the canvas. So for the first character you draw it at x.
+          // Some letters protrude to the left of the x that you specify, i.e. their so
+          // called actualBoundingBoxLeft is positive, for example it's quite large for the
+          // italic f in Times New Roman.
+          // For these characters you basically blit the entire glyph at x - actualBoundingBoxLeft
+          // so the part that should protrude to the left is actually partially blitted to,
+          // the left of x as it should be.
+          // HOWEVER for the first character you don't want to do that, because it would be
+          // drawn outside the left edge of the canvas. So for the first character, you
+          // blit it starting at x (not to its left) so no part actually protrudes to the
+          // left of x.
           // TODO SURELY THERE IS A BETTER NAME FOR THIS VARIABLE THAN "slightlyToTheLeft"
           var slightlyToTheLeft = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
           if (i == 0)
