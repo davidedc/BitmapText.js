@@ -277,8 +277,11 @@ class CrispBitmapText {
     else {
       // TODO IF THE LAST CHARACTER IS A SPACE, THERE IS NO tightCanvasBox SO
       // THE CODE BELOW IS GOING TO BREAK.
-      // with the last character you don't just advance by the advance with,
-      // rather you need to add the actualBoundingBoxRight
+
+      // With the last character you don't just advance by the advance width,
+      // rather you need to add the actualBoundingBoxRight, which for big sizes
+      // you can get from the browser, but for small sizes you need to get it
+      // from the tightBox (as we do all measures for small sizes)
       if (fontFamily === 'Arial' && fontSize <= 20) {
         x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
       }
