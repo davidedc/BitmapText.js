@@ -1,4 +1,5 @@
-const specsText = `Arial
+const specsText =
+`Arial
 normal
 --
 Kerning cutoff
@@ -13,6 +14,11 @@ Kerning
 12 to 21
   // letter === 'A' && this.isShortCharacter(nextLetter)
   A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
+  *any* followed by t: 0.1
+  *any* followed by f: 0.1
+  f followed by *any*: 0.1
+  t followed by *any*: 0.1
+  *any* followed by j: 0.1
 12 to 20
   ftvy followed by ftvy: 0.1
   rk followed by *any*: 0.1
@@ -56,8 +62,10 @@ Space advancement override for small sizes in px
   5
 14 to 14
   4
-12 to 13
+13 to 13
   3
+12 to 12
+  2
 10 to 11
   3
 0 to 9
