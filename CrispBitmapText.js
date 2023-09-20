@@ -8,18 +8,44 @@ class CrispBitmapText {
     this.glyphStore = glyphStore;
   }
 
+  // TODO all the vertical metrics done properly.
+  // This returns an object of the same shape
+  // and meaning as the TextMetrics object (see
+  // https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ) i.e.:
+  //  * the width should be the sum of the advancements (detracting kerning)
+  //  * actualBoundingBoxLeft =
+  //      the actualBoundingBoxLeft of the first character
+  //  * actualBoundingBoxRight =
+  //      the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
   measureText(text, fontSize, fontFamily, fontEmphasis) {
+    
+    if (text.length === 0)
+      return { width: 0, height: 0, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 0};
+    
     var width = 0;
+    var actualBoundingBoxLeft = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontEmphasis).letterMeasures.actualBoundingBoxLeft;
+    var actualBoundingBoxRight = 0;
+    var advancement = 0;
+    var glyph = null;
+
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
 
-      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
+      glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
 
-      width += this.calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
+      advancement = this.calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
+      width += advancement;
     }
+
+    // the actualBoundingBoxRight is the sum of all the advancements (detracting kerning) up to the last character...
+    actualBoundingBoxRight = width - advancement;
+    // ... plus the actualBoundingBoxRight of the last character
+    // (this is in place of adding its advancement)
+    actualBoundingBoxRight += glyph.letterMeasures.actualBoundingBoxRight; 
+
     // get the height of the text by looking at the height of 'a' - they are all the same height
-    const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontEmphasis);
-    return { width, height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent) };
+    glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontEmphasis);
+    return { width: width, height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent), actualBoundingBoxLeft: actualBoundingBoxLeft, actualBoundingBoxRight: actualBoundingBoxRight };
   }
 
   hasLotsOfSpaceAtBottomRight(letter) {
@@ -203,92 +229,78 @@ class CrispBitmapText {
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     // if (letter === ' ') debugger
-    var x = 0;
-
 
     // if glyph doesn't contain the letter, log out an error with the missing letter
     if (!glyph) {
       console.log("glyph doesn't contain the letter " + letter);
     }
 
-    // if it's not the last character
-    if (i < text.length - 1) {
+    var x = 0;
 
-      // You could add the space advancement as we got it from the browser
-      // (remember that the space doesn't have the tightCanvasBox)
-      // but since at small sizes we meddle with kerning quite a bit, we want
-      // to also meddle with this to try to make the width of text
-      // similar to what the browser paints normally.
-      // console.log(glyph.letterMeasures.width + " " + x);
-      // deal with the size of the " " character
-      if (glyph.letter === " ") {
-        const spaceAdvancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement override for small sizes in px");
-        if (spaceAdvancementOverrideForSmallSizesInPx !== 0) {
-          return spaceAdvancementOverrideForSmallSizesInPx;
-        }
-      }
+    // TODO this "space" section should handle all characters without a glyph
+    //      as there are many kinds of space-like characters.
 
-      // I THINK WE SHOULD ADD THE actualBoundingBoxLeft NOT HERE BUT OUTSIDE
-      // WHERE YOU CALL calculateAdvancement
-      // for the first character you need to further advance by the actualBoundingBoxLeft
-      // because the first character is not drawn at x, but at x - actualBoundingBoxLeft
-      if (i == 0) {
-        x = glyph.letterMeasures.actualBoundingBoxLeft;
+    // Handle space first ------------------------------------------
+    // You could add the space advancement as we got it from the browser
+    // (remember that the space doesn't have the tightCanvasBox)
+    // but since at small sizes we meddle with kerning quite a bit, we want
+    // to also meddle with this to try to make the width of text
+    // similar to what the browser paints normally.
+    // console.log(glyph.letterMeasures.width + " " + x);
+    // deal with the size of the " " character
+    if (letter === " ") {
+      const spaceAdvancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement override for small sizes in px");
+      if (spaceAdvancementOverrideForSmallSizesInPx !== 0) {
+        x += spaceAdvancementOverrideForSmallSizesInPx;
       }
-
-      // for small sizes we create our own advancement (width)
-      // also in the case of space there is no tightCanvasBox
-      if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20 && letter !== ' ') {
-        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
-      }
-      else if (fontFamily === 'Arial' && fontSize <= 11 && letter !== ' ') {
-        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
-      }
-      // for the space (which doesn't have the tightCanvasBox) and bigger sizes we obey what originally came from the browser
       else {
         x += glyph.letterMeasures.width;
       }
-
-      const nextLetter = text[i + 1];
-      const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis);
-
-      // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontEmphasis, correctionKey, kerning)
-      
-      // We apply kerning in two ways depending on the size of the font.
-      //  * For large sizes we multiply the advancement of the letter by the kerning
-      //  * For small sizes basically kerning means to decide whether to shorten the
-      //    distance of two letters by 0, 1 or 2 pixels, so instead of multiplying the
-      //    advancement of a letter by the kerning as we do for big sizes, we just
-      //    discretise the kerning into a small number like 0,1 or 2.
-      //
-      //if (fontSize === 16) {
-      //  debugger
-      //}
-      const kerningDiscretisationForSmallSizes = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, "Kerning discretisation for small sizes", kerningCorrection);
-      if (kerningDiscretisationForSmallSizes !== null) {
-        //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
-        x -= kerningDiscretisationForSmallSizes;
-      }
-      else {
-        x -= glyph.letterMeasures.width * kerningCorrection;
-      }
     }
-    // if it is the last character
+    // Non-space characters ------------------------------------------
     else {
-      // TODO IF THE LAST CHARACTER IS A SPACE, THERE IS NO tightCanvasBox SO
-      // THE CODE BELOW IS GOING TO BREAK.
-
-      // With the last character you don't just advance by the advance width,
-      // rather you need to add the actualBoundingBoxRight, which for big sizes
-      // you can get from the browser, but for small sizes you need to get it
-      // from the tightBox (as we do all measures for small sizes)
-      if (fontFamily === 'Arial' && fontSize <= 20) {
+      // for small sizes we create our own advancement (width)
+      if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20) {
         x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
       }
+      else if (fontFamily === 'Arial' && fontSize <= 11) {
+        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
+      }
+      // for all other sizes we use the advancement (width) as given by the browser
       else {
-        x += glyph.letterMeasures.actualBoundingBoxRight;
+        x += glyph.letterMeasures.width;
       }
     }
+
+    // Next, apply the kerning correction ----------------------------
+
+    const nextLetter = text[i + 1];
+    const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis);
+
+    // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontEmphasis, correctionKey, kerning)
+    
+    // We apply kerning in two ways depending on the size of the font.
+    //  * For large sizes we multiply the advancement of the letter by the kerning
+    //  * For small sizes basically kerning means to decide whether to shorten the
+    //    distance of two letters by 0, 1 or 2 pixels, so instead of multiplying the
+    //    advancement of a letter by the kerning as we do for big sizes, we just
+    //    discretise the kerning into a small number like 0,1 or 2.
+    //
+    //if (fontSize === 16) {
+    //  debugger
+    //}
+    const kerningDiscretisationForSmallSizes = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, "Kerning discretisation for small sizes", kerningCorrection);
+    if (kerningDiscretisationForSmallSizes !== null) {
+      //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
+      x -= kerningDiscretisationForSmallSizes;
+    }
+    else {
+      x -= glyph.letterMeasures.width * kerningCorrection;
+    }
+
+    // since we might want to actually _place_ a glyph,
+    // following this measurement, we want to return an
+    // integer coordinate here
     return Math.round(x);
   }
 
@@ -301,33 +313,49 @@ class CrispBitmapText {
       if (glyph) {
         if (glyph.tightCanvas) {
 
-          // Some letters protrude to the left of the x that you specify, i.e. their so
-          // called actualBoundingBoxLeft is positive, for example it's quite large for the
-          // italic f in Times New Roman.
-          // For these characters you basically blit the entire glyph at x - actualBoundingBoxLeft
-          // so the part that should protrude to the left is actually partially blitted to,
-          // the left of x as it should be.
-          // HOWEVER for the first character you don't want to do that, because it would be
-          // drawn outside the left edge of the canvas. So for the first character, you
-          // blit it starting at x (not to its left) so no part actually protrudes to the
-          // left of x.
-          // TODO SURELY THERE IS A BETTER NAME FOR THIS VARIABLE THAN "slightlyToTheLeft"
-          var slightlyToTheLeft = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
-          if (i == 0)
-            slightlyToTheLeft = 0;
+          // Some glyphs protrude to the left of the x that you specify, i.e. their
+          // actualBoundingBoxLeft > 0, for example it's quite large for the
+          // italic f in Times New Roman. The other glyphs that don't protrude to the left
+          // simply have actualBoundingBoxLeft = 0.
+          //
+          // (Note that actualBoundingBoxLeft comes from the canvas measureText method, i.e.
+          // it's not inferred from looking at how the canvas paints the glyph.)
+          //
+          // Hence, to render all glyphs correctly, you need to blit the glyph at
+          //    x - actualBoundingBoxLeft
+          // so the part that should protrude to the left is actually partially blitted to
+          // the left of x, as it should be.
+          //
+          // Note that if the fist character has a positive actualBoundingBoxLeft and we draw
+          // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
+          // it happens with a standard Canvas - one should just position the text
+          // carefully to avoid this (although it's rare that people actually take care of this).
 
+          var actualBoundingBoxLeftPull = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
+
+          var yPos = y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2;
+          var xPos = x - actualBoundingBoxLeftPull;
+
+          // For normal sizes:
+          //    we use the same spacing as the canvas gave us for each glyph
+          // For small sizes:
+          //    we ignore the spacing that the canvas gave us because a) it's allover the place and
+          //    b) it's not really needed. So we just blit the tightCanvas, we'll take care
+          //    of the spacing simply via the advancement.
+          //    So, in particular, the left spacing of the first character will be ignored, which really is
+          //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
+          //    touch the left side of the canvas.
           if (fontFamily === 'Arial' && fontSize <= 20) {
-            // for small sizes we insert predefined space between letters, we don't really care about the spacing
-            // added to the left and right of the glyph by the browser.
-            ctx.drawImage(glyph.tightCanvas, x - slightlyToTheLeft, y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+            // small sizes
+            ctx.drawImage(glyph.tightCanvas, xPos, yPos);
           }
           else {
-            ctx.drawImage(glyph.tightCanvas, x - slightlyToTheLeft + glyph.tightCanvasBox.topLeftCorner.x, y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+            // normal sizes
+            var leftSpacingAsGivenToUsByTheCanvas = glyph.tightCanvasBox.topLeftCorner.x;
+            ctx.drawImage(glyph.tightCanvas, xPos + leftSpacingAsGivenToUsByTheCanvas, y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
           }
         }
 
-        // I think we should add the actualBoundingBoxLeft right here i.e. doing
-        // x += slightlyToTheLeft + all this below
         x += this.calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
 
       }

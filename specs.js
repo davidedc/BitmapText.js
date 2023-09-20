@@ -40,6 +40,15 @@ ActualBoundingBoxLeft correction px
   // the j needs to be 1 pixel more to the right, keeping the same advancement (width)
   // so let's shrink its ActualBoundingBoxLeft
   j: -1
+0 to 20
+  // The A has a small ActualBoundingBoxLeft which is actually entirely the left
+  // spacing. So they cancel each other out, and A starts neatly right at the
+  // x where you put it. So: it's equivalent to _not_ having any ActualBoundingBoxLeft and
+  // any spacing. Since at sizes <= 20 we make our own fixed spacing by just playing with
+  // the advancement, effectively we ignore the left spacing info for the first letter in the line,
+  // so we ALSO need to set the ActualBoundingBoxLeft to 0,
+  // otherwise if an A is the first letter on a line it's clipped on the left.
+  A: -1
 --
 Space advancement override for small sizes in px
 -
