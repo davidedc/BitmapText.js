@@ -69,22 +69,22 @@ class CrispBitmapGlyph {
 
     // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
     if (!specs[fontFamily][fontEmphasis][correctionKey]) {
-      return 0;
+      return null;
     }
 
     if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
-      return 0;
+      return null;
     }
   
     for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
       const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
-      if (correctionEntry.sizeRange == undefined) return 0;
+      if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
         return correctionEntry.correction;
       }
     }
   
-    return 0;
+    return null;
   }
 
   getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, correctionKey, kerning) {

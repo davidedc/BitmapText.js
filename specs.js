@@ -72,7 +72,9 @@ Space advancement override for small sizes in px
 --
 Advancement override for small sizes in px
 -
-0 to 11
+0 to 7
+  0
+8 to 11
   1
 12 to 20
   2

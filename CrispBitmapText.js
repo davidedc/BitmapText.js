@@ -250,7 +250,7 @@ class CrispBitmapText {
     // deal with the size of the " " character
     if (letter === " ") {
       const spaceAdvancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement override for small sizes in px");
-      if (spaceAdvancementOverrideForSmallSizesInPx !== 0) {
+      if (spaceAdvancementOverrideForSmallSizesInPx !== null) {
         x += spaceAdvancementOverrideForSmallSizesInPx;
       }
       else {
@@ -262,7 +262,7 @@ class CrispBitmapText {
       // for small sizes we create our own advancement (width)
       const advancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px");
       //console.log("advancementOverrideForSmallSizesInPx: " + advancementOverrideForSmallSizesInPx);
-      if (advancementOverrideForSmallSizesInPx !== 0) {
+      if (advancementOverrideForSmallSizesInPx !== null) {
         x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + advancementOverrideForSmallSizesInPx;
       }
       // for all other sizes we use the advancement (width) as given by the browser
@@ -344,8 +344,9 @@ class CrispBitmapText {
           //    So, in particular, the left spacing of the first character will be ignored, which really is
           //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
           //    touch the left side of the canvas.
-          if (fontFamily === 'Arial' && fontSize <= 20) {
+          if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px") !== null) {
             // small sizes
+            console.log("small size");
             ctx.drawImage(glyph.tightCanvas, xPos, yPos);
           }
           else {
