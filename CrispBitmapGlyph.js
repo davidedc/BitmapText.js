@@ -366,6 +366,8 @@ class CrispBitmapGlyph {
     return pixels;
   }
 
+  // does a RLE (Run Length Encoding) compression of the pixels
+  // based on linear row visit of the pixels
   compressPixels(pixels) {
     const compressedPixels = [];
     let currentPixel = pixels[0];
