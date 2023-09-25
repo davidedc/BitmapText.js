@@ -92,7 +92,7 @@ class CrispBitmapText {
       return 0;
     }
 
-    if (USE_KERNING_FROM_SPECS) {
+    if (ENABLE_KERNING) {
       // for all entries in the Kerning array with a sizeRange that includes the current font size
       //   get the kerning array and for each one:
       //     if letter matches any of the letters in the "left" object or the "left" object is "*any*" and the nextLetter matches any of the letters in the "right" object or the "right" object is "*any*"

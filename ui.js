@@ -20,26 +20,26 @@ runButton.id = 'run-button';
 runButton.textContent = 'Build and Show Glyphs';
 document.getElementById("selectors").appendChild(runButton);
 
-// create a global USE_KERNING_FROM_SPECS boolean vailable and
-var USE_KERNING_FROM_SPECS = true;
+// create a global ENABLE_KERNING boolean vailable and
+var ENABLE_KERNING = true;
 
 // add a checkbox that controls it
-const useKerningFromSpecsCheckbox = document.createElement('input');
-useKerningFromSpecsCheckbox.type = 'checkbox';
-useKerningFromSpecsCheckbox.id = 'use-kerning-from-specs-checkbox';
-useKerningFromSpecsCheckbox.checked = USE_KERNING_FROM_SPECS;
-document.getElementById("selectors").appendChild(useKerningFromSpecsCheckbox);
+const enableKerningCheckbox = document.createElement('input');
+enableKerningCheckbox.type = 'checkbox';
+enableKerningCheckbox.id = 'enable-kerning-checkbox';
+enableKerningCheckbox.checked = ENABLE_KERNING;
+document.getElementById("selectors").appendChild(enableKerningCheckbox);
 // run the buildAndShowGlyphs function when the user changes the value of the font emphasis select
-useKerningFromSpecsCheckbox.addEventListener('change', function() {
+enableKerningCheckbox.addEventListener('change', function() {
 
-  USE_KERNING_FROM_SPECS = useKerningFromSpecsCheckbox.checked;
+  ENABLE_KERNING = enableKerningCheckbox.checked;
   buildAndShowGlyphs();
 });
 // add a label for the checkbox
-const useKerningFromSpecsCheckboxLabel = document.createElement('label');
-useKerningFromSpecsCheckboxLabel.textContent = 'Use kerning from specs';
-useKerningFromSpecsCheckboxLabel.htmlFor = 'use-kerning-from-specs-checkbox';
-document.getElementById("selectors").appendChild(useKerningFromSpecsCheckboxLabel);
+const enableKerningCheckboxLabel = document.createElement('label');
+enableKerningCheckboxLabel.textContent = 'Enable kerning';
+enableKerningCheckboxLabel.htmlFor = 'enable-kerning-checkbox';
+document.getElementById("selectors").appendChild(enableKerningCheckboxLabel);
 
 addCopyChoiceRadioButtons();
 
