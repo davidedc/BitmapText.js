@@ -114,24 +114,4 @@ Advancement correction proportional
   // this is so that WWW next to each other don't touch
   // can be seen clearly at size 30
   W: 0.03333333333333333
---
-Letters extra space and pull proportional
--
-1 to 21
-  hk: right 30 left 0
-22 to 1001
-  lm: right 40 left 0
---
-setting three
-dasdasd
-asdas
----------
-Arial
-bold
---
-setting three
-setting 3 here
---
-setting four
-setting 4 here
 `;
