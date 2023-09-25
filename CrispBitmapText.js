@@ -104,7 +104,7 @@ class CrispBitmapText {
           for (let j = 0; j < kerningEntry.kerning.length; j++) {
             const kerning = kerningEntry.kerning[j];
             if ((kerning.left.indexOf(letter) !== -1 || kerning.left.indexOf("*any*") !== -1) && (kerning.right.indexOf(nextLetter) !== -1 || kerning.right.indexOf("*any*") !== -1)) {
-              console.log("kerning correction for " + letter + " " + nextLetter + " is " + kerning.adjustment);
+              //console.log("kerning correction for " + letter + " " + nextLetter + " is " + kerning.adjustment);
               return kerning.adjustment;
             }
           }
@@ -260,11 +260,10 @@ class CrispBitmapText {
     // Non-space characters ------------------------------------------
     else {
       // for small sizes we create our own advancement (width)
-      if (fontFamily === 'Arial' && fontSize > 11 && fontSize <= 20) {
-        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 2;
-      }
-      else if (fontFamily === 'Arial' && fontSize <= 11) {
-        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + 1;
+      const advancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px");
+      //console.log("advancementOverrideForSmallSizesInPx: " + advancementOverrideForSmallSizesInPx);
+      if (advancementOverrideForSmallSizesInPx !== 0) {
+        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + advancementOverrideForSmallSizesInPx;
       }
       // for all other sizes we use the advancement (width) as given by the browser
       else {

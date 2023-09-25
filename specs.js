@@ -70,6 +70,13 @@ Space advancement override for small sizes in px
 0 to 9
   1
 --
+Advancement override for small sizes in px
+-
+0 to 11
+  1
+12 to 20
+  2
+--
 // For small sizes, instead of shortening the distance between letters based on
 // the advancement length of the first letter and the kerning value (as we do for large sizes),
 // we just output a small number like 0,1,2, so we just "discretise" the kerning.
