@@ -8,9 +8,14 @@ Kerning cutoff
 --
 Kerning
 -
+0 to 10
+  i followed by *any*: -0.2
 0 to 11
   // letter === 'A' && this.isShortCharacter(nextLetter)
-  A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
+  W followed by i: -0.2
+  AW followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
+  jw followed by *any*: -0.1
+  f followed by t: -0.2
 12 to 21
   // letter === 'A' && this.isShortCharacter(nextLetter)
   A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
@@ -63,12 +68,10 @@ Space advancement override for small sizes in px
   4
 13 to 13
   3
-12 to 12
+11 to 12
   3
-10 to 11
-  3
-0 to 9
-  1
+0 to 10
+  2
 --
 Advancement override for small sizes in px
 -
