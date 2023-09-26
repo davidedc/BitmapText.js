@@ -34,7 +34,7 @@ class CrispBitmapGlyph {
   drawBoundingBox() {
     var ctx = this.canvas.getContext('2d');
     ctx.strokeStyle = 'red';
-    ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x / SCALE, this.tightCanvasBox.topLeftCorner.y / SCALE, (this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x) / SCALE, (this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y) / SCALE);
+    ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x / PIXEL_DENSITY, this.tightCanvasBox.topLeftCorner.y / PIXEL_DENSITY, (this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY, (this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y) / PIXEL_DENSITY);
   }
 
   // this method can be refactored with the next two
@@ -199,7 +199,7 @@ class CrispBitmapGlyph {
 
     var canvasPixelsWidth = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
     canvas.style.width = canvasPixelsWidth + 'px';
-    canvas.width = canvasPixelsWidth * SCALE;
+    canvas.width = canvasPixelsWidth * PIXEL_DENSITY;
 
     // add a div with letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight
     const div = document.createElement('div');
@@ -214,13 +214,13 @@ class CrispBitmapGlyph {
 
     var canvasPixelsHeight = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);;
     canvas.style.height = canvasPixelsHeight + 'px';
-    canvas.height = canvasPixelsHeight * SCALE;
+    canvas.height = canvasPixelsHeight * PIXEL_DENSITY;
 
-    ctx.scale(SCALE, SCALE);
+    ctx.scale(PIXEL_DENSITY, PIXEL_DENSITY);
 
     // make the background white
     //ctx.fillStyle = 'white';
-    //ctx.fillRect(0, 0, canvas.width / SCALE, canvas.height / SCALE);
+    //ctx.fillRect(0, 0, canvas.width / PIXEL_DENSITY, canvas.height / PIXEL_DENSITY);
     // draw the text so that it fits in the canvas
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
     ctx.textBaseline = 'bottom';
@@ -229,7 +229,7 @@ class CrispBitmapGlyph {
 
     // you have to start painting the letter at actualBoundingBoxLeft because that's how much
     // TO THE LEFT OF THAT POINT that letter will ALSO extend
-    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft) + cropLeftCorrection, canvas.height / SCALE - 1);
+    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft) + cropLeftCorrection, canvas.height / PIXEL_DENSITY - 1);
 
     // now can remove the canvas from the page
     canvas.remove();
@@ -251,12 +251,12 @@ class CrispBitmapGlyph {
     }
 
     // copy the bounding box to a new canvas and add it to the page
-    var tightCanvasPixelsWidth = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1 * SCALE;
-    tightCanvas.style.width = tightCanvasPixelsWidth / SCALE + 'px';
+    var tightCanvasPixelsWidth = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
+    tightCanvas.style.width = tightCanvasPixelsWidth / PIXEL_DENSITY + 'px';
     tightCanvas.width = tightCanvasPixelsWidth;
 
-    var tightCanvasPixelsHeight = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1 * SCALE;
-    tightCanvas.style.height = tightCanvasPixelsHeight / SCALE + 'px';
+    var tightCanvasPixelsHeight = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
+    tightCanvas.style.height = tightCanvasPixelsHeight / PIXEL_DENSITY + 'px';
     tightCanvas.height = tightCanvasPixelsHeight;
 
     tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y;
@@ -287,7 +287,7 @@ class CrispBitmapGlyph {
     var tightCanvasBox = returned.tightCanvasBox;
 
     const div = document.createElement('div');
-    div.textContent = "tightCanvasBox width in px, phys: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) + " css: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) / SCALE; 
+    div.textContent = "tightCanvasBox width in px, phys: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) + " css: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY; 
     document.body.appendChild(div);
 
 

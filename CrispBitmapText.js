@@ -155,12 +155,12 @@ class CrispBitmapText {
     // Non-space characters ------------------------------------------
     else {
       // for small sizes we create our own advancement (width)
-      // NOTE THIS IS NOW DISABLED because this advancement should be exactly the same at any SCALE
-      // ...but it's not because crisp pixels painted at different SCALEs are painted differently.
+      // NOTE THIS IS NOW DISABLED because this advancement should be exactly the same at any PIXEL_DENSITY
+      // ...but it's not because crisp pixels painted at different PIXEL_DENSITYs are painted differently.
       const advancementOverrideForSmallSizes_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px");
       //console.log("advancementOverrideForSmallSizes_CSS_Px: " + advancementOverrideForSmallSizes_CSS_Px);
       if (advancementOverrideForSmallSizes_CSS_Px !== null) {
-        x_CSS_Px += ((glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x) / SCALE + 1) + advancementOverrideForSmallSizes_CSS_Px;
+        x_CSS_Px += ((glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY + 1) + advancementOverrideForSmallSizes_CSS_Px;
         //console.log("x_CSS_Px: " + x_CSS_Px + " for letter " + letter + " and nextLetter " + text[i + 1] + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
       }
       // for all other sizes we use the advancement (width) as given by the browser
@@ -203,8 +203,8 @@ class CrispBitmapText {
 
   drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontEmphasis) {
 
-    var x_Phys_Px = x_CSS_Px * SCALE;
-    var y_Phys_Px = y_CSS_Px * SCALE;
+    var x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
+    var y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
@@ -234,8 +234,8 @@ class CrispBitmapText {
 
           var actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
 
-          var yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * SCALE;
-          var xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * SCALE;
+          var yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY;
+          var xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
 
           // For normal sizes:
           //    we use the same spacing as the canvas gave us for each glyph
@@ -256,11 +256,11 @@ class CrispBitmapText {
             var leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
             ctx.drawImage(glyph.tightCanvas,
               xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
-              y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * SCALE);
+              y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY);
           }
         }
 
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) * SCALE;
+        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) * PIXEL_DENSITY;
 
       }
     }

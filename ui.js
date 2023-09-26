@@ -23,7 +23,7 @@ document.getElementById("selectors").appendChild(runButton);
 // create a global ENABLE_KERNING boolean vailable and
 var ENABLE_KERNING = true;
 
-var SCALE = null;
+var PIXEL_DENSITY = null;
 
 // add a checkbox that controls it
 const enableKerningCheckbox = document.createElement('input');
@@ -44,7 +44,7 @@ enableKerningCheckboxLabel.htmlFor = 'enable-kerning-checkbox';
 document.getElementById("selectors").appendChild(enableKerningCheckboxLabel);
 
 addCopyChoiceRadioButtons();
-addScaleChoiceRadioButtons();
+addPixelDensityChoiceRadioButtons();
 
 document.getElementById("selectors").appendChild(document.createElement('br'));
 

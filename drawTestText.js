@@ -83,10 +83,10 @@
   
   
   canvas.style.width = crispTestTextMeasures_CSS_Px.width + 'px';
-  canvas.width = crispTestTextMeasures_CSS_Px.width * SCALE;
+  canvas.width = crispTestTextMeasures_CSS_Px.width * PIXEL_DENSITY;
   
   canvas.style.height = crispTestTextMeasures_CSS_Px.height + 'px';
-  canvas.height = crispTestTextMeasures_CSS_Px.height * SCALE;
+  canvas.height = crispTestTextMeasures_CSS_Px.height * PIXEL_DENSITY;
   
   document.getElementById("testCopyCanvases").appendChild(canvas);
   const ctx = canvas.getContext('2d');
@@ -113,19 +113,19 @@
 
   var canvas2Width = Math.round(testCopyMeasures_CSS_Px.width);
   canvas2.style.width = canvas2Width + 'px';
-  canvas2.width = canvas2Width * SCALE;
+  canvas2.width = canvas2Width * PIXEL_DENSITY;
   
   var canvas2Height = Math.round(testCopyMeasures_CSS_Px.height);
   canvas2.style.height = canvas2Height + 'px';
-  canvas2.height = canvas2Height * SCALE;
+  canvas2.height = canvas2Height * PIXEL_DENSITY;
 
   // add to DOM before drawing the text otherwise
   // the CSS property to make it crisp doesn't work
   document.getElementById("testCopyCanvases").appendChild(canvas2);
   const ctx2 = canvas2.getContext('2d');
-  ctx2.scale(SCALE, SCALE);
+  ctx2.scale(PIXEL_DENSITY, PIXEL_DENSITY);
   ctx2.fillStyle = 'white';
-  ctx2.fillRect(0, 0, canvas2.width / SCALE, canvas2.height / SCALE);
+  ctx2.fillRect(0, 0, canvas2.width / PIXEL_DENSITY, canvas2.height / PIXEL_DENSITY);
   ctx2.fillStyle = 'black';
   ctx2.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx2.textBaseline = 'bottom';
@@ -148,23 +148,23 @@
   // and the height should rather be testCopyMeasuresCSSPx.fontBoundingBoxAscent + testCopyMeasuresCSSPx.fontBoundingBoxDescent
   var canvas6Width = Math.round(testCopyMeasures_CSS_Px.width);
   canvas6.style.width = canvas6Width + 'px';
-  canvas6.width = canvas6Width * SCALE;
+  canvas6.width = canvas6Width * PIXEL_DENSITY;
 
   var canvas6Height = Math.round(testCopyMeasures_CSS_Px.height /  testCopyLines.length);
   canvas6.style.height = canvas6Height + 'px';
-  canvas6.height = canvas6Height * SCALE;
+  canvas6.height = canvas6Height * PIXEL_DENSITY;
 
   // add to DOM before drawing the text otherwise
   // the CSS property to make it crisp doesn't work
   document.getElementById("testCopyCanvases").appendChild(canvas6);
   const ctx6 = canvas6.getContext('2d');
-  ctx6.scale(SCALE, SCALE);
+  ctx6.scale(PIXEL_DENSITY, PIXEL_DENSITY);
   ctx6.fillStyle = 'white';
-  ctx6.fillRect(0, 0, canvas6.width / SCALE, canvas6.height / SCALE);
+  ctx6.fillRect(0, 0, canvas6.width / PIXEL_DENSITY, canvas6.height / PIXEL_DENSITY);
   ctx6.fillStyle = 'black';
   ctx6.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx6.textBaseline = 'bottom';
-  ctx6.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas6.height / SCALE - 1);
+  ctx6.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas6.height / PIXEL_DENSITY - 1);
 
 
 
@@ -181,18 +181,18 @@
   
   var canvas3Width =  Math.round(testCopyMeasuresCSSPx.width);
   canvas3.style.width = canvas3Width + 'px';
-  canvas3.width = canvas3Width * SCALE;
+  canvas3.width = canvas3Width * PIXEL_DENSITY;
 
   
   var canvas3Height = Math.round(testCopyMeasuresCSSPx.height);
   canvas3.style.height = canvas3Height + 'px';
-  canvas3.height = canvas3Height * SCALE;
+  canvas3.height = canvas3Height * PIXEL_DENSITY;
 
 
   const ctx3 = canvas3.getContext('2d');
-  ctx3.scale(SCALE, SCALE);
+  ctx3.scale(PIXEL_DENSITY, PIXEL_DENSITY);
   ctx3.fillStyle = 'white';
-  ctx3.fillRect(0, 0, canvas3.width / SCALE, canvas3.height / SCALE);
+  ctx3.fillRect(0, 0, canvas3.width / PIXEL_DENSITY, canvas3.height / PIXEL_DENSITY);
   ctx3.fillStyle = 'black';
   ctx3.font = fontEmphasis + " " + fontSize + 'px ' + fontFamily;
   ctx3.textBaseline = 'bottom';

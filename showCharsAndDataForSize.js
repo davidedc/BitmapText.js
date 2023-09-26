@@ -1,11 +1,11 @@
 function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
 
-  // set the SCALE variable depending on the scale radio buttons
-  if (document.getElementById('scale-2-radio-button').checked) {
-    SCALE = 2;
+  // set the PIXEL_DENSITY variable depending on the scale radio buttons
+  if (document.getElementById('pixel-density-2-radio-button').checked) {
+    PIXEL_DENSITY = 2;
   }
   else {
-    SCALE = 1;
+    PIXEL_DENSITY = 1;
   }
 
 
