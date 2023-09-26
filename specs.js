@@ -72,12 +72,8 @@ Space advancement override for small sizes in px
 --
 Advancement override for small sizes in px
 -
-0 to 7
+0 to 0
   0
-8 to 11
-  1
-12 to 20
-  2
 --
 // For small sizes, instead of shortening the distance between letters based on
 // the advancement length of the first letter and the kerning value (as we do for large sizes),
@@ -85,7 +81,7 @@ Advancement override for small sizes in px
 Kerning discretisation for small sizes
 -
 0 to 20
-  0.145 >= kern > 0: 1
+  0.145 >= kern > 0: 0
   // this one below actually doesn't seem to be used at this moment
   10 >= kern > 0.145: 2
 --

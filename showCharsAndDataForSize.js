@@ -1,4 +1,14 @@
 function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
+
+  // set the SCALE variable depending on the scale radio buttons
+  if (document.getElementById('scale-2-radio-button').checked) {
+    SCALE = 2;
+  }
+  else {
+    SCALE = 1;
+  }
+
+
   // create a new CrispBitmapGlyph object
   var crispBitmapGlyphStore = new CrispBitmapGlyphStore();
 

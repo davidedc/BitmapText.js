@@ -34,7 +34,7 @@ class CrispBitmapGlyph {
   drawBoundingBox() {
     var ctx = this.canvas.getContext('2d');
     ctx.strokeStyle = 'red';
-    ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.topLeftCorner.y, this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x, this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y);
+    ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x / SCALE, this.tightCanvasBox.topLeftCorner.y / SCALE, (this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x) / SCALE, (this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y) / SCALE);
   }
 
   // this method can be refactored with the next two
@@ -197,7 +197,9 @@ class CrispBitmapGlyph {
     // n pixel more to the right in the mini canvas
     const cropLeftCorrection = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "CropLeft correction px");
 
-    canvas.width = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
+    var canvasPixelsWidth = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
+    canvas.style.width = canvasPixelsWidth + 'px';
+    canvas.width = canvasPixelsWidth * SCALE;
 
     // add a div with letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight
     const div = document.createElement('div');
@@ -210,11 +212,15 @@ class CrispBitmapGlyph {
 
     document.body.appendChild(div);
 
-    canvas.height = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);
+    var canvasPixelsHeight = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);;
+    canvas.style.height = canvasPixelsHeight + 'px';
+    canvas.height = canvasPixelsHeight * SCALE;
+
+    ctx.scale(SCALE, SCALE);
 
     // make the background white
     //ctx.fillStyle = 'white';
-    //ctx.fillRect(0, 0, canvas.width, canvas.height);
+    //ctx.fillRect(0, 0, canvas.width / SCALE, canvas.height / SCALE);
     // draw the text so that it fits in the canvas
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
     ctx.textBaseline = 'bottom';
@@ -223,7 +229,7 @@ class CrispBitmapGlyph {
 
     // you have to start painting the letter at actualBoundingBoxLeft because that's how much
     // TO THE LEFT OF THAT POINT that letter will ALSO extend
-    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft) + cropLeftCorrection, canvas.height - 1);
+    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft) + cropLeftCorrection, canvas.height / SCALE - 1);
 
     // now can remove the canvas from the page
     canvas.remove();
@@ -245,12 +251,19 @@ class CrispBitmapGlyph {
     }
 
     // copy the bounding box to a new canvas and add it to the page
-    tightCanvas.width = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1;
-    tightCanvas.height = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1;
+    var tightCanvasPixelsWidth = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1 * SCALE;
+    tightCanvas.style.width = tightCanvasPixelsWidth / SCALE + 'px';
+    tightCanvas.width = tightCanvasPixelsWidth;
+
+    var tightCanvasPixelsHeight = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1 * SCALE;
+    tightCanvas.style.height = tightCanvasPixelsHeight / SCALE + 'px';
+    tightCanvas.height = tightCanvasPixelsHeight;
+
     tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y;
     const tightCanvasBoxCtx = tightCanvas.getContext('2d');
 
-    tightCanvasBoxCtx.drawImage(canvas, tightCanvasBox.topLeftCorner.x, tightCanvasBox.topLeftCorner.y, tightCanvas.width, tightCanvas.height, 0, 0, tightCanvas.width, tightCanvas.height);
+    // avoid scaling here and just use physical pixels coordinates and sizes since the source and destination canvases have the same scale
+    tightCanvasBoxCtx.drawImage(canvas, tightCanvasBox.topLeftCorner.x , tightCanvasBox.topLeftCorner.y , tightCanvas.width , tightCanvas.height , 0, 0, tightCanvas.width , tightCanvas.height );
     return { tightCanvas, tightCanvasBox };
   }
 
@@ -272,6 +285,11 @@ class CrispBitmapGlyph {
 
     var tightCanvas = returned.tightCanvas;
     var tightCanvasBox = returned.tightCanvasBox;
+
+    const div = document.createElement('div');
+    div.textContent = "tightCanvasBox width in px, phys: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) + " css: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) / SCALE; 
+    document.body.appendChild(div);
+
 
 
     // get the image data

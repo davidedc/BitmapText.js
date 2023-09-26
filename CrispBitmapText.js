@@ -22,10 +22,10 @@ class CrispBitmapText {
     if (text.length === 0)
       return { width: 0, height: 0, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 0};
     
-    var width = 0;
-    var actualBoundingBoxLeft = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontEmphasis).letterMeasures.actualBoundingBoxLeft;
-    var actualBoundingBoxRight = 0;
-    var advancement = 0;
+    var width_CSS_Px = 0;
+    var actualBoundingBoxLeft_CSS_Px = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontEmphasis).letterMeasures.actualBoundingBoxLeft;
+    var actualBoundingBoxRight_CSS_Px = 0;
+    var advancement_CSS_Px = 0;
     var glyph = null;
 
     for (let i = 0; i < text.length; i++) {
@@ -33,19 +33,19 @@ class CrispBitmapText {
 
       glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
 
-      advancement = this.calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
-      width += advancement;
+      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
+      width_CSS_Px += advancement_CSS_Px;
     }
 
-    // the actualBoundingBoxRight is the sum of all the advancements (detracting kerning) up to the last character...
-    actualBoundingBoxRight = width - advancement;
-    // ... plus the actualBoundingBoxRight of the last character
-    // (this is in place of adding its advancement)
-    actualBoundingBoxRight += glyph.letterMeasures.actualBoundingBoxRight; 
+    // the actualBoundingBoxRight_CSS_Px is the sum of all the advancements (detracting kerning) up to the last character...
+    actualBoundingBoxRight_CSS_Px = width_CSS_Px - advancement_CSS_Px;
+    // ... plus the actualBoundingBoxRight_CSS_Px of the last character
+    // (this is in place of adding its advancement_CSS_Px)
+    actualBoundingBoxRight_CSS_Px += glyph.letterMeasures.actualBoundingBoxRight; 
 
     // get the height of the text by looking at the height of 'a' - they are all the same height
     glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontEmphasis);
-    return { width: width, height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent), actualBoundingBoxLeft: actualBoundingBoxLeft, actualBoundingBoxRight: actualBoundingBoxRight };
+    return { width: width_CSS_Px, height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent), actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px, actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px };
   }
 
   hasLotsOfSpaceAtBottomRight(letter) {
@@ -122,7 +122,7 @@ class CrispBitmapText {
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
+  calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
     // if (letter === ' ') debugger
 
     // if glyph doesn't contain the letter, log out an error with the missing letter
@@ -130,7 +130,7 @@ class CrispBitmapText {
       console.log("glyph doesn't contain the letter " + letter);
     }
 
-    var x = 0;
+    var x_CSS_Px = 0;
 
     // TODO this "space" section should handle all characters without a glyph
     //      as there are many kinds of space-like characters.
@@ -141,28 +141,31 @@ class CrispBitmapText {
     // but since at small sizes we meddle with kerning quite a bit, we want
     // to also meddle with this to try to make the width of text
     // similar to what the browser paints normally.
-    // console.log(glyph.letterMeasures.width + " " + x);
+    // console.log(glyph.letterMeasures.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement override for small sizes in px");
-      if (spaceAdvancementOverrideForSmallSizesInPx !== null) {
-        x += spaceAdvancementOverrideForSmallSizesInPx;
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement override for small sizes in px");
+      if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
+        x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
       else {
-        x += glyph.letterMeasures.width;
+        x_CSS_Px += glyph.letterMeasures.width;
       }
     }
     // Non-space characters ------------------------------------------
     else {
       // for small sizes we create our own advancement (width)
-      const advancementOverrideForSmallSizesInPx = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px");
-      //console.log("advancementOverrideForSmallSizesInPx: " + advancementOverrideForSmallSizesInPx);
-      if (advancementOverrideForSmallSizesInPx !== null) {
-        x += (glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1) + advancementOverrideForSmallSizesInPx;
+      // NOTE THIS IS NOW DISABLED because this advancement should be exactly the same at any SCALE
+      // ...but it's not because crisp pixels painted at different SCALEs are painted differently.
+      const advancementOverrideForSmallSizes_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px");
+      //console.log("advancementOverrideForSmallSizes_CSS_Px: " + advancementOverrideForSmallSizes_CSS_Px);
+      if (advancementOverrideForSmallSizes_CSS_Px !== null) {
+        x_CSS_Px += ((glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x) / SCALE + 1) + advancementOverrideForSmallSizes_CSS_Px;
+        //console.log("x_CSS_Px: " + x_CSS_Px + " for letter " + letter + " and nextLetter " + text[i + 1] + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
       }
       // for all other sizes we use the advancement (width) as given by the browser
       else {
-        x += glyph.letterMeasures.width;
+        x_CSS_Px += glyph.letterMeasures.width;
       }
     }
 
@@ -183,22 +186,26 @@ class CrispBitmapText {
     //if (fontSize === 16) {
     //  debugger
     //}
-    const kerningDiscretisationForSmallSizes = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, "Kerning discretisation for small sizes", kerningCorrection);
-    if (kerningDiscretisationForSmallSizes !== null) {
-      //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
-      x -= kerningDiscretisationForSmallSizes;
+    const kerningDiscretisationForSmallSizes_CSS_Px = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, "Kerning discretisation for small sizes", kerningCorrection);
+    if (kerningDiscretisationForSmallSizes_CSS_Px !== null) {
+      //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes_CSS_Px + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
+      x_CSS_Px -= kerningDiscretisationForSmallSizes_CSS_Px;
     }
     else {
-      x -= glyph.letterMeasures.width * kerningCorrection;
+      x_CSS_Px -= glyph.letterMeasures.width * kerningCorrection;
     }
 
     // since we might want to actually _place_ a glyph,
     // following this measurement, we want to return an
     // integer coordinate here
-    return Math.round(x);
+    return Math.round(x_CSS_Px);
   }
 
-  drawText(ctx, text, x, y, fontSize, fontFamily, fontEmphasis) {
+  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontEmphasis) {
+
+    var x_Phys_Px = x_CSS_Px * SCALE;
+    var y_Phys_Px = y_CSS_Px * SCALE;
+
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
@@ -207,7 +214,7 @@ class CrispBitmapText {
       if (glyph) {
         if (glyph.tightCanvas) {
 
-          // Some glyphs protrude to the left of the x that you specify, i.e. their
+          // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
           // actualBoundingBoxLeft > 0, for example it's quite large for the
           // italic f in Times New Roman. The other glyphs that don't protrude to the left
           // simply have actualBoundingBoxLeft = 0.
@@ -216,7 +223,7 @@ class CrispBitmapText {
           // it's not inferred from looking at how the canvas paints the glyph.)
           //
           // Hence, to render all glyphs correctly, you need to blit the glyph at
-          //    x - actualBoundingBoxLeft
+          //    x_Phys_Px - actualBoundingBoxLeft
           // so the part that should protrude to the left is actually partially blitted to
           // the left of x, as it should be.
           //
@@ -225,10 +232,10 @@ class CrispBitmapText {
           // it happens with a standard Canvas - one should just position the text
           // carefully to avoid this (although it's rare that people actually take care of this).
 
-          var actualBoundingBoxLeftPull = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
+          var actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
 
-          var yPos = y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2;
-          var xPos = x - actualBoundingBoxLeftPull;
+          var yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * SCALE;
+          var xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * SCALE;
 
           // For normal sizes:
           //    we use the same spacing as the canvas gave us for each glyph
@@ -242,16 +249,18 @@ class CrispBitmapText {
           if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px") !== null) {
             // small sizes
             console.log("small size");
-            ctx.drawImage(glyph.tightCanvas, xPos, yPos);
+            ctx.drawImage(glyph.tightCanvas, xPos_Phys_Px, yPos_Phys_Px);
           }
           else {
             // normal sizes
-            var leftSpacingAsGivenToUsByTheCanvas = glyph.tightCanvasBox.topLeftCorner.x;
-            ctx.drawImage(glyph.tightCanvas, xPos + leftSpacingAsGivenToUsByTheCanvas, y - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2);
+            var leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+            ctx.drawImage(glyph.tightCanvas,
+              xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
+              y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * SCALE);
           }
         }
 
-        x += this.calculateAdvancement(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
+        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) * SCALE;
 
       }
     }

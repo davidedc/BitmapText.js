@@ -23,6 +23,8 @@ document.getElementById("selectors").appendChild(runButton);
 // create a global ENABLE_KERNING boolean vailable and
 var ENABLE_KERNING = true;
 
+var SCALE = null;
+
 // add a checkbox that controls it
 const enableKerningCheckbox = document.createElement('input');
 enableKerningCheckbox.type = 'checkbox';
@@ -42,6 +44,7 @@ enableKerningCheckboxLabel.htmlFor = 'enable-kerning-checkbox';
 document.getElementById("selectors").appendChild(enableKerningCheckboxLabel);
 
 addCopyChoiceRadioButtons();
+addScaleChoiceRadioButtons();
 
 document.getElementById("selectors").appendChild(document.createElement('br'));
 
