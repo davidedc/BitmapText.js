@@ -189,21 +189,6 @@ class CrispBitmapGlyph {
   
 
 
-    /*
-    // the s needs 1 pixel more to the right
-    if ((this.letter === 's' || this.letter === 'V' || this.letter === 'W') && this.fontFamily === 'Arial') {
-      letterMeasures.actualBoundingBoxRight += 1;
-      letterMeasures.width += 1;
-    }
- 
-    // similarly, if you turn the kerning off, at size 12 (pretty much the smallest legible size ) you can see that some letters are just too much to the right
-    if ((this.letter === 'A' || this.letter === 'j') && this.fontFamily === 'Arial') {
-      letterMeasures.actualBoundingBoxLeft -= 1;
-    }
-    if (this.letter === 'y' && this.fontFamily === 'Arial') {
-      letterMeasures.actualBoundingBoxLeft += 1;
-    }
-    */
     // END OF LETTER-LEVEL RENDERING CORRECTIONS
     /////////////////////////////////////////////
 
