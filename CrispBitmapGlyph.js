@@ -38,7 +38,7 @@ class CrispBitmapGlyph {
   }
 
   // this method can be refactored with the next two
-  getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey) {
+  getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey, pixelDensity) {
 
     // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
     if (!specs[fontFamily][fontEmphasis][correctionKey]) {
@@ -52,6 +52,12 @@ class CrispBitmapGlyph {
     for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
       const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
       if (correctionEntry.sizeRange == undefined) return 0;
+
+      // check if the passed pixelDensity is the same as the one in the correctionEntry
+      // if not, return 0
+      // if (pixelDensity !== null) debugger;
+      if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) continue;
+
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
         for (let j = 0; j < correctionEntry.lettersAndTheirCorrections.length; j++) {
           const charAndOffset = correctionEntry.lettersAndTheirCorrections[j];
@@ -195,7 +201,7 @@ class CrispBitmapGlyph {
     // Happens at small sizes due to a browser rendering defect.
     // This correction will simply paint the letter
     // n pixel more to the right in the mini canvas
-    const cropLeftCorrection = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "CropLeft correction px");
+    const cropLeftCorrection_CSS_Px = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "CropLeft correction px", PIXEL_DENSITY);
 
     var canvasPixelsWidth = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
     canvas.style.width = canvasPixelsWidth + 'px';
@@ -229,7 +235,7 @@ class CrispBitmapGlyph {
 
     // you have to start painting the letter at actualBoundingBoxLeft because that's how much
     // TO THE LEFT OF THAT POINT that letter will ALSO extend
-    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft) + cropLeftCorrection, canvas.height / PIXEL_DENSITY - 1);
+    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft) + cropLeftCorrection_CSS_Px, canvas.height / PIXEL_DENSITY - 1);
 
     // now can remove the canvas from the page
     canvas.remove();

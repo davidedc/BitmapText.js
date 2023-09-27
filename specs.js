@@ -9,13 +9,35 @@ Kerning cutoff
 Kerning
 -
 0 to 10
-  i followed by *any*: -0.2
-0 to 11
   // letter === 'A' && this.isShortCharacter(nextLetter)
-  W followed by i: -0.2
-  AW followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
-  jw followed by *any*: -0.1
-  f followed by t: -0.2
+  W followed by i: -0.1
+  //AW followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
+  w followed by *any*: -0.04
+  i followed by tk: -0.2
+  *any* followed by s: -0.14
+  hn followed by *any*: 0.14
+  //f followed by t: -0.2
+  r followed by r: -0.2
+  e followed by *any*: 0.014
+11 to 11
+  ' followed by t: -0.1
+  sfzey followed by .,: 0.1
+  W followed by t: -0.2
+  ABWS followed by tklacdegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
+  W followed by ih: -0.2
+  W followed by acegjmnopqrsuvwxyz.,:;—·Çàç•: -0.1
+  U followed by zxve: 0
+  //U followed by pq: -0.014
+  CRNOUYJF followed by acegpquvwxz.,:;—·Çàç•: 0.1
+  T followed by *any*: 0.1
+  acegjmnopqrsuvwxyz.,:;—·Çàç followed by W: 0.1
+  iE followed by z: -0.1
+  E followed by atixj: -0.1
+  f followed by *any*: -0.2
+  o followed by fwvusxe: 0
+  o followed by *any*: -0.2
+  w followed by *any*: -0.2
+  k followed by ae: 0.1
 12 to 21
   // letter === 'A' && this.isShortCharacter(nextLetter)
   A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
@@ -46,19 +68,7 @@ Kerning
 // (highlighted in red) AND the character clearly looks too much to the left
 ActualBoundingBoxLeft correction px
 -
-0 to 12
-  // the j needs to be 1 pixel more to the right, keeping the same advancement (width)
-  // so let's shrink its ActualBoundingBoxLeft
-  j: -1
-0 to 20
-  // The A has a small ActualBoundingBoxLeft which is actually entirely the left
-  // spacing. So they cancel each other out, and A starts neatly right at the
-  // x where you put it. So: it's equivalent to _not_ having any ActualBoundingBoxLeft and
-  // any spacing. Since at sizes <= 20 we make our own fixed spacing by just playing with
-  // the advancement, effectively we ignore the left spacing info for the first letter in the line,
-  // so we ALSO need to set the ActualBoundingBoxLeft to 0,
-  // otherwise if an A is the first letter on a line it's clipped on the left.
-  A: -1
+// nothing in here
 --
 Space advancement override for small sizes in px
 -
@@ -75,8 +85,7 @@ Space advancement override for small sizes in px
 --
 Advancement override for small sizes in px
 -
-0 to 0
-  0
+// nothing in here
 --
 // For small sizes, instead of shortening the distance between letters based on
 // the advancement length of the first letter and the kerning value (as we do for large sizes),
@@ -84,7 +93,8 @@ Advancement override for small sizes in px
 Kerning discretisation for small sizes
 -
 0 to 20
-  0.145 >= kern > 0: 0
+  -0.001 >= kern > -0.144: -1
+  0.145 >= kern > 0: 1
   // this one below actually doesn't seem to be used at this moment
   10 >= kern > 0.145: 2
 --
@@ -92,9 +102,13 @@ Kerning discretisation for small sizes
 CropLeft correction px
 -
 11 to 11
-  // W and j are clipped on the left, this correction will simply paint them
+  // W is clipped on the left, this correction will simply paint them
   // 1 pixel more to the right in the mini canvas
-  Wj: 1
+  W: 1
+11 to 11 at pixel density 1
+  D: 1
+11 to 11 at pixel density 2
+  w: 1
 --
 ActualBoundingBoxRight correction px
 -

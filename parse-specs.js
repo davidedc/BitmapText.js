@@ -112,14 +112,41 @@ function parseSpecs() {
   console.dir(specs);
 }
 
-function parseSizeRange(line) {
-  const sizeRangeLine = line.split(' to ');
-  const from = parseInt(sizeRangeLine[0]);
-  const to = parseInt(sizeRangeLine[1]);
+// Parses a size range with possible pixel density into an object with keys "from" and "to" and "pixelDensity"
+// Example 1:
+//     "[integer1] to [integer2]"
+//   returns:
+//     { from: [integer1], to: [integer2], pixelDensity: null }
+//
+// Example 2:
+//     "[integer1] to [integer2] at pixel density [integer3]"
+//   returns:
+//     { from: [integer1], to: [integer2], pixelDensity: [integer3] }
 
-  return { from: from, to: to };
+function parseSizeRange(line) {
+  // split the line by " to "
+  const splitByTo = line.split(' to ');
+  const from = parseInt(splitByTo[0]);
+  const to = parseInt(splitByTo[1]);
+
+  // check if there is a pixel density in the line
+  if (line.indexOf(' at pixel density ') !== -1) {
+    // there is a pixel density
+    // split by " at pixel density "
+    const splitByAtPixelDensity = line.split(' at pixel density ');
+    const pixelDensity = parseInt(splitByAtPixelDensity[1]);
+    return { from: from, to: to, pixelDensity: pixelDensity };
+  }
+  else {
+    // there is no pixel density
+    return { from: from, to: to, pixelDensity: null };
+  }
 }
 
+// Checks if a given line represents a size range in the format of either
+//   "[integer] to [integer]"
+// or
+//   "[integer] to [integer] at pixel density [integer]"
 function isSizeRange(line) {
-  return /^\d+\s+to\s+\d+$/.test(line);
+  return /^\d+\s+to\s+\d+(\s+at\s+pixel\s+density\s+\d+)?$/.test(line);
 }
