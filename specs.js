@@ -8,7 +8,17 @@ Kerning cutoff
 --
 Kerning
 -
-0 to 10
+9 to 9
+  // letter === 'A' && this.isShortCharacter(nextLetter)
+  w followed by *any*: -0.04
+  W followed by i: -0.2
+  AWNR followed by cegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
+  m followed by abcegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
+  f followed by cbtlh: -0.1
+  DE followed by temhnoupqrsw: -0.1
+  C followed by ta: -0.1
+  MUZW followed by *any*: -0.1
+10 to 10
   // letter === 'A' && this.isShortCharacter(nextLetter)
   W followed by i: -0.1
   //AW followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
@@ -28,7 +38,9 @@ Kerning
   W followed by acegjmnopqrsuvwxyz.,:;—·Çàç•: -0.1
   U followed by zxve: 0
   //U followed by pq: -0.014
-  CRNOUYJF followed by acegpquvwxz.,:;—·Çàç•: 0.1
+  Y followed by o: 0.1
+  Y followed by acegqvwxz.,:;—·Çàç•: 0.1
+  CRNOUJF followed by acegpquvwxz.,:;—·Çàç•: 0.1
   T followed by *any*: 0.1
   acegjmnopqrsuvwxyz.,:;—·Çàç followed by W: 0.1
   iE followed by z: -0.1
