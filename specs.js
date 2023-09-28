@@ -8,6 +8,17 @@ Kerning cutoff
 --
 Kerning
 -
+12 to 12
+  A followed by dhklacegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
+  WR followed by ae: 0
+  acegijmnopqrsuvwxyz.,:;—·Çàç• followed by W: -0
+  sfzey followed by .,: 0
+  YM followed by *any*: 0.1
+  V followed by e: 0.1
+  o followed by *any*: 0
+  *any* followed by o: 0
+  w followed by s: 0
+  k followed by e: 0
 9 to 9
   // letter === 'A' && this.isShortCharacter(nextLetter)
   w followed by *any*: -0.04
@@ -29,7 +40,7 @@ Kerning
   //f followed by t: -0.2
   r followed by r: -0.2
   e followed by *any*: 0.014
-11 to 11
+11 to 12
   ' followed by t: -0.1
   sfzey followed by .,: 0.1
   W followed by t: -0.2
@@ -50,21 +61,21 @@ Kerning
   o followed by *any*: -0.2
   w followed by *any*: -0.2
   k followed by ae: 0.1
-12 to 21
+13 to 21
   // letter === 'A' && this.isShortCharacter(nextLetter)
   A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
   *any* followed by aetof: 0.1
   f followed by o: 0.2
   fteo followed by *any*: 0.1
   *any* followed by j: 0.1
-12 to 20
+13 to 20
   ftvy followed by ftvy: 0.1
   rk followed by *any*: 0.1
   p followed by a: 0.1
   c followed by y: 0.1
 21 to 23
   *any* followed by j: -0.15
-12 to 100
+13 to 100
   WV followed by WV: -0.04
   A\\L followed by W7: 0.1
   WfP followed by A/: 0.1
@@ -119,6 +130,8 @@ CropLeft correction px
   W: 1
 11 to 11 at pixel density 1
   D: 1
+12 to 12 at pixel density 1
+  y: 1
 11 to 11 at pixel density 2
   w: 1
 --
