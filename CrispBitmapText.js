@@ -192,7 +192,10 @@ class CrispBitmapText {
       x_CSS_Px -= kerningDiscretisationForSmallSizes_CSS_Px;
     }
     else {
-      x_CSS_Px -= glyph.letterMeasures.width * kerningCorrection;
+      // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
+      // We don't use ems, rather we use pxs, however we still want to keep Kerning as strictly proportional to the current type size,
+      // and also to keep it as a measure "in thousands".
+      x_CSS_Px -= fontSize * kerningCorrection / 1000;
     }
 
     // since we might want to actually _place_ a glyph,

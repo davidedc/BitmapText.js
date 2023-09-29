@@ -20,15 +20,19 @@ Kerning
   w followed by s: 0
   k followed by e: 0
 9 to 9
-  // letter === 'A' && this.isShortCharacter(nextLetter)
-  w followed by *any*: -0.04
-  W followed by i: -0.2
-  AWNR followed by cegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
-  m followed by abcegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
-  f followed by cbtlh: -0.1
-  DE followed by temhnoupqrsw: -0.1
-  C followed by ta: -0.1
-  MUZW followed by *any*: -0.1
+  //U followed by *any*: -10
+  A followed by *any*: -150
+  V followed by *any*: -150
+  w followed by *any*: -1
+  W followed by i: -115
+  AWNR followed by eW: -1
+  AWNR followed by cgjmnopqrsuvwxyz.,:;—·Çàç•: -100
+  m followed by abcegijmnopqrsuvwxyz.,:;—·Çàç•: -1
+  //f followed by h: -120
+  //f followed by *any*: -120
+  DE followed by temhnoupqrsw: -1
+  C followed by ta: -1
+  CDENHMUZW followed by *any*: -1
 10 to 10
   // letter === 'A' && this.isShortCharacter(nextLetter)
   W followed by i: -0.1
@@ -115,11 +119,6 @@ Advancement override for small sizes in px
 // we just output a small number like 0,1,2, so we just "discretise" the kerning.
 Kerning discretisation for small sizes
 -
-0 to 20
-  -0.001 >= kern > -0.144: -1
-  0.145 >= kern > 0: 1
-  // this one below actually doesn't seem to be used at this moment
-  10 >= kern > 0.145: 2
 --
 // Happens at small sizes due to a browser rendering
 CropLeft correction px
@@ -128,6 +127,10 @@ CropLeft correction px
   // W is clipped on the left, this correction will simply paint them
   // 1 pixel more to the right in the mini canvas
   W: 1
+9 to 9 at pixel density 2
+  AI: 1
+9 to 9 at pixel density 2
+  V: 1
 11 to 11 at pixel density 1
   D: 1
 12 to 12 at pixel density 1
@@ -139,6 +142,8 @@ ActualBoundingBoxRight correction px
 -
 0 to 20
   Ww: 5
+9 to 9
+  V: 1
 --
 ActualBoundingBoxRight correction proportional
 -
