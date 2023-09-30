@@ -34,16 +34,26 @@ Kerning
   C followed by ta: -1
   CDENHMUZW followed by *any*: -1
 10 to 10
-  // letter === 'A' && this.isShortCharacter(nextLetter)
-  W followed by i: -0.1
-  //AW followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: -0.1
-  w followed by *any*: -0.04
-  i followed by tk: -0.2
-  *any* followed by s: -0.14
-  hn followed by *any*: 0.14
-  //f followed by t: -0.2
-  r followed by r: -0.2
-  e followed by *any*: 0.014
+  ity followed by ’: -50
+  c followed by t: -50
+  r followed by s: -20
+  e followed by c: 9
+  n followed by e: 9
+  N followed by *any*: 50
+  c followed by z: -50
+  y followed by l: -30
+  Y followed by aoes: 50
+  W followed by i: -10
+  w followed by lkiy: -50
+  f followed by t: -100
+  r followed by kt: -50
+  j followed by shk: -50
+  a followed by k: -100
+  myc followed by wk: -50
+  l followed by skzyfw: -50
+  i followed by zwxjtks: -50
+  t followed by kws: -100
+  z followed by z: -50
 11 to 12
   ' followed by t: -0.1
   sfzey followed by .,: 0.1
@@ -123,6 +133,8 @@ Kerning discretisation for small sizes
 // Happens at small sizes due to a browser rendering
 CropLeft correction px
 -
+10 to 10 at pixel density 1
+  W: 1
 11 to 11
   // W is clipped on the left, this correction will simply paint them
   // 1 pixel more to the right in the mini canvas
