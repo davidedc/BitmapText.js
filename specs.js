@@ -34,7 +34,13 @@ Kerning
   C followed by ta: -1
   CDENHMUZW followed by *any*: -1
 10 to 10
-  ity followed by ’: -50
+  p followed by e: 10
+  h followed by a: 10
+  c followed by k: 10
+  a followed by sl: 10
+  S followed by e: 100
+  F followed by o: 100
+  ityl followed by ’: -50
   c followed by t: -50
   r followed by s: -20
   e followed by c: 9
@@ -134,7 +140,7 @@ Kerning discretisation for small sizes
 CropLeft correction px
 -
 10 to 10 at pixel density 1
-  W: 1
+  Wsk: 1
 11 to 11
   // W is clipped on the left, this correction will simply paint them
   // 1 pixel more to the right in the mini canvas
