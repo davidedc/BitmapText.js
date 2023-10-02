@@ -8,6 +8,45 @@ Kerning cutoff
 --
 Kerning
 -
+11 to 11
+  k followed by wl: 50
+  f followed by yilhb: -50
+  B followed by z: -50
+  W followed by it: -150
+  T followed by *any*: 150
+  S followed by mn: -100
+  W followed by *any*: -100
+  w followed by tk: -150
+  w followed by laei: -100
+  O followed by *any*: 50
+  A followed by *any*: -50
+  // BELOW INHERITED FROM SIZE 10
+  p followed by e: 10
+  h followed by a: 10
+  c followed by k: 10
+  a followed by sl: 10
+  S followed by e: 100
+  F followed by o: 100
+  ityl followed by ’: -50
+  c followed by t: -50
+  r followed by s: -20
+  e followed by c: 9
+  n followed by e: 9
+  N followed by *any*: 50
+  c followed by z: -50
+  y followed by l: -30
+  Y followed by aoes: 50
+  W followed by i: -10
+  w followed by lkiy: -50
+  f followed by t: -100
+  r followed by kt: -50
+  j followed by shk: -50
+  a followed by k: -100
+  myc followed by wk: -50
+  l followed by skzyfw: -50
+  i followed by zwxjtks: -50
+  t followed by kws: -100
+  z followed by z: -50
 12 to 12
   A followed by dhklacegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
   WR followed by ae: 0
@@ -150,7 +189,7 @@ CropLeft correction px
 9 to 9 at pixel density 2
   V: 1
 11 to 11 at pixel density 1
-  D: 1
+  CD: 1
 12 to 12 at pixel density 1
   y: 1
 11 to 11 at pixel density 2
