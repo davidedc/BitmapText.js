@@ -8,6 +8,13 @@ Kerning cutoff
 --
 Kerning
 -
+15 to 15
+  F followed by aeus: 50
+  m followed by a: -50
+  W followed by y: -100
+  W followed by ithu: -50
+  l followed by y: -50
+  YT followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 150
 14 to 14
   F followed by aeus: 50
   U followed by ade: 50
@@ -129,21 +136,21 @@ Kerning
   o followed by *any*: -0.2
   w followed by *any*: -0.2
   k followed by ae: 0.1
-15 to 21
+16 to 21
   // letter === 'A' && this.isShortCharacter(nextLetter)
   A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
   *any* followed by aetof: 0.1
   f followed by o: 0.2
   fteo followed by *any*: 0.1
   *any* followed by j: 0.1
-15 to 20
+16 to 20
   ftvy followed by ftvy: 0.1
   rk followed by *any*: 0.1
   p followed by a: 0.1
   c followed by y: 0.1
 21 to 23
   *any* followed by j: -0.15
-15 to 100
+16 to 100
   WV followed by WV: -0.04
   A\\L followed by W7: 0.1
   WfP followed by A/: 0.1
