@@ -9,6 +9,7 @@ Kerning cutoff
 Kerning
 -
 14 to 14
+  F followed by aeus: 50
   U followed by ade: 50
   YT followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 50
   V followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 50
