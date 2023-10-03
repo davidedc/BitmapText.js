@@ -8,6 +8,14 @@ Kerning cutoff
 --
 Kerning
 -
+16 to 16
+  r followed by fw: -50
+  b followed by y: -50
+  t followed by bz’: -50
+  k followed by rnywvhlz: -50
+  ’ followed by *any*: 50
+  YT followed by aeop: 100
+  YT followed by dklcgijmnqrsuvwxyz.,:;—·Çàç•: 50
 15 to 15
   F followed by aeus: 50
   m followed by a: -50
@@ -136,21 +144,21 @@ Kerning
   o followed by *any*: -0.2
   w followed by *any*: -0.2
   k followed by ae: 0.1
-16 to 21
+17 to 21
   // letter === 'A' && this.isShortCharacter(nextLetter)
   A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
   *any* followed by aetof: 0.1
   f followed by o: 0.2
   fteo followed by *any*: 0.1
   *any* followed by j: 0.1
-16 to 20
+17 to 20
   ftvy followed by ftvy: 0.1
   rk followed by *any*: 0.1
   p followed by a: 0.1
   c followed by y: 0.1
 21 to 23
   *any* followed by j: -0.15
-16 to 100
+17 to 100
   WV followed by WV: -0.04
   A\\L followed by W7: 0.1
   WfP followed by A/: 0.1
@@ -194,6 +202,8 @@ Kerning discretisation for small sizes
 // Happens at small sizes due to a browser rendering
 CropLeft correction px
 -
+16 to 16 at pixel density 1
+  .,: -1
 14 to 14 at pixel density 1
   .: -1
 13 to 14 at pixel density 1
