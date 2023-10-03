@@ -24,13 +24,17 @@ Kerning
   l followed by y: -50
   YT followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 150
 14 to 14
+  W followed by i: -50
   F followed by aeus: 50
   U followed by ade: 50
   YT followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 50
   V followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 50
   IJ followed by *any*: 50
 13 to 13
-  W followed by i: -50
+  w followed by h: -50
+  s followed by t: -100
+  r followed by t: -50
+  W followed by i: -100
   *any* followed by ': 100
   ' followed by *any*: -50
   YT followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 150
@@ -76,6 +80,7 @@ Kerning
   t followed by kws: -100
   z followed by z: -50
 12 to 12
+  r followed by t: -50
   s followed by this: -50
   f followed by tb: -50
   m followed by tw: -50
@@ -208,7 +213,9 @@ CropLeft correction px
   .: -1
 13 to 14 at pixel density 1
   ,: -110 to 10 at pixel density 1
-  Wsk: 1
+  W: 1
+13 to 13 at pixel density 1
+  v: 1
 11 to 11
   // W is clipped on the left, this correction will simply paint them
   // 1 pixel more to the right in the mini canvas
