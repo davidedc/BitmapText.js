@@ -48,16 +48,12 @@ Kerning
   t followed by kws: -100
   z followed by z: -50
 12 to 12
-  A followed by dhklacegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
-  WR followed by ae: 0
-  acegijmnopqrsuvwxyz.,:;—·Çàç• followed by W: -0
-  sfzey followed by .,: 0
-  YM followed by *any*: 0.1
-  V followed by e: 0.1
-  o followed by *any*: 0
-  *any* followed by o: 0
-  w followed by s: 0
-  k followed by e: 0
+  s followed by this: -50
+  f followed by tb: -50
+  m followed by tw: -50
+  b followed by y: 50
+  M followed by *any*: 50
+  T followed by dklacegijmnopqrsuvwxyz.,:;—·Çàç•: 100
 9 to 9
   //U followed by *any*: -10
   A followed by *any*: -150
