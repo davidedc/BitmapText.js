@@ -8,6 +8,17 @@ Kerning cutoff
 --
 Kerning
 -
+18 to 18
+  A followed by *any*: 20
+  y followed by w: -50
+  f followed by i: -50
+  i followed by f: -50
+  t followed by z: -50
+  B followed by vz: -50
+  YT followed by aeoprs dklcgjmnquvwxyz.,:;—·Çàç•: 50
+  Y followed by i: 20
+  X followed by ae: 50
+  V followed by ae: 50
 17 to 17
   A followed by *any*: -50
   X followed by i: -50
