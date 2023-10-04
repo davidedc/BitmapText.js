@@ -160,31 +160,6 @@ Kerning
   o followed by *any*: -0.2
   w followed by *any*: -0.2
   k followed by ae: 0.1
-18 to 21
-  // letter === 'A' && this.isShortCharacter(nextLetter)
-  A followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
-  *any* followed by aetof: 0.1
-  f followed by o: 0.2
-  fteo followed by *any*: 0.1
-  *any* followed by j: 0.1
-18 to 20
-  ftvy followed by ftvy: 0.1
-  rk followed by *any*: 0.1
-  p followed by a: 0.1
-  c followed by y: 0.1
-21 to 23
-  *any* followed by j: -0.15
-18 to 100
-  WV followed by WV: -0.04
-  A\\L followed by W7: 0.1
-  WfP followed by A/: 0.1
-  V7/TY followed by A/: 0.15
-  A\\L followed by V\\TY: 0.15
-  acegijmnopqrsuvwxyz.,:;—·Çàç• followed by W7: 0.1
-  WfP followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.1
-  V7/TY followed by acegijmnopqrsuvwxyz.,:;—·Çàç•: 0.15
-  acegijmnopqrsuvwxyz.,:;—·Çàç• followed by V\\TY: 0.15
-  acegijmnopqrsuvwxyz.,:;—·Çàç• followed by VW\\TY: 0.03
 --
 // this is when a character has a ActualBoundingBoxLeft != 0
 // (highlighted in red) AND the character clearly looks too much to the left
