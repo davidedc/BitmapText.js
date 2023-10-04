@@ -8,6 +8,32 @@ Kerning cutoff
 --
 Kerning
 -
+19 to 19
+  W followed by i: -50
+  y followed by w: -50
+  R followed by e: 25
+  r followed by coe: 0
+  a followed by c: 50
+  c followed by c: 50
+  c followed by e: 50
+  e followed by s: 0
+  e followed by f: 50
+  h followed by e: 50
+  h followed by o: 50
+  o followed by o: 50
+  *any* followed by s: 20
+  n followed by cdf: 50
+  sc followed by et: -50
+  f followed by yt: -100
+  ts followed by lihya: -50
+  rf followed by *any*: -50
+  //i followed by f: -50
+  t followed by kz: -50
+  B followed by vz: -50
+  YT followed by aeoprs dklcgjmnquvwxyz.,:;—·Çàç•: 50
+  Y followed by i: 20
+  X followed by ae: 50
+  V followed by ae: 50
 18 to 18
   A followed by *any*: 20
   y followed by w: -50
