@@ -88,11 +88,16 @@ class CrispBitmapText {
 
   getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
 
-    if (fontSize <= specs[fontFamily][fontEmphasis]["Kerning cutoff"]) {
-      return 0;
+    if (specCombinationExists(fontFamily, fontEmphasis, "Kerning cutoff")) {
+      if (fontSize <= specs[fontFamily][fontEmphasis]["Kerning cutoff"]) {
+        return 0;
+      }
     }
 
-    if (ENABLE_KERNING) {
+
+
+    if (ENABLE_KERNING && specCombinationExists(fontFamily, fontEmphasis, "Kerning")) {
+  
       // for all entries in the Kerning array with a sizeRange that includes the current font size
       //   get the kerning array and for each one:
       //     if letter matches any of the letters in the "left" object or the "left" object is "*any*" and the nextLetter matches any of the letters in the "right" object or the "right" object is "*any*"

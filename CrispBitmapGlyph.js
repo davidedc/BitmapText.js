@@ -41,7 +41,7 @@ class CrispBitmapGlyph {
   getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey, pixelDensity) {
 
     // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
-    if (!specs[fontFamily][fontEmphasis][correctionKey]) {
+    if (!specCombinationExists(fontFamily, fontEmphasis, correctionKey)) {
       return 0;
     }
 
@@ -74,7 +74,7 @@ class CrispBitmapGlyph {
   getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, correctionKey) {
 
     // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
-    if (!specs[fontFamily][fontEmphasis][correctionKey]) {
+    if (!specCombinationExists(fontFamily, fontEmphasis, correctionKey)) {
       return null;
     }
 
@@ -95,8 +95,7 @@ class CrispBitmapGlyph {
 
   getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, correctionKey, kerning) {
 
-    // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
-    if (!specs[fontFamily][fontEmphasis][correctionKey]) {
+    if (!specCombinationExists(fontFamily, fontEmphasis, correctionKey)) {
       return null;
     }
 

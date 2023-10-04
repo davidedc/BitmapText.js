@@ -1,3 +1,11 @@
+function specCombinationExists(fontFamily, fontEmphasis, correctionKey) {
+  if (!specs[fontFamily] || !specs[fontFamily][fontEmphasis] || !specs[fontFamily][fontEmphasis][correctionKey]) {
+    return false;
+  }
+  return true;
+}
+
+
 const specsText =
 `Arial
 normal
