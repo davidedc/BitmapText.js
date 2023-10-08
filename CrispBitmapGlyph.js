@@ -374,6 +374,21 @@ class CrispBitmapGlyph {
     return pixels;
   }
 
+  calculateBooleanArrayHash(booleanArray) {
+    let hash = 0;
+    if (booleanArray.length === 0) return hash;
+  
+    for (let i = 0; i < booleanArray.length; i++) {
+      // use ternary operator to convert boolean to 1231 for true, and 1237 for false
+      // this is what Java does
+      const valueForBoolean = booleanArray[i] ? 1231 : 1237;
+      hash = ((hash << 5) - hash) + valueForBoolean;
+      hash |= 0; // Convert to 32bit integer
+    }
+  
+    return hash;
+  }
+  
   // does a RLE (Run Length Encoding) compression of the pixels
   // based on linear row visit of the pixels
   compressPixels(pixels) {
