@@ -353,6 +353,31 @@ class CrispBitmapGlyph {
   }
 
 
+  // takes the canvas and returns an array of booleans representing whether each pixel is on or not
+  getOnPixels2DArray(canvas) {
+    var ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    // create a new 2D array with a boolean for each pixel to represent whether it is on or not
+    // note that the color in which the character is painted doesn't matter, we are just looking
+    // for pixels that are not transparent
+    const pixels2DArray = [];
+    for (let y = 0; y < canvas.height; y++) {
+      const row = [];
+      for (let x = 0; x < canvas.width; x++) {
+        // isOn is when any of the components is 0 AND the alpha is not 0
+        // that's because we are working with canvases with transparent backgrounds
+        // because glyphs often have are painted on top of other content AND also
+        // because glyphs actually often have to overlap with each other e.g. in the case of "ff" in Times New Roman
+        const isOn = data[(y * canvas.width + x) * 4 + 3] !== 0;
+        row.push(isOn);
+      }
+      pixels2DArray.push(row);
+    }
+    return pixels2DArray; 
+  }
+
 
   getOnPixelsArray(canvas) {
     var ctx = canvas.getContext('2d');
