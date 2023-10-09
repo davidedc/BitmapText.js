@@ -23,4 +23,13 @@ CanvasRenderingContext2D.prototype.getHash = function () {
   hash |= 0;
 
   return hash | 0;
+
+  // To print this 32 bit int as a fixed-length hex string
+  // (i.e. with leading zeros so that it's always 8 characters long):
+  // 
+  // function int32ToPaddedHexString(i) {
+  //   const hex = (i + 0x100000000).toString(16);
+  //   return hex.substring(1, 9);
+  // }
+
 };
