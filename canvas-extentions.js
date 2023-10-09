@@ -13,5 +13,14 @@ CanvasRenderingContext2D.prototype.getHash = function () {
     hash |= 0; // Convert to 32 bit integer
   }
 
+  // Also add to the hash the width and the height.
+  // Each of these MOST PROBABLY fits into a 16-bit integer, so we could pack both into a 32 bit integer
+  // however it's really not worth to introduce that assumption as for example PNG files
+  // have no size limit and we'd gain nothing from this optimisation.
+  hash = ((hash << 5) - hash) + this.canvas.width;
+  hash |= 0;
+  hash = ((hash << 5) - hash) + this.canvas.height;
+  hash |= 0;
+
   return hash | 0;
 };
