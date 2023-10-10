@@ -46,6 +46,18 @@ document.getElementById("selectors").appendChild(enableKerningCheckboxLabel);
 addCopyChoiceRadioButtons();
 addPixelDensityChoiceRadioButtons();
 
+// add a button that when clicked copied to clipboard the JSON of the thisRunsHashes object
+const copyToClipboardButton = document.createElement('button');
+copyToClipboardButton.id = 'copy-to-clipboard-button';
+copyToClipboardButton.textContent = 'Copy collected hashes to clipboard';
+document.getElementById("selectors").appendChild(copyToClipboardButton);
+copyToClipboardButton.addEventListener('click', function() {
+    const thisRunsHashesJSON = JSON.stringify(thisRunsHashes);
+    navigator.clipboard.writeText(thisRunsHashesJSON);
+  }
+);
+
+
 document.getElementById("selectors").appendChild(document.createElement('br'));
 
 // add to the "selectors" div a multiline textbox input where we have the specs related to the rendering.

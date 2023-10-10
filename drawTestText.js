@@ -4,13 +4,18 @@
   // testCopy1, kernKingCopyPart1, or kernKingCopyPart2 variables defined in test-copy.js
   // and put it in the testCopy variable
   let testCopy = '';
+  let testCopyChoiceNumber = 0;
   if (document.getElementById('test-copy-1-radio-button').checked) {
     testCopy = testCopy1;
+    testCopyChoiceNumber = 1;
   } else if (document.getElementById('kern-king-copy-part-1-radio-button').checked) {
     testCopy = kernKingCopyPart1;
+    testCopyChoiceNumber = 2;
   } else if (document.getElementById('kern-king-copy-part-2-radio-button').checked) {
     testCopy = kernKingCopyPart2;
+    testCopyChoiceNumber = 3;
   }
+  
 
   // put the test Text into an array of lines
   const testCopyLines = testCopy.split("\n");
@@ -98,6 +103,26 @@
     // which is not quite right, we should rather use the height of the line, considering ascent and descent
     crispBitmapText.drawText(ctx, testCopyLines[i], 0, Math.round((i+1) * crispTestTextMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontEmphasis);
   }
+  // add a div with the hash of the canvas
+  const divHash = document.createElement('div');
+  const crispTextHashString = ctx.getHashString();
+  divHash.textContent = 'hash: ' + crispTextHashString;
+  // add the hash to this run's hashes (thisRunsHashes) indexed on the font , fontEmphasis, fontSize, testCopy, pixelDensity
+  var hashKey = "fontFamily " + fontFamily + " // fontEmphasis " + fontEmphasis + " // fontSize " + fontSize + " // testCopyChoiceNumber " + testCopyChoiceNumber  + " // pixelDensity " + PIXEL_DENSITY;
+  thisRunsHashes[hashKey] = crispTextHashString;
+  // use the same key and check if the hash is the same as the one previously stored as reference in storedReferenceCrispTextRendersHashes
+  // if it is add to textContent " ✔ same hash as stored one", otherwise add " ✘ different hash from stored one"
+  if (storedReferenceCrispTextRendersHashes[hashKey] === crispTextHashString) {
+    divHash.textContent += " ✔ same hash as stored one";
+  }
+  else {
+    divHash.textContent += " ✘ different hash from stored one";
+  }
+
+  document.getElementById("testCopyCanvases").appendChild(divHash);
+
+  // add a newline
+  document.getElementById("testCopyCanvases").appendChild(document.createElement('br'));
 
 
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
@@ -134,6 +159,10 @@
     ctx2.fillText(testCopyLines[i], 0, Math.round((i+1) * testCopyMeasures_CSS_Px.height /  testCopyLines.length));
   }
 
+  // add a div with the hash of the canvas
+  const divHash2 = document.createElement('div');
+  divHash2.textContent = 'hash: ' + ctx2.getHashString();
+  document.getElementById("testCopyCanvases").appendChild(divHash2);
 
 
   // add another canvas at the top of the page and draw "xxxxxxxxxxxx" on it using the standard canvas text drawing methods
@@ -206,4 +235,10 @@
   // add to DOM after drawing the text so
   // the CSS property to make it crisp doesn't work
   document.getElementById("testCopyCanvases").appendChild(canvas3);
+
+  // add a div with the hash of the canvas
+  const divHash3 = document.createElement('div');
+  divHash3.textContent = 'hash: ' + ctx3.getHashString();
+  document.getElementById("testCopyCanvases").appendChild(divHash3);
+
 }
