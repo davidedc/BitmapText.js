@@ -15,7 +15,6 @@
   // put the test Text into an array of lines
   const testCopyLines = testCopy.split("\n");
 
-  //var testCopy = 'project does not take responsability for the accuracy of information provided by others.';
   // create a canvas just to find the text measures for the antialiased version (easy: don't add it to the DOM)
   const canvas4 = document.createElement('canvas');
   const ctx4 = canvas4.getContext('2d');
