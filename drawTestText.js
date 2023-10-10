@@ -1,6 +1,6 @@
   function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
   
-  // depending on the radio button selected, choose the test text form the
+  // depending on the radio button selected, choose the test text from the
   // testCopy1, kernKingCopyPart1, or kernKingCopyPart2 variables defined in test-copy.js
   // and put it in the testCopy variable
   let testCopy = '';
