@@ -247,6 +247,7 @@ class CrispBitmapGlyph {
     const onPixelsArray = this.getOnPixelsArray(canvas);
 
     // draw the bounding box of the text
+    // TODO you'd rather use the 2D array here
     const tightCanvasBox = this.getBoundingBox(canvas, onPixelsArray);
 
     const tightCanvas = document.createElement('canvas');
@@ -304,7 +305,7 @@ class CrispBitmapGlyph {
     const compressedPixels = this.compressPixels(onPixelsArrayBoundingBox).join(',');
 
 
-    // return the compressedPixels and the teo canvases
+    // return the compressedPixels and the two canvases
     return {
       compressedPixels,
       canvas,
