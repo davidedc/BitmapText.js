@@ -299,11 +299,11 @@ class CrispBitmapGlyph {
 
 
     // get the image data
-    const onPixelsArrayBoundingBox = this.getOnPixelsArray(tightCanvas);
-
+    // const onPixelsArrayBoundingBox = this.getOnPixelsArray(tightCanvas);
     // do a simple compression of the data by looking for runs of zeros and ones
-    const compressedPixels = this.compressPixels(onPixelsArrayBoundingBox).join(',');
+    //const compressedPixels = this.compressPixels(onPixelsArrayBoundingBox).join(',');
 
+    const compressedPixels = this.compressPixels(this.getOnPixelsInOrder(tightCanvas, createIndicesFromCanvas(tightCanvas))).join(',');
 
     // return the compressedPixels and the two canvases
     return {
@@ -400,18 +400,35 @@ class CrispBitmapGlyph {
     return pixels;
   }
 
-  // does a RLE (Run Length Encoding) compression of the pixels
-  // based on linear row visit of the pixels
-  compressPixels(pixels) {
+  // gets an array of coordinates and returns an array of booleans representing whether each pixel is on or not
+  getOnPixelsInOrder(canvas, coordinates) {
+    var ctx = canvas.getContext('2d');
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+    return coordinates.coordinates.map((coordinate) => {
+      const x = coordinate[0];
+      const y = coordinate[1];
+      // get the image data
+      const isOn = data[(y * canvas.width + x) * 4 + 3] !== 0;
+      return isOn;
+    });
+  }
+
+  // does a RLE (Run Length Encoding) compression of the pixels array
+  compressPixels(pixelsArray) {
     const compressedPixels = [];
-    let currentPixel = pixels[0];
+    
+    // you start assuming an off pixel.
+    // (you have to assume a starting pixel color)
+    let currentPixel = false;
+
     let currentPixelCount = 0;
-    for (let i = 0; i < pixels.length; i++) {
-      if (currentPixel === pixels[i]) {
+    for (let i = 0; i < pixelsArray.length; i++) {
+      if (currentPixel === pixelsArray[i]) {
         currentPixelCount++;
       } else {
         compressedPixels.push(currentPixelCount);
-        currentPixel = pixels[i];
+        currentPixel = pixelsArray[i];
         currentPixelCount = 1;
       }
     }
