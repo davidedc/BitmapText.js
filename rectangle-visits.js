@@ -72,10 +72,10 @@ function testAssertions(sourceCoordinatesArray, newCoordinates) {
 // diagonalStripesRemap means to visit the rectangle in diagonal stripes
 // 
 // diagonalStripesRemap i.e. start from top left corner and go up to the top right diagonally until the column is within the column range of the rectangle
-// then move down one row and repeat (until you reach row max(width, height) - 1).
-// Note that with this simple system we cover many pixels that are outside the rectangle, we simply ignore them.
+// then move down one row and repeat (until you reach row width + height - 1).
+// Note that with this simple system we cover many pixels that are outside the rectangle, we simply ignore those.
 //
-//  for each row j from 0 to (max(width, height) - 1):
+//  for each row j from [0, width + height - 2]:
 //    // start from the leftmost column and go up right until the column is within the column range of the rectangle
 //    for each column k from 0 to width - 1:
 //      // accessing [j-k,k] here is what makes us go diagonally to the top right
@@ -84,10 +84,10 @@ function testAssertions(sourceCoordinatesArray, newCoordinates) {
 //  then use the diagonalStripesRemap to find the corresponding element from the source sourceCoordinatesArray
 function diagonalStripesRemap(width, height, sourceCoordinatesArray) {
     var diagonalStripesScan = [];
-    var maxRow = Math.max(width, height) - 1;
+    var maxRow = width + height - 1;
 
     // for each row j from 0 to maxRow
-    for (var j = 0; j <= maxRow; j++) {
+    for (var j = 0; j < maxRow; j++) {
         // for each column k from 0 to width - 1
         for (var k = 0; k < width; k++) {
             // if [j-k,k] is inside the rectangle (check both coordinates are >= 0 and < width and height)
