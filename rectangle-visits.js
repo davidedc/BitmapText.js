@@ -27,7 +27,7 @@
 // mentally.
 //
 // NOTE 3: some remappings inherently create a 1D array of coordinates
-// rather than having a 2D geometric sense, e.g. spiralInsideOutRemap
+// rather than having a 2D geometric sense, e.g. spiralOutsideInRemap
 // and hilbert-visit. In these cases, the width and height of the
 // resulting matrix are arbitrary and there is not much sense to
 // do a further geometric visit to those e.g. 90 degrees rotation
@@ -52,20 +52,20 @@ function createIndicesFromCanvas(canvas) {
 
 function testAssertions(sourceCoordinatesArray, newCoordinates) {
     // assert that the count of elements in sourceCoordinatesArray is the same as the count of elements in newCoordinates
-    assert(sourceCoordinatesArray.length == newCoordinates.length);
+    console.assert(sourceCoordinatesArray.length == newCoordinates.length);
 
     // assert that all the elements in sourceCoordinatesArray are in newCoordinates
     for (var i = 0; i < sourceCoordinatesArray.length; i++) {
         // note that we use the same exact elements of sourceCoordinatesArray
         // so we can use includes as the elements respond well to === as they are the _same_ elements
-        assert(newCoordinates.includes(sourceCoordinatesArray[i]));
+        console.assert(newCoordinates.includes(sourceCoordinatesArray[i]));
     }
     
     // assert that all the elements in newCoordinates as in sourceCoordinatesArray
     for (var i = 0; i < newCoordinates.length; i++) {
         // note that we use the same exact elements of sourceCoordinatesArray
         // so we can use includes as the elements respond well to === as they are the _same_ elements
-        assert(sourceCoordinatesArray.includes(newCoordinates[i]));
+        console.assert(sourceCoordinatesArray.includes(newCoordinates[i]));
     }
 }
 
@@ -90,10 +90,10 @@ function diagonalStripesRemap(width, height, sourceCoordinatesArray) {
     for (var j = 0; j < maxRow; j++) {
         // for each column k from 0 to width - 1
         for (var k = 0; k < width; k++) {
-            // if [j-k,k] is inside the rectangle (check both coordinates are >= 0 and < width and height)
+            // if [k, j - k] is inside the rectangle (check both coordinates are >= 0 and < width and height)
             if ((j - k >= 0) && (j - k < height) && (k >= 0) && (k < width)) {
-                // add [j-k,k] to the diagonalStripesScan array
-                diagonalStripesScan.push([j - k, k]);
+                // add [k,j-k] to the diagonalStripesScan array
+                diagonalStripesScan.push([k, j - k]);
             }
         }
     }
@@ -109,7 +109,7 @@ function diagonalStripesRemap(width, height, sourceCoordinatesArray) {
 
     testAssertions(sourceCoordinatesArray, newCoordinates);
 
-    return {width, height, newCoordinates};
+    return {width, height, coordinates: newCoordinates};
 }
 
 
@@ -125,32 +125,50 @@ function reverseRemap(width, height, sourceCoordinatesArray) {
 
     testAssertions(sourceCoordinatesArray, newCoordinates);
 
-    return {width, height, newCoordinates};
+    return {width, height, coordinates: newCoordinates};
 }
 
 
 
 // spiral scan inside out of rectangle of size (width x height)
-function spiralInsideOutRemap(width, height, sourceCoordinatesArray) {
-    var spiralScan = [];
-    var x = 0;
-    var y = 0;
-    var dx = 0;
-    var dy = -1;
-    var t = Math.max(width, height);
-    var maxI = t * t;
-    for (var i = 0; i < maxI; i++) {
-        if ((-width / 2 <= x) && (x <= width / 2) && (-height / 2 <= y) && (y <= height / 2)) {
-            spiralScan.push([x, y]);
+function spiralOutsideInRemap(width, height, sourceCoordinatesArray) {
+
+    let row_start = 0;
+    let row_end = height - 1;
+    let col_start = 0;
+    let col_end = width - 1;
+    const spiralScan = [];
+  
+    while (row_start <= row_end && col_start <= col_end) {
+      // Traverse right
+      for (let i = col_start; i <= col_end; i++) {
+        spiralScan.push([i, row_start]);
+      }
+      row_start++;
+  
+      // Traverse down
+      for (let i = row_start; i <= row_end; i++) {
+        spiralScan.push([col_end,i]);
+      }
+      col_end--;
+  
+      // Traverse left
+      if (row_start <= row_end) {
+        for (let i = col_end; i >= col_start; i--) {
+          spiralScan.push([i,row_end]);
         }
-        if ((x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y))) {
-            t = dx;
-            dx = -dy;
-            dy = t;
+        row_end--;
+      }
+  
+      // Traverse up
+      if (col_start <= col_end) {
+        for (let i = row_end; i >= row_start; i--) {
+          spiralScan.push([col_start,i]);
         }
-        x += dx;
-        y += dy;
+        col_start++;
+      }
     }
+  
     // now use the spiralScan to find the corresponding element from the source sourceCoordinatesArray
     // i.e. for each coordinate in spiralScan, find the corresponding coordinate in sourceCoordinatesArray
     var newCoordinates = [];
@@ -164,8 +182,87 @@ function spiralInsideOutRemap(width, height, sourceCoordinatesArray) {
 
     // note that size of the resulting matrix here doesn't make much sense
     // i.e. it's arbitrary
-    return {width, height, newCoordinates};
+    return {width, height, coordinates: newCoordinates};
 }
+
+// this one simply alternates the columns from the left and from the right
+// starting from the first column, then the last column, then the second column, then the second last column, etc.
+function foldRightHalfOnLeftHalfRemap(width, height, sourceCoordinatesArray) {
+    var foldRightHalfOnLeftHalfScan = [];
+
+    // for each row
+    for (var y = 0; y < height; y++) {
+        // scan the leftColumnIndex to the right
+        // and the rightColumnIndex to the left
+        // until they meet in the middle
+        var leftColumnIndex = -1;
+        var rightColumnIndex = width;    
+        while (true) {
+            leftColumnIndex++;
+            if (leftColumnIndex >= rightColumnIndex)
+                break;
+            foldRightHalfOnLeftHalfScan.push([leftColumnIndex, y]);
+
+            rightColumnIndex--;
+            if (leftColumnIndex >= rightColumnIndex)
+                break;
+            foldRightHalfOnLeftHalfScan.push([rightColumnIndex, y]);
+        }
+    }
+
+    // now use the foldRightHalfOnLeftHalfScan to find the corresponding element from the source sourceCoordinatesArray
+    // i.e. for each coordinate in foldRightHalfOnLeftHalfScan, find the corresponding coordinate in sourceCoordinatesArray
+    var newCoordinates = [];
+    for (var i = 0; i < foldRightHalfOnLeftHalfScan.length; i++) {
+        var x = foldRightHalfOnLeftHalfScan[i][0];
+        var y = foldRightHalfOnLeftHalfScan[i][1];
+        newCoordinates.push(sourceCoordinatesArray[x + y * width]);
+    }
+    
+
+    testAssertions(sourceCoordinatesArray, newCoordinates);
+
+    return {width, height, coordinates: newCoordinates};
+}
+
+// this one is similar to the foldRightHalfOnLeftHalfRemap and simply alternates the rows from the top and from the bottom
+// starting from the first row, then the last row, then the second row, then the second last row, etc.
+function foldBottomHalfOnTopHalfRemap(width, height, sourceCoordinatesArray) {
+    var topRowIndex = -1;
+    var bottomRowIndex = height;
+    var foldBottomHalfOnTopHalfScan = [];
+
+    // for each row, if the row is odd pick the topRowIndex and increment it
+    // if the row is even pick the bottomRowIndex and decrement it
+    // until they meet in the middle
+    while (true) {
+        topRowIndex++;
+        if (topRowIndex >= bottomRowIndex)
+            break;
+        for (var x = 0; x < width; x++)
+            foldBottomHalfOnTopHalfScan.push([x, topRowIndex]);
+
+        bottomRowIndex--;
+        if (topRowIndex >= bottomRowIndex)
+            break;
+        for (var x = 0; x < width; x++)
+            foldBottomHalfOnTopHalfScan.push([x, bottomRowIndex]);
+    }
+
+    // now use the foldBottomHalfOnTopHalfScan to find the corresponding element from the source sourceCoordinatesArray
+    // i.e. for each coordinate in foldBottomHalfOnTopHalfScan, find the corresponding coordinate in sourceCoordinatesArray
+    var newCoordinates = [];
+    for (var i = 0; i < foldBottomHalfOnTopHalfScan.length; i++) {
+        var x = foldBottomHalfOnTopHalfScan[i][0];
+        var y = foldBottomHalfOnTopHalfScan[i][1];
+        newCoordinates.push(sourceCoordinatesArray[x + y * width]);
+    }
+
+    testAssertions(sourceCoordinatesArray, newCoordinates);
+
+    return {width, height, coordinates: newCoordinates};
+}
+    
 
 
 // bustrophedic modification of a scan
@@ -197,7 +294,7 @@ function bustrophedicHorizontalRemap(width, height, sourceCoordinatesArray) {
 
     testAssertions(sourceCoordinatesArray, newCoordinates);
 
-    return {width, height, newCoordinates};
+    return {width, height, coordinates: newCoordinates};
 }
 
 // horizontal flip modification of a scan
@@ -223,7 +320,7 @@ function horizontalFlipRemap(width, height, sourceCoordinatesArray) {
 
     testAssertions(sourceCoordinatesArray, newCoordinates);
 
-    return {width, height, newCoordinates};
+    return {width, height, coordinates: newCoordinates};
 }
 
 // vertical flip modification of a scan
@@ -249,7 +346,7 @@ function verticalFlipRemap(width, height, sourceCoordinatesArray) {
 
     testAssertions(sourceCoordinatesArray, newCoordinates);
 
-    return {width, height, newCoordinates};
+    return {width, height, coordinates: newCoordinates};
 }
 
 
@@ -282,7 +379,7 @@ function turn90DegreesRightRemap(width, height, sourceCoordinatesArray) {
     testAssertions(sourceCoordinatesArray, newCoordinates);
 
     // note the swap of the dimensions
-    return {width: height, height: width, newCoordinates};
+    return {width: height, height: width, coordinates: newCoordinates};
 }
 
 
@@ -369,7 +466,7 @@ function gilbert2dRemap(width, height, sourceCoordinatesArray) {
     
     // collect a standard hilbert visit
     var hilbertScan = [];
-    for (const [x, y] of gilbert2d(10, 11)) {
+    for (const [x, y] of gilbert2d(width, height)) {
         hilbertScan.push([x, y]);
     }
 
@@ -384,5 +481,5 @@ function gilbert2dRemap(width, height, sourceCoordinatesArray) {
 
     testAssertions(sourceCoordinatesArray, newCoordinates);
 
-    return {width, height, newCoordinates};
+    return {width, height, coordinates: newCoordinates};
 }
