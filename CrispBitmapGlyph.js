@@ -309,18 +309,7 @@ class CrispBitmapGlyph {
 
     var NUM_REMAPS_STAGES = 3;
     var REMAPS_COUNT = 10;
-    // create an array "remapsCombinations" containing all possible arrays of NUM_REMAPS_STAGES integers from 0 to REMAPS_COUNT
-    var remapsCombinations = [];
-    for (let i = 0; i < Math.pow(REMAPS_COUNT, NUM_REMAPS_STAGES); i++) {
-      remapsCombinations.push([]);
-    }
-
-    // print all possible sequences of NUM_REMAPS_STAGES integers from 0 to REMAPS_COUNT
-    for (let i = 0; i < Math.pow(REMAPS_COUNT, NUM_REMAPS_STAGES); i++) {
-      for (let j = 0; j < NUM_REMAPS_STAGES; j++) {
-        remapsCombinations[i].push(Math.floor(i / Math.pow(REMAPS_COUNT, j)) % REMAPS_COUNT);
-      }
-    }
+    var REMAPS_COMBINATIONS_COUNT = Math.pow(REMAPS_COUNT, NUM_REMAPS_STAGES);
 
 
     var remapIndices = function(indices, remapID) {
@@ -352,22 +341,54 @@ class CrispBitmapGlyph {
     }
 
 
-    // for each possible remaps combination in remapsCombinations
+    var baseIndexes = createIndicesFromCanvas(tightCanvas);
+    var onPixelsInOrder = this.getOnPixelsInOrder(tightCanvas, baseIndexes);
+    var compressedPixels = this.compressPixels(onPixelsInOrder).join(',');
+    var baselineCompression = "*" + compressedPixels;
+
     var bestCompression = null;
     var bestIndex = null;
     var bestRemapCombination = null;
     var bestOnPixelsInOrder = null;
-    for (let i = 0; i < remapsCombinations.length; i++) {
-      var indexes = createIndicesFromCanvas(tightCanvas);
-      var currentRemapCombination = remapsCombinations[i];
+
+    // for each possible remap combination
+    for (let i = 0; i < REMAPS_COMBINATIONS_COUNT; i++) {
+      var indexes = baseIndexes;
+
+      // create a remap combination i.e. an array of NUM_REMAPS_STAGES numbers between 0 and REMAPS_COUNT
+      // the easy way to generate that is to
+      // 1. map the number between 0 and REMAPS_COMBINATIONS_COUNT
+      // to the base REMAPS_COUNT by using the toString method with base REMAPS_COUNT
+      // 2. pad the string with zeroes to the left to make it NUM_REMAPS_STAGES long
+      // 3. split the string into an array of characters
+      // 4. map each character to a number
+      // from 0 to REMAPS_COUNT - 1
+      //
+      // -----------------------------------
+      //
+      // 1. map the number between 0 and REMAPS_COMBINATIONS_COUNT
+      // to the base REMAPS_COUNT by using the toString method with base REMAPS_COUNT
+      var currentRemapCombinationString = i.toString(REMAPS_COUNT);
+      // 2. pad the string with zeroes to the left to make it NUM_REMAPS_STAGES long
+      while (currentRemapCombinationString.length < NUM_REMAPS_STAGES) {
+        currentRemapCombinationString = "0" + currentRemapCombinationString;
+      }
+      // 3. split the string into an array of characters
+      // 4. map each character to a number
+      // from 0 to REMAPS_COUNT - 1
+      var currentRemapCombination = currentRemapCombinationString.split('').map((char) => {
+        return parseInt(char, REMAPS_COUNT);
+      });
+
+
       // for each remap stage
       for (let j = 0; j < NUM_REMAPS_STAGES; j++) {
         // remap the indices
         indexes = remapIndices(indexes, currentRemapCombination[j]);
       }
       // compress the pixels
-      var onPixelsInOrder = this.getOnPixelsInOrder(tightCanvas, indexes);
-      const compressedPixels = this.compressPixels(onPixelsInOrder).join(',');
+      onPixelsInOrder = this.getOnPixelsInOrder(tightCanvas, indexes);
+      compressedPixels = this.compressPixels(onPixelsInOrder).join(',');
       // make a version of the currentRemapCombination removing any zeroes in it
       var currentRemapCombinationNoZeroes = [];
       for (let j = 0; j < currentRemapCombination.length; j++) {
@@ -376,7 +397,7 @@ class CrispBitmapGlyph {
         }
       }
       // pre-pend the compressedPixels string with a string version of the currentRemapCombinationNoZeroes
-      var compressedPixelsWithHeader = currentRemapCombinationNoZeroes.join(',') + '//' + compressedPixels;
+      var compressedPixelsWithHeader = currentRemapCombinationNoZeroes.join(',') + '*' + compressedPixels;
 
       // if currentRemapCombinationNoZeroes contains 8 then print out to console the compressedPixelsWithHeader
       //if (currentRemapCombinationNoZeroes.indexOf(8) !== -1) {
@@ -437,6 +458,13 @@ class CrispBitmapGlyph {
 
     }    
 
+    // append number that shows the best compression vs the baselineCompression as % improvement
+    const percentageImprovementDiv = document.createElement('div');
+    // add the lengths of the two strings
+    percentageImprovementDiv.textContent = "best compression: " + bestCompression.length + " vs baseline compression: " + baselineCompression.length + " ";
+    // add the percentage improvement
+    percentageImprovementDiv.textContent += Math.round(100 * (baselineCompression.length - bestCompression.length) / baselineCompression.length) + "%";
+    document.body.appendChild(percentageImprovementDiv);
 
 
     /*
