@@ -14,7 +14,7 @@ class CrispBitmapGlyph {
     this.letterMeasures = returned.letterMeasures;
 
     this.displayCanvasesAndData();
-    debugger
+    //debugger
   }
 
   displayCanvasesAndData() {
@@ -33,7 +33,7 @@ class CrispBitmapGlyph {
   }
 
   drawBoundingBox() {
-    var ctx = this.canvas.getContext('2d');
+    const ctx = this.canvas.getContext('2d');
     ctx.strokeStyle = 'red';
     ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x / PIXEL_DENSITY, this.tightCanvasBox.topLeftCorner.y / PIXEL_DENSITY, (this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY, (this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y) / PIXEL_DENSITY);
   }
@@ -50,8 +50,8 @@ class CrispBitmapGlyph {
       return 0;
     }
   
-    for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
-      const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
+    for (const element of specs[fontFamily][fontEmphasis][correctionKey]) {
+      const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) return 0;
 
       // check if the passed pixelDensity is the same as the one in the correctionEntry
@@ -60,8 +60,8 @@ class CrispBitmapGlyph {
       if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) continue;
 
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
-        for (let j = 0; j < correctionEntry.lettersAndTheirCorrections.length; j++) {
-          const charAndOffset = correctionEntry.lettersAndTheirCorrections[j];
+        for (const element of correctionEntry.lettersAndTheirCorrections) {
+          const charAndOffset = element;
           if (charAndOffset.string.indexOf(letter) !== -1) {
             return charAndOffset.adjustment;
           }
@@ -83,8 +83,8 @@ class CrispBitmapGlyph {
       return null;
     }
   
-    for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
-      const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
+    for (const element of specs[fontFamily][fontEmphasis][correctionKey]) {
+      const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
         return correctionEntry.correction;
@@ -104,18 +104,18 @@ class CrispBitmapGlyph {
       return null;
     }
   
-    for (let i = 0; i < specs[fontFamily][fontEmphasis][correctionKey].length; i++) {
-      const correctionEntry = specs[fontFamily][fontEmphasis][correctionKey][i];
+    for (const element of specs[fontFamily][fontEmphasis][correctionKey]) {
+      const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
-        for (let j = 0; j < correctionEntry.sizeBracketAndItsCorrection.length; j++) {
+        for (const element of correctionEntry.sizeBracketAndItsCorrection) {
           // get the two floats representing the size range
           // from something like:
           //    { kernG: 0, kernLE: 0.145, adjustment: -1 }
-          const sizeRangeLower = correctionEntry.sizeBracketAndItsCorrection[j].kernLE;
-          const sizeRangeUpper = correctionEntry.sizeBracketAndItsCorrection[j].kernG;
+          const sizeRangeLower = element.kernLE;
+          const sizeRangeUpper = element.kernG;
           if (sizeRangeLower < kerning && sizeRangeUpper >= kerning) {
-            return correctionEntry.sizeBracketAndItsCorrection[j].adjustment;
+            return element.adjustment;
           }
         }
       }
@@ -142,12 +142,12 @@ class CrispBitmapGlyph {
     ctx.font = this.fontEmphasis + " " + this.fontSize + 'px ' + this.fontFamily;
 
     // size the canvas so it fits the this.letter
-    var letterMeasuresOrig = ctx.measureText(this.letter);
+    const letterMeasuresOrig = ctx.measureText(this.letter);
 
     // let's make a copy of letterMeasuresOrig into letterMeasures
     // so we can modify it
-    var letterMeasures = {};
-    for (var key in letterMeasuresOrig) {
+    let letterMeasures = {};
+    for (let key in letterMeasuresOrig) {
       letterMeasures[key] = letterMeasuresOrig[key];
     }
 
@@ -203,7 +203,7 @@ class CrispBitmapGlyph {
     // n pixel more to the right in the mini canvas
     const cropLeftCorrection_CSS_Px = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "CropLeft correction px", PIXEL_DENSITY);
 
-    var canvasPixelsWidth = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
+    const canvasPixelsWidth = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
     canvas.style.width = canvasPixelsWidth + 'px';
     canvas.width = canvasPixelsWidth * PIXEL_DENSITY;
 
@@ -218,7 +218,7 @@ class CrispBitmapGlyph {
 
     document.body.appendChild(div);
 
-    var canvasPixelsHeight = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);;
+    const canvasPixelsHeight = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);;
     canvas.style.height = canvasPixelsHeight + 'px';
     canvas.height = canvasPixelsHeight * PIXEL_DENSITY;
 
@@ -258,11 +258,11 @@ class CrispBitmapGlyph {
     }
 
     // copy the bounding box to a new canvas and add it to the page
-    var tightCanvasPixelsWidth = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
+    const tightCanvasPixelsWidth = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
     tightCanvas.style.width = tightCanvasPixelsWidth / PIXEL_DENSITY + 'px';
     tightCanvas.width = tightCanvasPixelsWidth;
 
-    var tightCanvasPixelsHeight = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
+    const tightCanvasPixelsHeight = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
     tightCanvas.style.height = tightCanvasPixelsHeight / PIXEL_DENSITY + 'px';
     tightCanvas.height = tightCanvasPixelsHeight;
 
@@ -515,7 +515,6 @@ class CrispBitmapGlyph {
 
   // function that gets the bounding box of the text and its position, by looking at the pixels
   getBoundingBox(canvas, onPixelsArray) {
-
     // find the top left and bottom right corners of the text
     let topLeftCorner = null;
     let bottomRightCorner = null;
@@ -553,7 +552,7 @@ class CrispBitmapGlyph {
 
   // takes the canvas and returns an array of booleans representing whether each pixel is on or not
   getOnPixels2DArray(canvas) {
-    var ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
@@ -578,7 +577,7 @@ class CrispBitmapGlyph {
 
 
   getOnPixelsArray(canvas) {
-    var ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
@@ -599,8 +598,8 @@ class CrispBitmapGlyph {
 
   // gets an array of coordinates and returns an array of booleans representing whether each pixel is on or not
   getOnPixelsInOrder(canvas, coordinates) {
-    var ctx = canvas.getContext('2d');
-    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const ctx = canvas.getContext('2d');
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
     return coordinates.coordinates.map((coordinate) => {
       const x = coordinate[0];
