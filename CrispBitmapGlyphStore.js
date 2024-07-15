@@ -21,7 +21,7 @@ class CrispBitmapGlyphStore {
   }
 
   getGlyph(fontFamily, fontSize, letter, fontEmphasis) {
-    if (this.glyphs[fontFamily] && this.glyphs[fontFamily][fontEmphasis] && this.glyphs[fontFamily][fontEmphasis][fontSize] && this.glyphs[fontFamily][fontEmphasis][fontSize][letter]) {
+    if (this.glyphs[fontFamily]?.[fontEmphasis]?.[fontSize]?.[letter]) {
       return this.glyphs[fontFamily][fontEmphasis][fontSize][letter];
     }
     return null;
