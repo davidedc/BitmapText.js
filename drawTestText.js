@@ -7,6 +7,10 @@ function createCanvas(width, height, pixelDensity = PIXEL_DENSITY) {
   return canvas;
 }
 
+function addElementToDOM(element, parentId = "testCopyCanvases") {
+  document.getElementById(parentId).appendChild(element);
+}
+
 function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
   let testCopy = '';
   let testCopyChoiceNumber = 0;
@@ -38,7 +42,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   console.log('testCopyMeasuresCSSPx.height: ' + testCopyMeasuresCSSPx.height);
 
   const canvas5 = createCanvas(1, 1);
-  document.getElementById("testCopyCanvases").appendChild(canvas5);
+  addElementToDOM(canvas5);
   const ctx5 = canvas5.getContext('2d');
   ctx5.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
 
@@ -54,7 +58,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
 
   const div = document.createElement('div');
   div.textContent = 'Crisp Bitmap Text Drawing:';
-  document.getElementById("testCopyCanvases").appendChild(div);
+  addElementToDOM(div);
   
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
 
@@ -67,7 +71,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   }
 
   const canvas = createCanvas(crispTestTextMeasures_CSS_Px.width, crispTestTextMeasures_CSS_Px.height);
-  document.getElementById("testCopyCanvases").appendChild(canvas);
+  addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -89,31 +93,31 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
     divHash.textContent += " ✘ different hash from stored one";
   }
 
-  document.getElementById("testCopyCanvases").appendChild(divHash);
-  document.getElementById("testCopyCanvases").appendChild(document.createElement('br'));
+  addElementToDOM(divHash);
+  addElementToDOM(document.createElement('br'));
 
   const div4 = document.createElement('div');
   div4.textContent = "Glyphs' Sheet:";
-  document.getElementById("testCopyCanvases").appendChild(div4);
+  addElementToDOM(div4);
   
   const canvas4GlyphSheet = crispBitmapGlyphStore.getGlyphsSheet(fontFamily, fontSize, fontEmphasis);
   if (canvas4GlyphSheet) {
-    document.getElementById("testCopyCanvases").appendChild(canvas4GlyphSheet);
+    addElementToDOM(canvas4GlyphSheet);
   } else {
     const div4GlyphSheet = document.createElement('div');
     div4GlyphSheet.textContent = 'No glyph sheet available for this font family, font size and font emphasis.';
-    document.getElementById("testCopyCanvases").appendChild(div4GlyphSheet);
+    addElementToDOM(div4GlyphSheet);
   }
 
   const div2 = document.createElement('div');
   div2.textContent = 'Standard Canvas Text Drawing with no smoothing:';
-  document.getElementById("testCopyCanvases").appendChild(div2);
+  addElementToDOM(div2);
 
   const canvas2Width = Math.round(testCopyMeasures_CSS_Px.width);
   const canvas2Height = Math.round(testCopyMeasures_CSS_Px.height);
   const canvas2 = createCanvas(canvas2Width, canvas2Height);
 
-  document.getElementById("testCopyCanvases").appendChild(canvas2);
+  addElementToDOM(canvas2);
   const ctx2 = canvas2.getContext('2d');
   ctx2.scale(PIXEL_DENSITY, PIXEL_DENSITY);
   ctx2.fillStyle = 'white';
@@ -128,17 +132,17 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
 
   const divHash2 = document.createElement('div');
   divHash2.textContent = 'hash: ' + ctx2.getHashString();
-  document.getElementById("testCopyCanvases").appendChild(divHash2);
+  addElementToDOM(divHash2);
 
   const div6 = document.createElement('div');
   div6.textContent = 'Standard Canvas Text Drawing with no smoothing - thin characters to see monospaced fonts:';
-  document.getElementById("testCopyCanvases").appendChild(div6);
+  addElementToDOM(div6);
 
   const canvas6Width = Math.round(testCopyMeasures_CSS_Px.width);
   const canvas6Height = Math.round(testCopyMeasures_CSS_Px.height / testCopyLines.length);
   const canvas6 = createCanvas(canvas6Width, canvas6Height);
 
-  document.getElementById("testCopyCanvases").appendChild(canvas6);
+  addElementToDOM(canvas6);
   const ctx6 = canvas6.getContext('2d');
   ctx6.scale(PIXEL_DENSITY, PIXEL_DENSITY);
   ctx6.fillStyle = 'white';
@@ -150,7 +154,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
 
   const div3 = document.createElement('div');
   div3.textContent = 'Standard Canvas Text Drawing with smoothing:';
-  document.getElementById("testCopyCanvases").appendChild(div3);
+  addElementToDOM(div3);
 
   const canvas3Width = Math.round(testCopyMeasuresCSSPx.width);
   const canvas3Height = Math.round(testCopyMeasuresCSSPx.height);
@@ -168,9 +172,9 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
     ctx3.fillText(testCopyLines[i], 0, Math.round((i+1) * testCopyMeasuresCSSPx.height / testCopyLines.length));
   }
 
-  document.getElementById("testCopyCanvases").appendChild(canvas3);
+  addElementToDOM(canvas3);
 
   const divHash3 = document.createElement('div');
   divHash3.textContent = 'hash: ' + ctx3.getHashString();
-  document.getElementById("testCopyCanvases").appendChild(divHash3);
+  addElementToDOM(divHash3);
 }
