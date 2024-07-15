@@ -123,6 +123,23 @@
   document.getElementById("testCopyCanvases").appendChild(document.createElement('br'));
 
 
+  // add a canvas with the glyph sheet for the font family, font size and font emphasis
+  // add some text above the canvas to say what it is
+  const div4 = document.createElement('div');
+  div4.textContent = "Glyphs' Sheet:";
+  document.getElementById("testCopyCanvases").appendChild(div4);
+  debugger
+  const canvas4GlyphSheet = crispBitmapGlyphStore.getGlyphsSheet(fontFamily, fontSize, fontEmphasis);
+  if (canvas4GlyphSheet) {
+    document.getElementById("testCopyCanvases").appendChild(canvas4GlyphSheet);
+  } else {
+    const div4GlyphSheet = document.createElement('div');
+    div4GlyphSheet.textContent = 'No glyph sheet available for this font family, font size and font emphasis.';
+    document.getElementById("testCopyCanvases").appendChild(div4GlyphSheet);
+  }
+
+
+
   // add another canvas at the top of the page and draw "Hello World" on it using the standard canvas text drawing methods
   // add some text above the canvas to say what it is
   const div2 = document.createElement('div');
