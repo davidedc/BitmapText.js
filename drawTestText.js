@@ -98,17 +98,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
     crispBitmapText.drawText(ctx, testCopyLines[i], 0, Math.round((i+1) * crispTestTextMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontEmphasis);
   }
 
-  const crispTextHashString = ctx.getHashString();
-  const hashKey = `fontFamily ${fontFamily} // fontEmphasis ${fontEmphasis} // fontSize ${fontSize} // testCopyChoiceNumber ${testCopyChoiceNumber} // pixelDensity ${PIXEL_DENSITY}`;
-  thisRunsHashes[hashKey] = crispTextHashString;
-  
-  let hashText = 'hash: ' + crispTextHashString;
-  if (storedReferenceCrispTextRendersHashes[hashKey] === crispTextHashString) {
-    hashText += " ✔ same hash as stored one";
-  } else {
-    hashText += " ✘ different hash from stored one";
-  }
-  addElementToDOM(createDivWithText(hashText));
+  addHashInfoWithMatch(ctx, fontFamily, fontEmphasis, fontSize, testCopyChoiceNumber);
   addElementToDOM(document.createElement('br'));
 
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
@@ -155,4 +145,18 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   addElementToDOM(canvas3);
 
   addElementToDOM(createDivWithText('hash: ' + ctx3.getHashString()));
+}
+
+function addHashInfoWithMatch(ctx, fontFamily, fontEmphasis, fontSize, testCopyChoiceNumber) {
+  const crispTextHashString = ctx.getHashString();
+  const hashKey = `fontFamily ${fontFamily} // fontEmphasis ${fontEmphasis} // fontSize ${fontSize} // testCopyChoiceNumber ${testCopyChoiceNumber} // pixelDensity ${PIXEL_DENSITY}`;
+  thisRunsHashes[hashKey] = crispTextHashString;
+
+  let hashText = 'hash: ' + crispTextHashString;
+  if (storedReferenceCrispTextRendersHashes[hashKey] === crispTextHashString) {
+    hashText += " ✔ same hash as stored one";
+  } else {
+    hashText += " ✘ different hash from stored one";
+  }
+  addElementToDOM(createDivWithText(hashText));
 }
