@@ -5,9 +5,8 @@ class CrispBitmapGlyph {
     this.fontFamily = fontFamily;
     this.fontEmphasis = fontEmphasis;
 
-    var returned = this.createCanvasesAndCompressedPixels();
+    let returned = this.createCanvases();
     // unpack the returned stuff into class properties
-    this.compressedPixels = returned.bestCompression;
     this.canvas = returned.canvas;
     this.tightCanvas = returned.tightCanvas;
     this.tightCanvasBox = returned.tightCanvasBox;
@@ -27,9 +26,6 @@ class CrispBitmapGlyph {
     }
     // this.drawBoundingBox();
     document.body.appendChild(this.tightCanvas);
-    const div = document.createElement('div');
-    div.textContent = this.compressedPixels;
-    document.body.appendChild(div);
   }
 
   drawBoundingBox() {
@@ -274,243 +270,18 @@ class CrispBitmapGlyph {
     return { tightCanvas, tightCanvasBox };
   }
 
-  createCanvasesAndCompressedPixels() {
-    var returned = this.createCanvasWithLetter();
-    var canvas = returned.canvas;
-    var letterMeasures = returned.letterMeasures;
+  createCanvases() {
+    const { canvas, letterMeasures } = this.createCanvasWithLetter();
 
-    const ctx = canvas.getContext('2d');
-
-    var returned = this.getBoundingBoxOfOnPixels(canvas);
-    //if (this.letter === ' ') {
-    //  console.log("for space:");
-    //  console.dir(returned);
-    //}
-    if (returned.tightCanvas === null) {
-      return { compressedPixels: null, canvas, tightCanvas: null, tightCanvasBox: null, letterMeasures };
-    }
-
-    var tightCanvas = returned.tightCanvas;
-    var tightCanvasData = tightCanvas.getContext('2d').getImageData(0, 0, tightCanvas.width, tightCanvas.height).data;
-    var tightCanvasBox = returned.tightCanvasBox;
+    const { tightCanvas, tightCanvasBox } = this.getBoundingBoxOfOnPixels(canvas);
+    if (tightCanvas === null)
+      return { canvas, tightCanvas: null, tightCanvasBox: null, letterMeasures };
 
     const div = document.createElement('div');
     div.textContent = "tightCanvasBox width in px, phys: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) + " css: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY; 
     document.body.appendChild(div);
 
-
-
-    // get the image data
-    // const onPixelsArrayBoundingBox = this.getOnPixelsArray(tightCanvas);
-    // do a simple compression of the data by looking for runs of zeros and ones
-    //const compressedPixels = this.compressPixels(onPixelsArrayBoundingBox).join(',');
-
-    //const compressedPixels = this.compressPixels(this.getOnPixelsInOrder(tightCanvas, createIndicesFromCanvas(tightCanvas))).join(',');
-
-    var NUM_REMAPS_STAGES = 3;
-    var REMAPS_COUNT = 10;
-    var REMAPS_COMBINATIONS_COUNT = Math.pow(REMAPS_COUNT, NUM_REMAPS_STAGES);
-
-
-    var remapIndices = function(indices, remapID) {
-      // switch on the remap, 0 does nothing, 1 does a diagonalStripesRemap
-      switch (remapID) {
-        case 0:
-          return indices;
-        case 1:
-          return diagonalStripesRemap(indices.width, indices.height, indices.coordinates);
-        case 2:
-          return spiralOutsideInRemap(indices.width, indices.height, indices.coordinates);
-        case 3:
-          return bustrophedicHorizontalRemap(indices.width, indices.height, indices.coordinates);
-        case 4:
-          return horizontalFlipRemap(indices.width, indices.height, indices.coordinates);
-        case 5:
-          return verticalFlipRemap(indices.width, indices.height, indices.coordinates);
-        case 6:
-          return turn90DegreesRightRemap(indices.width, indices.height, indices.coordinates);
-        case 7:
-          return gilbert2dRemap(indices.width, indices.height, indices.coordinates);
-        case 8:
-          return foldRightHalfOnLeftHalfRemap(indices.width, indices.height, indices.coordinates);
-        case 9:
-          return foldBottomHalfOnTopHalfRemap(indices.width, indices.height, indices.coordinates);
-        default:
-          debugger
-      }
-    }
-
-
-    var baseIndexes = createIndicesFromCanvas(tightCanvas);
-    var onPixelsInOrder = this.getOnPixelsInOrder(tightCanvas, baseIndexes);
-    var compressedPixels = this.compressPixels(onPixelsInOrder).join(',');
-    var baselineCompression = "*" + compressedPixels;
-
-    var bestCompression = null;
-    var bestIndex = null;
-    var bestRemapCombination = null;
-    var bestOnPixelsInOrder = null;
-
-    // for each possible remap combination
-    for (let i = 0; i < REMAPS_COMBINATIONS_COUNT; i++) {
-      var indexes = baseIndexes;
-
-      // create a remap combination i.e. an array of NUM_REMAPS_STAGES numbers between 0 and REMAPS_COUNT
-      // the easy way to generate that is to
-      // 1. map the number between 0 and REMAPS_COMBINATIONS_COUNT
-      // to the base REMAPS_COUNT by using the toString method with base REMAPS_COUNT
-      // 2. pad the string with zeroes to the left to make it NUM_REMAPS_STAGES long
-      // 3. split the string into an array of characters
-      // 4. map each character to a number
-      // from 0 to REMAPS_COUNT - 1
-      //
-      // -----------------------------------
-      //
-      // 1. map the number between 0 and REMAPS_COMBINATIONS_COUNT
-      // to the base REMAPS_COUNT by using the toString method with base REMAPS_COUNT
-      var currentRemapCombinationString = i.toString(REMAPS_COUNT);
-      // 2. pad the string with zeroes to the left to make it NUM_REMAPS_STAGES long
-      while (currentRemapCombinationString.length < NUM_REMAPS_STAGES) {
-        currentRemapCombinationString = "0" + currentRemapCombinationString;
-      }
-      // 3. split the string into an array of characters
-      // 4. map each character to a number
-      // from 0 to REMAPS_COUNT - 1
-      var currentRemapCombination = currentRemapCombinationString.split('').map((char) => {
-        return parseInt(char, REMAPS_COUNT);
-      });
-
-
-      // for each remap stage
-      for (let j = 0; j < NUM_REMAPS_STAGES; j++) {
-        // remap the indices
-        indexes = remapIndices(indexes, currentRemapCombination[j]);
-      }
-      // compress the pixels
-      onPixelsInOrder = this.getOnPixelsInOrder(tightCanvas, indexes);
-      compressedPixels = this.compressPixels(onPixelsInOrder).join(',');
-      // make a version of the currentRemapCombination removing any zeroes in it
-      var currentRemapCombinationNoZeroes = [];
-      for (let j = 0; j < currentRemapCombination.length; j++) {
-        if (currentRemapCombination[j] !== 0) {
-          currentRemapCombinationNoZeroes.push(currentRemapCombination[j]);
-        }
-      }
-      // pre-pend the compressedPixels string with a string version of the currentRemapCombinationNoZeroes
-      var compressedPixelsWithHeader = currentRemapCombinationNoZeroes.join(',') + '*' + compressedPixels;
-
-      // if currentRemapCombinationNoZeroes contains 8 then print out to console the compressedPixelsWithHeader
-      //if (currentRemapCombinationNoZeroes.indexOf(8) !== -1) {
-      //  console.log("with vertical fold: " + compressedPixelsWithHeader);
-      //}
-
-      // record the compressedPixels into bestCompression if it's the shortest so far
-      if (bestCompression === null || compressedPixelsWithHeader.length < bestCompression.length) {
-        bestCompression = compressedPixelsWithHeader;
-        bestIndex = indexes;
-        bestRemapCombination = currentRemapCombinationNoZeroes;
-        bestOnPixelsInOrder = onPixelsInOrder;
-      }      
-    }
-    console.log("best: " + bestCompression);
-
-    // visualise all the images for steps of the winning remap combination
-    var indexes = createIndicesFromCanvas(tightCanvas);
-    // for each remap stage
-    for (let j = 0; j < bestRemapCombination.length; j++) {
-      // remap the indices
-      indexes = remapIndices(indexes, bestRemapCombination[j]);
-
-
-      // create a canvas of size indexes.width x indexes.height
-      var tightCanvasIndexesVizWidth = indexes.width;
-      var tightCanvasIndexesVizHeight = indexes.height;
-      var tightCanvasIndexesViz = document.createElement('canvas');
-      tightCanvasIndexesViz.style.width = tightCanvasIndexesVizWidth / PIXEL_DENSITY + 'px';
-      tightCanvasIndexesViz.width = tightCanvasIndexesVizWidth;
-      tightCanvasIndexesViz.style.height = tightCanvasIndexesVizHeight / PIXEL_DENSITY + 'px';
-      tightCanvasIndexesViz.height = tightCanvasIndexesVizHeight;
-      // put the onPixelsInOrder into the tightCanvasIndexesViz image data
-      var tightCanvasIndexesVizCtx = tightCanvasIndexesViz.getContext('2d');
-      var imageData = tightCanvasIndexesVizCtx.createImageData(tightCanvasIndexesVizWidth, tightCanvasIndexesVizHeight);
-      var data = imageData.data;
-      for (let i = 0; i < indexes.coordinates.length; i++) {
-        const x = indexes.coordinates[i][0];
-        const y = indexes.coordinates[i][1];
-        // get the image data
-        const isOn = tightCanvasData[(y * tightCanvas.width + x) * 4 + 3] !== 0;
-        if (isOn) {
-          data[i * 4 + 0] = 0;
-          data[i * 4 + 1] = 0;
-          data[i * 4 + 2] = 0;
-          data[i * 4 + 3] = 255;
-        } else {
-          data[i * 4 + 0] = 255;
-          data[i * 4 + 1] = 255;
-          data[i * 4 + 2] = 255;
-          data[i * 4 + 3] = 255;
-        }
-      }
-      // put the image data into the canvas
-      tightCanvasIndexesVizCtx.putImageData(imageData, 0, 0);
-      // add the tightCanvasIndexesViz to the page
-      document.body.appendChild(tightCanvasIndexesViz);
-
-    }    
-
-    // append number that shows the best compression vs the baselineCompression as % improvement
-    const percentageImprovementDiv = document.createElement('div');
-    // add the lengths of the two strings
-    percentageImprovementDiv.textContent = "best compression: " + bestCompression.length + " vs baseline compression: " + baselineCompression.length + " ";
-    // add the percentage improvement
-    percentageImprovementDiv.textContent += Math.round(100 * (baselineCompression.length - bestCompression.length) / baselineCompression.length) + "%";
-    document.body.appendChild(percentageImprovementDiv);
-
-
-    /*
-    // create a canvas of size bestIndex.width x bestIndex.height
-    var tightCanvasIndexesVizWidth = bestIndex.width;
-    var tightCanvasIndexesVizHeight = bestIndex.height;
-    var tightCanvasIndexesViz = document.createElement('canvas');
-    tightCanvasIndexesViz.style.width = tightCanvasIndexesVizWidth / PIXEL_DENSITY + 'px';
-    tightCanvasIndexesViz.width = tightCanvasIndexesVizWidth;
-    tightCanvasIndexesViz.style.height = tightCanvasIndexesVizHeight / PIXEL_DENSITY + 'px';
-    tightCanvasIndexesViz.height = tightCanvasIndexesVizHeight;
-
-    // put the bestOnPixelsInOrder into the tightCanvasIndexesViz image data
-    var tightCanvasIndexesVizCtx = tightCanvasIndexesViz.getContext('2d');
-    var imageData = tightCanvasIndexesVizCtx.createImageData(tightCanvasIndexesVizWidth, tightCanvasIndexesVizHeight);
-    var data = imageData.data;
-    for (let i = 0; i < bestOnPixelsInOrder.length; i++) {
-      const isOn = bestOnPixelsInOrder[i];
-      if (isOn) {
-        data[i * 4 + 0] = 0;
-        data[i * 4 + 1] = 0;
-        data[i * 4 + 2] = 0;
-        data[i * 4 + 3] = 255;
-      } else {
-        data[i * 4 + 0] = 255;
-        data[i * 4 + 1] = 255;
-        data[i * 4 + 2] = 255;
-        data[i * 4 + 3] = 255;
-      }
-    }
-    tightCanvasIndexesVizCtx.putImageData(imageData, 0, 0);
-    document.body.appendChild(tightCanvasIndexesViz);
-    */
-
-
-    //const compressedPixels = this.compressPixels(this.getOnPixelsInOrder(tightCanvas, indexes)).join(',');
-
-    // return the compressedPixels and the two canvases
-    return {
-      bestCompression,
-      canvas,
-      tightCanvas,
-      tightCanvasBox,
-      letterMeasures
-    };
-
+    return { canvas, tightCanvas, tightCanvasBox, letterMeasures };
   }
 
   // function that gets the bounding box of the text and its position, by looking at the pixels
@@ -608,27 +379,5 @@ class CrispBitmapGlyph {
       const isOn = data[(y * canvas.width + x) * 4 + 3] !== 0;
       return isOn;
     });
-  }
-
-  // does a RLE (Run Length Encoding) compression of the pixels array
-  compressPixels(pixelsArray) {
-    const compressedPixels = [];
-    
-    // you start assuming an off pixel.
-    // (you have to assume a starting pixel color)
-    let currentPixel = false;
-
-    let currentPixelCount = 0;
-    for (let i = 0; i < pixelsArray.length; i++) {
-      if (currentPixel === pixelsArray[i]) {
-        currentPixelCount++;
-      } else {
-        compressedPixels.push(currentPixelCount);
-        currentPixel = pixelsArray[i];
-        currentPixelCount = 1;
-      }
-    }
-    compressedPixels.push(currentPixelCount);
-    return compressedPixels;
   }
 }
