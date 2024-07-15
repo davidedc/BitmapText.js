@@ -17,6 +17,16 @@ function createDivWithText(text) {
   return div;
 }
 
+function measureText(ctx, lines) {
+  let measures = { width: 0, height: 0 };
+  for (const line of lines) {
+    const lineMeasures = ctx.measureText(line);
+    measures.width = Math.max(measures.width, lineMeasures.width);
+    measures.height += lineMeasures.actualBoundingBoxAscent + lineMeasures.actualBoundingBoxDescent;
+  }
+  return measures;
+}
+
 function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
   let testCopy = '';
   let testCopyChoiceNumber = 0;
@@ -37,13 +47,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   const ctx4 = canvas4.getContext('2d');
   ctx4.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
 
-  let testCopyMeasuresCSSPx = {width: 0, height: 0};
-  for (const element of testCopyLines) {
-    const testCopyLineMeasures = ctx4.measureText(element);
-    if (testCopyLineMeasures.width > testCopyMeasuresCSSPx.width)
-      testCopyMeasuresCSSPx.width = testCopyLineMeasures.width;
-    testCopyMeasuresCSSPx.height += testCopyLineMeasures.actualBoundingBoxAscent + testCopyLineMeasures.actualBoundingBoxDescent;
-  }
+  let testCopyMeasuresCSSPx = measureText(ctx4, testCopyLines);
   console.log('testCopyMeasuresCSSPx.width: ' + testCopyMeasuresCSSPx.width);
   console.log('testCopyMeasuresCSSPx.height: ' + testCopyMeasuresCSSPx.height);
 
@@ -52,13 +56,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   const ctx5 = canvas5.getContext('2d');
   ctx5.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
 
-  let testCopyMeasures_CSS_Px = {width: 0, height: 0};
-  for (const element of testCopyLines) {
-    const testCopyLineMeasuresCrisp = ctx5.measureText(element);
-    if (testCopyLineMeasuresCrisp.width > testCopyMeasures_CSS_Px.width)
-      testCopyMeasures_CSS_Px.width = testCopyLineMeasuresCrisp.width;
-    testCopyMeasures_CSS_Px.height += testCopyLineMeasuresCrisp.actualBoundingBoxAscent + testCopyLineMeasuresCrisp.actualBoundingBoxDescent;
-  }
+  let testCopyMeasures_CSS_Px = measureText(ctx5, testCopyLines);
   console.log('testCopyMeasures_CSS_Px.width: ' + testCopyMeasures_CSS_Px.width);
   console.log('testCopyMeasures_CSS_Px.height: ' + testCopyMeasures_CSS_Px.height);
 
