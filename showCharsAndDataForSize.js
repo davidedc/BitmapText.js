@@ -10,7 +10,7 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
 
 
   // create a new CrispBitmapGlyph object
-  var crispBitmapGlyphStore = new CrispBitmapGlyphStore();
+  const crispBitmapGlyphStore = new CrispBitmapGlyphStore();
 
   crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(' ', fontSize, fontFamily, fontEmphasis));
   crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', fontSize, fontFamily, fontEmphasis));
@@ -34,10 +34,10 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontEmphasis) {
   }
 
   // note that the special charachter ’ below is NOT the single quote character '
-  allOtherChars = 'ß!"#$%&€\'’()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
+  const allOtherChars = 'ß!"#$%&€\'’()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
   // all chars in allOtherChars
-  for (let i = 0; i < allOtherChars.length; i++) {
-    const letter = allOtherChars[i];
+  for (const element of allOtherChars) {
+    const letter = element;
     crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(letter, fontSize, fontFamily, fontEmphasis));
   }
 

@@ -1,5 +1,5 @@
 CanvasRenderingContext2D.prototype.getHash = function () {
-  var data = this.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
+  const data = this.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
 
   // scan the data. The data for each pixel is 4 bytes, one for each component (RGBA)
   // so put that pixel info into a 32 bit integer, and use that to calculate the hash

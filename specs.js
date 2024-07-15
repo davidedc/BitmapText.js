@@ -1,8 +1,5 @@
 function specCombinationExists(fontFamily, fontEmphasis, correctionKey) {
-  if (!specs[fontFamily] || !specs[fontFamily][fontEmphasis] || !specs[fontFamily][fontEmphasis][correctionKey]) {
-    return false;
-  }
-  return true;
+  return !(!specs?.[fontFamily]?.[fontEmphasis]?.[correctionKey]);
 }
 
 

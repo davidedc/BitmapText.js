@@ -18,8 +18,8 @@ function parseSpecs() {
   console.dir(specsForFontFamilyAndFontEmphasisPair);
 
   // go through the specs for each font family and font emphasis pair
-  for (let i = 0; i < specsForFontFamilyAndFontEmphasisPair.length; i++) {
-    const setting = specsForFontFamilyAndFontEmphasisPair[i];
+  for (const element of specsForFontFamilyAndFontEmphasisPair) {
+    const setting = element;
     const lines = setting.split('\n');
 
     // remove all the empty lines
@@ -55,8 +55,8 @@ function parseSpecs() {
       // go through each sub-spec and parse it
 
       // for each sub-spec...
-      for (let k = 0; k < subSpecsOfFontFamilyAndFontEmphasisArray.length; k++) {
-        const subSpecOfFontFamilyFontEmphasis = subSpecsOfFontFamilyAndFontEmphasisArray[k];        
+      for (const element of subSpecsOfFontFamilyAndFontEmphasisArray) {
+        const subSpecOfFontFamilyFontEmphasis = element;        
 
         // remove all the empty lines
         const linesOfSubSpecOfFontFamilyFontEmphasis = subSpecOfFontFamilyFontEmphasis.split('\n');

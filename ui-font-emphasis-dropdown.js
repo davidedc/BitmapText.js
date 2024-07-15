@@ -2,10 +2,10 @@ function addFontEmphasisDropdown() {
   const fontEmphasisSelect = document.createElement('select');
   fontEmphasisSelect.id = 'font-emphasis-select';
   const fontEmphases = ['normal', 'bold', 'italic', 'bold italic'];
-  for (let i = 0; i < fontEmphases.length; i++) {
+  for (const element of fontEmphases) {
     const option = document.createElement('option');
-    option.value = fontEmphases[i];
-    option.textContent = fontEmphases[i];
+    option.value = element;
+    option.textContent = element;
     fontEmphasisSelect.appendChild(option);
   }
   document.getElementById("selectors").appendChild(fontEmphasisSelect);

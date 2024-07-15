@@ -22,11 +22,11 @@ class CrispBitmapText {
     if (text.length === 0)
       return { width: 0, height: 0, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 0};
     
-    var width_CSS_Px = 0;
-    var actualBoundingBoxLeft_CSS_Px = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontEmphasis).letterMeasures.actualBoundingBoxLeft;
-    var actualBoundingBoxRight_CSS_Px = 0;
-    var advancement_CSS_Px = 0;
-    var glyph = null;
+    let width_CSS_Px = 0;
+    const actualBoundingBoxLeft_CSS_Px = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontEmphasis).letterMeasures.actualBoundingBoxLeft;
+    let actualBoundingBoxRight_CSS_Px;
+    let advancement_CSS_Px = 0;
+    let glyph = null;
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
@@ -102,12 +102,12 @@ class CrispBitmapText {
       //   get the kerning array and for each one:
       //     if letter matches any of the letters in the "left" object or the "left" object is "*any*" and the nextLetter matches any of the letters in the "right" object or the "right" object is "*any*"
       //       return the value of the "adjustment" property
-      for (let i = 0; i < specs[fontFamily][fontEmphasis]["Kerning"].length; i++) {
-        const kerningEntry = specs[fontFamily][fontEmphasis]["Kerning"][i];
+      for (const element of specs[fontFamily][fontEmphasis]["Kerning"]) {
+        const kerningEntry = element;
         if (kerningEntry.sizeRange.from <= fontSize && kerningEntry.sizeRange.to >= fontSize) {
           // scan the kerningEntry.kerning array
-          for (let j = 0; j < kerningEntry.kerning.length; j++) {
-            const kerning = kerningEntry.kerning[j];
+          for (const element of kerningEntry.kerning) {
+            const kerning = element;
             if ((kerning.left.indexOf(letter) !== -1 || kerning.left.indexOf("*any*") !== -1) && (kerning.right.indexOf(nextLetter) !== -1 || kerning.right.indexOf("*any*") !== -1)) {
               //console.log("kerning correction for " + letter + " " + nextLetter + " is " + kerning.adjustment);
               return kerning.adjustment;
@@ -135,7 +135,7 @@ class CrispBitmapText {
       console.log("glyph doesn't contain the letter " + letter);
     }
 
-    var x_CSS_Px = 0;
+    let x_CSS_Px = 0;
 
     // TODO this "space" section should handle all characters without a glyph
     //      as there are many kinds of space-like characters.
@@ -211,8 +211,8 @@ class CrispBitmapText {
 
   drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontEmphasis) {
 
-    var x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
-    var y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
+    let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
+    const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
@@ -240,10 +240,10 @@ class CrispBitmapText {
           // it happens with a standard Canvas - one should just position the text
           // carefully to avoid this (although it's rare that people actually take care of this).
 
-          var actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
+          const actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
 
-          var yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY;
-          var xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
+          const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY;
+          const xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
 
           // For normal sizes:
           //    we use the same spacing as the canvas gave us for each glyph
@@ -261,7 +261,7 @@ class CrispBitmapText {
           }
           else {
             // normal sizes
-            var leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+            const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
             ctx.drawImage(glyph.tightCanvas,
               xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
               y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY);

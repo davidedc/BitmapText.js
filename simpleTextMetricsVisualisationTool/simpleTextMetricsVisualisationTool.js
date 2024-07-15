@@ -42,12 +42,12 @@ function getNewSettingsFromTextboxes() {
 
 function removeAllDivsAndRecreateContents() {
     const canvases = document.querySelectorAll("canvas");
-    for (let i = 0; i < canvases.length; i++)
-        canvases[i].remove();
+    for (const element of canvases)
+        element.remove();
 
     const divs = document.querySelectorAll("div");
-    for (let i = 0; i < divs.length; i++)
-            divs[i].remove();
+    for (const element of divs)
+            element.remove();
 
     text = textbox.value;
     createPageContentsApartFromTextboxes();

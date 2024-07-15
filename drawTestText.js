@@ -29,8 +29,8 @@
   // get the testCopyMeasuresCSSPx by going through the testCopyLines
   // (take the width of the longest line and the sum of the heights of all the lines)
   let testCopyMeasuresCSSPx = {width: 0, height: 0};
-  for (let i = 0; i < testCopyLines.length; i++) {
-    const testCopyLineMeasures = ctx4.measureText(testCopyLines[i]);
+  for (const element of testCopyLines) {
+    const testCopyLineMeasures = ctx4.measureText(element);
     if (testCopyLineMeasures.width > testCopyMeasuresCSSPx.width)
       testCopyMeasuresCSSPx.width = testCopyLineMeasures.width;
     testCopyMeasuresCSSPx.height += testCopyLineMeasures.actualBoundingBoxAscent + testCopyLineMeasures.actualBoundingBoxDescent;
@@ -51,8 +51,8 @@
   // TODO we should rather use the height of one line to calculate the height of all lines
   // (checking that the height represents all lines correctly i.e. ascents and descents are not specific to the chars in the line)
   let testCopyMeasures_CSS_Px = {width: 0, height: 0};
-  for (let i = 0; i < testCopyLines.length; i++) {
-    const testCopyLineMeasuresCrisp = ctx5.measureText(testCopyLines[i]);
+  for (const element of testCopyLines) {
+    const testCopyLineMeasuresCrisp = ctx5.measureText(element);
     if (testCopyLineMeasuresCrisp.width > testCopyMeasures_CSS_Px.width)
       testCopyMeasures_CSS_Px.width = testCopyLineMeasuresCrisp.width;
     testCopyMeasures_CSS_Px.height += testCopyLineMeasuresCrisp.actualBoundingBoxAscent + testCopyLineMeasuresCrisp.actualBoundingBoxDescent;
@@ -60,8 +60,6 @@
   console.log('testCopyMeasures_CSS_Px.width: ' + testCopyMeasures_CSS_Px.width);
   console.log('testCopyMeasures_CSS_Px.height: ' + testCopyMeasures_CSS_Px.height);
   
-
-
   // add another canvas at the top of the page and draw "Hello World" on it using the CrispBitmapText
   // add some text above the canvas to say what it is
   const div = document.createElement('div');
@@ -78,8 +76,8 @@
   // TODO we should rather use the height of one line to calculate the height of all lines
   // (checking that the height represents all lines correctly i.e. ascents and descents are not specific to the chars in the line)
   let crispTestTextMeasures_CSS_Px = {width: 0, height: 0};
-  for (let i = 0; i < testCopyLines.length; i++) {
-    const crispTestTextLineMeasures_CSS_Px = crispBitmapText.measureText(testCopyLines[i], fontSize, fontFamily, fontEmphasis);
+  for (const element of testCopyLines) {
+    const crispTestTextLineMeasures_CSS_Px = crispBitmapText.measureText(element, fontSize, fontFamily, fontEmphasis);
     if (crispTestTextLineMeasures_CSS_Px.width > crispTestTextMeasures_CSS_Px.width)
       crispTestTextMeasures_CSS_Px.width = crispTestTextLineMeasures_CSS_Px.width;
     crispTestTextMeasures_CSS_Px.height += crispTestTextLineMeasures_CSS_Px.height;
@@ -108,7 +106,7 @@
   const crispTextHashString = ctx.getHashString();
   divHash.textContent = 'hash: ' + crispTextHashString;
   // add the hash to this run's hashes (thisRunsHashes) indexed on the font , fontEmphasis, fontSize, testCopy, pixelDensity
-  var hashKey = "fontFamily " + fontFamily + " // fontEmphasis " + fontEmphasis + " // fontSize " + fontSize + " // testCopyChoiceNumber " + testCopyChoiceNumber  + " // pixelDensity " + PIXEL_DENSITY;
+  const hashKey = "fontFamily " + fontFamily + " // fontEmphasis " + fontEmphasis + " // fontSize " + fontSize + " // testCopyChoiceNumber " + testCopyChoiceNumber  + " // pixelDensity " + PIXEL_DENSITY;
   thisRunsHashes[hashKey] = crispTextHashString;
   // use the same key and check if the hash is the same as the one previously stored as reference in storedReferenceCrispTextRendersHashes
   // if it is add to textContent " ✔ same hash as stored one", otherwise add " ✘ different hash from stored one"

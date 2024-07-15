@@ -1,4 +1,4 @@
-var thisRunsHashes = {};
+const thisRunsHashes = {};
 
 // Note that some are missing because we fail to render some very small sizes
 const storedReferenceCrispTextRendersHashes = {

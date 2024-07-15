@@ -100,10 +100,10 @@ function diagonalStripesRemap(width, height, sourceCoordinatesArray) {
 
     // now use the diagonalStripesScan to find the corresponding element from the source sourceCoordinatesArray
     // i.e. for each coordinate in diagonalStripesScan, find the corresponding coordinate in sourceCoordinatesArray
-    var newCoordinates = [];
-    for (var i = 0; i < diagonalStripesScan.length; i++) {
-        var x = diagonalStripesScan[i][0];
-        var y = diagonalStripesScan[i][1];
+    let newCoordinates = [];
+    for (const element of diagonalStripesScan) {
+        const x = element[0];
+        const y = element[1];
         newCoordinates.push(sourceCoordinatesArray[x + y * width]);
     }
 
@@ -118,8 +118,8 @@ function diagonalStripesRemap(width, height, sourceCoordinatesArray) {
 function reverseRemap(width, height, sourceCoordinatesArray) {
     // note that there is no need to have a mapping step to the
     // sourceCoordinatesArray
-    var newCoordinates = [];
-    for (var i = sourceCoordinatesArray.length - 1; i >= 0; i--) {
+    let newCoordinates = [];
+    for (let i = sourceCoordinatesArray.length - 1; i >= 0; i--) {
         newCoordinates.push(sourceCoordinatesArray[i]);
     }
 
@@ -172,9 +172,9 @@ function spiralOutsideInRemap(width, height, sourceCoordinatesArray) {
     // now use the spiralScan to find the corresponding element from the source sourceCoordinatesArray
     // i.e. for each coordinate in spiralScan, find the corresponding coordinate in sourceCoordinatesArray
     var newCoordinates = [];
-    for (var i = 0; i < spiralScan.length; i++) {
-        var x = spiralScan[i][0];
-        var y = spiralScan[i][1];
+    for (const element of spiralScan) {
+        const x = element[0];
+        const y = element[1];
         newCoordinates.push(sourceCoordinatesArray[x + y * width]);
     }
 

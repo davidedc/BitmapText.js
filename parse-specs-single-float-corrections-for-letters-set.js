@@ -17,8 +17,8 @@ function parseSingleFloatCorrectionsForLettersSet(contentOfSubSpec) {
   //   [number] to [number]
   // into an array
   const correctionsBySizeArray = [];
-  for (let i = 0; i < linesOfSubSpecOfFontFamilyFontEmphasis.length; i++) {
-    const line = linesOfSubSpecOfFontFamilyFontEmphasis[i];
+  for (const element of linesOfSubSpecOfFontFamilyFontEmphasis) {
+    const line = element;
 
     // there can be multiple parts covering different ranges of sizes
     // so you have to constantly look out for the next range

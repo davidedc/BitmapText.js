@@ -1,6 +1,6 @@
 function buildAndShowGlyphs() {
 
-  var fontSize;
+  let fontSize;
 
   if (hoverFontSize !== null) {
     fontSize = hoverFontSize;
