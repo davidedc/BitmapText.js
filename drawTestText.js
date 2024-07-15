@@ -43,7 +43,7 @@ function drawTextOnCanvas(ctx, lines, measures, fontSize, fontFamily, fontEmphas
   }
 }
 
-function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
+function getTestCopyChoiceAndText() {
   let testCopy = '';
   let testCopyChoiceNumber = 0;
   if (document.getElementById('test-copy-1-radio-button').checked) {
@@ -56,6 +56,11 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
     testCopy = kernKingCopyPart2;
     testCopyChoiceNumber = 3;
   }
+  return { testCopy, testCopyChoiceNumber };
+}
+
+function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
+  const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
 
   const testCopyLines = testCopy.split("\n");
 
