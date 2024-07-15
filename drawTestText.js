@@ -27,13 +27,17 @@ function measureText(ctx, lines) {
   return measures;
 }
 
-function standardDrawTextOnCanvas(ctx, lines, measures, fontSize, fontFamily, fontEmphasis, pixelDensity = PIXEL_DENSITY) {
+function setupCanvas(ctx, fontSize, fontFamily, fontEmphasis, pixelDensity = PIXEL_DENSITY) {
   ctx.scale(pixelDensity, pixelDensity);
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, ctx.canvas.width / pixelDensity, ctx.canvas.height / pixelDensity);
   ctx.fillStyle = 'black';
   ctx.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
   ctx.textBaseline = 'bottom';
+}
+
+function drawTextOnCanvas(ctx, lines, measures, fontSize, fontFamily, fontEmphasis, pixelDensity = PIXEL_DENSITY) {
+  setupCanvas(ctx, fontSize, fontFamily, fontEmphasis, pixelDensity);
   for (let i = 0; i < lines.length; i++) {
     ctx.fillText(lines[i], 0, Math.round((i + 1) * measures.height / lines.length));
   }
@@ -124,7 +128,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
 
   addElementToDOM(canvas2);
   const ctx2 = canvas2.getContext('2d');
-  standardDrawTextOnCanvas(ctx2, testCopyLines, testCopyMeasures_CSS_Px, fontSize, fontFamily, fontEmphasis);
+  drawTextOnCanvas(ctx2, testCopyLines, testCopyMeasures_CSS_Px, fontSize, fontFamily, fontEmphasis);
 
   addElementToDOM(createDivWithText('hash: ' + ctx2.getHashString()));
 
@@ -136,12 +140,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
 
   addElementToDOM(canvas6);
   const ctx6 = canvas6.getContext('2d');
-  ctx6.scale(PIXEL_DENSITY, PIXEL_DENSITY);
-  ctx6.fillStyle = 'white';
-  ctx6.fillRect(0, 0, canvas6.width / PIXEL_DENSITY, canvas6.height / PIXEL_DENSITY);
-  ctx6.fillStyle = 'black';
-  ctx6.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
-  ctx6.textBaseline = 'bottom';
+  setupCanvas(ctx6, fontSize, fontFamily, fontEmphasis);
   ctx6.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas6.height / PIXEL_DENSITY - 1);
 
   addElementToDOM(createDivWithText('Standard Canvas Text Drawing with smoothing:'));
@@ -151,7 +150,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   const canvas3 = createCanvas(canvas3Width, canvas3Height);
 
   const ctx3 = canvas3.getContext('2d');
-  standardDrawTextOnCanvas(ctx3, testCopyLines, testCopyMeasuresCSSPx, fontSize, fontFamily, fontEmphasis);
+  drawTextOnCanvas(ctx3, testCopyLines, testCopyMeasuresCSSPx, fontSize, fontFamily, fontEmphasis);
 
   addElementToDOM(canvas3);
 
