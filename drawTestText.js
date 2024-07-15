@@ -17,14 +17,14 @@ function createDivWithText(text) {
   return div;
 }
 
-function measureText(ctx, lines) {
-  let measures = { width: 0, height: 0 };
+function measureMultilineText(ctx, lines) {
+  let linesMeasures_CSS_Px = { width: 0, height: 0 };
   for (const line of lines) {
-    const lineMeasures = ctx.measureText(line);
-    measures.width = Math.max(measures.width, lineMeasures.width);
-    measures.height += lineMeasures.actualBoundingBoxAscent + lineMeasures.actualBoundingBoxDescent;
+    const lineMeasures_CSS_Px = ctx.measureText(line);
+    linesMeasures_CSS_Px.width = Math.max(linesMeasures_CSS_Px.width, lineMeasures_CSS_Px.width);
+    linesMeasures_CSS_Px.height += lineMeasures_CSS_Px.actualBoundingBoxAscent + lineMeasures_CSS_Px.actualBoundingBoxDescent;
   }
-  return measures;
+  return linesMeasures_CSS_Px;
 }
 
 function setupCanvas(ctx, fontSize, fontFamily, fontEmphasis, pixelDensity = PIXEL_DENSITY) {
@@ -65,33 +65,34 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   const testCopyLines = testCopy.split("\n");
 
   // measures the text drawn smoothly
-  const canvas4 = createCanvas(1, 1);
-  const ctx4 = canvas4.getContext('2d');
-  ctx4.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
-  let smoothTestTextMeasures_CSS_Px = measureText(ctx4, testCopyLines);
+  const canvasMeasuringSmooth = createCanvas(1, 1);
+  const ctx_canvasMeasuringSmooth = canvasMeasuringSmooth.getContext('2d');
+  ctx_canvasMeasuringSmooth.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
+  let smoothTestTextMeasures_CSS_Px = measureMultilineText(ctx_canvasMeasuringSmooth, testCopyLines);
   console.log('smoothTestTextMeasures_CSS_Px.width: ' + smoothTestTextMeasures_CSS_Px.width);
   console.log('smoothTestTextMeasures_CSS_Px.height: ' + smoothTestTextMeasures_CSS_Px.height);
 
   // measures the text drawn crisply
   // (it's drawn crisply because it's attached to the DOM before the drawing of the text
   // and there is a CSS rule that makes the canvas crisp)
-  const canvas5 = createCanvas(1, 1);
-  addElementToDOM(canvas5);
-  const ctx5 = canvas5.getContext('2d');
-  ctx5.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
-  let crispTestCopyMeasures_CSS_Px = measureText(ctx5, testCopyLines);
+  const canvasMeasuringCrisp = createCanvas(1, 1);
+  addElementToDOM(canvasMeasuringCrisp);
+  const ctx_canvasMeasuringCrisp = canvasMeasuringCrisp.getContext('2d');
+  ctx_canvasMeasuringCrisp.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
+  let crispTestCopyMeasures_CSS_Px = measureMultilineText(ctx_canvasMeasuringCrisp, testCopyLines);
   console.log('crispTestCopyMeasures_CSS_Px.width: ' + crispTestCopyMeasures_CSS_Px.width);
   console.log('crispTestCopyMeasures_CSS_Px.height: ' + crispTestCopyMeasures_CSS_Px.height);
 
 
   // now do the measurements with the CrispBitmapText class
+  // note how this one doesn't need a canvas
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
-  let crispTestTextMeasures_CSS_Px = {width: 0, height: 0};
+  let linesMeasures_CSS_Px = {width: 0, height: 0};
   for (const element of testCopyLines) {
-    const crispBitmapTextTestLinesMeasures_CSS_Px = crispBitmapText.measureText(element, fontSize, fontFamily, fontEmphasis);
-    if (crispBitmapTextTestLinesMeasures_CSS_Px.width > crispTestTextMeasures_CSS_Px.width)
-      crispTestTextMeasures_CSS_Px.width = crispBitmapTextTestLinesMeasures_CSS_Px.width;
-    crispTestTextMeasures_CSS_Px.height += crispBitmapTextTestLinesMeasures_CSS_Px.height;
+    const lineMeasures_CSS_Px = crispBitmapText.measureText(element, fontSize, fontFamily, fontEmphasis);
+    if (lineMeasures_CSS_Px.width > linesMeasures_CSS_Px.width)
+      linesMeasures_CSS_Px.width = lineMeasures_CSS_Px.width;
+    linesMeasures_CSS_Px.height += lineMeasures_CSS_Px.height;
   }
 
   // ------------------------------------------------
@@ -99,58 +100,58 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   // (it's drawn crisply because it's attached to the DOM before the drawing of the text
   // and there is a CSS rule that makes the canvas crisp)
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing:'));
-  const canvas = createCanvas(crispTestTextMeasures_CSS_Px.width, crispTestTextMeasures_CSS_Px.height);
-  addElementToDOM(canvas);
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const canvasCrispBitmapDraw = createCanvas(linesMeasures_CSS_Px.width, linesMeasures_CSS_Px.height);
+  addElementToDOM(canvasCrispBitmapDraw);
+  const ctx_canvasCrispBitmapDraw = canvasCrispBitmapDraw.getContext('2d');
+  ctx_canvasCrispBitmapDraw.fillStyle = 'white';
+  ctx_canvasCrispBitmapDraw.fillRect(0, 0, canvasCrispBitmapDraw.width, canvasCrispBitmapDraw.height);
 
   for (let i = 0; i < testCopyLines.length; i++) {
-    crispBitmapText.drawText(ctx, testCopyLines[i], 0, Math.round((i+1) * crispTestTextMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontEmphasis);
+    crispBitmapText.drawText(ctx_canvasCrispBitmapDraw, testCopyLines[i], 0, Math.round((i+1) * linesMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontEmphasis);
   }
 
-  addHashInfoWithMatch(ctx, fontFamily, fontEmphasis, fontSize, testCopyChoiceNumber);
+  addHashInfoWithMatch(ctx_canvasCrispBitmapDraw, fontFamily, fontEmphasis, fontSize, testCopyChoiceNumber);
 
   addElementToDOM(document.createElement('br'));
 
   // ------------------------------------------------
 
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
-  const canvas4GlyphSheet = crispBitmapGlyphStore.getGlyphsSheet(fontFamily, fontSize, fontEmphasis);
-  addElementToDOM(canvas4GlyphSheet);
+  const canvasGlyphSheet = crispBitmapGlyphStore.getGlyphsSheet(fontFamily, fontSize, fontEmphasis);
+  addElementToDOM(canvasGlyphSheet);
 
   // ------------------------------------------------
 
   addElementToDOM(createDivWithText('Standard Canvas Text Drawing with no smoothing:'));
-  const canvas2Width = Math.round(crispTestCopyMeasures_CSS_Px.width);
-  const canvas2Height = Math.round(crispTestCopyMeasures_CSS_Px.height);
-  const canvas2 = createCanvas(canvas2Width, canvas2Height);
-  addElementToDOM(canvas2);
-  const ctx2 = canvas2.getContext('2d');
-  standardDrawTextOnCanvas(ctx2, testCopyLines, crispTestCopyMeasures_CSS_Px, fontSize, fontFamily, fontEmphasis);
-  addElementToDOM(createDivWithText('hash: ' + ctx2.getHashString()));
+  const canvasStdDrawCrispWidth = Math.round(crispTestCopyMeasures_CSS_Px.width);
+  const canvasStdDrawCrispHeight = Math.round(crispTestCopyMeasures_CSS_Px.height);
+  const canvasStdDrawCrisp = createCanvas(canvasStdDrawCrispWidth, canvasStdDrawCrispHeight);
+  addElementToDOM(canvasStdDrawCrisp);
+  const ctx_canvasStdDrawCrisp = canvasStdDrawCrisp.getContext('2d');
+  standardDrawTextOnCanvas(ctx_canvasStdDrawCrisp, testCopyLines, crispTestCopyMeasures_CSS_Px, fontSize, fontFamily, fontEmphasis);
+  addElementToDOM(createDivWithText('hash: ' + ctx_canvasStdDrawCrisp.getHashString()));
 
   // ------------------------------------------------
 
   addElementToDOM(createDivWithText('Standard Canvas Text Drawing with no smoothing - thin characters to see monospaced fonts:'));
-  const canvas6Width = Math.round(crispTestCopyMeasures_CSS_Px.width);
-  const canvas6Height = Math.round(crispTestCopyMeasures_CSS_Px.height / testCopyLines.length);
-  const canvas6 = createCanvas(canvas6Width, canvas6Height);
-  addElementToDOM(canvas6);
-  const ctx6 = canvas6.getContext('2d');
-  setupCanvas(ctx6, fontSize, fontFamily, fontEmphasis);
-  ctx6.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas6.height / PIXEL_DENSITY - 1);
+  const canvasThinLinesWidth = Math.round(crispTestCopyMeasures_CSS_Px.width);
+  const canvasThinLinesHeight = Math.round(crispTestCopyMeasures_CSS_Px.height / testCopyLines.length);
+  const canvasThinLines = createCanvas(canvasThinLinesWidth, canvasThinLinesHeight);
+  addElementToDOM(canvasThinLines);
+  const ctx_canvasThinLines = canvasThinLines.getContext('2d');
+  setupCanvas(ctx_canvasThinLines, fontSize, fontFamily, fontEmphasis);
+  ctx_canvasThinLines.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvasThinLines.height / PIXEL_DENSITY - 1);
 
   // ------------------------------------------------
 
   addElementToDOM(createDivWithText('Standard Canvas Text Drawing with smoothing:'));
-  const canvas3Width = Math.round(smoothTestTextMeasures_CSS_Px.width);
-  const canvas3Height = Math.round(smoothTestTextMeasures_CSS_Px.height);
-  const canvas3 = createCanvas(canvas3Width, canvas3Height);
-  const ctx3 = canvas3.getContext('2d');
-  standardDrawTextOnCanvas(ctx3, testCopyLines, smoothTestTextMeasures_CSS_Px, fontSize, fontFamily, fontEmphasis);
-  addElementToDOM(canvas3);
-  addElementToDOM(createDivWithText('hash: ' + ctx3.getHashString()));
+  const canvasStdDrawSmoothWidth = Math.round(smoothTestTextMeasures_CSS_Px.width);
+  const canvasStdDrawSmoothHeight = Math.round(smoothTestTextMeasures_CSS_Px.height);
+  const canvasStdDrawSmooth = createCanvas(canvasStdDrawSmoothWidth, canvasStdDrawSmoothHeight);
+  const ctx_canvasStdDrawSmooth = canvasStdDrawSmooth.getContext('2d');
+  standardDrawTextOnCanvas(ctx_canvasStdDrawSmooth, testCopyLines, smoothTestTextMeasures_CSS_Px, fontSize, fontFamily, fontEmphasis);
+  addElementToDOM(canvasStdDrawSmooth);
+  addElementToDOM(createDivWithText('hash: ' + ctx_canvasStdDrawSmooth.getHashString()));
 
 }
 
