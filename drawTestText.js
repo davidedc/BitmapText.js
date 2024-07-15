@@ -104,11 +104,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
   
   const canvas4GlyphSheet = crispBitmapGlyphStore.getGlyphsSheet(fontFamily, fontSize, fontEmphasis);
-  if (canvas4GlyphSheet) {
-    addElementToDOM(canvas4GlyphSheet);
-  } else {
-    addElementToDOM(createDivWithText('No glyph sheet available for this font family, font size and font emphasis.'));
-  }
+  addElementToDOM(canvas4GlyphSheet);
 
   addElementToDOM(createDivWithText('Standard Canvas Text Drawing with no smoothing:'));
 
