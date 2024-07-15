@@ -27,6 +27,18 @@ function measureText(ctx, lines) {
   return measures;
 }
 
+function standardDrawTextOnCanvas(ctx, lines, measures, fontSize, fontFamily, fontEmphasis, pixelDensity = PIXEL_DENSITY) {
+  ctx.scale(pixelDensity, pixelDensity);
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, ctx.canvas.width / pixelDensity, ctx.canvas.height / pixelDensity);
+  ctx.fillStyle = 'black';
+  ctx.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
+  ctx.textBaseline = 'bottom';
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], 0, Math.round((i + 1) * measures.height / lines.length));
+  }
+}
+
 function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore) {
   let testCopy = '';
   let testCopyChoiceNumber = 0;
@@ -112,16 +124,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
 
   addElementToDOM(canvas2);
   const ctx2 = canvas2.getContext('2d');
-  ctx2.scale(PIXEL_DENSITY, PIXEL_DENSITY);
-  ctx2.fillStyle = 'white';
-  ctx2.fillRect(0, 0, canvas2.width / PIXEL_DENSITY, canvas2.height / PIXEL_DENSITY);
-  ctx2.fillStyle = 'black';
-  ctx2.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
-  ctx2.textBaseline = 'bottom';
-
-  for (let i = 0; i < testCopyLines.length; i++) {
-    ctx2.fillText(testCopyLines[i], 0, Math.round((i+1) * testCopyMeasures_CSS_Px.height / testCopyLines.length));
-  }
+  standardDrawTextOnCanvas(ctx2, testCopyLines, testCopyMeasures_CSS_Px, fontSize, fontFamily, fontEmphasis);
 
   addElementToDOM(createDivWithText('hash: ' + ctx2.getHashString()));
 
@@ -148,16 +151,7 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   const canvas3 = createCanvas(canvas3Width, canvas3Height);
 
   const ctx3 = canvas3.getContext('2d');
-  ctx3.scale(PIXEL_DENSITY, PIXEL_DENSITY);
-  ctx3.fillStyle = 'white';
-  ctx3.fillRect(0, 0, canvas3.width / PIXEL_DENSITY, canvas3.height / PIXEL_DENSITY);
-  ctx3.fillStyle = 'black';
-  ctx3.font = `${fontEmphasis} ${fontSize}px ${fontFamily}`;
-  ctx3.textBaseline = 'bottom';
-
-  for (let i = 0; i < testCopyLines.length; i++) {
-    ctx3.fillText(testCopyLines[i], 0, Math.round((i+1) * testCopyMeasuresCSSPx.height / testCopyLines.length));
-  }
+  standardDrawTextOnCanvas(ctx3, testCopyLines, testCopyMeasuresCSSPx, fontSize, fontFamily, fontEmphasis);
 
   addElementToDOM(canvas3);
 
