@@ -10,9 +10,9 @@ function addSizeButtons() {
     button.textContent = i;
     button.style.width = '30px';
     button.style.height = '30px';
-    button.style.margin = '2px';
+    button.style.margin = '0px';
     button.style.padding = '0px';
-    button.style.border = '0px';
+    button.style.border = '1px dotted grey';
     button.style.backgroundColor = 'white';
     button.style.color = 'black';
     button.style.fontSize = '12px';
