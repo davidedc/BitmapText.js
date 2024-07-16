@@ -45,7 +45,16 @@ class CrispBitmapText {
 
     // get the height of the text by looking at the height of 'a' - they are all the same height
     glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontEmphasis);
-    return { width: width_CSS_Px, height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent), actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px, actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px };
+    return {
+      width: width_CSS_Px,
+      // this one below is a nice convenience but it's not what standard measureText provides
+      // so let's make things uniform and resist the temptation to provide it.
+      //height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent),
+      actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
+      actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
+      actualBoundingBoxAscent: glyph.letterMeasures.fontBoundingBoxAscent,
+      actualBoundingBoxDescent: glyph.letterMeasures.fontBoundingBoxDescent
+    };
   }
 
   hasLotsOfSpaceAtBottomRight(letter) {
