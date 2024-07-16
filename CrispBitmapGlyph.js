@@ -27,12 +27,6 @@ class CrispBitmapGlyph {
     document.body.appendChild(this.tightCanvas);
   }
 
-  drawBoundingBox() {
-    const ctx = this.canvas.getContext('2d');
-    ctx.strokeStyle = 'red';
-    ctx.strokeRect(this.tightCanvasBox.topLeftCorner.x / PIXEL_DENSITY, this.tightCanvasBox.topLeftCorner.y / PIXEL_DENSITY, (this.tightCanvasBox.bottomRightCorner.x - this.tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY, (this.tightCanvasBox.bottomRightCorner.y - this.tightCanvasBox.topLeftCorner.y) / PIXEL_DENSITY);
-  }
-
   // this method can be refactored with the next two
   getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey, pixelDensity) {
 
@@ -319,33 +313,6 @@ class CrispBitmapGlyph {
     };
   }
 
-
-  // takes the canvas and returns an array of booleans representing whether each pixel is on or not
-  getOnPixels2DArray(canvas) {
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-
-    // create a new 2D array with a boolean for each pixel to represent whether it is on or not
-    // note that the color in which the character is painted doesn't matter, we are just looking
-    // for pixels that are not transparent
-    const pixels2DArray = [];
-    for (let y = 0; y < canvas.height; y++) {
-      const row = [];
-      for (let x = 0; x < canvas.width; x++) {
-        // isOn is when any of the components is 0 AND the alpha is not 0
-        // that's because we are working with canvases with transparent backgrounds
-        // because glyphs often have are painted on top of other content AND also
-        // because glyphs actually often have to overlap with each other e.g. in the case of "ff" in Times New Roman
-        const isOn = data[(y * canvas.width + x) * 4 + 3] !== 0;
-        row.push(isOn);
-      }
-      pixels2DArray.push(row);
-    }
-    return pixels2DArray; 
-  }
-
-
   getOnPixelsArray(canvas) {
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -364,19 +331,5 @@ class CrispBitmapGlyph {
       pixels.push(isOn);
     }
     return pixels;
-  }
-
-  // gets an array of coordinates and returns an array of booleans representing whether each pixel is on or not
-  getOnPixelsInOrder(canvas, coordinates) {
-    const ctx = canvas.getContext('2d');
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-    return coordinates.coordinates.map((coordinate) => {
-      const x = coordinate[0];
-      const y = coordinate[1];
-      // get the image data
-      const isOn = data[(y * canvas.width + x) * 4 + 3] !== 0;
-      return isOn;
-    });
   }
 }

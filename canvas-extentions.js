@@ -30,9 +30,3 @@ CanvasRenderingContext2D.prototype.getHashString = function () {
   const hex = (this.getHash() + 0x100000000).toString(16);
   return hex.substring(1, 9);
 }
-
-// add a function that takes a canvas and returns a hash of the canvas
-
-function getCanvasHashString(canvas) {
-  return canvas.getContext('2d').getHashString();
-}
