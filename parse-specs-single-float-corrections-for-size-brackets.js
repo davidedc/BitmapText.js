@@ -45,6 +45,7 @@ function parseSingleFloatCorrectionsForSizeBrackets(contentOfSubSpec) {
   return correctionsBySizeArray;
 }
 
+// TODO this seems to be unused according to Chrome's coverage tool
 function parseSizesAndCorrectionLine(line) {
   // each line after the size range looks like:
   //

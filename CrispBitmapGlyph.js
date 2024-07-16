@@ -24,7 +24,6 @@ class CrispBitmapGlyph {
       document.body.appendChild(div);
       return;
     }
-    // this.drawBoundingBox();
     document.body.appendChild(this.tightCanvas);
   }
 
