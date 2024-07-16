@@ -256,6 +256,8 @@ class CrispBitmapGlyph {
     tightCanvas.height = tightCanvasPixelsHeight;
 
     tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y;
+    // TODO should be:
+    // tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y - 1;
     const tightCanvasBoxCtx = tightCanvas.getContext('2d');
 
     // avoid scaling here and just use physical pixels coordinates and sizes since the source and destination canvases have the same scale

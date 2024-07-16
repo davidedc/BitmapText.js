@@ -104,9 +104,10 @@ function drawTestText(fontEmphasis, fontSize, fontFamily, crispBitmapGlyphStore)
   // drawing the text
   // ------------------------------------------------
 
-  bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontEmphasis, testCopyChoiceNumber);
-  addElementToDOM(document.createElement('br'));
   drawGlyphSheet(crispBitmapGlyphStore, fontFamily, fontSize, fontEmphasis);
+  bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontEmphasis, testCopyChoiceNumber);
+  bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontEmphasis, testCopyChoiceNumber);
+  addElementToDOM(document.createElement('br'));
   stdDrawCrispText(crispTestCopyMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontEmphasis);
   stdDrawCrispThinLines(crispTestCopyMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontEmphasis);
   stdDrawSmoothText(smoothTestTextMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontEmphasis);
@@ -123,6 +124,21 @@ function bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapTex
 
   for (let i = 0; i < testCopyLines.length; i++) {
     crispBitmapText.drawText(ctx, testCopyLines[i], 0, Math.round((i + 1) * linesMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontEmphasis);
+  }
+
+  addHashInfoWithMatch(ctx, fontFamily, fontEmphasis, fontSize, testCopyChoiceNumber);
+}
+
+function bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontEmphasis, testCopyChoiceNumber) {
+  addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing from glyphs sheet:'));
+  const canvas = createCanvas(linesMeasures_CSS_Px.width, linesMeasures_CSS_Px.height);
+  addElementToDOM(canvas);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < testCopyLines.length; i++) {
+    crispBitmapText.drawTextFromGlyphSheet(ctx, testCopyLines[i], 0, Math.round((i + 1) * linesMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontEmphasis);
   }
 
   addHashInfoWithMatch(ctx, fontFamily, fontEmphasis, fontSize, testCopyChoiceNumber);

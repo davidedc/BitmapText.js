@@ -3,17 +3,21 @@
 class CrispBitmapGlyphStore {
   constructor() {
     this.glyphs = {};
+    this.glyphsSheets = {};
   }
 
   addGlyph(glyph) {
     if (!this.glyphs[glyph.fontFamily]) {
       this.glyphs[glyph.fontFamily] = {};
+      this.glyphsSheets[glyph.fontFamily] = {};
     }
     if (!this.glyphs[glyph.fontFamily][glyph.fontEmphasis]) {
       this.glyphs[glyph.fontFamily][glyph.fontEmphasis] = {};
+      this.glyphsSheets[glyph.fontFamily][glyph.fontEmphasis] = {};
     }
     if (!this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize]) {
       this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize] = {};
+      this.glyphsSheets[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize] = {};
     }
     if (!this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize][glyph.letter]) {
       this.glyphs[glyph.fontFamily][glyph.fontEmphasis][glyph.fontSize][glyph.letter] = glyph;
@@ -27,7 +31,7 @@ class CrispBitmapGlyphStore {
     return null;
   }
 
-  // get a canvas with all the glyphs of a certain font family, font size and font emphasis
+  // Get a canvas with all the glyphs of a certain font family, font size and font emphasis
   // 1. go through all the glyphs and get the maximum width and height each so that you calculate the
   //    width and height of the rectangle needed to fit all the glyphs
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
@@ -51,14 +55,14 @@ class CrispBitmapGlyphStore {
         continue;
       }
 
-      glyph.width = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x;
-      glyph.height = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y;
+      glyph.tightWidth = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1;
+      glyph.tightHeight = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1;
 
-      if (!isNaN(glyph.width) ) {
-        fittingWidth += glyph.width;
+      if (!isNaN(glyph.tightWidth) ) {
+        fittingWidth += glyph.tightWidth;
       }
-      if (glyph.height > maxHeight) {
-        maxHeight = glyph.height;
+      if (glyph.tightHeight > maxHeight) {
+        maxHeight = glyph.tightHeight;
       }
     }
     let canvas = document.createElement('canvas');
@@ -69,13 +73,23 @@ class CrispBitmapGlyphStore {
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
       // if there is no glyph.tightCanvas, then just continue
-      if (!glyph.tightCanvas || isNaN(glyph.width)) {
+      if (!glyph.tightCanvas || isNaN(glyph.tightWidth)) {
+        if (isNaN(glyph.tightWidth)) {
+          console.log("glyph " + fontEmphasis + " " + fontFamily + " " + fontSize + " " + letter + " has no tightWidth");
+        }
+        if (!glyph.tightCanvas) {
+          console.log("glyph " + fontEmphasis + " " + fontFamily + " " + fontSize + " " + letter + " has no tightCanvas");
+        }
+        
         continue;
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
-      // check that glyph.width is a valid number
-      x += glyph.width;
+      glyph.xInGlyphSheet = x;
+      // check that glyph.tightWidth is a valid number
+      x += glyph.tightWidth;
     }
+    // put the canvas in the store so that we can retrieve it later
+    this.glyphsSheets[fontFamily][fontEmphasis][fontSize][PIXEL_DENSITY] = canvas;
     return canvas;
   }
 }
