@@ -22,7 +22,13 @@ function measureMultilineText(lines, measureTextFn) {
   for (const line of lines) {
     const lineMeasures_CSS_Px = measureTextFn(line);
     linesMeasures_CSS_Px.width = Math.max(linesMeasures_CSS_Px.width, lineMeasures_CSS_Px.width);
-    linesMeasures_CSS_Px.height += lineMeasures_CSS_Px.actualBoundingBoxAscent + lineMeasures_CSS_Px.actualBoundingBoxDescent;
+    // take as the height of all the lines to be the same as the maximum possible height given the font
+    // i.e. don't actually measure the height of the line using actualBoundingBoxAscent and actualBoundingBoxDescent
+    // (which would measure the actual text) but instead, just take the fontBoundingBoxAscent and fontBoundingBoxDescent
+    // This is all the lines are equally spaced vertically and have all the space needed for particularly ascending and descending
+    // characters such as "À", "Ç", "ç".
+    console.log ('lineMeasures_CSS_Px.fontBoundingBoxAscent: ' + lineMeasures_CSS_Px.fontBoundingBoxAscent + ' lineMeasures_CSS_Px.fontBoundingBoxDescent: ' + lineMeasures_CSS_Px.fontBoundingBoxDescent);
+    linesMeasures_CSS_Px.height += lineMeasures_CSS_Px.fontBoundingBoxAscent + lineMeasures_CSS_Px.fontBoundingBoxDescent;
   }
   return linesMeasures_CSS_Px;
 }
