@@ -8,7 +8,6 @@ class CrispBitmapText {
     this.glyphStore = glyphStore;
   }
 
-  // TODO all the vertical metrics done properly.
   // This returns an object of the same shape
   // and meaning as the TextMetrics object (see
   // https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ) i.e.:
@@ -20,7 +19,15 @@ class CrispBitmapText {
   measureText(text, fontSize, fontFamily, fontEmphasis) {
     
     if (text.length === 0)
-      return { width: 0, height: 0, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 0};
+      return {
+        width: 0,
+        actualBoundingBoxLeft: 0,
+        actualBoundingBoxRight: 0,
+        actualBoundingBoxAscent: 0,
+        actualBoundingBoxDescent: 0,
+        fontBoundingBoxAscent: 0,
+        fontBoundingBoxDescent: 0
+      };
     
     let width_CSS_Px = 0;
     const actualBoundingBoxLeft_CSS_Px = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontEmphasis).letterMeasures.actualBoundingBoxLeft;
@@ -52,8 +59,10 @@ class CrispBitmapText {
       //height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent),
       actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
       actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
-      actualBoundingBoxAscent: glyph.letterMeasures.fontBoundingBoxAscent,
-      actualBoundingBoxDescent: glyph.letterMeasures.fontBoundingBoxDescent
+      actualBoundingBoxAscent: glyph.letterMeasures.actualBoundingBoxAscent,
+      actualBoundingBoxDescent: glyph.letterMeasures.actualBoundingBoxDescent,
+      fontBoundingBoxAscent: glyph.letterMeasures.fontBoundingBoxAscent,
+      fontBoundingBoxDescent: glyph.letterMeasures.fontBoundingBoxDescent
     };
   }
 
