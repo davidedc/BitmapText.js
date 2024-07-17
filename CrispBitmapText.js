@@ -260,7 +260,7 @@ class CrispBitmapText {
 
           const actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
 
-          const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY;
+          const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
           const xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
 
           // For normal sizes:
@@ -282,9 +282,26 @@ class CrispBitmapText {
           else {
             // normal sizes
             const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+            // Example: the user asks to draw the potential bottom of the text (i.e. including the most descending parts
+            // that might or might not be painted on that last row of pixels, depending on the letter, typically
+            // "Ç" or "ç" or italic f in Times New Roman are the most descending letters, and they touch the bottom
+            // because we set textBaseline to 'bottom'. If the letter does not touch the bottom, the number of empty rows
+            // (obviously not in the tightCanvas because... it's tight) is measured by distanceBetweenBottomAndBottomOfCanvas)
+            // at y = 20 (i.e. the 21st pixel starting from the top).
+            // I.e. y = 20 (line 21) is the bottom-most row of pixels that the most descending letters would touch.
+            // The tight canvas of the glyph is 10px tall, and
+            // the distance between the bottom of the tight canvas and the bottom of the canvas is 5px.
+            // Hence we paint the letter starting the top at row (20 + 1) - (10-1) - 5 = row 7. Row 7 i.e. y = 6.
+            //   explained: (20+1) is the row of y = 20; - (10-1) brings you to the top of the tight canvas,
+            //              and to leave 5 spaces below you have to subtract 5.
+            // That's what we do below applying the formula below:
+            //     y = 20 - 10 - 5 + 1 = 6.
+            // Let's verify that: painting the first row of the letter at y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
+            // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
+            // (which is what we wanted).
             ctx.drawImage(glyph.tightCanvas,
               xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
-              y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY);
+              y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY);
           }
         }
 
@@ -300,7 +317,7 @@ class CrispBitmapText {
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
-    const glyphsSheet = this.glyphStore.glyphsSheets[fontFamily][fontEmphasis][fontSize][PIXEL_DENSITY];
+    const glyphsSheet = this.glyphStore.glyphsSheets[fontFamily][fontEmphasis][fontSize][PIXEL_DENSITY+""];
 
 
     for (let i = 0; i < text.length; i++) {
@@ -331,7 +348,7 @@ class CrispBitmapText {
 
           const actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
 
-          const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY;
+          const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
           const xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
 
           // For normal sizes:
@@ -349,20 +366,17 @@ class CrispBitmapText {
             console.log("small size");
             // instead of drawing the glyph from the tightCanvas in the glyph, we draw it from the glyphSheet
             //ctx.drawImage(glyph.tightCanvas, xPos_Phys_Px, yPos_Phys_Px);
-            ctx.drawImage(glyphsSheet, glyph.xInGlyphSheet, 0, glyph.tightWidth, glyph.tightHeight, xPos_Phys_Px, yPos_Phys_Px, glyph.tightWidth, glyph.tightHeight);
+            ctx.drawImage(glyphsSheet, glyph.xInGlyphSheet, 0, glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""], xPos_Phys_Px, yPos_Phys_Px, glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""]);
             alert("small size now is used!");
           }
           else {
             // normal sizes
             const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
-            //ctx.drawImage(glyph.tightCanvas,
-            //  xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
-            //  y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY);
-            ctx.drawImage(glyphsSheet, glyph.xInGlyphSheet, 0, glyph.tightWidth, glyph.tightHeight,
+            ctx.drawImage(glyphsSheet, glyph.xInGlyphSheet, 0, glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""],
               xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
-              //  - (PIXEL_DENSITY - 1) is because 
-              y_Phys_Px - (glyph.tightHeight + PIXEL_DENSITY - 1) - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 2 * PIXEL_DENSITY,
-              glyph.tightWidth, glyph.tightHeight);
+              // same formula for the y as ctx.drawText above, see explanation there
+              y_Phys_Px - glyph.tightHeight[PIXEL_DENSITY+""] - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY,
+              glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""]);
 
           }
         }

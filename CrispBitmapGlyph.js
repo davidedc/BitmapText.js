@@ -250,20 +250,34 @@ class CrispBitmapGlyph {
       return { tightCanvas: null, tightCanvasBox: null };
     }
 
-    // copy the bounding box to a new canvas and add it to the page
+    // Note on why you multiply +1 and -1 by PIXEL_DENSITY: -----------------------
+    // it's a good idea to keep the physical pixels divisible by PIXEL_DENSITY
+    // just for purity reasons, and also in theory it should make the scaling down
+    // of the canvas look better.
+    // ----------------------------------------------------------------------------
+
+    // Always add one to these coordinatest subtractions!
+    // Example: if the canvas right has an x of 15 (i.e. SIXTEENTH pixel from left) and the left is 5 (i.e. SIXTH pixel from left),
+    // then the width of the tight canvas is 15 - 5 + 1 = 11
     const tightCanvasPixelsWidth = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
     tightCanvas.style.width = tightCanvasPixelsWidth / PIXEL_DENSITY + 'px';
     tightCanvas.width = tightCanvasPixelsWidth;
 
+    // Always add one to these coordinatest subtractions!
+    // Example: if the canvas bottom has a y of 15 (i.e. SIXTEENTH pixel from top) and the top is 5 (i.e. SIXTH pixel from top),
+    // then the height of the tight canvas is 15 - 5 + 1 = 11
     const tightCanvasPixelsHeight = tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
     tightCanvas.style.height = tightCanvasPixelsHeight / PIXEL_DENSITY + 'px';
     tightCanvas.height = tightCanvasPixelsHeight;
 
-    tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y;
-    // TODO should be:
-    // tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y - 1;
-    const tightCanvasBoxCtx = tightCanvas.getContext('2d');
+    // This one is a distance so you have to subtract 1
+    // Example: if the canvas is 15 tall and the bottomRightCorner.y (i.e. the bottom of the tight canvas)
+    // is 5 (which means it's on the SIXTH pixel down from the top), then
+    // the distance between the bottom of the canvas and the bottom of the tight canvas box is 15 - 5 - 1 = 9
+    tightCanvas.distanceBetweenBottomAndBottomOfCanvas = canvas.height - tightCanvasBox.bottomRightCorner.y - 1 * PIXEL_DENSITY;
 
+    // Now draw the tight canvas
+    const tightCanvasBoxCtx = tightCanvas.getContext('2d');
     // avoid scaling here and just use physical pixels coordinates and sizes since the source and destination canvases have the same scale
     tightCanvasBoxCtx.drawImage(canvas, tightCanvasBox.topLeftCorner.x , tightCanvasBox.topLeftCorner.y , tightCanvas.width , tightCanvas.height , 0, 0, tightCanvas.width , tightCanvas.height );
 

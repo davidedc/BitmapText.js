@@ -55,14 +55,18 @@ class CrispBitmapGlyphStore {
         continue;
       }
 
-      glyph.tightWidth = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1;
-      glyph.tightHeight = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1;
+      // you use 1 * PIXEL_DENSITY because it's always good to do things in increments of PIXEL_DENSITY
+      // so that everything remains divisible by PIXEL_DENSITY
+      glyph.tightWidth = [];
+      glyph.tightHeight = [];
+      glyph.tightWidth[PIXEL_DENSITY+""] = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
+      glyph.tightHeight[PIXEL_DENSITY+""] = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
 
-      if (!isNaN(glyph.tightWidth) ) {
-        fittingWidth += glyph.tightWidth;
+      if (!isNaN(glyph.tightWidth[PIXEL_DENSITY+""]) ) {
+        fittingWidth += glyph.tightWidth[PIXEL_DENSITY+""];
       }
-      if (glyph.tightHeight > maxHeight) {
-        maxHeight = glyph.tightHeight;
+      if (glyph.tightHeight[PIXEL_DENSITY+""] > maxHeight) {
+        maxHeight = glyph.tightHeight[PIXEL_DENSITY+""];
       }
     }
     let canvas = document.createElement('canvas');
@@ -73,9 +77,9 @@ class CrispBitmapGlyphStore {
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
       // if there is no glyph.tightCanvas, then just continue
-      if (!glyph.tightCanvas || isNaN(glyph.tightWidth)) {
-        if (isNaN(glyph.tightWidth)) {
-          console.log("glyph " + fontEmphasis + " " + fontFamily + " " + fontSize + " " + letter + " has no tightWidth");
+      if (!glyph.tightCanvas || !glyph.tightWidth || isNaN(glyph.tightWidth[PIXEL_DENSITY+""])) {
+        if (!glyph.tightWidth) {
+          console.log("glyph " + fontEmphasis + " " + fontFamily + " " + fontSize + " " + letter + ' has no tightWidth[PIXEL_DENSITY+""]');
         }
         if (!glyph.tightCanvas) {
           console.log("glyph " + fontEmphasis + " " + fontFamily + " " + fontSize + " " + letter + " has no tightCanvas");
@@ -85,11 +89,11 @@ class CrispBitmapGlyphStore {
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
       glyph.xInGlyphSheet = x;
-      // check that glyph.tightWidth is a valid number
-      x += glyph.tightWidth;
+      // check that glyph.tightWidth[PIXEL_DENSITY+""] is a valid number
+      x += glyph.tightWidth[PIXEL_DENSITY+""];
     }
     // put the canvas in the store so that we can retrieve it later
-    this.glyphsSheets[fontFamily][fontEmphasis][fontSize][PIXEL_DENSITY] = canvas;
+    this.glyphsSheets[fontFamily][fontEmphasis][fontSize][PIXEL_DENSITY+""] = canvas;
     return canvas;
   }
 }
