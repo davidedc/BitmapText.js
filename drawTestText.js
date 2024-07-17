@@ -38,6 +38,10 @@ function setupCanvas(ctx, fontSize, fontFamily, fontEmphasis, pixelDensity = PIX
 
 function standardDrawTextOnCanvas(ctx, lines, measures, fontSize, fontFamily, fontEmphasis, pixelDensity = PIXEL_DENSITY) {
   setupCanvas(ctx, fontSize, fontFamily, fontEmphasis, pixelDensity);
+  // note that we draw with baseline = 'bottom' i.e.
+  // the chosen x,y is at the crossing of the first column and last row
+  // of where any pixel can be drawn
+  // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
   for (let i = 0; i < lines.length; i++) {
     ctx.fillText(lines[i], 0, Math.round((i + 1) * measures.height / lines.length));
   }
@@ -122,6 +126,10 @@ function bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapTex
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // note that we assume that we draw with baseline = 'bottom' i.e.
+  // the chosen x,y is at the crossing of the first column and last row
+  // of where any pixel can be drawn
+  // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
   for (let i = 0; i < testCopyLines.length; i++) {
     crispBitmapText.drawText(ctx, testCopyLines[i], 0, Math.round((i + 1) * linesMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontEmphasis);
   }

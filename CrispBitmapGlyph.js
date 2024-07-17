@@ -217,6 +217,8 @@ class CrispBitmapGlyph {
     //ctx.fillStyle = 'white';
     //ctx.fillRect(0, 0, canvas.width / PIXEL_DENSITY, canvas.height / PIXEL_DENSITY);
     // draw the text so that it fits in the canvas
+    // The chosen x,y is at the crossing of the first column and last row
+    // of where any pixel can be drawn.
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
     ctx.textBaseline = 'bottom';
 
