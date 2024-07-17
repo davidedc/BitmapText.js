@@ -214,9 +214,9 @@ class CrispBitmapGlyph {
     ctx.scale(PIXEL_DENSITY, PIXEL_DENSITY);
 
     // make the background white
-    //ctx.fillStyle = 'white';
-    //ctx.fillRect(0, 0, canvas.width / PIXEL_DENSITY, canvas.height / PIXEL_DENSITY);
-    // draw the text so that it fits in the canvas
+    // ctx.fillStyle = 'white';
+    // ctx.fillRect(0, 0, canvas.width / PIXEL_DENSITY, canvas.height / PIXEL_DENSITY);
+    // draw the text so that it fits in the canvas.
     // The chosen x,y is at the crossing of the first column and last row
     // of where any pixel can be drawn.
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
@@ -235,12 +235,14 @@ class CrispBitmapGlyph {
   }
 
   getBoundingBoxOfOnPixels(canvas) {
-    // get the image data
+    // get the image data, and from it get the tight bounding box of the letter/text
     const onPixelsArray = this.getOnPixelsArray(canvas);
-
-    // draw the bounding box of the text
-    // TODO you'd rather use the 2D array here
     const tightCanvasBox = this.getBoundingBox(canvas, onPixelsArray);
+
+    ///////////////////////////////////////////////////////////////////
+    // Copy the tight canvas box to a new canvas and add it to the page
+    // so you can look at it / inspect it if needed.
+    ///////////////////////////////////////////////////////////////////
 
     const tightCanvas = document.createElement('canvas');
 
@@ -264,6 +266,7 @@ class CrispBitmapGlyph {
 
     // avoid scaling here and just use physical pixels coordinates and sizes since the source and destination canvases have the same scale
     tightCanvasBoxCtx.drawImage(canvas, tightCanvasBox.topLeftCorner.x , tightCanvasBox.topLeftCorner.y , tightCanvas.width , tightCanvas.height , 0, 0, tightCanvas.width , tightCanvas.height );
+
     return { tightCanvas, tightCanvasBox };
   }
 
