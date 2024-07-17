@@ -273,9 +273,11 @@ class CrispBitmapText {
           //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
           //    touch the left side of the canvas.
           if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px") !== null) {
+            // NOT USED AT THE MOMENT, I'M NOT SURE THIS IS CORRECT
             // small sizes
             console.log("small size");
             ctx.drawImage(glyph.tightCanvas, xPos_Phys_Px, yPos_Phys_Px);
+            alert("small size now is used!");
           }
           else {
             // normal sizes
@@ -342,11 +344,13 @@ class CrispBitmapText {
           //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
           //    touch the left side of the canvas.
           if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px") !== null) {
+            // NOT USED AT THE MOMENT, I'M NOT SURE THIS IS CORRECT
             // small sizes
             console.log("small size");
             // instead of drawing the glyph from the tightCanvas in the glyph, we draw it from the glyphSheet
             //ctx.drawImage(glyph.tightCanvas, xPos_Phys_Px, yPos_Phys_Px);
             ctx.drawImage(glyphsSheet, glyph.xInGlyphSheet, 0, glyph.tightWidth, glyph.tightHeight, xPos_Phys_Px, yPos_Phys_Px, glyph.tightWidth, glyph.tightHeight);
+            alert("small size now is used!");
           }
           else {
             // normal sizes
