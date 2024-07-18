@@ -1,11 +1,12 @@
 // Globals
 let ENABLE_KERNING = true;
 let PIXEL_DENSITY = 0;
-let hoverFontSize = 0;
-let selectedFontSize = 80;
+let hoverFontSize = 19;
+let selectedFontSize = 19;
 let settingsTextarea = null;
 let fontFamilySelect = null;
-let fontEmphasisSelect = null;
+let fontStyleSelect = null;
+let fontWeightSelect = null;
 
 // Helper function to create and append elements
 function createElement(type, id, text, parent) {
@@ -21,7 +22,8 @@ function setupGlyphUI() {
 
     // Add dropdowns
     fontFamilySelect = addDropdownWithFontFamilies();
-    fontEmphasisSelect = addFontEmphasisDropdown();
+    fontStyleSelect = addFontStyleDropdown();
+    fontWeightSelect = addFontWeightDropdown();
 
     // Add run button
     const runButton = createElement('button', 'run-button', 'Build and Show Glyphs', selectorsDiv);

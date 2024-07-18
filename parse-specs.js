@@ -1,5 +1,5 @@
 // build an object that will contain the specs, which is object keyed by font family,
-// then by font emphasis, then by sub-spec name
+// then by font style, then by sub-spec name
 const specs = {};
 
 function parseSpecs() {
@@ -14,11 +14,11 @@ function parseSpecs() {
 
   console.log("have to parse" + settingsTextareaContentsWithoutCommentsAndEmptyLines);
 
-  const specsForFontFamilyAndFontEmphasisPair = settingsTextareaContentsWithoutCommentsAndEmptyLines.split('---------');
-  console.dir(specsForFontFamilyAndFontEmphasisPair);
+  const specsForFontFamilyAndFontStyleAndFontWeightTriplet = settingsTextareaContentsWithoutCommentsAndEmptyLines.split('---------');
+  console.dir(specsForFontFamilyAndFontStyleAndFontWeightTriplet);
 
-  // go through the specs for each font family and font emphasis pair
-  for (const element of specsForFontFamilyAndFontEmphasisPair) {
+  // go through the specs for each font family and font style pair
+  for (const element of specsForFontFamilyAndFontStyleAndFontWeightTriplet) {
     const setting = element;
     const lines = setting.split('\n');
 
@@ -32,81 +32,86 @@ function parseSpecs() {
 
     if (lines.length > 1) {
       
-      // parse the first two lines, which are the font family and font emphasis
-      const fontFamily = lines[0];
-      const fontEmphasis = lines[1];
+      // parse the first three lines, which are the font family and font style and font weight
+      const fontFamily = lines[0].split(':')[1].trim();
+      const fontStyle = lines[1].split(':')[1].trim();
+      const fontWeight = lines[2].split(':')[1].trim();
 
-      // make the keys for font family and emphasis
+      // make the keys for font family and style
       // in the specs object if they don't exist yet
       if (specs[fontFamily] === undefined) {
         specs[fontFamily] = {};
       }
+      // space for the fontWeight
+      if (specs[fontFamily][fontStyle] === undefined) {
+        specs[fontFamily][fontStyle] = {};
+      }
 
       // the object that will hold the specs for the current
-      // font family and font emphasis pair
-      const specsForFontFamilyAndEmphasisPair = {};
+      // font family and font style pair
+      const specsForFontFamilyAndStyleAndWeightTriplet = {};
 
-      // these are all the specs for a specific fontfamily and fontemphasis
-      var specsContentsOfFontFamilyAndFontEmphasis = lines.slice(2).join('\n');
+      // these are all the specs for a specific fontfamily and fontStyle and fontWeight
+      var specsContentsOfFontFamilyAndFontStyleAndFontWeight = lines.slice(2).join('\n');
       // these contain several sub-specs, each of which is separated by a line with two dashes,
       // so split the sub-specs by the -- separator
-      var subSpecsOfFontFamilyAndFontEmphasisArray = specsContentsOfFontFamilyAndFontEmphasis.split('--');
+      var subSpecsOfFontFamilyAndFontStyleAndFontWeightArray = specsContentsOfFontFamilyAndFontStyleAndFontWeight.split('--');
       
       // go through each sub-spec and parse it
 
       // for each sub-spec...
-      for (const element of subSpecsOfFontFamilyAndFontEmphasisArray) {
-        const subSpecOfFontFamilyFontEmphasis = element;        
+      for (const element of subSpecsOfFontFamilyAndFontStyleAndFontWeightArray) {
+        const subSpecOfFontFamilyFontStyleFontWeight = element;        
 
         // remove all the empty lines
-        const linesOfSubSpecOfFontFamilyFontEmphasis = subSpecOfFontFamilyFontEmphasis.split('\n');
-        for (let j = 0; j < linesOfSubSpecOfFontFamilyFontEmphasis.length; j++) {
-          if (linesOfSubSpecOfFontFamilyFontEmphasis[j] === '') {
-            linesOfSubSpecOfFontFamilyFontEmphasis.splice(j, 1);
+        const linesOfSubSpecOfFontFamilyFontStyleFontWeight = subSpecOfFontFamilyFontStyleFontWeight.split('\n');
+        for (let j = 0; j < linesOfSubSpecOfFontFamilyFontStyleFontWeight.length; j++) {
+          if (linesOfSubSpecOfFontFamilyFontStyleFontWeight[j] === '') {
+            linesOfSubSpecOfFontFamilyFontStyleFontWeight.splice(j, 1);
             j--;
           }
         }
 
         // get the name and content of the sub-spec.
-        if (linesOfSubSpecOfFontFamilyFontEmphasis.length > 1) {
+        if (linesOfSubSpecOfFontFamilyFontStyleFontWeight.length > 1) {
           
           // the name is the first line...
-          const nameOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis[0];
+          const nameOfSubSpecOfFontFamilyFontStyleFontWeight = linesOfSubSpecOfFontFamilyFontStyleFontWeight[0];
           // ... the rest is the content (starting with a line with a dash)
-          const contentOfSubSpecOfFontFamilyFontEmphasis = linesOfSubSpecOfFontFamilyFontEmphasis.slice(1).join('\n');
+          const contentOfSubSpecOfFontFamilyFontStyleFontWeight = linesOfSubSpecOfFontFamilyFontStyleFontWeight.slice(1).join('\n');
 
           // check the sub-spec name and parse it accordingly
-          if (nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxLeft correction px" ||
-              nameOfSubSpecOfFontFamilyFontEmphasis === "CropLeft correction px" ||
-              nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction px" ||
-              nameOfSubSpecOfFontFamilyFontEmphasis === "ActualBoundingBoxRight correction proportional" ||
-              nameOfSubSpecOfFontFamilyFontEmphasis === "Advancement correction proportional"
+          if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxLeft correction px" ||
+              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "CropLeft correction px" ||
+              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxRight correction px" ||
+              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxRight correction proportional" ||
+              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Advancement correction proportional"
               ) {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrectionsForLettersSet(contentOfSubSpecOfFontFamilyFontEmphasis);
+            specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseSingleFloatCorrectionsForLettersSet(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Space advancement override for small sizes in px" ||
-                   nameOfSubSpecOfFontFamilyFontEmphasis === "Advancement override for small sizes in px"
+          else if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Space advancement override for small sizes in px" ||
+                   nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Advancement override for small sizes in px"
                   ) {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrection(contentOfSubSpecOfFontFamilyFontEmphasis);
+            specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseSingleFloatCorrection(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning discretisation for small sizes") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseSingleFloatCorrectionsForSizeBrackets(contentOfSubSpecOfFontFamilyFontEmphasis);
+          else if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Kerning discretisation for small sizes") {
+            specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseSingleFloatCorrectionsForSizeBrackets(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning cutoff") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontEmphasis);
+          else if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Kerning cutoff") {
+            specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseKerningCutoff(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
-          else if (nameOfSubSpecOfFontFamilyFontEmphasis === "Kerning") {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = parseKerning(contentOfSubSpecOfFontFamilyFontEmphasis);
+          else if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Kerning") {
+            specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseKerning(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
           // if we don't have a parser for the sub-spec, just put its string content in the object as it is
           else {
-            specsForFontFamilyAndEmphasisPair[nameOfSubSpecOfFontFamilyFontEmphasis] = contentOfSubSpecOfFontFamilyFontEmphasis;
+            specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = contentOfSubSpecOfFontFamilyFontStyleFontWeight;
           }
         }
       }
 
 
-      specs[fontFamily][fontEmphasis] = specsForFontFamilyAndEmphasisPair;
+      specs[fontFamily][fontStyle][fontWeight] = specsForFontFamilyAndStyleAndWeightTriplet;
     }
   }
   console.dir(specs);

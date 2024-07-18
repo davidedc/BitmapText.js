@@ -1,11 +1,12 @@
-function specCombinationExists(fontFamily, fontEmphasis, correctionKey) {
-  return !(!specs?.[fontFamily]?.[fontEmphasis]?.[correctionKey]);
+function specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey) {
+  return !(!specs?.[fontFamily]?.[fontStyle]?.[fontWeight]?.[correctionKey]);
 }
 
 
 const specsText =
-`Arial
-normal
+`Font family: Arial
+Font style: normal
+Font weight: normal
 --
 Kerning cutoff
 -

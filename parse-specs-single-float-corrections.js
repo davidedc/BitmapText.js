@@ -1,9 +1,9 @@
 function parseSingleFloatCorrection(contentOfSubSpec) {
   // remove the first line as it's a dash
-  const linesOfSubSpecOfFontFamilyFontEmphasis = contentOfSubSpec.split('\n');
-  linesOfSubSpecOfFontFamilyFontEmphasis.splice(0, 1);
+  const linesOfSubSpecOfFontFamilyFontStyleFontWeight = contentOfSubSpec.split('\n');
+  linesOfSubSpecOfFontFamilyFontStyleFontWeight.splice(0, 1);
 
-  // linesOfSubSpecOfFontFamilyFontEmphasis in in the form:
+  // linesOfSubSpecOfFontFamilyFontStyleFontWeight in the form:
   // 0 to 20
   //   [something]
   //   ...
@@ -17,7 +17,7 @@ function parseSingleFloatCorrection(contentOfSubSpec) {
   //   [number] to [number]
   // into an array
   const correctionsBySizeArray = [];
-  for (const element of linesOfSubSpecOfFontFamilyFontEmphasis) {
+  for (const element of linesOfSubSpecOfFontFamilyFontStyleFontWeight) {
     const line = element;
 
     // there can be multiple parts covering different ranges of sizes

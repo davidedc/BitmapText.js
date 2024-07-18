@@ -1,9 +1,10 @@
 class CrispBitmapGlyph {
-  constructor(letter, fontSize, fontFamily, fontEmphasis) {
+  constructor(letter, fontSize, fontFamily, fontStyle, fontWeight) {
     this.letter = letter;
     this.fontSize = fontSize;
     this.fontFamily = fontFamily;
-    this.fontEmphasis = fontEmphasis;
+    this.fontStyle = fontStyle;
+    this.fontWeight = fontWeight;
 
     let returned = this.createCanvases();
     // unpack the returned stuff into class properties
@@ -28,18 +29,18 @@ class CrispBitmapGlyph {
   }
 
   // this method can be refactored with the next two
-  getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontEmphasis, correctionKey, pixelDensity) {
+  getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
 
-    // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
-    if (!specCombinationExists(fontFamily, fontEmphasis, correctionKey)) {
+    // if specs[fontFamily][fontStyle][fontWeight][correctionKey] doesn't exist
+    if (!specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
       return 0;
     }
 
-    if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
+    if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       return 0;
     }
   
-    for (const element of specs[fontFamily][fontEmphasis][correctionKey]) {
+    for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) return 0;
 
@@ -61,18 +62,18 @@ class CrispBitmapGlyph {
     return 0;
   }
 
-  getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, correctionKey) {
+  getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
 
-    // if specs[fontFamily][fontEmphasis][correctionKey] doesn't exist
-    if (!specCombinationExists(fontFamily, fontEmphasis, correctionKey)) {
+    // if specs[fontFamily][fontStyle][fontWeight][correctionKey] doesn't exist
+    if (!specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
       return null;
     }
 
-    if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
+    if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       return null;
     }
   
-    for (const element of specs[fontFamily][fontEmphasis][correctionKey]) {
+    for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
@@ -83,17 +84,17 @@ class CrispBitmapGlyph {
     return null;
   }
 
-  getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, correctionKey, kerning) {
+  getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontStyle, fontWeight, correctionKey, kerning) {
 
-    if (!specCombinationExists(fontFamily, fontEmphasis, correctionKey)) {
+    if (!specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
       return null;
     }
 
-    if (fontSize <= specs[fontFamily][fontEmphasis][correctionKey]) {
+    if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       return null;
     }
   
-    for (const element of specs[fontFamily][fontEmphasis][correctionKey]) {
+    for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
@@ -128,7 +129,7 @@ class CrispBitmapGlyph {
     document.body.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
-    ctx.font = this.fontEmphasis + " " + this.fontSize + 'px ' + this.fontFamily;
+    ctx.font = this.fontStyle + " " + this.fontWeight + " " + this.fontSize + 'px ' + this.fontFamily;
 
     // size the canvas so it fits the this.letter
     const letterMeasuresOrig = ctx.measureText(this.letter);
@@ -168,18 +169,18 @@ class CrispBitmapGlyph {
     // is not enough to fit the letter in the canvas and the top-right gets ever so slightly clipped...
 
     // get the specs for "ActualBoundingBoxLeft correction px" of this
-    // font family and emphasis and size
+    // font family and style and weight and size
     
 
-    letterMeasures.actualBoundingBoxLeft += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction px");
+    letterMeasures.actualBoundingBoxLeft += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction px");
     //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction px");
+    letterMeasures.actualBoundingBoxRight += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction px");
     //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
-    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxLeft correction proportional"));
+    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction proportional"));
     //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "ActualBoundingBoxRight correction proportional"));
+    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction proportional"));
     //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
-    letterMeasures.width += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "Advancement correction proportional"));
+    letterMeasures.width += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "Advancement correction proportional"));
     //console.log ("letterMeasures.width: " + letterMeasures.width);
   
 
@@ -190,7 +191,7 @@ class CrispBitmapGlyph {
     // Happens at small sizes due to a browser rendering defect.
     // This correction will simply paint the letter
     // n pixel more to the right in the mini canvas
-    const cropLeftCorrection_CSS_Px = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontEmphasis, "CropLeft correction px", PIXEL_DENSITY);
+    const cropLeftCorrection_CSS_Px = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "CropLeft correction px", PIXEL_DENSITY);
 
     const canvasPixelsWidth = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
     canvas.style.width = canvasPixelsWidth + 'px';
@@ -222,7 +223,7 @@ class CrispBitmapGlyph {
     // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
     ctx.textBaseline = 'bottom';
 
-    ctx.font = this.fontEmphasis + " " + this.fontSize + 'px ' + this.fontFamily;
+    ctx.font = this.fontStyle + " " + this.fontWeight + " " + this.fontSize + 'px ' + this.fontFamily;
 
     // you have to start painting the letter at actualBoundingBoxLeft because that's how much
     // TO THE LEFT OF THAT POINT that letter will ALSO extend

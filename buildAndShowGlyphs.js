@@ -16,7 +16,7 @@ function buildAndShowGlyphs() {
   if (!isNaN(fontSize)) {
     // remove all canvases and divs from the page
     removeAllCanvasesAndDivs();
-    showCharsAndDataForSize(fontSize, fontFamilySelect.value, fontEmphasisSelect.value);
+    showCharsAndDataForSize(fontSize, fontFamilySelect.value, fontStyleSelect.value, fontWeightSelect.value);
   }
 
 }

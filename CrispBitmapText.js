@@ -16,7 +16,7 @@ class CrispBitmapText {
   //      the actualBoundingBoxLeft of the first character
   //  * actualBoundingBoxRight =
   //      the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
-  measureText(text, fontSize, fontFamily, fontEmphasis) {
+  measureText(text, fontSize, fontFamily, fontStyle, fontWeight) {
     
     if (text.length === 0)
       return {
@@ -30,7 +30,7 @@ class CrispBitmapText {
       };
     
     let width_CSS_Px = 0;
-    const actualBoundingBoxLeft_CSS_Px = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontEmphasis).letterMeasures.actualBoundingBoxLeft;
+    const actualBoundingBoxLeft_CSS_Px = this.glyphStore.getGlyph(fontFamily, fontSize, text[0], fontStyle, fontWeight).letterMeasures.actualBoundingBoxLeft;
     let actualBoundingBoxRight_CSS_Px;
     let advancement_CSS_Px = 0;
     let glyph = null;
@@ -38,9 +38,9 @@ class CrispBitmapText {
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
 
-      glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
+      glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
 
-      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis);
+      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight);
       width_CSS_Px += advancement_CSS_Px;
     }
 
@@ -51,7 +51,7 @@ class CrispBitmapText {
     actualBoundingBoxRight_CSS_Px += glyph.letterMeasures.actualBoundingBoxRight; 
 
     // get the height of the text by looking at the height of 'a' - they are all the same height
-    glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontEmphasis);
+    glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontStyle, fontWeight);
     return {
       width: width_CSS_Px,
       // this one below is a nice convenience but it's not what standard measureText provides
@@ -104,23 +104,23 @@ class CrispBitmapText {
   }
 
 
-  getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis) {
+  getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
 
-    if (specCombinationExists(fontFamily, fontEmphasis, "Kerning cutoff")) {
-      if (fontSize <= specs[fontFamily][fontEmphasis]["Kerning cutoff"]) {
+    if (specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning cutoff")) {
+      if (fontSize <= specs[fontFamily][fontStyle][fontWeight]["Kerning cutoff"]) {
         return 0;
       }
     }
 
 
 
-    if (ENABLE_KERNING && specCombinationExists(fontFamily, fontEmphasis, "Kerning")) {
+    if (ENABLE_KERNING && specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning")) {
   
       // for all entries in the Kerning array with a sizeRange that includes the current font size
       //   get the kerning array and for each one:
       //     if letter matches any of the letters in the "left" object or the "left" object is "*any*" and the nextLetter matches any of the letters in the "right" object or the "right" object is "*any*"
       //       return the value of the "adjustment" property
-      for (const element of specs[fontFamily][fontEmphasis]["Kerning"]) {
+      for (const element of specs[fontFamily][fontStyle][fontWeight]["Kerning"]) {
         const kerningEntry = element;
         if (kerningEntry.sizeRange.from <= fontSize && kerningEntry.sizeRange.to >= fontSize) {
           // scan the kerningEntry.kerning array
@@ -145,7 +145,7 @@ class CrispBitmapText {
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) {
+  calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) {
     // if (letter === ' ') debugger
 
     // if glyph doesn't contain the letter, log out an error with the missing letter
@@ -167,7 +167,7 @@ class CrispBitmapText {
     // console.log(glyph.letterMeasures.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Space advancement override for small sizes in px");
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
@@ -180,11 +180,10 @@ class CrispBitmapText {
       // for small sizes we create our own advancement (width)
       // NOTE THIS IS NOW DISABLED because this advancement should be exactly the same at any PIXEL_DENSITY
       // ...but it's not because crisp pixels painted at different PIXEL_DENSITYs are painted differently.
-      const advancementOverrideForSmallSizes_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px");
+      const advancementOverrideForSmallSizes_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Advancement override for small sizes in px");
       //console.log("advancementOverrideForSmallSizes_CSS_Px: " + advancementOverrideForSmallSizes_CSS_Px);
       if (advancementOverrideForSmallSizes_CSS_Px !== null) {
         x_CSS_Px += ((glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY + 1) + advancementOverrideForSmallSizes_CSS_Px;
-        //console.log("x_CSS_Px: " + x_CSS_Px + " for letter " + letter + " and nextLetter " + text[i + 1] + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
       }
       // for all other sizes we use the advancement (width) as given by the browser
       else {
@@ -195,9 +194,9 @@ class CrispBitmapText {
     // Next, apply the kerning correction ----------------------------
 
     const nextLetter = text[i + 1];
-    const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontEmphasis);
+    const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
 
-    // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontEmphasis, correctionKey, kerning)
+    // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontStyle, fontWeight, correctionKey, kerning)
     
     // We apply kerning in two ways depending on the size of the font.
     //  * For large sizes we multiply the advancement of the letter by the kerning
@@ -209,9 +208,9 @@ class CrispBitmapText {
     //if (fontSize === 16) {
     //  debugger
     //}
-    const kerningDiscretisationForSmallSizes_CSS_Px = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontEmphasis, "Kerning discretisation for small sizes", kerningCorrection);
+    const kerningDiscretisationForSmallSizes_CSS_Px = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontStyle, fontWeight, "Kerning discretisation for small sizes", kerningCorrection);
     if (kerningDiscretisationForSmallSizes_CSS_Px !== null) {
-      //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes_CSS_Px + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontEmphasis " + fontEmphasis + " and fontFamily " + fontFamily);
+      //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes_CSS_Px + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontStyle " + fontStyle + " and fontFamily " + fontFamily);
       x_CSS_Px -= kerningDiscretisationForSmallSizes_CSS_Px;
     }
     else {
@@ -233,14 +232,14 @@ class CrispBitmapText {
   // and see if it's bold or not. This is not a good idea because it's slow.
   // So, the best way is to keep track of the font-family, font-size and
   // font-style that you use in your own code and pass as params.
-  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontEmphasis) {
+  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight) {
 
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
-      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
+      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
 
 
       if (glyph) {
@@ -278,7 +277,7 @@ class CrispBitmapText {
           //    So, in particular, the left spacing of the first character will be ignored, which really is
           //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
           //    touch the left side of the canvas.
-          if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px") !== null) {
+          if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Advancement override for small sizes in px") !== null) {
             // NOT USED AT THE MOMENT, I'M NOT SURE THIS IS CORRECT
             // small sizes
             console.log("small size");
@@ -311,24 +310,24 @@ class CrispBitmapText {
           }
         }
 
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) * PIXEL_DENSITY;
+        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
 
       }
     }
   }
 
 
-  drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontEmphasis) {
+  drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight) {
 
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
-    const glyphsSheet = this.glyphStore.glyphsSheets[fontFamily][fontEmphasis][fontSize][PIXEL_DENSITY+""];
+    const glyphsSheet = this.glyphStore.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY+""];
 
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
-      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontEmphasis);
+      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
 
 
       if (glyph) {
@@ -366,7 +365,7 @@ class CrispBitmapText {
           //    So, in particular, the left spacing of the first character will be ignored, which really is
           //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
           //    touch the left side of the canvas.
-          if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontEmphasis, "Advancement override for small sizes in px") !== null) {
+          if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Advancement override for small sizes in px") !== null) {
             // NOT USED AT THE MOMENT, I'M NOT SURE THIS IS CORRECT
             // small sizes
             console.log("small size");
@@ -387,7 +386,7 @@ class CrispBitmapText {
           }
         }
 
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontEmphasis) * PIXEL_DENSITY;
+        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
 
       }
     }
