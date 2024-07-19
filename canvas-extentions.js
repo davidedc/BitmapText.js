@@ -30,3 +30,17 @@ CanvasRenderingContext2D.prototype.getHashString = function () {
   const hex = (this.getHash() + 0x100000000).toString(16);
   return hex.substring(1, 9);
 }
+
+CanvasRenderingContext2D.prototype.toPNGImage = function() {
+  // Get the data URL of the canvas content
+  const dataURL = this.canvas.toDataURL('image/png');
+  
+  // Create a new Image element
+  const img = new Image();
+  
+  // Set the src attribute to the data URL
+  img.src = dataURL;
+  
+  // Return the Image element
+  return img;
+};

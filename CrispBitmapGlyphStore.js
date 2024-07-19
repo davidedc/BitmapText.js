@@ -98,8 +98,18 @@ class CrispBitmapGlyphStore {
       // check that glyph.tightWidth[PIXEL_DENSITY+""] is a valid number
       x += glyph.tightWidth[PIXEL_DENSITY+""];
     }
-    // put the canvas in the store so that we can retrieve it later
+
+    const glyphsSheetsPNG = ctx.toPNGImage();
+    // NOTE that you can't use the image in here... although the data URL is a base64-encoded
+    // string representing the image data, and there is no network request involved... however,
+    // even though the data is available immediately, the Image element still needs a short
+    // amount of time to process the data and make it available for rendering.
+    // This processing time is typically very brief, but if you try it here, you'll get frequent
+    // failures to paint the letters from this image.
     this.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY+""] = canvas;
-    return canvas;
+
+    // ... but you CAN return it here as it will be added to the DOM and the browser seems to
+    // have no problem in showing it 100% of the time.
+    return glyphsSheetsPNG
   }
 }
