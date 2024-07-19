@@ -8,10 +8,6 @@ function showCharsAndDataForSize(fontSize, fontFamily, fontStyle, fontWeight) {
     PIXEL_DENSITY = 1;
   }
 
-
-  // create a new CrispBitmapGlyph object
-  const crispBitmapGlyphStore = new CrispBitmapGlyphStore();
-
   crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph(' ', fontSize, fontFamily, fontStyle, fontWeight));
   crispBitmapGlyphStore.addGlyph(new CrispBitmapGlyph('█', fontSize, fontFamily, fontStyle, fontWeight));
 
