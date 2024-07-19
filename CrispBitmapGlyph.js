@@ -6,26 +6,22 @@ class CrispBitmapGlyph {
     this.fontStyle = fontStyle;
     this.fontWeight = fontWeight;
 
-    let returned = this.createCanvases();
-    // unpack the returned stuff into class properties
-    this.canvas = returned.canvas;
-    this.tightCanvas = returned.tightCanvas;
-    this.tightCanvasBox = returned.tightCanvasBox;
-    this.letterMeasures = returned.letterMeasures;
+    const { canvas, tightCanvas, tightCanvasBox, letterMeasures } = this.createCanvases();
+    this.canvas = canvas;
+    this.tightCanvas = tightCanvas;
+    this.tightCanvasBox = tightCanvasBox;
+    this.letterMeasures = letterMeasures;
 
     this.displayCanvasesAndData();
-    //debugger
   }
 
   displayCanvasesAndData() {
     document.body.appendChild(this.canvas);
-    if (this.tightCanvas === null) {
-      // append a new line
-      const div = document.createElement('div');
-      document.body.appendChild(div);
-      return;
+    if (!this.tightCanvas) {
+      document.body.appendChild(document.createElement('div'));
+    } else {
+      document.body.appendChild(this.tightCanvas);
     }
-    document.body.appendChild(this.tightCanvas);
   }
 
   // this method can be refactored with the next two
@@ -129,7 +125,7 @@ class CrispBitmapGlyph {
     document.body.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
-    ctx.font = this.fontStyle + " " + this.fontWeight + " " + this.fontSize + 'px ' + this.fontFamily;
+    ctx.font = `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
 
     // size the canvas so it fits the this.letter
     const letterMeasuresOrig = ctx.measureText(this.letter);
@@ -287,9 +283,9 @@ class CrispBitmapGlyph {
 
   createCanvases() {
     const { canvas, letterMeasures } = this.createCanvasWithLetter();
-
     const { tightCanvas, tightCanvasBox } = this.getBoundingBoxOfOnPixels(canvas);
-    if (tightCanvas === null)
+
+    if (!tightCanvas)
       return { canvas, tightCanvas: null, tightCanvasBox: null, letterMeasures };
 
     const div = document.createElement('div');

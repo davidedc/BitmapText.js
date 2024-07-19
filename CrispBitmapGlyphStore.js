@@ -36,10 +36,7 @@ class CrispBitmapGlyphStore {
   }
 
   getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight) {
-    if (this.glyphs[fontFamily]?.[fontStyle]?.[fontWeight]?.[fontSize]?.[letter]) {
-      return this.glyphs[fontFamily][fontStyle][fontWeight][fontSize][letter];
-    }
-    return null;
+    return this.glyphs?.[fontFamily]?.[fontStyle]?.[fontWeight]?.[fontSize]?.[letter] || null;
   }
 
   // Get a canvas with all the glyphs of a certain font family, font size and font style
@@ -48,12 +45,12 @@ class CrispBitmapGlyphStore {
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
   // 3. draw each glyph in the canvas
   getGlyphsSheet(fontFamily, fontSize, fontStyle, fontWeight) {
-    if (! this.glyphs[fontFamily]?.[fontStyle]?.[fontWeight]?.[fontSize])
-      return;
+    const glyphs = this.glyphs?.[fontFamily]?.[fontStyle]?.[fontWeight]?.[fontSize];
+    if (!glyphs) return null;
 
-    let glyphs = this.glyphs[fontFamily][fontStyle][fontWeight][fontSize];
     let fittingWidth = 0;
     let maxHeight = 0;
+
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
       // the width is calculated from the glyph.tightCanvasBox
@@ -68,34 +65,32 @@ class CrispBitmapGlyphStore {
 
       // you use 1 * PIXEL_DENSITY because it's always good to do things in increments of PIXEL_DENSITY
       // so that everything remains divisible by PIXEL_DENSITY
-      glyph.tightWidth = [];
-      glyph.tightHeight = [];
-      glyph.tightWidth[PIXEL_DENSITY+""] = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
-      glyph.tightHeight[PIXEL_DENSITY+""] = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
+      const tightWidth = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
+      const tightHeight = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
 
-      if (!isNaN(glyph.tightWidth[PIXEL_DENSITY+""]) ) {
-        fittingWidth += glyph.tightWidth[PIXEL_DENSITY+""];
-      }
-      if (glyph.tightHeight[PIXEL_DENSITY+""] > maxHeight) {
-        maxHeight = glyph.tightHeight[PIXEL_DENSITY+""];
-      }
+      glyph.tightWidth = { [PIXEL_DENSITY+""]: tightWidth };
+      glyph.tightHeight = { [PIXEL_DENSITY+""]: tightHeight };
+
+      if (!isNaN(tightWidth)) fittingWidth += tightWidth;
+      if (tightHeight > maxHeight) maxHeight = tightHeight;
     }
-    let canvas = document.createElement('canvas');
+
+    const canvas = document.createElement('canvas');
     canvas.width = fittingWidth;
     canvas.height = maxHeight;
-    let ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     let x = 0;
+
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
       // if there is no glyph.tightCanvas, then just continue
       if (!glyph.tightCanvas || !glyph.tightWidth || isNaN(glyph.tightWidth[PIXEL_DENSITY+""])) {
         if (!glyph.tightWidth) {
-          console.log("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + ' has no tightWidth[PIXEL_DENSITY+""]');
+          console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + ' has no tightWidth[PIXEL_DENSITY+""]');
         }
         if (!glyph.tightCanvas) {
-          console.log("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + " has no tightCanvas");
+          console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + " has no tightCanvas");
         }
-        
         continue;
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
