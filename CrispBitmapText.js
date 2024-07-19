@@ -50,8 +50,6 @@ class CrispBitmapText {
     // (this is in place of adding its advancement_CSS_Px)
     actualBoundingBoxRight_CSS_Px += glyph.letterMeasures.actualBoundingBoxRight; 
 
-    // get the height of the text by looking at the height of 'a' - they are all the same height
-    glyph = this.glyphStore.getGlyph(fontFamily, fontSize, 'a', fontStyle, fontWeight);
     return {
       width: width_CSS_Px,
       // this one below is a nice convenience but it's not what standard measureText provides
