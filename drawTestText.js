@@ -114,7 +114,6 @@ function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGl
   // drawing the text
   // ------------------------------------------------
 
-  debugger
   drawGlyphSheet(crispBitmapGlyphStore, fontFamily, fontSize, fontStyle, fontWeight);
   bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
   bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
@@ -168,7 +167,6 @@ function stdDrawSmoothText(smoothTestTextMeasures_CSS_Px, testCopyLines, fontSiz
   const canvasHeight = Math.round(smoothTestTextMeasures_CSS_Px.height);
   const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext('2d');
-  debugger
   standardDrawTextOnCanvas(ctx, testCopyLines, smoothTestTextMeasures_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight);
   addElementToDOM(canvas);
   addElementToDOM(createDivWithText('hash: ' + ctx.getHashString()));
