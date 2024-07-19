@@ -7,24 +7,31 @@ class CrispBitmapGlyphStore {
   }
 
   addGlyph(glyph) {
-    if (!this.glyphs[glyph.fontFamily]) {
-      this.glyphs[glyph.fontFamily] = {};
-      this.glyphsSheets[glyph.fontFamily] = {};
-    }
-    if (!this.glyphs[glyph.fontFamily][glyph.fontStyle]) {
-      this.glyphs[glyph.fontFamily][glyph.fontStyle] = {};
-      this.glyphsSheets[glyph.fontFamily][glyph.fontStyle] = {};
-    }
-    if (!this.glyphs[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight]) {
-      this.glyphs[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight] = {};
-      this.glyphsSheets[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight] = {};
-    }
-    if (!this.glyphs[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight][glyph.fontSize]) {
-      this.glyphs[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight][glyph.fontSize] = {};
-      this.glyphsSheets[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight][glyph.fontSize] = {};
-    }
-    if (!this.glyphs[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight][glyph.fontSize][glyph.letter]) {
-      this.glyphs[glyph.fontFamily][glyph.fontStyle][glyph.fontWeight][glyph.fontSize][glyph.letter] = glyph;
+    // the structure of the object follows these four levels:
+    const propertiesLevels = ['fontFamily', 'fontStyle', 'fontWeight', 'fontSize', 'letter'];
+    // so whenever you add a glyph, you go through the propertiesLevels and create the
+    // structure (or part of it) if it's not there.
+
+    let currentGlyphsLevel = this.glyphs;
+    let currentGlyphsSheetsLevel = this.glyphsSheets;
+  
+    for (let i = 0; i < propertiesLevels.length; i++) {
+      const prop = propertiesLevels[i];
+      const value = glyph[prop];
+  
+      if (!currentGlyphsLevel[value]) {
+        currentGlyphsLevel[value] = {};
+        if (i < propertiesLevels.length - 1) {
+          currentGlyphsSheetsLevel[value] = {};
+        }
+      }
+  
+      if (i === propertiesLevels.length - 1) {
+        currentGlyphsLevel[value] = glyph;
+      } else {
+        currentGlyphsLevel = currentGlyphsLevel[value];
+        currentGlyphsSheetsLevel = currentGlyphsSheetsLevel[value];
+      }
     }
   }
 
