@@ -50,6 +50,35 @@ function setupGlyphUI() {
         navigator.clipboard.writeText(JSON.stringify(thisRunsHashes));
     });
 
+    // button to automatically scan through all the sizes of a particular triplet (font family, style, weight)
+    const buildAllSizesButton = createElement('button', 'build-all-sizes-button', 'Build and Show Glyphs at All Sizes', selectorsDiv);
+    buildAllSizesButton.addEventListener('click', function() {
+        let i = 3;
+        setTimeout(() => {
+            let i = 3;
+            const interval = setInterval(() => {
+                if (i >= 81) {
+                    clearInterval(interval);
+                    return;
+                }
+                selectedFontSize = hoverFontSize = i;
+
+                // un-highlight all the buttons
+                for (let j = 0; j < 81; j++) {
+                    const button = document.getElementById('button-size-' + j);
+                    button.style.backgroundColor = 'white';
+                }
+
+                // highlight the button of the size we are currently building
+                const button = document.getElementById('button-size-' + i);
+                button.style.backgroundColor = 'darkgray';
+
+                buildAndShowGlyphs();
+                i++;
+            });
+        }, 1);
+    });
+
     selectorsDiv.appendChild(document.createElement('br'));
 
     // Add settings textarea
