@@ -79,6 +79,33 @@ function setupGlyphUI() {
         }, 1);
     });
 
+    // button to download all the png glyphs sheets
+    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download All Glyphs Sheets', selectorsDiv);
+    downloadAllSheetsButton.addEventListener('click', function() {
+        // use JSZip to create a zip file with all the pngs
+        // for this font family, style, weight and all sizes
+        // This is done starting from the canvases, which are all at
+        // crispBitmapGlyphStore.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY+""];
+        const zip = new JSZip();
+        const folder = zip.folder("glyphsSheets");
+        const glyphsSheets = crispBitmapGlyphStore.glyphsSheets;
+        const fontFamily = fontFamilySelect.value;
+        const fontStyle = fontStyleSelect.value;
+        const fontWeight = fontWeightSelect.value;
+        const sizes = Object.keys(glyphsSheets[fontFamily][fontStyle][fontWeight]);
+        sizes.forEach(size => {
+            const canvas = glyphsSheets[fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""];
+            const dataUrl = canvas.toDataURL('image/png');
+            const data = dataUrl.split(',')[1];
+            folder.file(size + '.png', data, { base64: true });
+        });
+        zip.generateAsync({ type: "blob" }).then(function(content) {
+            saveAs(content, "glyphsSheets.zip");
+        });
+        
+    });
+
+
     selectorsDiv.appendChild(document.createElement('br'));
 
     // Add settings textarea
