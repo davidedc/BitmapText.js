@@ -1,9 +1,9 @@
-// a class CrispBitmpTextDrawer, constructed with a CrispBitmapGlyphStore
+// a class CrispBitmpTextDrawer, constructed with a CrispBitmapGlyphStore_Full
 // has a method to draw text on a canvas
-// the text is drawn by looking up the glyphs in the CrispBitmapGlyphStore
+// the text is drawn by looking up the glyphs in the CrispBitmapGlyphStore_Full
 // and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
 // the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
-class CrispBitmapText {
+class CrispBitmapText_Full {
   constructor(glyphStore) {
     this.glyphStore = glyphStore;
   }

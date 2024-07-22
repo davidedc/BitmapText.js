@@ -1,6 +1,6 @@
-// a class to store all the crispBitmapGlyphs
+// a class to store all the crispBitmapGlyph_Fulls
 // so that we can retrieve them by font family, font size and letter
-class CrispBitmapGlyphStore {
+class CrispBitmapGlyphStore_Full {
   constructor() {
     this.glyphs = {};
     this.glyphsSheets = {};

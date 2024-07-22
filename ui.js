@@ -85,10 +85,10 @@ function setupGlyphUI() {
         // use JSZip to create a zip file with all the pngs
         // for this font family, style, weight and all sizes
         // This is done starting from the canvases, which are all at
-        // crispBitmapGlyphStore.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY+""];
+        // crispBitmapGlyphStore_Full.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY+""];
         const zip = new JSZip();
         const folder = zip.folder("glyphsSheets");
-        const glyphsSheets = crispBitmapGlyphStore.glyphsSheets;
+        const glyphsSheets = crispBitmapGlyphStore_Full.glyphsSheets;
         const fontFamily = fontFamilySelect.value;
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;

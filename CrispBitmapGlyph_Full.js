@@ -1,4 +1,4 @@
-class CrispBitmapGlyph {
+class CrispBitmapGlyph_Full {
   constructor(letter, fontSize, fontFamily, fontStyle, fontWeight) {
     this.letter = letter;
     this.fontSize = fontSize;
