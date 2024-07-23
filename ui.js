@@ -97,7 +97,11 @@ function setupGlyphUI() {
             const canvas = glyphsSheets[fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""];
             const dataUrl = canvas.toDataURL('image/png');
             const data = dataUrl.split(',')[1];
-            folder.file(size + '.png', data, { base64: true });
+            // the filename is the font family, style, weight, size and pixel density, all lowercase, with
+            // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
+            let fileName = 'glyphs-sheet-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size + '-density-' + PIXEL_DENSITY;
+            fileName = fileName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+            folder.file(fileName + '.png', data, { base64: true });
         });
         zip.generateAsync({ type: "blob" }).then(function(content) {
             saveAs(content, "glyphsSheets.zip");
