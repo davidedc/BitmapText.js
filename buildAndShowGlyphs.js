@@ -9,7 +9,6 @@ function buildAndShowGlyphs() {
     fontSize = selectedFontSize;
   }
 
-
   // get the contents of the settings-textarea and split the contents by the --------- separator
   parseSpecs();
 

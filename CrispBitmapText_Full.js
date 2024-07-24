@@ -224,7 +224,7 @@ class CrispBitmapText_Full {
     return Math.round(x_CSS_Px);
   }
 
-  // Note that you can parse the fintSize fontFamily and font-style from the ctx.font string
+  // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string
   // HOWEVER for some quirks of Canvas implementaiton there is no way to read the font-weight
   // (i.e. "bold"). The only way would be to do some text rendering and then measure the text
   // and see if it's bold or not. This is not a good idea because it's slow.
