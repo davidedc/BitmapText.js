@@ -1,12 +1,21 @@
 // build an object that will contain the specs, which is object keyed by font family,
 // then by font style, then by sub-spec name
 const specs = {};
+let previousSoecsTextareaValue = null;
 
 function parseSpecs() {
- 
-  // get contents of the settingsTextarea and remove all the lines containing double slashes (we'll treat them as comments)
+
+  // get contents of the settingsTextarea
   const settingsTextareaContents = settingsTextarea.value;
-  // double shashes can be anywhere in the line, so we have to remove the whole line
+
+  // if the contents of the textarea haven't changed, don't parse them again
+  if (settingsTextareaContents === previousSoecsTextareaValue) {
+    return;
+  }
+
+  previousSoecsTextareaValue = settingsTextareaContents;
+
+  // remove comments i.e. double shashes. Can be anywhere in the line, so we have to remove the whole line
   const settingsTextareaContentsWithoutComments = settingsTextareaContents.replace(/.*\/\/.*/g, '');
 
   // also remove empty lines
