@@ -80,7 +80,7 @@ function setupGlyphUI() {
     });
 
     // button to download all the png glyphs sheets
-    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download All Glyphs Sheets', selectorsDiv);
+    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download glyphs sheets & kerning maps', selectorsDiv);
     downloadAllSheetsButton.addEventListener('click', function() {
         // use JSZip to create a zip file with all the pngs
         // for this font family, style, weight and all sizes
@@ -102,6 +102,15 @@ function setupGlyphUI() {
             let fileName = 'glyphs-sheet-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size + '-density-' + PIXEL_DENSITY;
             fileName = fileName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
             folder.file(fileName + '.png', data, { base64: true });
+
+            // get the kerning table at this size, it's in
+            // the glyphStore in kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
+            const kerningTable = crispBitmapGlyphStore_Full.kerningTables[fontFamily][fontStyle][fontWeight][size];
+
+            // save it in a JSON file with the same name as the png file
+            folder.file(fileName + '.json', JSON.stringify(kerningTable));
+
+
         });
         zip.generateAsync({ type: "blob" }).then(function(content) {
             saveAs(content, "glyphsSheets.zip");

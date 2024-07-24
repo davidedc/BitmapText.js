@@ -102,7 +102,7 @@ class CrispBitmapText_Full {
   }
 
 
-  getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
+  getKerningCorrectionFromSpec(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
 
     if (specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning cutoff")) {
       if (fontSize <= specs[fontFamily][fontStyle][fontWeight]["Kerning cutoff"]) {
@@ -110,9 +110,7 @@ class CrispBitmapText_Full {
       }
     }
 
-
-
-    if (ENABLE_KERNING && specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning")) {
+    if (specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning")) {
   
       // for all entries in the Kerning array with a sizeRange that includes the current font size
       //   get the kerning array and for each one:
@@ -137,6 +135,76 @@ class CrispBitmapText_Full {
 
     return 0;
   }
+
+  buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize) {
+
+    // check if the kerningTable already exists in the glyphs store
+    if (this.glyphStore.kerningTables[fontFamily] &&
+        this.glyphStore.kerningTables[fontFamily][fontStyle] &&
+        this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight] &&
+        this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight][fontSize]) {
+      return;
+    }
+
+    // all the letters are
+    // lower case letters
+    //  for (let i = 97; i < 123; i++)
+    //    const letter = String.fromCharCode(i);
+    // upper case letters
+    //   for (let i = 65; i < 91; i++)
+    //     const letter = String.fromCharCode(i);
+    // numbers
+    //   for (let i = 48; i < 58; i++) {
+    //     const letter = String.fromCharCode(i);
+    // all others
+    // const allOtherChars = 'ß!"#$%&€\'’()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
+
+    const allLetters = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ß!\"#$%&€'’()*+,-./:;<=>?@[\\]^_`{|}~—£°²·ÀÇàç•";
+
+    // go through all the letters and for each letter, go through all the other letters
+    // and calculate the kerning correction between the two letters
+    // and store it in the kerningTable
+    const kerningTable = {};
+    for (const letter of allLetters) {
+      kerningTable[letter] = {};
+      for (const nextLetter of allLetters) {
+        const kerningCorrection = this.getKerningCorrectionFromSpec(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
+        if (kerningCorrection !== 0) {
+          kerningTable[letter][nextLetter] = kerningCorrection;
+        }
+      }
+    }
+
+    // prune the letters that don't have any kerning corrections
+    for (const letter in kerningTable) {
+      if (Object.keys(kerningTable[letter]).length === 0) {
+        delete kerningTable[letter];
+      }
+    }
+
+    // create the object level by level if it doesn't exist
+    // in this.glyphStore.kerningTables
+    let currentKerningTableLevel = this.glyphStore.kerningTables;
+    for (let i = 0; i < 4; i++) {
+      const prop = [fontFamily, fontStyle, fontWeight, fontSize][i];
+      if (!currentKerningTableLevel[prop]) {
+        currentKerningTableLevel[prop] = {};
+      }
+      if (i === 3) {
+        currentKerningTableLevel[prop] = kerningTable;
+      }
+      else {
+        currentKerningTableLevel = currentKerningTableLevel[prop];
+      }
+    }
+
+    // store the kerningTable in the glyphs store
+    // so that it can be retrieved later
+    // when drawing text
+    this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
+
+  }
+          
 
 
   // Get the advancement of the i-th character i.e. needed AFTER the i-th character
@@ -192,7 +260,7 @@ class CrispBitmapText_Full {
     // Next, apply the kerning correction ----------------------------
 
     const nextLetter = text[i + 1];
-    const kerningCorrection = this.getKerningCorrection(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
+    let kerningCorrection = this.getKerningCorrection(fontFamily, fontStyle, fontWeight, fontSize, nextLetter, letter);
 
     // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontStyle, fontWeight, correctionKey, kerning)
     
@@ -222,6 +290,21 @@ class CrispBitmapText_Full {
     // following this measurement, we want to return an
     // integer coordinate here
     return Math.round(x_CSS_Px);
+  }
+
+  getKerningCorrection(fontFamily, fontStyle, fontWeight, fontSize, nextLetter, letter) {
+    this.buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize);
+    //console.log("kerningTable at fontSize " + fontSize + " fontStyle " + fontStyle + " fontWeight " + fontWeight + " fontFamily " + fontFamily + " letter " + letter + " nextLetter " + nextLetter );
+    // if there is no next letter, the kerning correction is 0
+    let kerningCorrection = 0;
+    if (ENABLE_KERNING && nextLetter) {
+      let kerningCorrectionPlace = this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight][fontSize];
+      // if the kerning correction is not in the kerning table, it's 0
+      if (kerningCorrectionPlace[letter] && kerningCorrectionPlace[letter][nextLetter]) {
+        kerningCorrection = kerningCorrectionPlace[letter][nextLetter];
+      }
+    }
+    return kerningCorrection;
   }
 
   // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string

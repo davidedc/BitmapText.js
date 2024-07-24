@@ -4,6 +4,11 @@ class CrispBitmapGlyphStore_Full {
   constructor() {
     this.glyphs = {};
     this.glyphsSheets = {};
+    this.kerningTables = {};
+  }
+
+  clearKerningTables() {
+    this.kerningTables = {};
   }
 
   addGlyph(glyph) {

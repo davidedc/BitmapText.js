@@ -14,6 +14,8 @@ function parseSpecs() {
   }
 
   previousSoecsTextareaValue = settingsTextareaContents;
+  // clear the kerning tables
+  crispBitmapGlyphStore_Full.clearKerningTables();
 
   // remove comments i.e. double shashes. Can be anywhere in the line, so we have to remove the whole line
   const settingsTextareaContentsWithoutComments = settingsTextareaContents.replace(/.*\/\/.*/g, '');
