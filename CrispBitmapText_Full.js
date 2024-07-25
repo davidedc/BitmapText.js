@@ -293,7 +293,6 @@ class CrispBitmapText_Full {
   }
 
   getKerningCorrection(fontFamily, fontStyle, fontWeight, fontSize, nextLetter, letter) {
-    this.buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize);
     //console.log("kerningTable at fontSize " + fontSize + " fontStyle " + fontStyle + " fontWeight " + fontWeight + " fontFamily " + fontFamily + " letter " + letter + " nextLetter " + nextLetter );
     // if there is no next letter, the kerning correction is 0
     let kerningCorrection = 0;

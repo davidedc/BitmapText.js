@@ -3,20 +3,33 @@
 const specs = {};
 let previousSoecsTextareaValue = null;
 
-function parseSpecs() {
+// If the contents of the specs textarea have changed, parse them, clear all the kerning tables and build
+// the one for the current size.
+// If the contents have not changed, check if the kerning table for the current size exists and if not, build it.
+function parseSpecsIfChangedAndCalculateKerningsIfNeeded() {
 
   // get contents of the settingsTextarea
   const settingsTextareaContents = settingsTextarea.value;
 
   // if the contents of the textarea haven't changed, don't parse them again
   if (settingsTextareaContents === previousSoecsTextareaValue) {
+    buildKerningTableIfDoesntExist();
     return;
   }
 
   previousSoecsTextareaValue = settingsTextareaContents;
-  // clear the kerning tables
+
+  parseSpecs(settingsTextareaContents);
+  console.dir(specs);
+
+  // clear the kerning tables because the specs probably have changed
+  // (unless the user is just changing, say, a comment, but we can't know that)
   crispBitmapGlyphStore_Full.clearKerningTables();
 
+  buildKerningTableIfDoesntExist();
+}
+
+function parseSpecs(settingsTextareaContents) {
   // remove comments i.e. double shashes. Can be anywhere in the line, so we have to remove the whole line
   const settingsTextareaContentsWithoutComments = settingsTextareaContents.replace(/.*\/\/.*/g, '');
 
@@ -92,16 +105,14 @@ function parseSpecs() {
 
           // check the sub-spec name and parse it accordingly
           if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxLeft correction px" ||
-              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "CropLeft correction px" ||
-              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxRight correction px" ||
-              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxRight correction proportional" ||
-              nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Advancement correction proportional"
-              ) {
+            nameOfSubSpecOfFontFamilyFontStyleFontWeight === "CropLeft correction px" ||
+            nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxRight correction px" ||
+            nameOfSubSpecOfFontFamilyFontStyleFontWeight === "ActualBoundingBoxRight correction proportional" ||
+            nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Advancement correction proportional") {
             specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseSingleFloatCorrectionsForLettersSet(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
           else if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Space advancement override for small sizes in px" ||
-                   nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Advancement override for small sizes in px"
-                  ) {
+            nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Advancement override for small sizes in px") {
             specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseSingleFloatCorrection(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
           else if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Kerning discretisation for small sizes") {
@@ -113,6 +124,7 @@ function parseSpecs() {
           else if (nameOfSubSpecOfFontFamilyFontStyleFontWeight === "Kerning") {
             specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = parseKerning(contentOfSubSpecOfFontFamilyFontStyleFontWeight);
           }
+
           // if we don't have a parser for the sub-spec, just put its string content in the object as it is
           else {
             specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = contentOfSubSpecOfFontFamilyFontStyleFontWeight;
@@ -124,7 +136,6 @@ function parseSpecs() {
       specs[fontFamily][fontStyle][fontWeight] = specsForFontFamilyAndStyleAndWeightTriplet;
     }
   }
-  console.dir(specs);
 }
 
 // Parses a size range with possible pixel density into an object with keys "from" and "to" and "pixelDensity"

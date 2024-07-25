@@ -8,8 +8,10 @@ function buildAndShowGlyphs() {
     fontSize = selectedFontSize;
   }
 
-  // get the contents of the settings-textarea and split the contents by the --------- separator
-  parseSpecs();
+  // If the contents of the specs textarea have changed, parse them, clear all the kerning tables and build
+  // the one for the current size.
+  // If the contents have not changed, check if the kerning table for the current size exists and if not, build it.
+  parseSpecsIfChangedAndCalculateKerningsIfNeeded();
 
   if (!isNaN(fontSize)) {
     // remove all canvases and divs from the page

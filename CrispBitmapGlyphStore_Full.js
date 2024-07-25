@@ -11,6 +11,14 @@ class CrispBitmapGlyphStore_Full {
     this.kerningTables = {};
   }
 
+  clearKerningTable(fontFamily, fontStyle, fontWeight, fontSize) {
+    if (!this.kerningTables[fontFamily]) return;
+    if (!this.kerningTables[fontFamily][fontStyle]) return;
+    if (!this.kerningTables[fontFamily][fontStyle][fontWeight]) return;
+    if (!this.kerningTables[fontFamily][fontStyle][fontWeight][fontSize]) return;
+    this.kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = null;
+  }
+
   addGlyph(glyph) {
     // the structure of the object follows these four levels:
     const propertiesLevels = ['fontFamily', 'fontStyle', 'fontWeight', 'fontSize', 'letter'];

@@ -8,6 +8,23 @@ let fontFamilySelect = null;
 let fontStyleSelect = null;
 let fontWeightSelect = null;
 
+
+function buildKerningTableIfDoesntExist() {
+    // if the kerning table for this font family, style, weight and size doesn't exist yet, generate it
+
+    // first get the font family, style, weight, size
+    const fontFamily = fontFamilySelect.value;
+    const fontStyle = fontStyleSelect.value;
+    const fontWeight = fontWeightSelect.value;
+    let fontSize = selectedFontSize;
+
+    if (hoverFontSize !== null) {
+        fontSize = hoverFontSize;
+    }
+ 
+    crispBitmapText_Full.buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize);
+}
+
 // Helper function to create and append elements
 function createElement(type, id, text, parent) {
     const element = document.createElement(type);
@@ -94,6 +111,11 @@ function setupGlyphUI() {
         const fontWeight = fontWeightSelect.value;
         const sizes = Object.keys(glyphsSheets[fontFamily][fontStyle][fontWeight]);
         sizes.forEach(size => {
+            // if there is no entry for the current pixel density, then do nothing
+            if (!glyphsSheets[fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""]) {
+                return;
+            }
+
             const canvas = glyphsSheets[fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""];
             const dataUrl = canvas.toDataURL('image/png');
             const data = dataUrl.split(',')[1];

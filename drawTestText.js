@@ -106,7 +106,6 @@ function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGl
 
   // now do the measurements with the CrispBitmapText_Full class
   // note how this one doesn't need a canvas
-  const crispBitmapText_Full = new CrispBitmapText_Full(crispBitmapGlyphStore_Full);
   const measureTextCrispBitmap = (text) => crispBitmapText_Full.measureText(text, fontSize, fontFamily, fontStyle, fontWeight);
   let linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
 
