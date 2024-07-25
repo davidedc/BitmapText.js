@@ -42,7 +42,7 @@ function parseSpecs() {
     }
 
     if (lines.length > 1) {
-      
+
       // parse the first three lines, which are the font family and font style and font weight
       const fontFamily = lines[0].split(':')[1].trim();
       const fontStyle = lines[1].split(':')[1].trim();
@@ -67,12 +67,11 @@ function parseSpecs() {
       // these contain several sub-specs, each of which is separated by a line with two dashes,
       // so split the sub-specs by the -- separator
       var subSpecsOfFontFamilyAndFontStyleAndFontWeightArray = specsContentsOfFontFamilyAndFontStyleAndFontWeight.split('--');
-      
-      // go through each sub-spec and parse it
 
+      // go through each sub-spec and parse it
       // for each sub-spec...
       for (const element of subSpecsOfFontFamilyAndFontStyleAndFontWeightArray) {
-        const subSpecOfFontFamilyFontStyleFontWeight = element;        
+        const subSpecOfFontFamilyFontStyleFontWeight = element;
 
         // remove all the empty lines
         const linesOfSubSpecOfFontFamilyFontStyleFontWeight = subSpecOfFontFamilyFontStyleFontWeight.split('\n');
@@ -85,7 +84,7 @@ function parseSpecs() {
 
         // get the name and content of the sub-spec.
         if (linesOfSubSpecOfFontFamilyFontStyleFontWeight.length > 1) {
-          
+
           // the name is the first line...
           const nameOfSubSpecOfFontFamilyFontStyleFontWeight = linesOfSubSpecOfFontFamilyFontStyleFontWeight[0];
           // ... the rest is the content (starting with a line with a dash)
