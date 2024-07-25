@@ -146,28 +146,13 @@ class CrispBitmapText_Full {
       return;
     }
 
-    // all the letters are
-    // lower case letters
-    //  for (let i = 97; i < 123; i++)
-    //    const letter = String.fromCharCode(i);
-    // upper case letters
-    //   for (let i = 65; i < 91; i++)
-    //     const letter = String.fromCharCode(i);
-    // numbers
-    //   for (let i = 48; i < 58; i++) {
-    //     const letter = String.fromCharCode(i);
-    // all others
-    // const allOtherChars = 'ß!"#$%&€\'’()*+,-./:;<=>?@[\]^_`{|}~—£°²·ÀÇàç•';
-
-    const allLetters = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ß!\"#$%&€'’()*+,-./:;<=>?@[\\]^_`{|}~—£°²·ÀÇàç•";
-
     // go through all the letters and for each letter, go through all the other letters
     // and calculate the kerning correction between the two letters
     // and store it in the kerningTable
     const kerningTable = {};
-    for (const letter of allLetters) {
+    for (const letter of characterSet) {
       kerningTable[letter] = {};
-      for (const nextLetter of allLetters) {
+      for (const nextLetter of characterSet) {
         const kerningCorrection = this.getKerningCorrectionFromSpec(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
         if (kerningCorrection !== 0) {
           kerningTable[letter][nextLetter] = kerningCorrection;
