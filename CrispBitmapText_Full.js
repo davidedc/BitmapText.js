@@ -413,7 +413,7 @@ class CrispBitmapText_Full {
           // so the part that should protrude to the left is actually partially blitted to
           // the left of x, as it should be.
           //
-          // Note that if the fist character has a positive actualBoundingBoxLeft and we draw
+          // Note that if the first character has a positive actualBoundingBoxLeft and we draw
           // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
           // it happens with a standard Canvas - one should just position the text
           // carefully to avoid this (although it's rare that people actually take care of this).
