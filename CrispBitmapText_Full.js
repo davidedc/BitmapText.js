@@ -37,10 +37,11 @@ class CrispBitmapText_Full {
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
+      const nextLetter = text[i + 1];
 
       glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
 
-      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight);
+      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
       width_CSS_Px += advancement_CSS_Px;
     }
 
@@ -196,7 +197,7 @@ class CrispBitmapText_Full {
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) {
+  calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
     // if (letter === ' ') debugger
 
     // if glyph doesn't contain the letter, log out an error with the missing letter
@@ -231,9 +232,8 @@ class CrispBitmapText_Full {
         x_CSS_Px += glyph.letterMeasures.width;
     }
 
-    // Next, apply the kerning correction ----------------------------
 
-    const nextLetter = text[i + 1];
+    // Next, apply the kerning correction ----------------------------
     let kerningCorrection = this.getKerningCorrection(fontFamily, fontStyle, fontWeight, fontSize, nextLetter, letter);
 
     // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontStyle, fontWeight, correctionKey, kerning)
@@ -281,6 +281,7 @@ class CrispBitmapText_Full {
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
+      const nextLetter = text[i + 1];
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
 
 
@@ -339,7 +340,7 @@ class CrispBitmapText_Full {
             y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY);
         }
 
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
+        x_Phys_Px += this.calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
 
       }
     }
@@ -356,6 +357,8 @@ class CrispBitmapText_Full {
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
+      const nextLetter = text[i + 1];
+
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
 
 
@@ -405,7 +408,7 @@ class CrispBitmapText_Full {
 
         }
 
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
+        x_Phys_Px += this.calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
 
       }
     }
