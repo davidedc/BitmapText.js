@@ -113,7 +113,12 @@ class CrispBitmapGlyphStore_Full {
         continue;
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
-      glyph.xInGlyphSheet = x;
+
+      if (!glyph.xInGlyphSheet) {
+        glyph.xInGlyphSheet = {};
+      }
+      glyph.xInGlyphSheet[PIXEL_DENSITY] = x;
+
       // check that glyph.tightWidth[PIXEL_DENSITY] is a valid number
       x += glyph.tightWidth[PIXEL_DENSITY];
     }

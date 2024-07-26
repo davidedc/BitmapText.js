@@ -431,7 +431,7 @@ class CrispBitmapText_Full {
           // see https://stackoverflow.com/a/6061102
           ctx.drawImage(glyphsSheet,
             // sx, sy -------------------
-            glyph.xInGlyphSheet, 0,
+            glyph.xInGlyphSheet[PIXEL_DENSITY], 0,
             // sWidth, sHeight ----------
             glyph.tightWidth[PIXEL_DENSITY], glyph.tightHeight[PIXEL_DENSITY],
             // then dx, dy --------------
