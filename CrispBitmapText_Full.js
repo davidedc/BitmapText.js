@@ -219,6 +219,10 @@ class CrispBitmapText_Full {
     // console.log(glyph.letterMeasures.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
+      // TODO you have to extract this "Space advancement override for small sizes in px" where you store the
+      // kerning table and you have to extract it into its own file.
+      // And then you do like with the kerning: one you built the array you store it in the glyphStore
+      // and you use it from there instead of using getSingleFloatCorrection.
       const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
