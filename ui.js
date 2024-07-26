@@ -102,10 +102,10 @@ function setupGlyphUI() {
         // use JSZip to create a zip file with all the pngs
         // for this font family, style, weight and all sizes
         // This is done starting from the canvases, which are all at
-        // crispBitmapGlyphStore_Full.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
+        // crispBitmapGlyphStore_Full.compact_glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
         const zip = new JSZip();
         const folder = zip.folder("glyphsSheets");
-        const glyphsSheets = crispBitmapGlyphStore_Full.glyphsSheets;
+        const glyphsSheets = crispBitmapGlyphStore_Full.compact_glyphsSheets;
         const fontFamily = fontFamilySelect.value;
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;
@@ -126,8 +126,8 @@ function setupGlyphUI() {
             folder.file(fileName + '.png', data, { base64: true });
 
             // get the kerning table at this size, it's in
-            // the glyphStore in kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
-            const kerningTable = crispBitmapGlyphStore_Full.kerningTables[fontFamily][fontStyle][fontWeight][size];
+            // the glyphStore in compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
+            const kerningTable = crispBitmapGlyphStore_Full.compact_kerningTables[fontFamily][fontStyle][fontWeight][size];
 
             // save it in a JSON file with the same name as the png file
             folder.file(fileName + '.json', JSON.stringify(kerningTable));

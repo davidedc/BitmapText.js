@@ -140,10 +140,10 @@ class CrispBitmapText_Full {
   buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize) {
 
     // check if the kerningTable already exists in the glyphs store
-    if (this.glyphStore.kerningTables[fontFamily] &&
-        this.glyphStore.kerningTables[fontFamily][fontStyle] &&
-        this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight] &&
-        this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight][fontSize]) {
+    if (this.glyphStore.compact_kerningTables[fontFamily] &&
+        this.glyphStore.compact_kerningTables[fontFamily][fontStyle] &&
+        this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight] &&
+        this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize]) {
       return;
     }
 
@@ -169,8 +169,8 @@ class CrispBitmapText_Full {
     }
 
     // create the object level by level if it doesn't exist
-    // in this.glyphStore.kerningTables
-    let currentKerningTableLevel = this.glyphStore.kerningTables;
+    // in this.glyphStore.compact_kerningTables
+    let currentKerningTableLevel = this.glyphStore.compact_kerningTables;
     for (let i = 0; i < 4; i++) {
       const prop = [fontFamily, fontStyle, fontWeight, fontSize][i];
       if (!currentKerningTableLevel[prop]) {
@@ -187,7 +187,7 @@ class CrispBitmapText_Full {
     // store the kerningTable in the glyphs store
     // so that it can be retrieved later
     // when drawing text
-    this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
+    this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
 
   }
           
@@ -263,7 +263,7 @@ class CrispBitmapText_Full {
     // if there is no next letter, the kerning correction is 0
     let kerningCorrection = 0;
     if (ENABLE_KERNING && nextLetter) {
-      let kerningCorrectionPlace = this.glyphStore.kerningTables[fontFamily][fontStyle][fontWeight][fontSize];
+      let kerningCorrectionPlace = this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize];
       // if the kerning correction is not in the kerning table, it's 0
       if (kerningCorrectionPlace[letter] && kerningCorrectionPlace[letter][nextLetter]) {
         kerningCorrection = kerningCorrectionPlace[letter][nextLetter];
@@ -356,7 +356,7 @@ class CrispBitmapText_Full {
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
-    const glyphsSheet = this.glyphStore.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
+    const glyphsSheet = this.glyphStore.compact_glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
 
 
     for (let i = 0; i < text.length; i++) {
