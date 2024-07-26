@@ -8,7 +8,7 @@ class CrispBitmapGlyphStore_Full {
     // all kinds of other intermediate data useful for construction/inspection)
     this.compact_glyphsSheets = {};
     this.compact_kerningTables = {};
-    this.compact_glyphs = {};
+    this.compact_glyphs_measures = {};
 
     // these objects instead contain all kinds of other
     // intermediate data useful for construction/inspection
