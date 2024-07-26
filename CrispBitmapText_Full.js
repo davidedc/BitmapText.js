@@ -369,7 +369,9 @@ class CrispBitmapText_Full {
             // Let's verify that: painting the first row of the letter at y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
             // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
             // (which is what we wanted).
+            // See https://www.w3schools.com/jsref/canvas_drawimage.asp
             ctx.drawImage(glyph.tightCanvas,
+              // x, y -------------------
               xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
               y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY);
           }
@@ -387,7 +389,7 @@ class CrispBitmapText_Full {
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
-    const glyphsSheet = this.glyphStore.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY+""];
+    const glyphsSheet = this.glyphStore.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
 
 
     for (let i = 0; i < text.length; i++) {
@@ -416,39 +418,29 @@ class CrispBitmapText_Full {
           // it happens with a standard Canvas - one should just position the text
           // carefully to avoid this (although it's rare that people actually take care of this).
 
-          const actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
+          // const actualBoundingBoxLeftPull_CSS_Px = Math.round(glyph.letterMeasures.actualBoundingBoxLeft);
 
-          const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
-          const xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
+          // const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
+          // const xPos_Phys_Px = x_Phys_Px - Math.round(glyph.letterMeasures.actualBoundingBoxLeft) * PIXEL_DENSITY;
 
           // For normal sizes:
           //    we use the same spacing as the canvas gave us for each glyph
-          // For small sizes:
-          //    we ignore the spacing that the canvas gave us because a) it's allover the place and
-          //    b) it's not really needed. So we just blit the tightCanvas, we'll take care
-          //    of the spacing simply via the advancement.
-          //    So, in particular, the left spacing of the first character will be ignored, which really is
-          //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
-          //    touch the left side of the canvas.
-          if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Advancement override for small sizes in px") !== null) {
-            // NOT USED AT THE MOMENT, I'M NOT SURE THIS IS CORRECT
-            // small sizes
-            console.log("small size");
-            // instead of drawing the glyph from the tightCanvas in the glyph, we draw it from the glyphSheet
-            //ctx.drawImage(glyph.tightCanvas, xPos_Phys_Px, yPos_Phys_Px);
-            ctx.drawImage(glyphsSheet, glyph.xInGlyphSheet, 0, glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""], xPos_Phys_Px, yPos_Phys_Px, glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""]);
-            alert("small size now is used!");
-          }
-          else {
-            // normal sizes
-            const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
-            ctx.drawImage(glyphsSheet, glyph.xInGlyphSheet, 0, glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""],
-              xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
-              // same formula for the y as ctx.drawText above, see explanation there
-              y_Phys_Px - glyph.tightHeight[PIXEL_DENSITY+""] - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY,
-              glyph.tightWidth[PIXEL_DENSITY+""], glyph.tightHeight[PIXEL_DENSITY+""]);
 
-          }
+          // normal sizes
+          // const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+          // see https://stackoverflow.com/a/6061102
+          ctx.drawImage(glyphsSheet,
+            // sx, sy -------------------
+            glyph.xInGlyphSheet, 0,
+            // sWidth, sHeight ----------
+            glyph.tightWidth[PIXEL_DENSITY], glyph.tightHeight[PIXEL_DENSITY],
+            // then dx, dy --------------
+            x_Phys_Px + glyph.dx[PIXEL_DENSITY],
+            // same formula for the y as ctx.drawText above, see explanation there
+            y_Phys_Px + glyph.dy[PIXEL_DENSITY],
+            // then dWidth, dHeight -----
+            glyph.tightWidth[PIXEL_DENSITY], glyph.tightHeight[PIXEL_DENSITY]);
+
         }
 
         x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;

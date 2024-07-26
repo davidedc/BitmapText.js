@@ -81,8 +81,14 @@ class CrispBitmapGlyphStore_Full {
       const tightWidth = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
       const tightHeight = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
 
-      glyph.tightWidth = { [PIXEL_DENSITY+""]: tightWidth };
-      glyph.tightHeight = { [PIXEL_DENSITY+""]: tightHeight };
+      // Note that PIXEL_DENSITY can be an integer or a fractional number.
+      // In both cases, JavaScript will automatically convert the number to a string when using it as an object key.
+      // For example, if PIXEL_DENSITY is 2, the key will be "2", and if it's 1.5, the key will be "1.5".
+      glyph.tightWidth = { [PIXEL_DENSITY]: tightWidth };
+      glyph.tightHeight = { [PIXEL_DENSITY]: tightHeight };
+
+      glyph.dx ={ [PIXEL_DENSITY]: - Math.round(glyph.letterMeasures.actualBoundingBoxLeft) * PIXEL_DENSITY + glyph.tightCanvasBox.topLeftCorner.x };
+      glyph.dy ={ [PIXEL_DENSITY]: - glyph.tightHeight[PIXEL_DENSITY] - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY };
 
       if (!isNaN(tightWidth)) fittingWidth += tightWidth;
       if (tightHeight > maxHeight) maxHeight = tightHeight;
@@ -97,9 +103,9 @@ class CrispBitmapGlyphStore_Full {
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
       // if there is no glyph.tightCanvas, then just continue
-      if (!glyph.tightCanvas || !glyph.tightWidth || isNaN(glyph.tightWidth[PIXEL_DENSITY+""])) {
+      if (!glyph.tightCanvas || !glyph.tightWidth || isNaN(glyph.tightWidth[PIXEL_DENSITY])) {
         if (!glyph.tightWidth) {
-          console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + ' has no tightWidth[PIXEL_DENSITY+""]');
+          console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + ' has no tightWidth[PIXEL_DENSITY]');
         }
         if (!glyph.tightCanvas) {
           console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + " has no tightCanvas");
@@ -108,8 +114,8 @@ class CrispBitmapGlyphStore_Full {
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
       glyph.xInGlyphSheet = x;
-      // check that glyph.tightWidth[PIXEL_DENSITY+""] is a valid number
-      x += glyph.tightWidth[PIXEL_DENSITY+""];
+      // check that glyph.tightWidth[PIXEL_DENSITY] is a valid number
+      x += glyph.tightWidth[PIXEL_DENSITY];
     }
 
     const glyphsSheetsPNG = ctx.toPNGImage();
@@ -119,7 +125,7 @@ class CrispBitmapGlyphStore_Full {
     // amount of time to process the data and make it available for rendering.
     // This processing time is typically very brief, but if you try it here, you'll get frequent
     // failures to paint the letters from this image.
-    this.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY+""] = canvas;
+    this.glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY] = canvas;
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.
