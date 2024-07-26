@@ -24,7 +24,7 @@ class CrispBitmapGlyph_Full {
     }
   }
 
-  // this method can be refactored with the next two
+  // this method can be refactored with the next one
   getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
 
     // if specs[fontFamily][fontStyle][fontWeight][correctionKey] doesn't exist
@@ -74,36 +74,6 @@ class CrispBitmapGlyph_Full {
       if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
         return correctionEntry.correction;
-      }
-    }
-  
-    return null;
-  }
-
-  getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontStyle, fontWeight, correctionKey, kerning) {
-
-    if (!specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
-      return null;
-    }
-
-    if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
-      return null;
-    }
-  
-    for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
-      const correctionEntry = element;
-      if (correctionEntry.sizeRange == undefined) return null;
-      if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
-        for (const element of correctionEntry.sizeBracketAndItsCorrection) {
-          // get the two floats representing the size range
-          // from something like:
-          //    { kernG: 0, kernLE: 0.145, adjustment: -1 }
-          const sizeRangeLower = element.kernLE;
-          const sizeRangeUpper = element.kernG;
-          if (sizeRangeLower < kerning && sizeRangeUpper >= kerning) {
-            return element.adjustment;
-          }
-        }
       }
     }
   

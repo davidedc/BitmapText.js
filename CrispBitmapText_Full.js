@@ -228,18 +228,7 @@ class CrispBitmapText_Full {
     }
     // Non-space characters ------------------------------------------
     else {
-      // for small sizes we create our own advancement (width)
-      // NOTE THIS IS NOW DISABLED because this advancement should be exactly the same at any PIXEL_DENSITY
-      // ...but it's not because crisp pixels painted at different PIXEL_DENSITYs are painted differently.
-      const advancementOverrideForSmallSizes_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Advancement override for small sizes in px");
-      //console.log("advancementOverrideForSmallSizes_CSS_Px: " + advancementOverrideForSmallSizes_CSS_Px);
-      if (advancementOverrideForSmallSizes_CSS_Px !== null) {
-        x_CSS_Px += ((glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY + 1) + advancementOverrideForSmallSizes_CSS_Px;
-      }
-      // for all other sizes we use the advancement (width) as given by the browser
-      else {
         x_CSS_Px += glyph.letterMeasures.width;
-      }
     }
 
     // Next, apply the kerning correction ----------------------------
@@ -249,27 +238,15 @@ class CrispBitmapText_Full {
 
     // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontStyle, fontWeight, correctionKey, kerning)
     
-    // We apply kerning in two ways depending on the size of the font.
-    //  * For large sizes we multiply the advancement of the letter by the kerning
-    //  * For small sizes basically kerning means to decide whether to shorten the
-    //    distance of two letters by 0, 1 or 2 pixels, so instead of multiplying the
-    //    advancement of a letter by the kerning as we do for big sizes, we just
-    //    discretise the kerning into a small number like 0,1 or 2.
+    // We multiply the advancement of the letter by the kerning
     //
     //if (fontSize === 16) {
     //  debugger
     //}
-    const kerningDiscretisationForSmallSizes_CSS_Px = glyph.getSingleFloatCorrectionForSizeBracket(fontFamily, fontSize, fontStyle, fontWeight, "Kerning discretisation for small sizes", kerningCorrection);
-    if (kerningDiscretisationForSmallSizes_CSS_Px !== null) {
-      //console.log("kerning was: " + kerningCorrection + " and is hence correction: " + kerningDiscretisationForSmallSizes_CSS_Px + " for letter " + letter + " and nextLetter " + nextLetter + " and fontSize " + fontSize + " and fontStyle " + fontStyle + " and fontFamily " + fontFamily);
-      x_CSS_Px -= kerningDiscretisationForSmallSizes_CSS_Px;
-    }
-    else {
-      // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
-      // We don't use ems, rather we use pxs, however we still want to keep Kerning as strictly proportional to the current type size,
-      // and also to keep it as a measure "in thousands".
-      x_CSS_Px -= fontSize * kerningCorrection / 1000;
-    }
+    // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
+    // We don't use ems, rather we use pxs, however we still want to keep Kerning as strictly proportional to the current type size,
+    // and also to keep it as a measure "in thousands".
+    x_CSS_Px -= fontSize * kerningCorrection / 1000;
 
     // since we might want to actually _place_ a glyph,
     // following this measurement, we want to return an
@@ -335,46 +312,31 @@ class CrispBitmapText_Full {
 
           // For normal sizes:
           //    we use the same spacing as the canvas gave us for each glyph
-          // For small sizes:
-          //    we ignore the spacing that the canvas gave us because a) it's allover the place and
-          //    b) it's not really needed. So we just blit the tightCanvas, we'll take care
-          //    of the spacing simply via the advancement.
-          //    So, in particular, the left spacing of the first character will be ignored, which really is
-          //    not a big deal, this can be seen in capital R and a, where for small sizes straight-up
-          //    touch the left side of the canvas.
-          if (glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Advancement override for small sizes in px") !== null) {
-            // NOT USED AT THE MOMENT, I'M NOT SURE THIS IS CORRECT
-            // small sizes
-            console.log("small size");
-            ctx.drawImage(glyph.tightCanvas, xPos_Phys_Px, yPos_Phys_Px);
-            alert("small size now is used!");
-          }
-          else {
-            // normal sizes
-            const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
-            // Example: the user asks to draw the potential bottom of the text (i.e. including the most descending parts
-            // that might or might not be painted on that last row of pixels, depending on the letter, typically
-            // "Ç" or "ç" or italic f in Times New Roman are the most descending letters, and they touch the bottom
-            // because we set textBaseline to 'bottom'. If the letter does not touch the bottom, the number of empty rows
-            // (obviously not in the tightCanvas because... it's tight) is measured by distanceBetweenBottomAndBottomOfCanvas)
-            // at y = 20 (i.e. the 21st pixel starting from the top).
-            // I.e. y = 20 (line 21) is the bottom-most row of pixels that the most descending letters would touch.
-            // The tight canvas of the glyph is 10px tall, and
-            // the distance between the bottom of the tight canvas and the bottom of the canvas is 5px.
-            // Hence we paint the letter starting the top at row (20 + 1) - (10-1) - 5 = row 7. Row 7 i.e. y = 6.
-            //   explained: (20+1) is the row of y = 20; - (10-1) brings you to the top of the tight canvas,
-            //              and to leave 5 spaces below you have to subtract 5.
-            // That's what we do below applying the formula below:
-            //     y = 20 - 10 - 5 + 1 = 6.
-            // Let's verify that: painting the first row of the letter at y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
-            // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
-            // (which is what we wanted).
-            // See https://www.w3schools.com/jsref/canvas_drawimage.asp
-            ctx.drawImage(glyph.tightCanvas,
-              // x, y -------------------
-              xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
-              y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY);
-          }
+
+          // normal sizes
+          const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+          // Example: the user asks to draw the potential bottom of the text (i.e. including the most descending parts
+          // that might or might not be painted on that last row of pixels, depending on the letter, typically
+          // "Ç" or "ç" or italic f in Times New Roman are the most descending letters, and they touch the bottom
+          // because we set textBaseline to 'bottom'. If the letter does not touch the bottom, the number of empty rows
+          // (obviously not in the tightCanvas because... it's tight) is measured by distanceBetweenBottomAndBottomOfCanvas)
+          // at y = 20 (i.e. the 21st pixel starting from the top).
+          // I.e. y = 20 (line 21) is the bottom-most row of pixels that the most descending letters would touch.
+          // The tight canvas of the glyph is 10px tall, and
+          // the distance between the bottom of the tight canvas and the bottom of the canvas is 5px.
+          // Hence we paint the letter starting the top at row (20 + 1) - (10-1) - 5 = row 7. Row 7 i.e. y = 6.
+          //   explained: (20+1) is the row of y = 20; - (10-1) brings you to the top of the tight canvas,
+          //              and to leave 5 spaces below you have to subtract 5.
+          // That's what we do below applying the formula below:
+          //     y = 20 - 10 - 5 + 1 = 6.
+          // Let's verify that: painting the first row of the letter at y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
+          // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
+          // (which is what we wanted).
+          // See https://www.w3schools.com/jsref/canvas_drawimage.asp
+          ctx.drawImage(glyph.tightCanvas,
+            // x, y -------------------
+            xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
+            y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY);
         }
 
         x_Phys_Px += this.calculateAdvancement_CSS_Px(i, text, glyph, fontFamily, letter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
