@@ -1,5 +1,5 @@
 function specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey) {
-  return Boolean(specs?.[fontFamily]?.[fontStyle]?.[fontWeight]?.[correctionKey]);
+  return checkNestedPropertiesExist(specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
 }
 
 

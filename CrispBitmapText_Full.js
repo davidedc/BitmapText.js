@@ -140,10 +140,7 @@ class CrispBitmapText_Full {
   buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize) {
 
     // check if the kerningTable already exists in the glyphs store
-    if (this.glyphStore.compact_kerningTables[fontFamily] &&
-        this.glyphStore.compact_kerningTables[fontFamily][fontStyle] &&
-        this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight] &&
-        this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize]) {
+    if (checkNestedPropertiesExist(this.glyphStore.compact_kerningTables, [fontFamily, fontStyle, fontWeight, fontSize])) {
       return;
     }
 
@@ -170,20 +167,8 @@ class CrispBitmapText_Full {
 
     // create the object level by level if it doesn't exist
     // in this.glyphStore.compact_kerningTables
-    let currentKerningTableLevel = this.glyphStore.compact_kerningTables;
-    for (let i = 0; i < 4; i++) {
-      const prop = [fontFamily, fontStyle, fontWeight, fontSize][i];
-      if (!currentKerningTableLevel[prop]) {
-        currentKerningTableLevel[prop] = {};
-      }
-      if (i === 3) {
-        currentKerningTableLevel[prop] = kerningTable;
-      }
-      else {
-        currentKerningTableLevel = currentKerningTableLevel[prop];
-      }
-    }
-
+    setNestedProperty(this.glyphStore.compact_kerningTables, [fontFamily, fontStyle, fontWeight, fontSize], kerningTable);
+    
     // store the kerningTable in the glyphs store
     // so that it can be retrieved later
     // when drawing text
@@ -259,17 +244,15 @@ class CrispBitmapText_Full {
   }
 
   getKerningCorrection(fontFamily, fontStyle, fontWeight, fontSize, nextLetter, letter) {
-    //console.log("kerningTable at fontSize " + fontSize + " fontStyle " + fontStyle + " fontWeight " + fontWeight + " fontFamily " + fontFamily + " letter " + letter + " nextLetter " + nextLetter );
-    // if there is no next letter, the kerning correction is 0
-    let kerningCorrection = 0;
+    const properties = [letter, nextLetter];
+
     if (ENABLE_KERNING && nextLetter) {
       let kerningCorrectionPlace = this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize];
-      // if the kerning correction is not in the kerning table, it's 0
-      if (kerningCorrectionPlace[letter] && kerningCorrectionPlace[letter][nextLetter]) {
-        kerningCorrection = kerningCorrectionPlace[letter][nextLetter];
-      }
+      if (checkNestedPropertiesExist(kerningCorrectionPlace, properties))
+        return getNestedProperty(kerningCorrectionPlace, properties);
     }
-    return kerningCorrection;
+
+    return 0;
   }
 
   // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string

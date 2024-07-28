@@ -22,11 +22,11 @@ class CrispBitmapGlyphStore_Full {
   }
 
   clearKerningTable(fontFamily, fontStyle, fontWeight, fontSize) {
-    if (!this.compact_kerningTables[fontFamily]) return;
-    if (!this.compact_kerningTables[fontFamily][fontStyle]) return;
-    if (!this.compact_kerningTables[fontFamily][fontStyle][fontWeight]) return;
-    if (!this.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize]) return;
-    this.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = null;
+    const properties = [fontFamily, fontStyle, fontWeight, fontSize];
+
+    if (checkNestedPropertiesExist(this.compact_kerningTables, properties)) {
+        setNestedProperty(this.compact_kerningTables, properties, null);
+    }
   }
 
   addGlyph(glyph) {
@@ -59,7 +59,7 @@ class CrispBitmapGlyphStore_Full {
   }
 
   getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight) {
-    return this.glyphs?.[fontFamily]?.[fontStyle]?.[fontWeight]?.[fontSize]?.[letter] || null;
+    return getNestedProperty(this.glyphs, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
   }
 
   // Get a canvas with all the glyphs of a certain font family, font size and font style
@@ -68,7 +68,7 @@ class CrispBitmapGlyphStore_Full {
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
   // 3. draw each glyph in the canvas
   getGlyphsSheet(fontFamily, fontSize, fontStyle, fontWeight) {
-    const glyphs = this.glyphs?.[fontFamily]?.[fontStyle]?.[fontWeight]?.[fontSize];
+    const glyphs = getNestedProperty(this.glyphs, [fontFamily, fontStyle, fontWeight, fontSize]);
     if (!glyphs) return null;
 
     let fittingWidth = 0;

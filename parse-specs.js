@@ -63,13 +63,7 @@ function parseSpecs(settingsTextareaContents) {
 
       // make the keys for font family and style
       // in the specs object if they don't exist yet
-      if (specs[fontFamily] === undefined) {
-        specs[fontFamily] = {};
-      }
-      // space for the fontWeight
-      if (specs[fontFamily][fontStyle] === undefined) {
-        specs[fontFamily][fontStyle] = {};
-      }
+      ensureNestedPropertiesExist(specs, [fontFamily, fontStyle]);
 
       // the object that will hold the specs for the current
       // font family and font style pair
