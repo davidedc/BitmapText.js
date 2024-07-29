@@ -6,7 +6,7 @@ class CrispBitmapGlyph_Full {
     this.fontStyle = fontStyle;
     this.fontWeight = fontWeight;
 
-    const { canvas, tightCanvas, tightCanvasBox, letterMeasures } = this.createCanvases();
+    const { canvas, tightCanvas, tightCanvasBox, letterMeasures } = this.createCanvasesAndLetterMeasures();
     this.canvas = canvas;
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
@@ -253,7 +253,7 @@ class CrispBitmapGlyph_Full {
     return { tightCanvas, tightCanvasBox };
   }
 
-  createCanvases() {
+  createCanvasesAndLetterMeasures() {
     const { canvas, letterMeasures } = this.createCanvasWithLetter();
     const { tightCanvas, tightCanvasBox } = this.getBoundingBoxOfOnPixels(canvas);
 
