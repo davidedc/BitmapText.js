@@ -51,7 +51,7 @@ class CrispBitmapText_Full {
     actualBoundingBoxRight_CSS_Px = width_CSS_Px - advancement_CSS_Px;
     // ... plus the actualBoundingBoxRight_CSS_Px of the last character
     // (this is in place of adding its advancement_CSS_Px)
-    actualBoundingBoxRight_CSS_Px += letterMeasures.actualBoundingBoxRight; 
+    actualBoundingBoxRight_CSS_Px += letterMeasures.actualBoundingBoxRight;
 
     return {
       width: width_CSS_Px,
