@@ -32,6 +32,8 @@ class CrispBitmapText_Full {
     let width_CSS_Px = 0;
     let letterMeasures = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
     const actualBoundingBoxLeft_CSS_Px = letterMeasures.actualBoundingBoxLeft;
+    let actualBoundingBoxAscent = 0;
+    let actualBoundingBoxDescent = 0;
     let actualBoundingBoxRight_CSS_Px;
     let advancement_CSS_Px = 0;
     let glyph = null;
@@ -42,6 +44,9 @@ class CrispBitmapText_Full {
 
       glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
       letterMeasures = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+
+      actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterMeasures.actualBoundingBoxAscent);
+      actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterMeasures.actualBoundingBoxDescent);
 
       advancement_CSS_Px = this.calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
       width_CSS_Px += advancement_CSS_Px;
@@ -60,8 +65,8 @@ class CrispBitmapText_Full {
       //height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent),
       actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
       actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
-      actualBoundingBoxAscent: letterMeasures.actualBoundingBoxAscent, // TODO surely this should be the max of all the actualBoundingBoxAscent?
-      actualBoundingBoxDescent: letterMeasures.actualBoundingBoxDescent, // TODO surely this should be the max of all the actualBoundingBoxDescent?
+      actualBoundingBoxAscent,
+      actualBoundingBoxDescent,
       fontBoundingBoxAscent: letterMeasures.fontBoundingBoxAscent,
       fontBoundingBoxDescent: letterMeasures.fontBoundingBoxDescent
     };
