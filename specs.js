@@ -2,6 +2,28 @@ function specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)
   return checkNestedPropertiesExist(specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
 }
 
+function getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
+
+  // if specs[fontFamily][fontStyle][fontWeight][correctionKey] doesn't exist
+  if (!specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
+    return null;
+  }
+
+  if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
+    return null;
+  }
+
+  for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
+    const correctionEntry = element;
+    if (correctionEntry.sizeRange == undefined) return null;
+    if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
+      return correctionEntry.correction;
+    }
+  }
+
+  return null;
+}
+
 
 const specsText =
 `Font family: Arial

@@ -48,7 +48,7 @@ class CrispBitmapText_Full {
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterMeasures.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterMeasures.actualBoundingBoxDescent);
 
-      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
+      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
       width_CSS_Px += advancement_CSS_Px;
     }
 
@@ -181,6 +181,12 @@ class CrispBitmapText_Full {
     // when drawing text
     this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
 
+    // store the spaceAdvancementOverrideForSmallSizesInPx
+    // by doing getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
+    // and store it in the compact_spaceAdvancementOverrideForSmallSizesInPx object at the right level
+    const spaceAdvancementOverrideForSmallSizesInPx = getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
+    setNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [fontFamily, fontStyle, fontWeight, fontSize], spaceAdvancementOverrideForSmallSizesInPx);
+
   }
           
 
@@ -189,14 +195,9 @@ class CrispBitmapText_Full {
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
+  calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
     const letterMeasures = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
     // if (letter === ' ') debugger
-
-    // if glyph doesn't contain the letter, log out an error with the missing letter
-    if (!glyph) {
-      console.log("glyph doesn't contain the letter " + letter);
-    }
 
     let x_CSS_Px = 0;
 
@@ -212,11 +213,7 @@ class CrispBitmapText_Full {
     // console.log(letterMeasures.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      // TODO you have to extract this "Space advancement override for small sizes in px" where you store the
-      // kerning table and you have to extract it into its own file.
-      // And then you do like with the kerning: one you built the array you store it in the glyphStore
-      // and you use it from there instead of using getSingleFloatCorrection.
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = glyph.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = getNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [fontFamily, fontStyle, fontWeight, fontSize]);
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
@@ -336,7 +333,7 @@ class CrispBitmapText_Full {
             y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY);
         }
 
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
+        x_Phys_Px += this.calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
 
       }
     }
@@ -357,56 +354,55 @@ class CrispBitmapText_Full {
 
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
 
+      if (!glyph) debugger;
 
-      if (glyph) {
-        if (glyph.tightCanvas) {
+      if (glyph.compact_xInGlyphSheet) {
 
-          // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
-          // actualBoundingBoxLeft > 0, for example it's quite large for the
-          // italic f in Times New Roman. The other glyphs that don't protrude to the left
-          // simply have actualBoundingBoxLeft = 0.
-          //
-          // (Note that actualBoundingBoxLeft comes from the canvas measureText method, i.e.
-          // it's not inferred from looking at how the canvas paints the glyph.)
-          //
-          // Hence, to render all glyphs correctly, you need to blit the glyph at
-          //    x_Phys_Px - actualBoundingBoxLeft
-          // so the part that should protrude to the left is actually partially blitted to
-          // the left of x, as it should be.
-          //
-          // Note that if the first character has a positive actualBoundingBoxLeft and we draw
-          // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
-          // it happens with a standard Canvas - one should just position the text
-          // carefully to avoid this (although it's rare that people actually take care of this).
+        // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
+        // actualBoundingBoxLeft > 0, for example it's quite large for the
+        // italic f in Times New Roman. The other glyphs that don't protrude to the left
+        // simply have actualBoundingBoxLeft = 0.
+        //
+        // (Note that actualBoundingBoxLeft comes from the canvas measureText method, i.e.
+        // it's not inferred from looking at how the canvas paints the glyph.)
+        //
+        // Hence, to render all glyphs correctly, you need to blit the glyph at
+        //    x_Phys_Px - actualBoundingBoxLeft
+        // so the part that should protrude to the left is actually partially blitted to
+        // the left of x, as it should be.
+        //
+        // Note that if the first character has a positive actualBoundingBoxLeft and we draw
+        // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
+        // it happens with a standard Canvas - one should just position the text
+        // carefully to avoid this (although it's rare that people actually take care of this).
 
-          // const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterMeasures.actualBoundingBoxLeft);
+        // const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterMeasures.actualBoundingBoxLeft);
 
-          // const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
-          // const xPos_Phys_Px = x_Phys_Px - Math.round(letterMeasures.actualBoundingBoxLeft) * PIXEL_DENSITY;
+        // const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
+        // const xPos_Phys_Px = x_Phys_Px - Math.round(letterMeasures.actualBoundingBoxLeft) * PIXEL_DENSITY;
 
-          // For normal sizes:
-          //    we use the same spacing as the canvas gave us for each glyph
+        // For normal sizes:
+        //    we use the same spacing as the canvas gave us for each glyph
 
-          // normal sizes
-          // const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
-          // see https://stackoverflow.com/a/6061102
-          ctx.drawImage(glyphsSheet,
-            // sx, sy -------------------
-            glyph.compact_xInGlyphSheet[PIXEL_DENSITY], 0,
-            // sWidth, sHeight ----------
-            glyph.compact_tightWidth[PIXEL_DENSITY], glyph.compact_tightHeight[PIXEL_DENSITY],
-            // then dx, dy --------------
-            x_Phys_Px + glyph.compact_dx[PIXEL_DENSITY],
-            // same formula for the y as ctx.drawText above, see explanation there
-            y_Phys_Px + glyph.compact_dy[PIXEL_DENSITY],
-            // then dWidth, dHeight -----
-            glyph.compact_tightWidth[PIXEL_DENSITY], glyph.compact_tightHeight[PIXEL_DENSITY]);
-
-        }
-
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(glyph, fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
+        // normal sizes
+        // const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+        // see https://stackoverflow.com/a/6061102
+        ctx.drawImage(glyphsSheet,
+          // sx, sy -------------------
+          glyph.compact_xInGlyphSheet[PIXEL_DENSITY], 0,
+          // sWidth, sHeight ----------
+          glyph.compact_tightWidth[PIXEL_DENSITY], glyph.compact_tightHeight[PIXEL_DENSITY],
+          // then dx, dy --------------
+          x_Phys_Px + glyph.compact_dx[PIXEL_DENSITY],
+          // same formula for the y as ctx.drawText above, see explanation there
+          y_Phys_Px + glyph.compact_dy[PIXEL_DENSITY],
+          // then dWidth, dHeight -----
+          glyph.compact_tightWidth[PIXEL_DENSITY], glyph.compact_tightHeight[PIXEL_DENSITY]);
 
       }
+
+      x_Phys_Px += this.calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
+
     }
   }
 
