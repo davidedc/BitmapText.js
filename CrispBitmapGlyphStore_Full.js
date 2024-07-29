@@ -76,6 +76,7 @@ class CrispBitmapGlyphStore_Full {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
+      let letterMeasures = getNestedProperty(this.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
       // the width is calculated from the glyph.tightCanvasBox
       // example: bottomRightCorner: {x: 40, y: 71}
       // topLeftCorner: {x: 4, y: 13}
@@ -97,7 +98,7 @@ class CrispBitmapGlyphStore_Full {
       glyph.compact_tightWidth = { [PIXEL_DENSITY]: compact_tightWidth };
       glyph.compact_tightHeight = { [PIXEL_DENSITY]: compact_tightHeight };
 
-      glyph.compact_dx ={ [PIXEL_DENSITY]: - Math.round(glyph.letterMeasures.actualBoundingBoxLeft) * PIXEL_DENSITY + glyph.tightCanvasBox.topLeftCorner.x };
+      glyph.compact_dx ={ [PIXEL_DENSITY]: - Math.round(letterMeasures.actualBoundingBoxLeft) * PIXEL_DENSITY + glyph.tightCanvasBox.topLeftCorner.x };
       glyph.compact_dy ={ [PIXEL_DENSITY]: - glyph.compact_tightHeight[PIXEL_DENSITY] - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY };
 
       if (!isNaN(compact_tightWidth)) fittingWidth += compact_tightWidth;

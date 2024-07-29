@@ -6,15 +6,13 @@ class CrispBitmapGlyph_Full {
     this.fontStyle = fontStyle;
     this.fontWeight = fontWeight;
 
-    // TODO letterMeasures created here, these need to be extracted into their own JSON file
-    // and put in the compact_glyphs data structure and used from the measuring and drawing methods
     const { canvas, tightCanvas, tightCanvasBox, letterMeasures } = this.createCanvases();
     this.canvas = canvas;
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
 
-    // TODO don't put them here, put them in the compact_glyphs_measures data structure
-    this.letterMeasures = letterMeasures;
+    // this.letterMeasures = letterMeasures;
+    setNestedProperty(crispBitmapGlyphStore_Full.compact_glyphs_measures, [this.fontFamily, this.fontStyle, this.fontWeight, this.fontSize, this.letter], letterMeasures);
 
     this.displayCanvasesAndData();
   }
