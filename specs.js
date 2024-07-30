@@ -29,6 +29,23 @@ function getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, c
   return correctionEntry ? correctionEntry.correction : null;
 }
 
+function getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
+
+  const correctionEntry = getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
+  if (!correctionEntry) return 0;
+
+  // check if the passed pixelDensity is the same as the one in the correctionEntry
+  if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) return 0;
+
+  for (const element of correctionEntry.lettersAndTheirCorrections) {
+    const charAndOffset = element;
+    if (charAndOffset.string.indexOf(letter) !== -1) {
+      return charAndOffset.adjustment;
+    }
+  }
+
+  return 0;
+}
 
 const specsText =
 `Font family: Arial
@@ -306,20 +323,4 @@ Advancement correction proportional
   // this is so that WWW next to each other don't touch
   // can be seen clearly at size 30
   W: 0.03333333333333333
-`;function getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
-
-  const correctionEntry = getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
-  if (!correctionEntry) return 0;
-
-  // check if the passed pixelDensity is the same as the one in the correctionEntry
-  if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) return 0;
-
-  for (const element of correctionEntry.lettersAndTheirCorrections) {
-    const charAndOffset = element;
-    if (charAndOffset.string.indexOf(letter) !== -1) {
-      return charAndOffset.adjustment;
-    }
-  }
-
-  return 0;
-}
+`;
