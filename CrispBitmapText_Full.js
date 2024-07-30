@@ -30,7 +30,7 @@ class CrispBitmapText_Full {
       };
     
     let width_CSS_Px = 0;
-    let letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
+    let letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -43,7 +43,7 @@ class CrispBitmapText_Full {
       const nextLetter = text[i + 1];
 
       glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
-      letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
@@ -196,7 +196,7 @@ class CrispBitmapText_Full {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
-    const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+    const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
     // if (letter === ' ') debugger
 
     let x_CSS_Px = 0;
@@ -275,7 +275,7 @@ class CrispBitmapText_Full {
       const letter = text[i];
       const nextLetter = text[i + 1];
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
-      const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
 
       if (glyph) {

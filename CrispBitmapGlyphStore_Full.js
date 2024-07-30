@@ -8,7 +8,7 @@ class CrispBitmapGlyphStore_Full {
     // all kinds of other intermediate data useful for construction/inspection)
     this.compact_glyphsSheets = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
     this.compact_kerningTables = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
-    this.compact_glyphs_measures = {}; // [fontFamily, fontStyle, fontWeight, fontSize, letter]
+    this.compact_glyphsTextMetrics = {}; // [fontFamily, fontStyle, fontWeight, fontSize, letter]
     this.compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
 
     // these objects instead contain all kinds of other
@@ -53,7 +53,7 @@ class CrispBitmapGlyphStore_Full {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      let letterTextMetrics = getNestedProperty(this.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      let letterTextMetrics = getNestedProperty(this.compact_glyphsTextMetrics, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
       // the width is calculated from the glyph.tightCanvasBox
       // example: bottomRightCorner: {x: 40, y: 71}
       // topLeftCorner: {x: 4, y: 13}
