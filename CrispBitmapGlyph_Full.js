@@ -6,13 +6,13 @@ class CrispBitmapGlyph_Full {
     this.fontStyle = fontStyle;
     this.fontWeight = fontWeight;
 
-    const { canvas, tightCanvas, tightCanvasBox, letterMeasures } = this.createCanvasesAndLetterMeasures();
+    const { canvas, tightCanvas, tightCanvasBox, letterTextMetrics } = this.createCanvasesAndLetterTextMetrics();
     this.canvas = canvas;
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
 
-    // this.letterMeasures = letterMeasures;
-    setNestedProperty(crispBitmapGlyphStore_Full.compact_glyphs_measures, [this.fontFamily, this.fontStyle, this.fontWeight, this.fontSize, this.letter], letterMeasures);
+    // this.letterTextMetrics = letterTextMetrics;
+    setNestedProperty(crispBitmapGlyphStore_Full.compact_glyphs_measures, [this.fontFamily, this.fontStyle, this.fontWeight, this.fontSize, this.letter], letterTextMetrics);
 
     this.displayCanvasesAndData();
   }
@@ -77,20 +77,20 @@ class CrispBitmapGlyph_Full {
     ctx.font = `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
 
     // size the canvas so it fits the this.letter
-    const letterMeasuresOrig = ctx.measureText(this.letter);
+    const letterTextMetricsOrig = ctx.measureText(this.letter);
 
-    // let's make a copy of letterMeasuresOrig into letterMeasures
+    // let's make a copy of letterTextMetricsOrig into letterTextMetrics
     // so we can modify it
-    let letterMeasures = {};
-    for (let key in letterMeasuresOrig) {
-      letterMeasures[key] = letterMeasuresOrig[key];
+    let letterTextMetrics = {};
+    for (let key in letterTextMetricsOrig) {
+      letterTextMetrics[key] = letterTextMetricsOrig[key];
     }
 
     // for the space character, Chrome gives actualBoundingBoxLeft == actualBoundingBoxRight == 0
     // even if the width is not 0. Since we are going to use the actualBoundingBoxLeft and actualBoundingBoxRight
     // to size the canvas, we need to fix that.
-    if (letterMeasures.actualBoundingBoxLeft === 0 && letterMeasures.actualBoundingBoxRight === 0) {
-      letterMeasures.actualBoundingBoxRight = letterMeasures.width;
+    if (letterTextMetrics.actualBoundingBoxLeft === 0 && letterTextMetrics.actualBoundingBoxRight === 0) {
+      letterTextMetrics.actualBoundingBoxRight = letterTextMetrics.width;
     }
 
     //////////////////////////////////////////////
@@ -117,16 +117,16 @@ class CrispBitmapGlyph_Full {
     // font family and style and weight and size
     
 
-    letterMeasures.actualBoundingBoxLeft += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction px");
-    //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction px");
-    //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
-    letterMeasures.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction proportional"));
-    //console.log ("letterMeasures.actualBoundingBoxLeft: " + letterMeasures.actualBoundingBoxLeft);
-    letterMeasures.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction proportional"));
-    //console.log ("letterMeasures.actualBoundingBoxRight: " + letterMeasures.actualBoundingBoxRight);
-    letterMeasures.width += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "Advancement correction proportional"));
-    //console.log ("letterMeasures.width: " + letterMeasures.width);
+    letterTextMetrics.actualBoundingBoxLeft += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction px");
+    //console.log ("letterTextMetrics.actualBoundingBoxLeft: " + letterTextMetrics.actualBoundingBoxLeft);
+    letterTextMetrics.actualBoundingBoxRight += this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction px");
+    //console.log ("letterTextMetrics.actualBoundingBoxRight: " + letterTextMetrics.actualBoundingBoxRight);
+    letterTextMetrics.actualBoundingBoxLeft += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction proportional"));
+    //console.log ("letterTextMetrics.actualBoundingBoxLeft: " + letterTextMetrics.actualBoundingBoxLeft);
+    letterTextMetrics.actualBoundingBoxRight += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction proportional"));
+    //console.log ("letterTextMetrics.actualBoundingBoxRight: " + letterTextMetrics.actualBoundingBoxRight);
+    letterTextMetrics.width += Math.floor(this.fontSize * this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "Advancement correction proportional"));
+    //console.log ("letterTextMetrics.width: " + letterTextMetrics.width);
   
 
 
@@ -138,22 +138,22 @@ class CrispBitmapGlyph_Full {
     // n pixel more to the right in the mini canvas
     const cropLeftCorrection_CSS_Px = this.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "CropLeft correction px", PIXEL_DENSITY);
 
-    const canvasPixelsWidth = Math.round(letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight);
+    const canvasPixelsWidth = Math.round(letterTextMetrics.actualBoundingBoxLeft + letterTextMetrics.actualBoundingBoxRight);
     canvas.style.width = canvasPixelsWidth + 'px';
     canvas.width = canvasPixelsWidth * PIXEL_DENSITY;
 
-    // add a div with letterMeasures.actualBoundingBoxLeft + letterMeasures.actualBoundingBoxRight
+    // add a div with letterTextMetrics.actualBoundingBoxLeft + letterTextMetrics.actualBoundingBoxRight
     const div = document.createElement('div');
-    div.textContent = this.letter + " bbox left: " + letterMeasures.actualBoundingBoxLeft + " bbox right:" + letterMeasures.actualBoundingBoxRight;
+    div.textContent = this.letter + " bbox left: " + letterTextMetrics.actualBoundingBoxLeft + " bbox right:" + letterTextMetrics.actualBoundingBoxRight;
 
     // add to the textcontent the actualBoundingBoxLeft in red if it's not 0
-    if (letterMeasures.actualBoundingBoxLeft !== 0) {
+    if (letterTextMetrics.actualBoundingBoxLeft !== 0) {
       div.style.color = "red";
     }
 
     document.body.appendChild(div);
 
-    const canvasPixelsHeight = Math.round(letterMeasures.fontBoundingBoxAscent + letterMeasures.fontBoundingBoxDescent);;
+    const canvasPixelsHeight = Math.round(letterTextMetrics.fontBoundingBoxAscent + letterTextMetrics.fontBoundingBoxDescent);;
     canvas.style.height = canvasPixelsHeight + 'px';
     canvas.height = canvasPixelsHeight * PIXEL_DENSITY;
 
@@ -172,12 +172,12 @@ class CrispBitmapGlyph_Full {
 
     // you have to start painting the letter at actualBoundingBoxLeft because that's how much
     // TO THE LEFT OF THAT POINT that letter will ALSO extend
-    ctx.fillText(this.letter, Math.round(letterMeasures.actualBoundingBoxLeft) + cropLeftCorrection_CSS_Px, canvas.height / PIXEL_DENSITY - 1);
+    ctx.fillText(this.letter, Math.round(letterTextMetrics.actualBoundingBoxLeft) + cropLeftCorrection_CSS_Px, canvas.height / PIXEL_DENSITY - 1);
 
     // now can remove the canvas from the page
     canvas.remove();
 
-    return { canvas, letterMeasures };
+    return { canvas, letterTextMetrics };
   }
 
   getBoundingBoxOfOnPixels(canvas) {
@@ -230,18 +230,18 @@ class CrispBitmapGlyph_Full {
     return { tightCanvas, tightCanvasBox };
   }
 
-  createCanvasesAndLetterMeasures() {
-    const { canvas, letterMeasures } = this.createCanvasWithLetter();
+  createCanvasesAndLetterTextMetrics() {
+    const { canvas, letterTextMetrics } = this.createCanvasWithLetter();
     const { tightCanvas, tightCanvasBox } = this.getBoundingBoxOfOnPixels(canvas);
 
     if (!tightCanvas)
-      return { canvas, tightCanvas: null, tightCanvasBox: null, letterMeasures };
+      return { canvas, tightCanvas: null, tightCanvasBox: null, letterTextMetrics };
 
     const div = document.createElement('div');
     div.textContent = "tightCanvasBox width in px, phys: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) + " css: " + (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) / PIXEL_DENSITY; 
     document.body.appendChild(div);
 
-    return { canvas, tightCanvas, tightCanvasBox, letterMeasures };
+    return { canvas, tightCanvas, tightCanvasBox, letterTextMetrics };
   }
 
   // function that gets the bounding box of the text and its position, by looking at the pixels

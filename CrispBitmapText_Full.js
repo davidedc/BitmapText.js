@@ -30,8 +30,8 @@ class CrispBitmapText_Full {
       };
     
     let width_CSS_Px = 0;
-    let letterMeasures = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
-    const actualBoundingBoxLeft_CSS_Px = letterMeasures.actualBoundingBoxLeft;
+    let letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
+    const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
     let actualBoundingBoxRight_CSS_Px;
@@ -43,10 +43,10 @@ class CrispBitmapText_Full {
       const nextLetter = text[i + 1];
 
       glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
-      letterMeasures = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
-      actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterMeasures.actualBoundingBoxAscent);
-      actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterMeasures.actualBoundingBoxDescent);
+      actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
+      actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
 
       advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
       width_CSS_Px += advancement_CSS_Px;
@@ -56,19 +56,19 @@ class CrispBitmapText_Full {
     actualBoundingBoxRight_CSS_Px = width_CSS_Px - advancement_CSS_Px;
     // ... plus the actualBoundingBoxRight_CSS_Px of the last character
     // (this is in place of adding its advancement_CSS_Px)
-    actualBoundingBoxRight_CSS_Px += letterMeasures.actualBoundingBoxRight;
+    actualBoundingBoxRight_CSS_Px += letterTextMetrics.actualBoundingBoxRight;
 
     return {
       width: width_CSS_Px,
       // this one below is a nice convenience but it's not what standard measureText provides
       // so let's make things uniform and resist the temptation to provide it.
-      //height: Math.round(glyph.letterMeasures.fontBoundingBoxAscent + glyph.letterMeasures.fontBoundingBoxDescent),
+      //height: Math.round(glyph.letterTextMetrics.fontBoundingBoxAscent + glyph.letterTextMetrics.fontBoundingBoxDescent),
       actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
       actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
       actualBoundingBoxAscent,
       actualBoundingBoxDescent,
-      fontBoundingBoxAscent: letterMeasures.fontBoundingBoxAscent,
-      fontBoundingBoxDescent: letterMeasures.fontBoundingBoxDescent
+      fontBoundingBoxAscent: letterTextMetrics.fontBoundingBoxAscent,
+      fontBoundingBoxDescent: letterTextMetrics.fontBoundingBoxDescent
     };
   }
 
@@ -196,7 +196,7 @@ class CrispBitmapText_Full {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
-    const letterMeasures = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+    const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
     // if (letter === ' ') debugger
 
     let x_CSS_Px = 0;
@@ -210,7 +210,7 @@ class CrispBitmapText_Full {
     // but since at small sizes we meddle with kerning quite a bit, we want
     // to also meddle with this to try to make the width of text
     // similar to what the browser paints normally.
-    // console.log(letterMeasures.width + " " + x_CSS_Px);
+    // console.log(letterTextMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
       const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = getNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [fontFamily, fontStyle, fontWeight, fontSize]);
@@ -218,12 +218,12 @@ class CrispBitmapText_Full {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
       else {
-        x_CSS_Px += letterMeasures.width;
+        x_CSS_Px += letterTextMetrics.width;
       }
     }
     // Non-space characters ------------------------------------------
     else {
-        x_CSS_Px += letterMeasures.width;
+        x_CSS_Px += letterTextMetrics.width;
     }
 
 
@@ -275,7 +275,7 @@ class CrispBitmapText_Full {
       const letter = text[i];
       const nextLetter = text[i + 1];
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
-      const letterMeasures = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphs_measures, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
 
       if (glyph) {
@@ -299,7 +299,7 @@ class CrispBitmapText_Full {
           // it happens with a standard Canvas - one should just position the text
           // carefully to avoid this (although it's rare that people actually take care of this).
 
-          const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterMeasures.actualBoundingBoxLeft);
+          const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterTextMetrics.actualBoundingBoxLeft);
 
           const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
           const xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
@@ -376,10 +376,10 @@ class CrispBitmapText_Full {
         // it happens with a standard Canvas - one should just position the text
         // carefully to avoid this (although it's rare that people actually take care of this).
 
-        // const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterMeasures.actualBoundingBoxLeft);
+        // const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterTextMetrics.actualBoundingBoxLeft);
 
         // const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
-        // const xPos_Phys_Px = x_Phys_Px - Math.round(letterMeasures.actualBoundingBoxLeft) * PIXEL_DENSITY;
+        // const xPos_Phys_Px = x_Phys_Px - Math.round(letterTextMetrics.actualBoundingBoxLeft) * PIXEL_DENSITY;
 
         // For normal sizes:
         //    we use the same spacing as the canvas gave us for each glyph
