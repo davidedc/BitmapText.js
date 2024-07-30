@@ -6,10 +6,10 @@ class CrispBitmapGlyphStore_Full {
     // "compact" means that they are the final data structures that are used to measure
     // text and draw the glyphs/text. (As opposed to the other data structures that contain
     // all kinds of other intermediate data useful for construction/inspection)
-    this.compact_glyphsSheets = {};
-    this.compact_kerningTables = {};
-    this.compact_glyphs_measures = {};
-    this.compact_spaceAdvancementOverrideForSmallSizesInPx = {};
+    this.compact_glyphsSheets = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
+    this.compact_kerningTables = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
+    this.compact_glyphs_measures = {}; // [fontFamily, fontStyle, fontWeight, fontSize, letter]
+    this.compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
 
     // these objects instead contain all kinds of other
     // intermediate data useful for construction/inspection
