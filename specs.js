@@ -1,50 +1,49 @@
-function specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey) {
-  return checkNestedPropertiesExist(specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
-}
+class Specs {
 
-function getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
+  specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey) {
+    return checkNestedPropertiesExist(specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
+  }
 
-  // if specs[fontFamily][fontStyle][fontWeight][correctionKey] doesn't exist
-  if (!specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
+  getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
+    if (!this.specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
+      return null;
+    }
+
+    if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
+      return null;
+    }
+
+    for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
+      const correctionEntry = element;
+      if (correctionEntry.sizeRange == undefined) return null;
+      if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
+        return correctionEntry;
+      }
+    }
+
     return null;
   }
 
-  if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
-    return null;
+  getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
+    const correctionEntry = this.getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
+    return correctionEntry ? correctionEntry.correction : null;
   }
 
-  for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
-    const correctionEntry = element;
-    if (correctionEntry.sizeRange == undefined) return null;
-    if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
-      return correctionEntry;
+  getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
+    const correctionEntry = this.getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
+    if (!correctionEntry) return 0;
+
+    if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) return 0;
+
+    for (const element of correctionEntry.lettersAndTheirCorrections) {
+      const charAndOffset = element;
+      if (charAndOffset.string.indexOf(letter) !== -1) {
+        return charAndOffset.adjustment;
+      }
     }
+
+    return 0;
   }
-
-  return null;
-}
-
-function getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
-  const correctionEntry = getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
-  return correctionEntry ? correctionEntry.correction : null;
-}
-
-function getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
-
-  const correctionEntry = getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
-  if (!correctionEntry) return 0;
-
-  // check if the passed pixelDensity is the same as the one in the correctionEntry
-  if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) return 0;
-
-  for (const element of correctionEntry.lettersAndTheirCorrections) {
-    const charAndOffset = element;
-    if (charAndOffset.string.indexOf(letter) !== -1) {
-      return charAndOffset.adjustment;
-    }
-  }
-
-  return 0;
 }
 
 const specsText =
@@ -324,3 +323,6 @@ Advancement correction proportional
   // can be seen clearly at size 30
   W: 0.03333333333333333
 `;
+
+// instantiation of the Specs class
+const specsInstance = new Specs();

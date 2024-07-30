@@ -112,13 +112,13 @@ class CrispBitmapText_Full {
 
   getKerningCorrectionFromSpec(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
 
-    if (specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning cutoff")) {
+    if (specsInstance.specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning cutoff")) {
       if (fontSize <= specs[fontFamily][fontStyle][fontWeight]["Kerning cutoff"]) {
         return 0;
       }
     }
 
-    if (specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning")) {
+    if (specsInstance.specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning")) {
   
       // for all entries in the Kerning array with a sizeRange that includes the current font size
       //   get the kerning array and for each one:
@@ -184,7 +184,7 @@ class CrispBitmapText_Full {
     // store the spaceAdvancementOverrideForSmallSizesInPx
     // by doing getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
     // and store it in the compact_spaceAdvancementOverrideForSmallSizesInPx object at the right level
-    const spaceAdvancementOverrideForSmallSizesInPx = getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
+    const spaceAdvancementOverrideForSmallSizesInPx = specsInstance.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
     setNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [fontFamily, fontStyle, fontWeight, fontSize], spaceAdvancementOverrideForSmallSizesInPx);
 
   }
