@@ -1,31 +1,31 @@
 // build an object that will contain the specs, which is object keyed by font family,
 // then by font style, then by sub-spec name
 
-// Global specs object
-let specs = {};
 
 class SpecsParser {
   constructor() {
     this.previousSpecsString = null;
+    this.parsedSpecs = {};
   }
 
   // If the specs string changed, parse it, clear all the kerning tables and build
   // the one for the current size.
   // If the string has not changed, check if the kerning table for the current size exists and if not, build it.
-  parseSpecsIfChangedAndCalculateKerningsIfNeeded(specsString) {
+  parseSpecsIfChanged(specsString) {
 
     if (specsString !== this.previousSpecsString) {
       this.previousSpecsString = specsString;
 
       this.parseSpecs(specsString);
-      console.dir(specs);
+      console.dir(this.parsedSpecs);
 
       // clear the kerning tables because the specs probably have changed
       // (unless the user is just changing, say, a comment, but we can't know that)
       crispBitmapGlyphStore_Full.clearKerningTables();
     }
 
-    buildKerningTableIfDoesntExist();
+    return new Specs(this.parsedSpecs);
+
   }
 
   parseSpecs(specsString) {
@@ -52,7 +52,7 @@ class SpecsParser {
 
         // make the keys for font family and style
         // in the specs object if they don't exist yet
-        this.ensureNestedPropertiesExist(specs, [fontFamily, fontStyle]);
+        this.ensureNestedPropertiesExist(this.parsedSpecs, [fontFamily, fontStyle]);
 
         const specsForFontFamilyAndStyleAndWeightTriplet = {};
 
@@ -76,7 +76,7 @@ class SpecsParser {
           }
         }
 
-        specs[fontFamily][fontStyle][fontWeight] = specsForFontFamilyAndStyleAndWeightTriplet;
+        this.parsedSpecs[fontFamily][fontStyle][fontWeight] = specsForFontFamilyAndStyleAndWeightTriplet;
       }
     }
   }
@@ -440,5 +440,3 @@ class SpecsParser {
   }
 
 }
-
-const specsParser = new SpecsParser();

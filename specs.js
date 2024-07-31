@@ -1,7 +1,19 @@
 class Specs {
 
+  constructor(specs) {
+    this.specs = specs;
+  }
+
+  kerning(fontFamily,fontStyle,fontWeight) {
+    return this.specs[fontFamily][fontStyle][fontWeight]["Kerning"];
+  }
+
+  kerningCutoff(fontFamily,fontStyle,fontWeight) {
+    return this.specs[fontFamily][fontStyle][fontWeight]["Kerning cutoff"];
+  }
+
   specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey) {
-    return checkNestedPropertiesExist(specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
+    return checkNestedPropertiesExist(this.specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
   }
 
   getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
@@ -9,11 +21,11 @@ class Specs {
       return null;
     }
 
-    if (fontSize <= specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
+    if (fontSize <= this.specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       return null;
     }
 
-    for (const element of specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
+    for (const element of this.specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) return null;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
@@ -323,6 +335,3 @@ Advancement correction proportional
   // can be seen clearly at size 30
   W: 0.03333333333333333
 `;
-
-// instantiation of the Specs class
-const specsInstance = new Specs();

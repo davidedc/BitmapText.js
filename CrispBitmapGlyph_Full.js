@@ -84,15 +84,15 @@ class CrispBitmapGlyph_Full {
     // font family and style and weight and size
     
 
-    letterTextMetrics.actualBoundingBoxLeft += specsInstance.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction px");
+    letterTextMetrics.actualBoundingBoxLeft += specs.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction px");
     //console.log ("letterTextMetrics.actualBoundingBoxLeft: " + letterTextMetrics.actualBoundingBoxLeft);
-    letterTextMetrics.actualBoundingBoxRight += specsInstance.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction px");
+    letterTextMetrics.actualBoundingBoxRight += specs.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction px");
     //console.log ("letterTextMetrics.actualBoundingBoxRight: " + letterTextMetrics.actualBoundingBoxRight);
-    letterTextMetrics.actualBoundingBoxLeft += Math.floor(this.fontSize * specsInstance.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction proportional"));
+    letterTextMetrics.actualBoundingBoxLeft += Math.floor(this.fontSize * specs.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxLeft correction proportional"));
     //console.log ("letterTextMetrics.actualBoundingBoxLeft: " + letterTextMetrics.actualBoundingBoxLeft);
-    letterTextMetrics.actualBoundingBoxRight += Math.floor(this.fontSize * specsInstance.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction proportional"));
+    letterTextMetrics.actualBoundingBoxRight += Math.floor(this.fontSize * specs.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "ActualBoundingBoxRight correction proportional"));
     //console.log ("letterTextMetrics.actualBoundingBoxRight: " + letterTextMetrics.actualBoundingBoxRight);
-    letterTextMetrics.width += Math.floor(this.fontSize * specsInstance.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "Advancement correction proportional"));
+    letterTextMetrics.width += Math.floor(this.fontSize * specs.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "Advancement correction proportional"));
     //console.log ("letterTextMetrics.width: " + letterTextMetrics.width);
   
 
@@ -103,7 +103,7 @@ class CrispBitmapGlyph_Full {
     // Happens at small sizes due to a browser rendering defect.
     // This correction will simply paint the letter
     // n pixel more to the right in the mini canvas
-    const cropLeftCorrection_CSS_Px = specsInstance.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "CropLeft correction px", PIXEL_DENSITY);
+    const cropLeftCorrection_CSS_Px = specs.getSingleFloatCorrectionForLetter(this.fontFamily, this.letter, null, this.fontSize, this.fontStyle, this.fontWeight, "CropLeft correction px", PIXEL_DENSITY);
 
     const canvasPixelsWidth = Math.round(letterTextMetrics.actualBoundingBoxLeft + letterTextMetrics.actualBoundingBoxRight);
     canvas.style.width = canvasPixelsWidth + 'px';
