@@ -52,7 +52,7 @@ class SpecsParser {
 
         // make the keys for font family and style
         // in the specs object if they don't exist yet
-        this.ensureNestedPropertiesExist(this.parsedSpecs, [fontFamily, fontStyle]);
+        ensureNestedPropertiesExist(this.parsedSpecs, [fontFamily, fontStyle]);
 
         const specsForFontFamilyAndStyleAndWeightTriplet = {};
 
@@ -427,16 +427,6 @@ class SpecsParser {
   //   "[integer] to [integer] at pixel density [integer]"
   isSizeRange(line) {
     return /^\d+\s+to\s+\d+(\s+at\s+pixel\s+density\s+\d+)?$/.test(line);
-  }
-
-  ensureNestedPropertiesExist(obj, properties) {
-    let current = obj;
-    for (const prop of properties) {
-      if (!current[prop]) {
-        current[prop] = {};
-      }
-      current = current[prop];
-    }
   }
 
 }
