@@ -13,7 +13,13 @@ class CrispBitmapGlyphStore_Full {
     this.compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
     // these two needed to precisely paint a glyph from the sheet into the destination canvas
     this.compact_glyphsSheets = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
-    this.compact_glyphsSheetsMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
+    this.compact_glyphsSheetsMetrics = { // all objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
+      compact_tightWidth: {},
+      compact_tightHeight: {},
+      compact_dx: {},
+      compact_dy: {},
+      compact_xInGlyphSheet: {}
+    };
 
     // these objects instead contain all kinds of other
     // intermediate data useful for construction/inspection
@@ -68,19 +74,21 @@ class CrispBitmapGlyphStore_Full {
         continue;
       }
 
+      // Note that PIXEL_DENSITY can be an integer or a fractional number.
+      // In both cases, JavaScript will automatically convert the number to a string when using it as an object key.
+      // For example, if PIXEL_DENSITY is 2, the key will be "2", and if it's 1.5, the key will be "1.5".
+
       // you use 1 * PIXEL_DENSITY because it's always good to do things in increments of PIXEL_DENSITY
       // so that everything remains divisible by PIXEL_DENSITY
       const compact_tightWidth = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
       const compact_tightHeight = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
+      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_tightWidth);
+      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_tightHeight, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_tightHeight);
 
-      // Note that PIXEL_DENSITY can be an integer or a fractional number.
-      // In both cases, JavaScript will automatically convert the number to a string when using it as an object key.
-      // For example, if PIXEL_DENSITY is 2, the key will be "2", and if it's 1.5, the key will be "1.5".
-      glyph.compact_tightWidth = { [PIXEL_DENSITY]: compact_tightWidth };
-      glyph.compact_tightHeight = { [PIXEL_DENSITY]: compact_tightHeight };
-
-      glyph.compact_dx ={ [PIXEL_DENSITY]: - Math.round(letterTextMetrics.actualBoundingBoxLeft) * PIXEL_DENSITY + glyph.tightCanvasBox.topLeftCorner.x };
-      glyph.compact_dy ={ [PIXEL_DENSITY]: - glyph.compact_tightHeight[PIXEL_DENSITY] - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY };
+      const compact_dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * PIXEL_DENSITY + glyph.tightCanvasBox.topLeftCorner.x;
+      const compact_dy = - compact_tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
+      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_dx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_dx);
+      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_dy, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_dy);
 
       if (!isNaN(compact_tightWidth)) fittingWidth += compact_tightWidth;
       if (compact_tightHeight > maxHeight) maxHeight = compact_tightHeight;
@@ -94,9 +102,10 @@ class CrispBitmapGlyphStore_Full {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
+      const compact_tightWidth = getNestedProperty(this.compact_glyphsSheetsMetrics.compact_tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
       // if there is no glyph.tightCanvas, then just continue
-      if (!glyph.tightCanvas || !glyph.compact_tightWidth || isNaN(glyph.compact_tightWidth[PIXEL_DENSITY])) {
-        if (!glyph.compact_tightWidth) {
+      if (!glyph.tightCanvas || !compact_tightWidth || isNaN(compact_tightWidth)) {
+        if (!compact_tightWidth) {
           console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + ' has no compact_tightWidth[PIXEL_DENSITY]');
         }
         if (!glyph.tightCanvas) {
@@ -106,13 +115,9 @@ class CrispBitmapGlyphStore_Full {
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
 
-      if (!glyph.compact_xInGlyphSheet) {
-        glyph.compact_xInGlyphSheet = {};
-      }
-      glyph.compact_xInGlyphSheet[PIXEL_DENSITY] = x;
+      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_xInGlyphSheet, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], x);
 
-      // check that glyph.compact_tightWidth[PIXEL_DENSITY] is a valid number
-      x += glyph.compact_tightWidth[PIXEL_DENSITY];
+      x += compact_tightWidth;
     }
 
     const glyphsSheetsPNG = ctx.toPNGImage();

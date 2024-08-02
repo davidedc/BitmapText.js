@@ -352,52 +352,25 @@ class CrispBitmapText_Full {
       const letter = text[i];
       const nextLetter = text[i + 1];
 
-      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
+      const compact_xInGlyphSheet = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_xInGlyphSheet, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const compact_tightWidth = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const compact_tightHeight = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_tightHeight, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const compact_dx = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_dx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const compact_dy = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_dy, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
-      if (!glyph) debugger;
-
-      if (glyph.compact_xInGlyphSheet) {
-
-        // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
-        // actualBoundingBoxLeft > 0, for example it's quite large for the
-        // italic f in Times New Roman. The other glyphs that don't protrude to the left
-        // simply have actualBoundingBoxLeft = 0.
-        //
-        // (Note that actualBoundingBoxLeft comes from the canvas measureText method, i.e.
-        // it's not inferred from looking at how the canvas paints the glyph.)
-        //
-        // Hence, to render all glyphs correctly, you need to blit the glyph at
-        //    x_Phys_Px - actualBoundingBoxLeft
-        // so the part that should protrude to the left is actually partially blitted to
-        // the left of x, as it should be.
-        //
-        // Note that if the first character has a positive actualBoundingBoxLeft and we draw
-        // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
-        // it happens with a standard Canvas - one should just position the text
-        // carefully to avoid this (although it's rare that people actually take care of this).
-
-        // const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterTextMetrics.actualBoundingBoxLeft);
-
-        // const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
-        // const xPos_Phys_Px = x_Phys_Px - Math.round(letterTextMetrics.actualBoundingBoxLeft) * PIXEL_DENSITY;
-
-        // For normal sizes:
-        //    we use the same spacing as the canvas gave us for each glyph
-
-        // normal sizes
-        // const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+      if (compact_xInGlyphSheet) {
         // see https://stackoverflow.com/a/6061102
         ctx.drawImage(glyphsSheet,
           // sx, sy -------------------
-          glyph.compact_xInGlyphSheet[PIXEL_DENSITY], 0,
+          compact_xInGlyphSheet, 0,
           // sWidth, sHeight ----------
-          glyph.compact_tightWidth[PIXEL_DENSITY], glyph.compact_tightHeight[PIXEL_DENSITY],
+          compact_tightWidth, compact_tightHeight,
           // then dx, dy --------------
-          x_Phys_Px + glyph.compact_dx[PIXEL_DENSITY],
+          x_Phys_Px + compact_dx,
           // same formula for the y as ctx.drawText above, see explanation there
-          y_Phys_Px + glyph.compact_dy[PIXEL_DENSITY],
+          y_Phys_Px + compact_dy,
           // then dWidth, dHeight -----
-          glyph.compact_tightWidth[PIXEL_DENSITY], glyph.compact_tightHeight[PIXEL_DENSITY]);
+          compact_tightWidth, compact_tightHeight);
 
       }
 
