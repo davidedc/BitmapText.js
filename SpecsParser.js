@@ -1,223 +1,81 @@
-// build an object that will contain the specs, which is object keyed by font family,
-// then by font style, then by sub-spec name
-
+// Builds a Specs object that will contain the specs, i.e. an object keyed by font family,
+// then by font style, then by sub-spec name.
 
 class SpecsParser {
   constructor() {
     this.previousSpecsString = null;
     this.parsedSpecs = {};
+
+    // Bind methods to ensure 'this' refers to the SpecsParser instance
+    this.parseSubSpec = this.parseSubSpec.bind(this);
+    this.parseKerningCutoff = this.parseKerningCutoff.bind(this);
+    this.parseSizeBasedSpec = this.parseSizeBasedSpec.bind(this);
   }
 
-  // If the specs string changed, parse it, clear all the kerning tables and build
-  // the one for the current size.
-  // If the string has not changed, check if the kerning table for the current size exists and if not, build it.
   parseSpecsIfChanged(specsString) {
-
     if (specsString !== this.previousSpecsString) {
       this.previousSpecsString = specsString;
-
       this.parseSpecs(specsString);
       console.dir(this.parsedSpecs);
-
       // clear the kerning tables because the specs probably have changed
       // (unless the user is just changing, say, a comment, but we can't know that)
       crispBitmapGlyphStore_Full.clearKerningTables();
     }
-
     return new Specs(this.parsedSpecs);
-
   }
 
+  cleanSpecsString(specsString) {
+    return specsString
+      .replace(/.*\/\/.*/g, '') // Remove comments
+      .replace(/^\s*\n/gm, ''); // Remove empty lines
+  }
+
+  // Each "spec" is separated by '---------' and specifies
+  // a bunch of sub-specs for a triplet of font family, style, and weight
   parseSpecs(specsString) {
-    // remove comments i.e. double shashes. Can be anywhere in the line, so we have to remove the whole line
-    const specsStringWithoutComments = specsString.replace(/.*\/\/.*/g, '');
-    // also remove empty lines
-    const specsStringWithoutCommentsAndEmptyLines = specsStringWithoutComments.replace(/^\s*\n/gm, '');
+    const cleanedSpecs = this.cleanSpecsString(specsString);
+    const fontSpecs = cleanedSpecs.split('---------');
 
-    console.log("have to parse" + specsStringWithoutCommentsAndEmptyLines);
-
-    const specsForFontFamilyAndFontStyleAndFontWeightTriplet = specsStringWithoutCommentsAndEmptyLines.split('---------');
-    console.dir(specsForFontFamilyAndFontStyleAndFontWeightTriplet);
-
-    // go through the specs for each font family and font style pair
-    for (const setting of specsForFontFamilyAndFontStyleAndFontWeightTriplet) {
-      // also remove empty lines
+    for (const setting of fontSpecs) {
       const lines = setting.split('\n').filter(line => line !== '');
-
       if (lines.length > 1) {
-        // parse the first three lines, which are the font family and font style and font weight
-        const fontFamily = lines[0].split(':')[1].trim();
-        const fontStyle = lines[1].split(':')[1].trim();
-        const fontWeight = lines[2].split(':')[1].trim();
-
-        // make the keys for font family and style
-        // in the specs object if they don't exist yet
-        ensureNestedPropertiesExist(this.parsedSpecs, [fontFamily, fontStyle]);
-
-        const specsForFontFamilyAndStyleAndWeightTriplet = {};
-
-        const specsContentsOfFontFamilyAndFontStyleAndFontWeight = lines.slice(2).join('\n');
-        const subSpecsOfFontFamilyAndFontStyleAndFontWeightArray = specsContentsOfFontFamilyAndFontStyleAndFontWeight.split('--');
-
-        // go through each sub-spec and parse it
-        // for each sub-spec...
-        for (const subSpecOfFontFamilyFontStyleFontWeight of subSpecsOfFontFamilyAndFontStyleAndFontWeightArray) {
-          // also remove empty lines
-          const linesOfSubSpecOfFontFamilyFontStyleFontWeight = subSpecOfFontFamilyFontStyleFontWeight.split('\n').filter(line => line !== '');
-
-          // get the name and content of the sub-spec.
-          if (linesOfSubSpecOfFontFamilyFontStyleFontWeight.length > 1) {
-            // the name is the first line...
-            const nameOfSubSpecOfFontFamilyFontStyleFontWeight = linesOfSubSpecOfFontFamilyFontStyleFontWeight[0];
-            // ... the rest is the content (starting with a line with a dash)
-            const contentOfSubSpecOfFontFamilyFontStyleFontWeight = linesOfSubSpecOfFontFamilyFontStyleFontWeight.slice(1).join('\n');
-
-            specsForFontFamilyAndStyleAndWeightTriplet[nameOfSubSpecOfFontFamilyFontStyleFontWeight] = this.parseSubSpec(nameOfSubSpecOfFontFamilyFontStyleFontWeight, contentOfSubSpecOfFontFamilyFontStyleFontWeight);
-          }
-        }
-
-        this.parsedSpecs[fontFamily][fontStyle][fontWeight] = specsForFontFamilyAndStyleAndWeightTriplet;
+        this.parseFontSpec(lines);
       }
     }
   }
 
-  parseSubSpec(name, content) {
-    switch (name) {
-      case "ActualBoundingBoxLeft correction px":
-      case "CropLeft correction px":
-      case "ActualBoundingBoxRight correction px":
-      case "ActualBoundingBoxRight correction proportional":
-      case "Advancement correction proportional":
-        return this.parseSingleFloatCorrectionsForLettersSet(content);
-      case "Space advancement override for small sizes in px":
-      case "Advancement override for small sizes in px":
-        return this.parseSingleFloatCorrection(content);
-      case "Kerning discretisation for small sizes":
-        return this.parseSingleFloatCorrectionsForSizeBrackets(content);
-      case "Kerning cutoff":
-        return this.parseKerningCutoff(content);
-      case "Kerning":
-        return this.parseKerning(content);
-      default:
-        // if we don't have a parser for the sub-spec, just put its string content in the object as it is  
-        return content;
-    }
-  }
+  // Each "spec" is separated by '---------' and starts with three lines of font info,
+  // then a bunch of sub-specs separated by '--'
+  parseFontSpec(lines) {
+    // example:
+    //   Font family: Arial
+    //   Font style: normal
+    //   Font weight: normal
+    const [fontFamily, fontStyle, fontWeight] = this.parseFontInfo(lines.slice(0, 3));
+    ensureNestedPropertiesExist(this.parsedSpecs, [fontFamily, fontStyle]);
 
-  parseSingleFloatCorrectionsForLettersSet(contentOfSubSpec) {
-    // remove the first line as it's a dash
-    const linesOfSubSpecOfFontFamilyFontStyleFontWeight = contentOfSubSpec.split('\n').slice(1);
-    const correctionsBySizeArray = [];
+    // subspecs are separated by '--'
+    const specsForFont = {};
+    const subSpecs = lines.slice(2).join('\n').split('--');
 
-    // linesOfSubSpecOfFontFamilyFontStyleFontWeight in the form:
-    // 0 to 20
-    //   [something]
-    //   ...
-    // 20 to 1000
-    //   [something]
-    //   ...
-    // ...
-    // let's put each section starting with
-    //   [number] to [number]
-    // until the next line with
-    //   [number] to [number]
-    // into an array    
-    for (const line of linesOfSubSpecOfFontFamilyFontStyleFontWeight) {
-      // there can be multiple parts covering different ranges of sizes
-      // so you have to constantly look out for the next range
-      // i.e. a line matching "[number] to [number]""
-      if (this.isSizeRange(line)) {
-        // this is a line with " to " in it
-        // so it's the start of a new section
-        // put the two numbers in the line into an object with keys "from" and "to"
-        const sizeRangeObj = this.parseSizeRange(line);
-        // add to the correctionsBySizeArray array the new size range and the correctionsBySizeArray objects array
-        correctionsBySizeArray.push({ sizeRange: sizeRangeObj, lettersAndTheirCorrections: [] });
-      } else {
-        const parseCharsAndCorrectionObj = this.parseCharsAndCorrectionLine(line);
-        correctionsBySizeArray[correctionsBySizeArray.length - 1].lettersAndTheirCorrections.push(parseCharsAndCorrectionObj);
+    // go through each sub-spec and parse it
+    for (const subSpec of subSpecs) {
+      const subSpecLines = subSpec.split('\n').filter(line => line !== '');
+      if (subSpecLines.length > 1) {
+        const [name, ...content] = subSpecLines;
+        specsForFont[name] = this.parseSubSpec(name, content.join('\n'));
       }
     }
-    return correctionsBySizeArray;
+
+    this.parsedSpecs[fontFamily][fontStyle][fontWeight] = specsForFont;
   }
 
-  parseSingleFloatCorrection(contentOfSubSpec) {
-    // remove the first line as it's a dash
-    const linesOfSubSpecOfFontFamilyFontStyleFontWeight = contentOfSubSpec.split('\n').slice(1);
-    // linesOfSubSpecOfFontFamilyFontStyleFontWeight in the form:
-    // 0 to 20
-    //   [something]
-    //   ...
-    // 20 to 1000
-    //   [something]
-    //   ...
-    // ...
-    // let's put each section starting with
-    //   [number] to [number]
-    // until the next line with
-    //   [number] to [number]
-    // into an array
-    const correctionsBySizeArray = [];
-
-    for (const line of linesOfSubSpecOfFontFamilyFontStyleFontWeight) {
-      // there can be multiple parts covering different ranges of sizes
-      // so you have to constantly look out for the next range
-      // i.e. a line matching "[number] to [number]""
-      if (this.isSizeRange(line)) {
-        // this is a line with " to " in it
-        // so it's the start of a new section
-        // put the two numbers in the line into an object with keys "from" and "to"
-        const sizeRangeObj = this.parseSizeRange(line);
-        // add to the correctionsBySizeArray array the new size range and the correctionsBySizeArray objects array
-        correctionsBySizeArray.push({ sizeRange: sizeRangeObj, correction: {} });
-      } else {
-        const correction = this.parseCorrectionLine(line);
-        correctionsBySizeArray[correctionsBySizeArray.length - 1].correction = correction;
-      }
-    }
-    return correctionsBySizeArray;
+  parseFontInfo(infoLines) {
+    return infoLines.map(line => line.split(':')[1].trim());
   }
 
-  parseSingleFloatCorrectionsForSizeBrackets(contentOfSubSpec) {
-    // remove the first line as it's a dash
-    const linesOfSubSpecOfFontFamilyFontStyleFontWeight = contentOfSubSpec.split('\n').slice(1);
-
-    // linesOfSubSpecOfFontFamilyFontStyleFontWeight in the form:
-    // 0 to 20
-    //   [something]
-    //   ...
-    // 20 to 1000
-    //   [something]
-    //   ...
-    // ...
-    // let's put each section starting with
-    //   [number] to [number]
-    // until the next line with
-    //   [number] to [number]
-    // into an array
-    const correctionsBySizeArray = [];
-
-    for (const line of linesOfSubSpecOfFontFamilyFontStyleFontWeight) {
-      // there can be multiple parts covering different ranges of sizes
-      // so you have to constantly look out for the next range
-      // i.e. a line matching "[number] to [number]""
-      if (this.isSizeRange(line)) {
-        // this is a line with " to " in it
-        // so it's the start of a new section
-        // put the two numbers in the line into an object with keys "from" and "to"
-        const sizeRangeObj = this.parseSizeRange(line);
-        // add to the correctionsBySizeArray array the new size range and the correctionsBySizeArray objects array
-        correctionsBySizeArray.push({ sizeRange: sizeRangeObj, sizeBracketAndItsCorrection: [] });
-      } else {
-        const sizeBracketAndCorrection = this.parseSizesAndCorrectionLine(line);
-        correctionsBySizeArray[correctionsBySizeArray.length - 1].sizeBracketAndItsCorrection.push(sizeBracketAndCorrection);
-      }
-    }
-    return correctionsBySizeArray;
-  }
-
-  // The function parseKerning takes as input a sub-spec of the form:
-  //
+  // Take Kerning for example:
+  // ---------------------------------------
   // Kerning
   // -
   // [integer] to [integer]
@@ -225,7 +83,7 @@ class SpecsParser {
   //   ...
   // ...
   //
-  // EXAMPLE -------------
+  // EXAMPLE --------------------------------
   //
   // Kerning
   // -
@@ -237,12 +95,27 @@ class SpecsParser {
   //   absvds followed by dshkjshdfjhsdfsdfjkh: 0.1
   //   sdfslksdf followed by *any*: 0.2
   //   *any* followed by LKJLKJF: 0.2
-  parseKerning(contentOfSubSpec) {
-    console.log("have to parse" + contentOfSubSpec);
-    // remove the first line as it's a dash
-    const linesOfSubSpecOfFontFamilyFontStyleFontWeight = contentOfSubSpec.split('\n').slice(1);
+  parseSubSpec(name, content) {
+    const parsers = {
+      "ActualBoundingBoxLeft correction px": this.parseSizeBasedSpec.bind(this, 'letters'),
+      "CropLeft correction px": this.parseSizeBasedSpec.bind(this, 'letters'),
+      "ActualBoundingBoxRight correction px": this.parseSizeBasedSpec.bind(this, 'letters'),
+      "ActualBoundingBoxRight correction proportional": this.parseSizeBasedSpec.bind(this, 'letters'),
+      "Advancement correction proportional": this.parseSizeBasedSpec.bind(this, 'letters'),
+      "Space advancement override for small sizes in px": this.parseSizeBasedSpec.bind(this, 'single'),
+      "Advancement override for small sizes in px": this.parseSizeBasedSpec.bind(this, 'single'),
+      "Kerning discretisation for small sizes": this.parseSizeBasedSpec.bind(this, 'sizeBracket'),
+      "Kerning cutoff": this.parseKerningCutoff,
+      "Kerning": this.parseSizeBasedSpec.bind(this, 'kerning')
+    };
 
-    // linesOfSubSpecOfFontFamilyFontStyleFontWeight in the form:
+    return parsers[name] ? parsers[name](content) : content;
+  }
+
+  parseSizeBasedSpec(type, content) {
+    const lines = content.split('\n').slice(1);
+    const result = [];
+
     // 0 to 20
     //   [something]
     //   ...
@@ -255,170 +128,170 @@ class SpecsParser {
     // until the next line with
     //   [number] to [number]
     // into an array
-    const kerningArray = [];
-
-    for (const line of linesOfSubSpecOfFontFamilyFontStyleFontWeight) {
-      // there can be multiple parts covering different ranges of sizes
-      // so you have to constantly look out for the next range
-      // i.e. a line matching "[number] to [number]""
+    let currentSizeRange = null;
+    for (const line of lines) {
       if (this.isSizeRange(line)) {
-        // this is a line with " to " in it
-        // so it's the start of a new section
-        // put the two numbers in the line into an object with keys "from" and "to"
-        const sizeRangeObj = this.parseSizeRange(line);
-        // add to the kerningArray array the new size range and the kerning objects array
-        kerningArray.push({ sizeRange: sizeRangeObj, kerning: [] });
-      } else {
-        const parseKerningObj = this.parseKerningLine(line);
-        kerningArray[kerningArray.length - 1].kerning.push(parseKerningObj);
+        currentSizeRange = this.parseSizeRange(line);
+        result.push(this.createEntryForType(type, currentSizeRange));
+      } else if (currentSizeRange) {
+        const parsedLine = this.parseSizeBasedLine(type, line);
+        const lastEntry = result[result.length - 1];
+        this.addParsedLineToEntry(lastEntry, type, parsedLine);
       }
     }
-    return kerningArray;
+
+    return result;
   }
 
-  parseKerningCutoff(contentOfSubSpec) {
-    console.log("have to parse" + contentOfSubSpec);
-
-    // remove the first line as it's a dash
-    const linesOfSubSpecOfFontFamilyFontStyleFontWeight = contentOfSubSpec.split('\n');
-    linesOfSubSpecOfFontFamilyFontStyleFontWeight.splice(0, 1);
-
-    // just parse a number in the next line
-    return parseInt(linesOfSubSpecOfFontFamilyFontStyleFontWeight[0]);
-  }
-
-  parseCharsAndCorrectionLine(line) {
-    // each line after the size range looks like:
-    //
-    //   vw: 9
-    //
-    // so:
-    // 1. ignore the first two spaces
-    // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-    // 3. keep as a number the number after the last colon
-    // 4. pack the string and the two numbers into an object
-
-    // 1. ignore the first two spaces
-    const line2 = line.substring(2);
-    // 2. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-    const line3 = line2.substring(0, line2.lastIndexOf(':'));
-    // 3. keep as a number the number after the last colon
-    const correction = parseFloat(line2.substring(line2.lastIndexOf(':') + 1));
-    // 4. pack the string and the two numbers into an object
-    return { string: line3, adjustment: correction };
-  }
-
-  parseCorrectionLine(line) {
-    // each line after the size range looks like:
-    //
-    //   9
-    //
-    // so:
-    // 1. ignore the first two spaces
-    // 2. parse the float and return it
-
-    // 1. ignore the first two spaces
-    const line2 = line.substring(2);
-    // 2. parse the float and return it
-    return parseFloat(line2);
-  }
-
-  parseSizesAndCorrectionLine(line) {
-    // each line after the size range looks like:
-    //
-    //   0.145 >= kern > 0: -1
-    //
-    // in which case we want to return:
-    //   { kernG: 0, kernLE: 0.145, adjustment: -1 }
-    //
-    // so:
-    // 1. ignore the first two spaces
-    // 2. parse the float
-    // 3. skip the " >= kern > " part
-    // 4. parse the float
-    // 5. skip the ": " part
-    // 6. parse the float
-    // 7. pack the three numbers into an object
-
-    // 1. ignore the first two spaces
-    const line2 = line.substring(2);
-    // 2. parse the float
-    const kernG = parseFloat(line2);
-    // 3. skip the " >= kern > " part
-    const line3 = line2.substring(line2.indexOf(' > ') + 3);
-    // 4. parse the float
-    const kernLE = parseFloat(line3);
-    // 5. skip the ": " part
-    const line4 = line3.substring(line3.indexOf(': ') + 2);
-    // 6. parse the float
-    const adjustment = parseFloat(line4);
-    // 7. pack the three numbers into an object
-    return { kernG: kernG, kernLE: kernLE, adjustment: adjustment };
-  }
-
-  // The function parseKerningLine takes as input a line of the form:
-  //
-  //   [letters or "*any*"] followed by [letters or "*any*"]: [float]
-  //
-  // and returns an object of the form:
-  //
-  //   { left: [letters or "*any*"] , right: [letters or "*any*"], adjustment: [float] }
-  //
-  // EXAMPLE -------------
-  //
-  //   absvds followed by dshkjshdfjhsdfsdfjkh: 0.1
-  //
-  // returns:
-  //
-  //   { left: "absvds", right: "dshkjshdfjhsdfsdfjkh", adjustment: 0.1 }
-  parseKerningLine(line) {
-    // each line after the size range looks like:
-    //
-    //   [letters or "*any*"] followed by [letters or "*any*"]: [float]
-    //
-    // so:
-    // 1. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-    // 2. keep as a number the number after the last colon
-    // 3. keep in a string all the characters up to the word " followed" and remove the first two spaces
-    // 4. keep in a string all the characters after the string "followed by " and before the last colon
-    // 5. pack the two strings and the number into an object
-
-    // 1. keep in a string all the characters up to the last colon in the string (there might be more than one colon in the string)
-    const line2 = line.substring(0, line.lastIndexOf(':'));
-    // 2. keep as a number the number after the last colon
-    const adjustment = parseFloat(line.substring(line.lastIndexOf(':') + 1));
-    // 3. keep in a string all the characters up to the word " followed" and remove the first two spaces
-    // const left = line2.substring(0, line2.indexOf(' followed') - 1);
-    const left = line2.substring(2, line2.indexOf(' followed'));
-    // 4. keep in a string all the characters after the string "followed by " and before the last colon
-    const right = line2.substring(line2.indexOf('followed by ') + 12);
-    // 5. pack the two strings and the number into an object
-    return { left: left, right: right, adjustment: adjustment };
-  }
-
-  // Parses a size range with possible pixel density into an object with keys "from" and "to" and "pixelDensity"
-  // Example 1:
-  //     "[integer1] to [integer2]"
-  //   returns:
-  //     { from: [integer1], to: [integer2], pixelDensity: null }
-  //
-  // Example 2:
-  //     "[integer1] to [integer2] at pixel density [integer3]"
-  //   returns:
-  //     { from: [integer1], to: [integer2], pixelDensity: [integer3] }
-
-  parseSizeRange(line) {
-    const splitByTo = line.split(' to ');
-    const from = parseInt(splitByTo[0]);
-    const to = parseInt(splitByTo[1]);
-
-    if (line.indexOf(' at pixel density ') !== -1) {
-      const splitByAtPixelDensity = line.split(' at pixel density ');
-      const pixelDensity = parseInt(splitByAtPixelDensity[1]);
-      return { from: from, to: to, pixelDensity: pixelDensity };
-    } else {
-      return { from: from, to: to, pixelDensity: null };
+  createEntryForType(type, sizeRange) {
+    const entry = { sizeRange };
+    switch (type) {
+      case 'kerning':
+        entry.kerning = [];
+        break;
+      case 'letters':
+        entry.lettersAndTheirCorrections = [];
+        break;
+      case 'single':
+        entry.correction = null;
+        break;
+      case 'sizeBracket':
+        entry.sizeBracketAndItsCorrection = [];
+        break;
+      default:
+        entry.data = [];
     }
+    return entry;
+  }
+
+  addParsedLineToEntry(entry, type, parsedLine) {
+    switch (type) {
+      case 'kerning':
+        entry.kerning.push(parsedLine);
+        break;
+      case 'letters':
+        entry.lettersAndTheirCorrections.push(parsedLine);
+        break;
+      case 'single':
+        entry.correction = parsedLine;
+        break;
+      case 'sizeBracket':
+        entry.sizeBracketAndItsCorrection.push(parsedLine);
+        break;
+      default:
+        if (!entry.data) entry.data = [];
+        entry.data.push(parsedLine);
+    }
+  }
+
+  parseSizeBasedLine(type, line) {
+    const trimmedLine = line.trim();
+    switch (type) {
+      case 'letters':
+        return this.parseCharsAndCorrectionLine(trimmedLine);
+      case 'single':
+        return this.parseCorrectionLine(trimmedLine);
+      case 'sizeBracket':
+        return this.parseSizesAndCorrectionLine(trimmedLine);
+      case 'kerning':
+        // example:
+        //   absvds followed by dshkjshdfjhsdfsdfjkh: 0.1
+        return this.parseKerningLine(trimmedLine);
+      default:
+        throw new Error(`Unknown size-based spec type: ${type}`);
+    }
+  }
+
+  // example:
+  //   Kerning cutoff
+  //   -
+  //   5
+  parseKerningCutoff(content) {
+    const cutoffLine = content.split('\n')[1].trim();
+    return this.parseIntAndCheck(cutoffLine, content);
+  }
+
+  splitOnLastColon(str) {
+    const lastColonIndex = str.lastIndexOf(':');
+    if (lastColonIndex === -1) {
+      return [str];
+    }
+    return [str.slice(0, lastColonIndex), str.slice(lastColonIndex + 1)];
+  }
+
+  parseNumberAndCheck(value, originalLine, parseFunction) {
+    const parsedValue = parseFunction(value);
+    if (isNaN(parsedValue)) {
+      console.log(originalLine);
+      debugger;
+    }
+    return parsedValue;
+  }
+
+  parseIntAndCheck(value, originalLine) {
+    return this.parseNumberAndCheck(value, originalLine, parseInt);
+  }
+
+  parseFloatAndCheck(value, originalLine) {
+    return this.parseNumberAndCheck(value, originalLine, parseFloat);
+  }
+
+  // example:
+  //   abc.:;,def: -1
+  parseCharsAndCorrectionLine(line) {
+    const [chars, correction] = this.splitOnLastColon(line).map(s => s.trim());
+    return { 
+      string: chars, 
+      adjustment: this.parseFloatAndCheck(correction, line) 
+    };
+  }
+
+  // example is the '5' below:
+  //   Space advancement override for small sizes in px
+  //   -
+  //   15 to 20
+  //    5  
+  parseCorrectionLine(line) {
+    return this.parseFloatAndCheck(line.trim(), line);
+  }
+
+  // example:
+  //   0.145 >= kern > 0: -1
+  parseSizesAndCorrectionLine(line) {
+    const [sizes, adjustment] = this.splitOnLastColon(line).map(s => s.trim());
+    const [kernLE, kernG] = sizes.split('>=').map(s => parseFloat(s.trim()));
+    return { 
+      kernG, 
+      kernLE, 
+      adjustment: this.parseFloatAndCheck(adjustment, line) 
+    };
+  }
+
+  // example:
+  //   [letters or "*any*"] followed by [letters or "*any*"]: [float]
+  // e.g.
+  //   absvds followed by dshkjshdfjhsdfsdfjkh: 0.1
+  parseKerningLine(line) {
+    const [pairs, adjustment] = this.splitOnLastColon(line).map(s => s.trim());
+    const [left, right] = pairs.split('followed by').map(s => s.trim());
+    return { 
+      left, 
+      right, 
+      adjustment: this.parseFloatAndCheck(adjustment, line) 
+    };
+  }
+
+  // examples:
+  //   2 to 10
+  //   9 to 9 at pixel density 2
+  parseSizeRange(line) {
+    const [range, pixelDensity] = line.split(' at pixel density ');
+    const [from, to] = range.split(' to').map(s => this.parseIntAndCheck(s.trim(), line));
+    return {
+      from,
+      to,
+      pixelDensity: pixelDensity ? this.parseIntAndCheck(pixelDensity, line) : null
+    };
   }
 
   // Checks if a given line represents a size range in the format of either
@@ -428,5 +301,4 @@ class SpecsParser {
   isSizeRange(line) {
     return /^\d+\s+to\s+\d+(\s+at\s+pixel\s+density\s+\d+)?$/.test(line);
   }
-
 }
