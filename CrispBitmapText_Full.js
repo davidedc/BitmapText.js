@@ -176,11 +176,6 @@ class CrispBitmapText_Full {
     // in this.glyphStore.compact_kerningTables
     setNestedProperty(this.glyphStore.compact_kerningTables, [fontFamily, fontStyle, fontWeight, fontSize], kerningTable);
     
-    // store the kerningTable in the glyphs store
-    // so that it can be retrieved later
-    // when drawing text
-    this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
-
     // store the spaceAdvancementOverrideForSmallSizesInPx
     // by doing getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
     // and store it in the compact_spaceAdvancementOverrideForSmallSizesInPx object at the right level
