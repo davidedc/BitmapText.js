@@ -121,13 +121,13 @@ function setupGlyphUI() {
             const data = dataUrl.split(',')[1];
             // the filename is the font family, style, weight, size and pixel density, all lowercase, with
             // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
-            let fileName = 'glyphs-sheet-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size + '-density-' + PIXEL_DENSITY;
+            let fileName = 'glyphs-sheet-density-' + PIXEL_DENSITY + '-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size;
             fileName = fileName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
             folder.file(fileName + '.png', data, { base64: true });
 
             // get the kerning table at this size, it's in
-            // the glyphStore in compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
-            const kerningTable = crispBitmapGlyphStore_Full.compact_kerningTables[fontFamily][fontStyle][fontWeight][size];
+            // the glyphStore in compact_kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize] = kerningTable;
+            const kerningTable = crispBitmapGlyphStore_Full.compact_kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
 
             // save it in a JSON file with the same name as the png file
             folder.file(fileName + '.json', JSON.stringify(kerningTable));

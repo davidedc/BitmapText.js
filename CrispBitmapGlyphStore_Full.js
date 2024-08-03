@@ -8,7 +8,7 @@ class CrispBitmapGlyphStore_Full {
     // all kinds of other intermediate data useful for construction/inspection)
 
     // these three needed to measure text and place each glyph one after the other with the correct advancement
-    this.compact_kerningTables = {}; // [fontFamily, fontStyle, fontWeight, fontSize]    
+    this.compact_kerningTables = {}; // [PIXEL_DENSITY,fontFamily, fontStyle, fontWeight, fontSize]    
     this.compact_glyphsTextMetrics = {}; // [fontFamily, fontStyle, fontWeight, fontSize, letter]
     this.compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
     // these two needed to precisely paint a glyph from the sheet into the destination canvas
@@ -33,7 +33,7 @@ class CrispBitmapGlyphStore_Full {
   }
 
   clearKerningTable(fontFamily, fontStyle, fontWeight, fontSize) {
-    const properties = [fontFamily, fontStyle, fontWeight, fontSize];
+    const properties = [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize];
 
     if (checkNestedPropertiesExist(this.compact_kerningTables, properties)) {
         setNestedProperty(this.compact_kerningTables, properties, null);

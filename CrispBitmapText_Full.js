@@ -147,7 +147,7 @@ class CrispBitmapText_Full {
   buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize) {
 
     // check if the kerningTable already exists in the glyphs store
-    if (checkNestedPropertiesExist(this.glyphStore.compact_kerningTables, [fontFamily, fontStyle, fontWeight, fontSize])) {
+    if (checkNestedPropertiesExist(this.glyphStore.compact_kerningTables, [PIXEL_DENSITY,fontFamily, fontStyle, fontWeight, fontSize])) {
       return;
     }
 
@@ -174,7 +174,7 @@ class CrispBitmapText_Full {
 
     // create the object level by level if it doesn't exist
     // in this.glyphStore.compact_kerningTables
-    setNestedProperty(this.glyphStore.compact_kerningTables, [fontFamily, fontStyle, fontWeight, fontSize], kerningTable);
+    setNestedProperty(this.glyphStore.compact_kerningTables, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], kerningTable);
     
     // store the spaceAdvancementOverrideForSmallSizesInPx
     // by doing getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
@@ -247,7 +247,7 @@ class CrispBitmapText_Full {
     const properties = [letter, nextLetter];
 
     if (ENABLE_KERNING && nextLetter) {
-      let kerningCorrectionPlace = this.glyphStore.compact_kerningTables[fontFamily][fontStyle][fontWeight][fontSize];
+      let kerningCorrectionPlace = this.glyphStore.compact_kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize];
       if (checkNestedPropertiesExist(kerningCorrectionPlace, properties))
         return getNestedProperty(kerningCorrectionPlace, properties);
     }
