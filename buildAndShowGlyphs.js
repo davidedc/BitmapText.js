@@ -13,6 +13,14 @@ function buildAndShowGlyphs() {
     fontSize = selectedFontSize;
   }
 
+  // set the PIXEL_DENSITY variable depending on the scale radio buttons
+  if (document.getElementById('pixel-density-2-radio-button').checked) {
+    PIXEL_DENSITY = 2;
+  }
+  else {
+    PIXEL_DENSITY = 1;
+  }
+  
   // If the contents of the specs textarea have changed, parse them, clear all the kerning tables and build
   // the one for the current size.
   // If the contents have not changed, check if the kerning table for the current size exists and if not, build it.

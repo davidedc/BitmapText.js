@@ -16,14 +16,6 @@ let characterSet = " █abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 function showCharsAndDataForSize(fontSize, fontFamily, fontStyle, fontWeight) {
 
-  // set the PIXEL_DENSITY variable depending on the scale radio buttons
-  if (document.getElementById('pixel-density-2-radio-button').checked) {
-    PIXEL_DENSITY = 2;
-  }
-  else {
-    PIXEL_DENSITY = 1;
-  }
-
   for (const letter of characterSet) {
     crispBitmapGlyphStore_Full.addGlyph(new CrispBitmapGlyph_Full(letter, fontSize, fontFamily, fontStyle, fontWeight));
   }
