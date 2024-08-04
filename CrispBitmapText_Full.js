@@ -58,9 +58,8 @@ class CrispBitmapText_Full {
 
     return {
       width: width_CSS_Px,
-      // this one below is a nice convenience but it's not what standard measureText provides
-      // so let's make things uniform and resist the temptation to provide it.
-      //height: Math.round(glyph.letterTextMetrics.fontBoundingBoxAscent + glyph.letterTextMetrics.fontBoundingBoxDescent),
+      // note that standard measureText returns a TextMetrics object
+      // which has no height, so so let's make things uniform and resist the temptation to provide it.
       actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
       actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
       actualBoundingBoxAscent,
