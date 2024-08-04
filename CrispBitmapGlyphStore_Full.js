@@ -9,6 +9,16 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
     this.glyphs = {};
   }
 
+  extractCrispBitmapGlyphStoreInstance() {
+    const instance = new CrispBitmapGlyphStore();
+    instance.compact_kerningTables = this.compact_kerningTables;
+    instance.compact_glyphsTextMetrics = this.compact_glyphsTextMetrics;
+    instance.compact_spaceAdvancementOverrideForSmallSizesInPx = this.compact_spaceAdvancementOverrideForSmallSizesInPx;
+    instance.compact_glyphsSheets = this.compact_glyphsSheets;
+    instance.compact_glyphsSheetsMetrics = this.compact_glyphsSheetsMetrics;
+    return instance;
+  }
+
   clearKerningTables() {
     this.compact_kerningTables = {};
   }

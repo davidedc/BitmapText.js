@@ -114,6 +114,11 @@ function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGl
   bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
 
 
+  const crispBitmapGlyphStore = crispBitmapGlyphStore_Full.extractCrispBitmapGlyphStoreInstance();
+  // this is going to be the class that is going to be used to render the text
+  // outside of the editor.
+  const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
+
   // now do the measurements and drawing with the CrispBitmapText "normal" class
   // note how also this one doesn't need a canvas
   const measureTextCrispBitmap = (text) => crispBitmapText.measureText(text, fontSize, fontFamily, fontStyle, fontWeight);

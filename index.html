@@ -58,12 +58,7 @@
 <script >
   const crispBitmapGlyphStore_Full = new CrispBitmapGlyphStore_Full();
   const crispBitmapText_Full = new CrispBitmapText_Full(crispBitmapGlyphStore_Full);
-  
-  // this is going to be the class that is going to be used to render the text
-  // outside of the editor. It should not be constructued with the full glyph store
-  // but just with a "normal" one, however let's ignore that here.
-  const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore_Full);
-  
+    
   buildAndShowGlyphs();
 </script>
 
