@@ -41,7 +41,7 @@ class Specs {
     return correctionEntry ? correctionEntry.correction : null;
   }
 
-  getSingleFloatCorrectionForLetter(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
+  getSingleFloatCorrectionForLetter(fontFamily, letter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
     const correctionEntry = this.getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
     if (!correctionEntry) return 0;
 
