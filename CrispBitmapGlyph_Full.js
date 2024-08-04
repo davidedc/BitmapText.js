@@ -12,7 +12,7 @@ class CrispBitmapGlyph_Full {
     this.tightCanvasBox = tightCanvasBox;
 
     // this.letterTextMetrics = letterTextMetrics;
-    setNestedProperty(crispBitmapGlyphStore_Full.compact_glyphsTextMetrics, [this.fontFamily, this.fontStyle, this.fontWeight, this.fontSize, this.letter], letterTextMetrics);
+    setNestedProperty(crispBitmapGlyphStore_Full.compact_glyphsTextMetrics, [PIXEL_DENSITY, this.fontFamily, this.fontStyle, this.fontWeight, this.fontSize, this.letter], letterTextMetrics);
 
     this.displayCanvasesAndData();
   }

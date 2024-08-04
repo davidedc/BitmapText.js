@@ -9,7 +9,7 @@ class CrispBitmapGlyphStore_Full {
 
     // these three needed to measure text and place each glyph one after the other with the correct advancement
     this.compact_kerningTables = {}; // [PIXEL_DENSITY,fontFamily, fontStyle, fontWeight, fontSize]    
-    this.compact_glyphsTextMetrics = {}; // [fontFamily, fontStyle, fontWeight, fontSize, letter]
+    this.compact_glyphsTextMetrics = {}; // [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]
     this.compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
     // these two needed to precisely paint a glyph from the sheet into the destination canvas
     this.compact_glyphsSheets = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
@@ -63,7 +63,7 @@ class CrispBitmapGlyphStore_Full {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      let letterTextMetrics = getNestedProperty(this.compact_glyphsTextMetrics, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      let letterTextMetrics = getNestedProperty(this.compact_glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
       // the width is calculated from the glyph.tightCanvasBox
       // example: bottomRightCorner: {x: 40, y: 71}
       // topLeftCorner: {x: 4, y: 13}
