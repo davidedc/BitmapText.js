@@ -102,21 +102,21 @@ function setupGlyphUI() {
         // use JSZip to create a zip file with all the pngs
         // for this font family, style, weight and all sizes
         // This is done starting from the canvases, which are all at
-        // crispBitmapGlyphStore_Full.compact_glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
+        // crispBitmapGlyphStore_Full.compact_glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
         const zip = new JSZip();
         const folder = zip.folder("glyphsSheets");
         const glyphsSheets = crispBitmapGlyphStore_Full.compact_glyphsSheets;
         const fontFamily = fontFamilySelect.value;
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;
-        const sizes = Object.keys(glyphsSheets[fontFamily][fontStyle][fontWeight]);
+        const sizes = Object.keys(glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight]);
         sizes.forEach(size => {
             // if there is no entry for the current pixel density, then do nothing
-            if (!glyphsSheets[fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""]) {
+            if (!glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""]) {
                 return;
             }
 
-            const canvas = glyphsSheets[fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""];
+            const canvas = glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""];
             const dataUrl = canvas.toDataURL('image/png');
             const data = dataUrl.split(',')[1];
             // the filename is the font family, style, weight, size and pixel density, all lowercase, with

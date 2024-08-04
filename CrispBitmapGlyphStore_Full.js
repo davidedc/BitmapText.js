@@ -8,11 +8,11 @@ class CrispBitmapGlyphStore_Full {
     // all kinds of other intermediate data useful for construction/inspection)
 
     // these three needed to measure text and place each glyph one after the other with the correct advancement
-    this.compact_kerningTables = {}; // [PIXEL_DENSITY,fontFamily, fontStyle, fontWeight, fontSize]    
-    this.compact_glyphsTextMetrics = {}; // [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]
-    this.compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
+    this.compact_kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
+    this.compact_glyphsTextMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
+    this.compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
     // these two needed to precisely paint a glyph from the sheet into the destination canvas
-    this.compact_glyphsSheets = {}; // [fontFamily, fontStyle, fontWeight, fontSize]
+    this.compact_glyphsSheets = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
     this.compact_glyphsSheetsMetrics = { // all objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
       compact_tightWidth: {},
       compact_tightHeight: {},
@@ -42,7 +42,7 @@ class CrispBitmapGlyphStore_Full {
 
   addGlyph(glyph) {
     setNestedProperty(this.glyphs, [glyph.fontFamily, glyph.fontStyle, glyph.fontWeight, glyph.fontSize, glyph.letter], glyph);
-    ensureNestedPropertiesExist(this.compact_glyphsSheets, [glyph.fontFamily, glyph.fontStyle, glyph.fontWeight, glyph.fontSize]);
+    ensureNestedPropertiesExist(this.compact_glyphsSheets, [PIXEL_DENSITY, glyph.fontFamily, glyph.fontStyle, glyph.fontWeight, glyph.fontSize]);
   }
 
   getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight) {
@@ -127,7 +127,7 @@ class CrispBitmapGlyphStore_Full {
     // amount of time to process the data and make it available for rendering.
     // This processing time is typically very brief, but if you try it here, you'll get frequent
     // failures to paint the letters from this image.
-    this.compact_glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY] = canvas;
+    this.compact_glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY] = canvas;
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.

@@ -177,7 +177,7 @@ class CrispBitmapText_Full {
     // by doing getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
     // and store it in the compact_spaceAdvancementOverrideForSmallSizesInPx object at the right level
     const spaceAdvancementOverrideForSmallSizesInPx = specs.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
-    setNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [fontFamily, fontStyle, fontWeight, fontSize], spaceAdvancementOverrideForSmallSizesInPx);
+    setNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], spaceAdvancementOverrideForSmallSizesInPx);
 
   }
           
@@ -205,7 +205,7 @@ class CrispBitmapText_Full {
     // console.log(letterTextMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = getNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [fontFamily, fontStyle, fontWeight, fontSize]);
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = getNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize]);
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
@@ -337,7 +337,7 @@ class CrispBitmapText_Full {
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
-    const glyphsSheet = this.glyphStore.compact_glyphsSheets[fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
+    const glyphsSheet = this.glyphStore.compact_glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
 
 
     for (let i = 0; i < text.length; i++) {
