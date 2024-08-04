@@ -104,28 +104,33 @@ function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGl
   console.log('crispTestCopyMeasures_CSS_Px.height: ' + crispTestCopyMeasures_CSS_Px.height);
 
 
-  // now do the measurements with the CrispBitmapText_Full class
+  // now do the measurements, generation of glyphs sheet and rendering of text with the CrispBitmapText_Full class
   // note how this one doesn't need a canvas
-  const measureTextCrispBitmap = (text) => crispBitmapText_Full.measureText(text, fontSize, fontFamily, fontStyle, fontWeight);
-  let linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
-
-  // ------------------------------------------------
-  // drawing the text
-  // ------------------------------------------------
-
+  const measureTextCrispBitmap_Full = (text) => crispBitmapText_Full.measureText(text, fontSize, fontFamily, fontStyle, fontWeight);
+  let linesMeasures_CSS_Px_Full = measureMultilineText(testCopyLines, measureTextCrispBitmap_Full);
+  // generating the glyphs sheet with the full class is necessary to then being able to draw the text with the "normal" class
   drawGlyphSheet(crispBitmapGlyphStore_Full, fontFamily, fontSize, fontStyle, fontWeight);
-  bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
-  bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
+  // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
+  bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
+
+
+  // now do the measurements and drawing with the CrispBitmapText "normal" class
+  // note how also this one doesn't need a canvas
+  const measureTextCrispBitmap = (text) => crispBitmapText.measureText(text, fontSize, fontFamily, fontStyle, fontWeight);
+  let linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
+  bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
+
   addElementToDOM(document.createElement('br'));
+
   stdDrawCrispText(crispTestCopyMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
   stdDrawCrispThinLines(crispTestCopyMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
   stdDrawSmoothText(smoothTestTextMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
 
 }
 
-function bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber) {
+function bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber) {
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing:'));
-  const canvas = createCanvas(linesMeasures_CSS_Px.width, linesMeasures_CSS_Px.height);
+  const canvas = createCanvas(linesMeasures_CSS_Px_Full.width, linesMeasures_CSS_Px_Full.height);
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
@@ -136,13 +141,13 @@ function bitmapDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapTex
   // of where any pixel can be drawn
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
   for (let i = 0; i < testCopyLines.length; i++) {
-    crispBitmapText_Full.drawText(ctx, testCopyLines[i], 0, Math.round((i + 1) * linesMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontStyle, fontWeight);
+    crispBitmapText_Full.drawText(ctx, testCopyLines[i], 0, Math.round((i + 1) * linesMeasures_CSS_Px_Full.height / testCopyLines.length), fontSize, fontFamily, fontStyle, fontWeight);
   }
 
   addHashInfoWithMatch(ctx, fontFamily, fontStyle, fontWeight, fontSize, testCopyChoiceNumber);
 }
 
-function bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber) {
+function bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber) {
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing from glyphs sheet:'));
   const canvas = createCanvas(linesMeasures_CSS_Px.width, linesMeasures_CSS_Px.height);
   addElementToDOM(canvas);
@@ -151,7 +156,7 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, cri
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (let i = 0; i < testCopyLines.length; i++) {
-    crispBitmapText_Full.drawTextFromGlyphSheet(ctx, testCopyLines[i], 0, Math.round((i + 1) * linesMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontStyle, fontWeight);
+    crispBitmapText.drawTextFromGlyphSheet(ctx, testCopyLines[i], 0, Math.round((i + 1) * linesMeasures_CSS_Px.height / testCopyLines.length), fontSize, fontFamily, fontStyle, fontWeight);
   }
 
   addHashInfoWithMatch(ctx, fontFamily, fontStyle, fontWeight, fontSize, testCopyChoiceNumber);
