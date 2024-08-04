@@ -36,13 +36,11 @@ class CrispBitmapText_Full {
     let actualBoundingBoxDescent = 0;
     let actualBoundingBoxRight_CSS_Px;
     let advancement_CSS_Px = 0;
-    let glyph = null;
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
       const nextLetter = text[i + 1];
 
-      glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
       letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
