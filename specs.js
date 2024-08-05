@@ -16,7 +16,7 @@ class Specs {
     return checkNestedPropertiesExist(this.specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
   }
 
-  getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
+  getCorrectionEntries(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
     if (!this.specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
       return null;
     }
@@ -25,32 +25,62 @@ class Specs {
       return null;
     }
 
+    const correctionEntries = [];
     for (const element of this.specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       const correctionEntry = element;
-      if (correctionEntry.sizeRange == undefined) return null;
+      if (correctionEntry.sizeRange == undefined) continue;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
-        return correctionEntry;
+        correctionEntries.push(correctionEntry);
       }
     }
-
-    return null;
+    return correctionEntries.length > 0 ? correctionEntries : null;
   }
 
+  // We don't expect to have multiple matches across sizes as the
+  // sizes should form a partition i.e. they shouldn't be overlapping,
+  // hence we return the first match.
+  //
+  // Example:
+  //
+  //  Space advancement override for small sizes in px
+  //  -
+  //  15 to 20
+  //    5
+  //  14 to 14
+  //    4
   getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
-    const correctionEntry = this.getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
-    return correctionEntry ? correctionEntry.correction : null;
+    const correctionEntries = this.getCorrectionEntries(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
+    // if there is a first element with a correcttion, return it, otherwise return null
+    return correctionEntries ? correctionEntries[0].correction : null;
+    
   }
 
+  // for this one, the sizes don't form a partition, so we need to check all the entries
+  // and return the first match where the letter is found
+  //
+  // Example:
+  //
+  //  CropLeft correction px
+  //  -
+  //  14 to 14 at pixel density 1
+  //    .: -1
+  //  13 to 14 at pixel density 1
+  //    ,: -110 to 10 at pixel density 1
+  //    W: 1
+  //  13 to 13 at pixel density 1
+  //    v: 1
   getSingleFloatCorrectionForLetter(fontFamily, letter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
-    const correctionEntry = this.getCorrectionEntry(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
-    if (!correctionEntry) return 0;
+    const correctionEntries = this.getCorrectionEntries(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
+    if (!correctionEntries) return 0;
 
-    if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) return 0;
+    for (const correctionEntry of correctionEntries) {
+      if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) return 0;
 
-    for (const element of correctionEntry.lettersAndTheirCorrections) {
-      const charAndOffset = element;
-      if (charAndOffset.string.indexOf(letter) !== -1) {
-        return charAndOffset.adjustment;
+      for (const element of correctionEntry.lettersAndTheirCorrections) {
+        const charAndOffset = element;
+        if (charAndOffset.string.indexOf(letter) !== -1) {
+          return charAndOffset.adjustment;
+        }
       }
     }
 
