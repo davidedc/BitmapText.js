@@ -139,6 +139,12 @@ function setupGlyphUI() {
         
     });
 
+    // add a new button "reset background color" to reset the background color of the page after an error
+    const resetBackgroundColorButton = createElement('button', 'reset-background-color-button', 'Reset background color', selectorsDiv);
+    resetBackgroundColorButton.addEventListener('click', function() {
+        document.body.style.backgroundColor = '#d4ffd4';
+    });
+
 
     selectorsDiv.appendChild(document.createElement('br'));
 

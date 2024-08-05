@@ -221,6 +221,8 @@ function addHashInfoWithMatch(ctx, fontFamily, fontStyle, fontWeight, fontSize, 
     hashText += " ✔ same hash as stored one";
   } else {
     hashText += " ✘ different hash from stored one";
+    // turn the background of the page light pink
+    document.body.style.backgroundColor = '#FFC0CB';
   }
   addElementToDOM(createDivWithText(hashText));
 }
