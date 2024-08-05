@@ -29,6 +29,8 @@ class Specs {
     for (const element of this.specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
       const correctionEntry = element;
       if (correctionEntry.sizeRange == undefined) continue;
+      // if the pixel density is specified and it doesn't match, skip this entry
+      if (PIXEL_DENSITY !== null && correctionEntry.sizeRange.pixelDensity !== null && PIXEL_DENSITY !== correctionEntry.sizeRange.pixelDensity) continue;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
         correctionEntries.push(correctionEntry);
       }
@@ -74,8 +76,6 @@ class Specs {
     if (!correctionEntries) return 0;
 
     for (const correctionEntry of correctionEntries) {
-      if (pixelDensity !== null && correctionEntry.sizeRange.pixelDensity !== null && pixelDensity !== correctionEntry.sizeRange.pixelDensity) return 0;
-
       for (const element of correctionEntry.lettersAndTheirCorrections) {
         const charAndOffset = element;
         if (charAndOffset.string.indexOf(letter) !== -1) {
