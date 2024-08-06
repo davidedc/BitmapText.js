@@ -104,7 +104,7 @@ function setupGlyphUI() {
         const zip = new JSZip();
         const folder = zip.folder("glyphsSheets");
         const crispBitmapGlyphStore = crispBitmapGlyphStore_Full.extractCrispBitmapGlyphStoreInstance();
-        const glyphsSheets = crispBitmapGlyphStore.compact_glyphsSheets;
+        const glyphsSheets = crispBitmapGlyphStore.glyphsSheets;
         const fontFamily = fontFamilySelect.value;
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;
@@ -125,36 +125,36 @@ function setupGlyphUI() {
             folder.file(fileName + '.png', data, { base64: true });
 
             // navigate through the crispBitmapGlyphStore, which contains:
-            //   compact_kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
-            //   compact_glyphsTextMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-            //   compact_spaceAdvancementOverrideForSmallSizesInPx = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
+            //   kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
+            //   glyphsTextMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
+            //   spaceAdvancementOverrideForSmallSizesInPx = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
             //   // these two needed to precisely paint a glyph from the sheet into the destination canvas
-            //   compact_glyphsSheets = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
-            //   compact_glyphsSheetsMetrics = { // all objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-            //     compact_tightWidth: {},
-            //     compact_tightHeight: {},
-            //     compact_dx: {},
-            //     compact_dy: {},
-            //     compact_xInGlyphSheet: {}
+            //   glyphsSheets = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
+            //   glyphsSheetsMetrics = { // all objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
+            //     tightWidth: {},
+            //     tightHeight: {},
+            //     dx: {},
+            //     dy: {},
+            //     xInGlyphSheet: {}
             //   };
             // and filter all the objects that are relevant to the current PIXEL_DENSITY, font family, style, weight and size
             // and save them in a JSON file
-            const compact_kerningTable = crispBitmapGlyphStore.compact_kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            const compact_glyphsTextMetrics = crispBitmapGlyphStore.compact_glyphsTextMetrics[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            const compact_spaceAdvancementOverrideForSmallSizesInPx = crispBitmapGlyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            const compact_glyphsSheetsMetrics = {};
-            compact_glyphsSheetsMetrics.compact_tightWidth = crispBitmapGlyphStore.compact_glyphsSheetsMetrics.compact_tightWidth[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            compact_glyphsSheetsMetrics.compact_tightHeight = crispBitmapGlyphStore.compact_glyphsSheetsMetrics.compact_tightHeight[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            compact_glyphsSheetsMetrics.compact_dx = crispBitmapGlyphStore.compact_glyphsSheetsMetrics.compact_dx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            compact_glyphsSheetsMetrics.compact_dy = crispBitmapGlyphStore.compact_glyphsSheetsMetrics.compact_dy[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            compact_glyphsSheetsMetrics.compact_xInGlyphSheet = crispBitmapGlyphStore.compact_glyphsSheetsMetrics.compact_xInGlyphSheet[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const kerningTable = crispBitmapGlyphStore.kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const glyphsTextMetrics = crispBitmapGlyphStore.glyphsTextMetrics[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const spaceAdvancementOverrideForSmallSizesInPx = crispBitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const glyphsSheetsMetrics = {};
+            glyphsSheetsMetrics.tightWidth = crispBitmapGlyphStore.glyphsSheetsMetrics.tightWidth[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.tightHeight = crispBitmapGlyphStore.glyphsSheetsMetrics.tightHeight[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.dx = crispBitmapGlyphStore.glyphsSheetsMetrics.dx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.dy = crispBitmapGlyphStore.glyphsSheetsMetrics.dy[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.xInGlyphSheet = crispBitmapGlyphStore.glyphsSheetsMetrics.xInGlyphSheet[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
 
             // save all the data in a JSON file with the same name as the png file
             folder.file(fileName + '.json', JSON.stringify({
-                compact_kerningTable,
-                compact_glyphsTextMetrics,
-                compact_spaceAdvancementOverrideForSmallSizesInPx,
-                compact_glyphsSheetsMetrics
+                kerningTable,
+                glyphsTextMetrics,
+                spaceAdvancementOverrideForSmallSizesInPx,
+                glyphsSheetsMetrics
             }));
 
         });

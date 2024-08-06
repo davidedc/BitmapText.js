@@ -11,29 +11,31 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
   extractCrispBitmapGlyphStoreInstance() {
     const instance = new CrispBitmapGlyphStore();
-    instance.compact_kerningTables = this.compact_kerningTables;
-    instance.compact_glyphsTextMetrics = this.compact_glyphsTextMetrics;
-    instance.compact_spaceAdvancementOverrideForSmallSizesInPx = this.compact_spaceAdvancementOverrideForSmallSizesInPx;
-    instance.compact_glyphsSheets = this.compact_glyphsSheets;
-    instance.compact_glyphsSheetsMetrics = this.compact_glyphsSheetsMetrics;
+    instance.kerningTables = this.kerningTables;
+    instance.glyphsTextMetrics = this.glyphsTextMetrics;
+    instance.spaceAdvancementOverrideForSmallSizesInPx = this.spaceAdvancementOverrideForSmallSizesInPx;
+    instance.glyphsSheets = this.glyphsSheets;
+    instance.glyphsSheetsMetrics = this.glyphsSheetsMetrics;
     return instance;
   }
 
   clearKerningTables() {
-    this.compact_kerningTables = {};
+    this.kerningTables = {};
   }
 
   clearKerningTable(fontFamily, fontStyle, fontWeight, fontSize) {
     const properties = [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize];
 
-    if (checkNestedPropertiesExist(this.compact_kerningTables, properties)) {
-        setNestedProperty(this.compact_kerningTables, properties, null);
+    if (checkNestedPropertiesExist(this.kerningTables, properties)) {
+        setNestedProperty(this.kerningTables, properties, null);
     }
   }
 
   addGlyph(glyph) {
     setNestedProperty(this.glyphs, [glyph.fontFamily, glyph.fontStyle, glyph.fontWeight, glyph.fontSize, glyph.letter], glyph);
-    ensureNestedPropertiesExist(this.compact_glyphsSheets, [PIXEL_DENSITY, glyph.fontFamily, glyph.fontStyle, glyph.fontWeight, glyph.fontSize]);
+    // glyphsSheets is actually part of the narrower CrispBitmapGlyphStore class
+    // however we also need it here in the Full class for construction of things.
+    ensureNestedPropertiesExist(this.glyphsSheets, [PIXEL_DENSITY, glyph.fontFamily, glyph.fontStyle, glyph.fontWeight, glyph.fontSize]);
   }
 
   getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight) {
@@ -54,7 +56,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      let letterTextMetrics = getNestedProperty(this.compact_glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      let letterTextMetrics = getNestedProperty(this.glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
       // the width is calculated from the glyph.tightCanvasBox
       // example: bottomRightCorner: {x: 40, y: 71}
       // topLeftCorner: {x: 4, y: 13}
@@ -71,18 +73,18 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
       // you use 1 * PIXEL_DENSITY because it's always good to do things in increments of PIXEL_DENSITY
       // so that everything remains divisible by PIXEL_DENSITY
-      const compact_tightWidth = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
-      const compact_tightHeight = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
-      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_tightWidth);
-      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_tightHeight, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_tightHeight);
+      const tightWidth = glyph.tightCanvasBox.bottomRightCorner.x - glyph.tightCanvasBox.topLeftCorner.x + 1 * PIXEL_DENSITY;
+      const tightHeight = glyph.tightCanvasBox.bottomRightCorner.y - glyph.tightCanvasBox.topLeftCorner.y + 1 * PIXEL_DENSITY;
+      setNestedProperty(this.glyphsSheetsMetrics.tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], tightWidth);
+      setNestedProperty(this.glyphsSheetsMetrics.tightHeight, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], tightHeight);
 
-      const compact_dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * PIXEL_DENSITY + glyph.tightCanvasBox.topLeftCorner.x;
-      const compact_dy = - compact_tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
-      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_dx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_dx);
-      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_dy, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], compact_dy);
+      const dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * PIXEL_DENSITY + glyph.tightCanvasBox.topLeftCorner.x;
+      const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
+      setNestedProperty(this.glyphsSheetsMetrics.dx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], dx);
+      setNestedProperty(this.glyphsSheetsMetrics.dy, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], dy);
 
-      if (!isNaN(compact_tightWidth)) fittingWidth += compact_tightWidth;
-      if (compact_tightHeight > maxHeight) maxHeight = compact_tightHeight;
+      if (!isNaN(tightWidth)) fittingWidth += tightWidth;
+      if (tightHeight > maxHeight) maxHeight = tightHeight;
     }
 
     const canvas = document.createElement('canvas');
@@ -93,11 +95,11 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      const compact_tightWidth = getNestedProperty(this.compact_glyphsSheetsMetrics.compact_tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const tightWidth = getNestedProperty(this.glyphsSheetsMetrics.tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
       // if there is no glyph.tightCanvas, then just continue
-      if (!glyph.tightCanvas || !compact_tightWidth || isNaN(compact_tightWidth)) {
-        if (!compact_tightWidth) {
-          console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + ' has no compact_tightWidth[PIXEL_DENSITY]');
+      if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
+        if (!tightWidth) {
+          console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + ' has no tightWidth[PIXEL_DENSITY]');
         }
         if (!glyph.tightCanvas) {
           console.warn("glyph " + fontStyle + " " + fontWeight + " " + fontFamily + " " + fontSize + " " + letter + " has no tightCanvas");
@@ -106,9 +108,9 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
 
-      setNestedProperty(this.compact_glyphsSheetsMetrics.compact_xInGlyphSheet, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], x);
+      setNestedProperty(this.glyphsSheetsMetrics.xInGlyphSheet, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter], x);
 
-      x += compact_tightWidth;
+      x += tightWidth;
     }
 
     const glyphsSheetsPNG = ctx.toPNGImage();
@@ -118,7 +120,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
     // amount of time to process the data and make it available for rendering.
     // This processing time is typically very brief, but if you try it here, you'll get frequent
     // failures to paint the letters from this image.
-    this.compact_glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY] = canvas;
+    this.glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY] = canvas;
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.

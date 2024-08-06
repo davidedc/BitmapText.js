@@ -11,9 +11,9 @@ class CrispBitmapGlyph_Full {
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
 
-    // compact_glyphsTextMetrics actually belongs to the base class crispBitmapGlyphStore
+    // glyphsTextMetrics actually belongs to the base class crispBitmapGlyphStore
     // which underlies the CrispBitmapGlyphStore_Full class
-    setNestedProperty(crispBitmapGlyphStore_Full.compact_glyphsTextMetrics, [PIXEL_DENSITY, this.fontFamily, this.fontStyle, this.fontWeight, this.fontSize, this.letter], letterTextMetrics);
+    setNestedProperty(crispBitmapGlyphStore_Full.glyphsTextMetrics, [PIXEL_DENSITY, this.fontFamily, this.fontStyle, this.fontWeight, this.fontSize, this.letter], letterTextMetrics);
 
     this.displayCanvasesAndData();
   }

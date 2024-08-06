@@ -80,7 +80,7 @@ class CrispBitmapText_Full extends CrispBitmapText {
   buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize) {
 
     // check if the kerningTable already exists in the glyphs store
-    if (checkNestedPropertiesExist(this.glyphStore.compact_kerningTables, [PIXEL_DENSITY,fontFamily, fontStyle, fontWeight, fontSize])) {
+    if (checkNestedPropertiesExist(this.glyphStore.kerningTables, [PIXEL_DENSITY,fontFamily, fontStyle, fontWeight, fontSize])) {
       return;
     }
 
@@ -106,14 +106,14 @@ class CrispBitmapText_Full extends CrispBitmapText {
     }
 
     // create the object level by level if it doesn't exist
-    // in this.glyphStore.compact_kerningTables
-    setNestedProperty(this.glyphStore.compact_kerningTables, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], kerningTable);
+    // in this.glyphStore.kerningTables
+    setNestedProperty(this.glyphStore.kerningTables, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], kerningTable);
     
     // store the spaceAdvancementOverrideForSmallSizesInPx
     // by doing getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
-    // and store it in the compact_spaceAdvancementOverrideForSmallSizesInPx object at the right level
+    // and store it in the spaceAdvancementOverrideForSmallSizesInPx object at the right level
     const spaceAdvancementOverrideForSmallSizesInPx = specs.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
-    setNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], spaceAdvancementOverrideForSmallSizesInPx);
+    setNestedProperty(this.glyphStore.spaceAdvancementOverrideForSmallSizesInPx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], spaceAdvancementOverrideForSmallSizesInPx);
 
   }
 
@@ -132,7 +132,7 @@ class CrispBitmapText_Full extends CrispBitmapText {
       const letter = text[i];
       const nextLetter = text[i + 1];
       const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
-      const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const letterTextMetrics = getNestedProperty(this.glyphStore.glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
 
       if (glyph) {

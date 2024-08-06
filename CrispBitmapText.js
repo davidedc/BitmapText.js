@@ -30,7 +30,7 @@ class CrispBitmapText {
       };
     
     let width_CSS_Px = 0;
-    let letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
+    let letterTextMetrics = getNestedProperty(this.glyphStore.glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -41,7 +41,7 @@ class CrispBitmapText {
       const letter = text[i];
       const nextLetter = text[i + 1];
 
-      letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      letterTextMetrics = getNestedProperty(this.glyphStore.glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
@@ -74,7 +74,7 @@ class CrispBitmapText {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
-    const letterTextMetrics = getNestedProperty(this.glyphStore.compact_glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+    const letterTextMetrics = getNestedProperty(this.glyphStore.glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
     // if (letter === ' ') debugger
 
     let x_CSS_Px = 0;
@@ -91,7 +91,7 @@ class CrispBitmapText {
     // console.log(letterTextMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = getNestedProperty(this.glyphStore.compact_spaceAdvancementOverrideForSmallSizesInPx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize]);
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = getNestedProperty(this.glyphStore.spaceAdvancementOverrideForSmallSizesInPx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize]);
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
@@ -130,7 +130,7 @@ class CrispBitmapText {
     const properties = [letter, nextLetter];
 
     if (ENABLE_KERNING && nextLetter) {
-      let kerningCorrectionPlace = this.glyphStore.compact_kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize];
+      let kerningCorrectionPlace = this.glyphStore.kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize];
       if (checkNestedPropertiesExist(kerningCorrectionPlace, properties))
         return getNestedProperty(kerningCorrectionPlace, properties);
     }
@@ -144,32 +144,32 @@ class CrispBitmapText {
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
-    const glyphsSheet = this.glyphStore.compact_glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
+    const glyphsSheet = this.glyphStore.glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
 
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
       const nextLetter = text[i + 1];
 
-      const compact_xInGlyphSheet = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_xInGlyphSheet, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
-      const compact_tightWidth = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
-      const compact_tightHeight = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_tightHeight, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
-      const compact_dx = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_dx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
-      const compact_dy = getNestedProperty(this.glyphStore.compact_glyphsSheetsMetrics.compact_dy, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const xInGlyphSheet = getNestedProperty(this.glyphStore.glyphsSheetsMetrics.xInGlyphSheet, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const tightWidth = getNestedProperty(this.glyphStore.glyphsSheetsMetrics.tightWidth, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const tightHeight = getNestedProperty(this.glyphStore.glyphsSheetsMetrics.tightHeight, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const dx = getNestedProperty(this.glyphStore.glyphsSheetsMetrics.dx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const dy = getNestedProperty(this.glyphStore.glyphsSheetsMetrics.dy, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
 
-      if (compact_xInGlyphSheet) {
+      if (xInGlyphSheet) {
         // see https://stackoverflow.com/a/6061102
         ctx.drawImage(glyphsSheet,
           // sx, sy -------------------
-          compact_xInGlyphSheet, 0,
+          xInGlyphSheet, 0,
           // sWidth, sHeight ----------
-          compact_tightWidth, compact_tightHeight,
+          tightWidth, tightHeight,
           // then dx, dy --------------
-          x_Phys_Px + compact_dx,
+          x_Phys_Px + dx,
           // same formula for the y as ctx.drawText above, see explanation there
-          y_Phys_Px + compact_dy,
+          y_Phys_Px + dy,
           // then dWidth, dHeight -----
-          compact_tightWidth, compact_tightHeight);
+          tightWidth, tightHeight);
 
       }
 
