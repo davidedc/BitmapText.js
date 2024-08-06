@@ -109,6 +109,7 @@ function setupGlyphUI() {
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;
         const sizes = Object.keys(glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight]);
+        let files = [];
         sizes.forEach(size => {
             // if there is no entry for the current pixel density, then do nothing
             if (!glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""]) {
@@ -156,8 +157,11 @@ function setupGlyphUI() {
                 spaceAdvancementOverrideForSmallSizesInPx,
                 glyphsSheetsMetrics
             }) + ";");
-
+            files.push(fileName);
         });
+        // add one last file i.e. the manifest file that contains the list of all the files
+        folder.file('manifest.js', "(bitmapFontsManifest ??= {}).files = " + JSON.stringify(files) + ";");
+
         zip.generateAsync({ type: "blob" }).then(function(content) {
             saveAs(content, "glyphsSheets.zip");
         });
