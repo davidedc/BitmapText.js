@@ -14,11 +14,9 @@
 
 let characterSet = " █abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ß!\"#$%&€'’()*+,-./:;<=>?@[\\]^_`{|}~—£°²·ÀÇàç•";
 
-function showCharsAndDataForSize(fontSize, fontFamily, fontStyle, fontWeight) {
+function createGlyphsAndAddToFullStore(fontSize, fontFamily, fontStyle, fontWeight) {
 
   for (const letter of characterSet) {
     crispBitmapGlyphStore_Full.addGlyph(new CrispBitmapGlyph_Full(letter, fontSize, fontFamily, fontStyle, fontWeight));
   }
-
-  drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGlyphStore_Full);
 }

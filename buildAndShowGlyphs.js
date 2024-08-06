@@ -27,10 +27,11 @@ function buildAndShowGlyphs() {
   specs = specsParser.parseSpecsIfChanged(settingsTextarea.value);
   buildKerningTableIfDoesntExist();
 
-  if (!isNaN(fontSize)) {
-    // remove all canvases and divs from the page
-    removeAllCanvasesAndDivs();
-    showCharsAndDataForSize(fontSize, fontFamilySelect.value, fontStyleSelect.value, fontWeightSelect.value);
-  }
+  if (isNaN(fontSize)) return;
+
+  // remove all canvases and divs from the page
+  removeAllCanvasesAndDivs();
+  createGlyphsAndAddToFullStore(fontSize, fontFamilySelect.value, fontStyleSelect.value, fontWeightSelect.value);
+  drawTestText(fontStyleSelect.value, fontWeightSelect.value, fontSize, fontFamilySelect.value, crispBitmapGlyphStore_Full);
 
 }
