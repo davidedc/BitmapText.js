@@ -112,11 +112,11 @@ function setupGlyphUI() {
         let files = [];
         sizes.forEach(size => {
             // if there is no entry for the current pixel density, then do nothing
-            if (!glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""]) {
+            if (!glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size]) {
                 return;
             }
 
-            const canvas = glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size][PIXEL_DENSITY + ""];
+            const canvas = glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
             const dataUrl = canvas.toDataURL('image/png');
             const data = dataUrl.split(',')[1];
             // the filename is the font family, style, weight, size and pixel density, all lowercase, with

@@ -120,7 +120,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
     // amount of time to process the data and make it available for rendering.
     // This processing time is typically very brief, but if you try it here, you'll get frequent
     // failures to paint the letters from this image.
-    this.glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY] = canvas;
+    this.glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize] = canvas;
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.

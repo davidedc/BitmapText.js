@@ -144,7 +144,7 @@ class CrispBitmapText {
     let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
     const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
 
-    const glyphsSheet = this.glyphStore.glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize][PIXEL_DENSITY];
+    const glyphsSheet = this.glyphStore.glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][fontSize];
 
 
     for (let i = 0; i < text.length; i++) {
