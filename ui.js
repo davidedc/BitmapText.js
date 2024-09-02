@@ -122,7 +122,7 @@ function setupGlyphUI() {
             // the filename is the font family, style, weight, size and pixel density, all lowercase, with
             // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
             let fileName = 'glyphs-sheet-density-' + PIXEL_DENSITY + '-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size;
-            fileName = fileName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+            fileName = fileName.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-');
             folder.file(fileName + '.png', data, { base64: true });
 
             // navigate through the crispBitmapGlyphStore, which contains:
