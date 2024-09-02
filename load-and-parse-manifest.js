@@ -32,6 +32,27 @@ for (const element of bitmapFontsManifest.files) {
   let img = new Image();
   img.src = "bitmap-fonts-data/" + filename + '.png';
   img.onload = function() {
+    // create a canvas element and draw the image on it
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    let ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    // attach the canvas to the document
+    document.body.appendChild(canvas);
+    // and then a newline
+    document.body.appendChild(document.createElement('br'));
+    // extract the pixel density, font family, style, weight, size from the filename of the type:
+    //   glyphs-sheet-density-1-arial-style-normal-weight-normal-size-18
+    const parts = filename.split('-');
+    const density = parts[3];
+    const fontFamily = parts[4];
+    const style = parts[6];
+    const weight = parts[8];
+    const size = parts[10];
+    // add the canvas to the crispBitmapGlyphStore
+    setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], canvas);
+    
     bitmapFontJsOrImageLoaded();
   }
 }
