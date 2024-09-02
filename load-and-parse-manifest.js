@@ -32,6 +32,12 @@ for (const element of bitmapFontsManifest.files) {
   let img = new Image();
   img.src = "bitmap-fonts-data/" + filename + '.png';
   img.onload = function() {
+    
+    // TODO we create a Canvas element and draw the image on it HOWEVER
+    // we could just use the image directly in the drawImage function.
+    // (note that in the editor we indeed use the canvas, we can't use the image directly because
+    // it's tricky to wait for the image to be created from the canvas as it's an async operation).
+
     // create a canvas element and draw the image on it
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
