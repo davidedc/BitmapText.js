@@ -30,7 +30,7 @@ function addSizeButtons() {
       if (selectedFontSize !== i) {
         button.style.backgroundColor = 'lightgray';
       }
-      buildAndShowGlyphs();
+      updatePageContent();
     });
 
     // when the mouse exits the button, set the hoverFontSize to null
@@ -40,7 +40,7 @@ function addSizeButtons() {
       if (selectedFontSize !== i) {
         button.style.backgroundColor = 'white';
       }
-      buildAndShowGlyphs();
+      updatePageContent();
     });
 
 

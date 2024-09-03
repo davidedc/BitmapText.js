@@ -19,6 +19,6 @@ function addFontStyleDropdown() {
   }
   document.getElementById("selectors").appendChild(fontStyleSelect);
   // run the buildAndShowGlyphs function when the user changes the value of the font style select
-  fontStyleSelect.addEventListener('change', buildAndShowGlyphs);
+  fontStyleSelect.addEventListener('change', updatePageContent);
   return fontStyleSelect;
 }

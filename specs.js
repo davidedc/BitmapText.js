@@ -88,7 +88,7 @@ class Specs {
   }
 }
 
-const specsText =
+specsText =
 `Font family: Arial
 Font style: normal
 Font weight: normal

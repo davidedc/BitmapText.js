@@ -39,9 +39,9 @@ function addCopyChoiceRadioButtons() {
     // 1. remove all the test text canvases
     // 2. re-add them
     // 3. call drawTestText
-    testCopy1RadioButton.addEventListener('click', buildAndShowGlyphs);
-    kernKingCopyPart1RadioButton.addEventListener('click', buildAndShowGlyphs);
-    kernKingCopyPart2RadioButton.addEventListener('click', buildAndShowGlyphs);
+    testCopy1RadioButton.addEventListener('click', updatePageContent);
+    kernKingCopyPart1RadioButton.addEventListener('click', updatePageContent);
+    kernKingCopyPart2RadioButton.addEventListener('click', updatePageContent);
 
 }
 

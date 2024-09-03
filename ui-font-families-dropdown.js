@@ -10,6 +10,6 @@ function addDropdownWithFontFamilies() {
   }
   document.getElementById("selectors").appendChild(fontFamilySelect);
   // run the buildAndShowGlyphs function when the user changes the value of the font family select
-  fontFamilySelect.addEventListener('change', buildAndShowGlyphs);
+  fontFamilySelect.addEventListener('change', updatePageContent);
   return fontFamilySelect;
 }

@@ -28,7 +28,7 @@ function addPixelDensityChoiceRadioButtons() {
     // 1. remove all the test text canvases
     // 2. re-add them
     // 3. call drawTestText
-    pixelDensity1RadioButton.addEventListener('click', buildAndShowGlyphs);
-    pixelDensity2RadioButton.addEventListener('click', buildAndShowGlyphs);
+    pixelDensity1RadioButton.addEventListener('click', updatePageContent);
+    pixelDensity2RadioButton.addEventListener('click', updatePageContent);
 
 }  

@@ -44,7 +44,7 @@ function setupGlyphUI() {
 
     // Add run button
     const runButton = createElement('button', 'run-button', 'Build and Show Glyphs', selectorsDiv);
-    runButton.addEventListener('click', buildAndShowGlyphs);
+    runButton.addEventListener('click', updatePageContent);
 
     // Add kerning checkbox
     const enableKerningCheckbox = createElement('input', 'enable-kerning-checkbox', null, selectorsDiv);
@@ -52,7 +52,7 @@ function setupGlyphUI() {
     enableKerningCheckbox.checked = ENABLE_KERNING;
     enableKerningCheckbox.addEventListener('change', function() {
         ENABLE_KERNING = this.checked;
-        buildAndShowGlyphs();
+        updatePageContent();
     });
 
     createElement('label', null, 'Enable kerning', selectorsDiv).htmlFor = 'enable-kerning-checkbox';
@@ -90,7 +90,7 @@ function setupGlyphUI() {
                 const button = document.getElementById('button-size-' + i);
                 button.style.backgroundColor = 'darkgray';
 
-                buildAndShowGlyphs();
+                updatePageContent();
                 i++;
             });
         }, 1);
@@ -179,7 +179,8 @@ function setupGlyphUI() {
 
     // Add settings textarea
     settingsTextarea = createElement('textarea', 'settings-textarea', null, selectorsDiv);
-    settingsTextarea.value = specsText;
+    // value is specsText variable if it exists, otherwise it is an empty string
+    settingsTextarea.value = specsText || '';
     settingsTextarea.style.cssText = 'float: left; height: 200px; width: 333px;';
 
     // Add size buttons

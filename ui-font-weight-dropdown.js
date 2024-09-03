@@ -19,6 +19,6 @@ function addFontWeightDropdown() {
   }
   document.getElementById("selectors").appendChild(fontWeightSelect);
   // run the buildAndShowGlyphs function when the user changes the value of the font weight select
-  fontWeightSelect.addEventListener('change', buildAndShowGlyphs);
+  fontWeightSelect.addEventListener('change', updatePageContent);
   return fontWeightSelect;
 }
