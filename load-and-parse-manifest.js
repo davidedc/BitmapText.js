@@ -102,5 +102,15 @@ function ingestBitmapFontsData() {
 
     }
   }
-  debugger
+  // create a canvas and draw the text "Hello World" using the CrispBitmapText class
+  // using the method
+  //   drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight)
+  const canvas = document.createElement('canvas');
+  canvas.width = 1000;
+  canvas.height = 1000;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
+  PIXEL_DENSITY = 1;
+  crispBitmapText.drawTextFromGlyphSheet(ctx, 'Access to this information is provided as part of the WorldWideWeb project. The WWW', 50,50, 18, "Arial", "normal", "normal");
 }
