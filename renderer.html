@@ -1,3 +1,14 @@
+<!--
+You'll need to serve this file from a server to avoid CORS issues, because if you open the page from filesystem
+the dynamic loading of the images seems to create security issues when you then try to read the pixels from the canvas
+where you painted the images.
+
+So use a simple server like this:
+  python -m http.server
+and then open the page from the browser at:
+  http://localhost:8000/renderer.html
+-->
+
 <!DOCTYPE html>
 <html lang="">
 
