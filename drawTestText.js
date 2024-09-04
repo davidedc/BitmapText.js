@@ -71,7 +71,6 @@ function getTestCopyChoiceAndText() {
 
 function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGlyphStore_Full) {
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
-
   const testCopyLines = testCopy.split("\n");
 
   // ------------------------------------------------
@@ -157,6 +156,7 @@ function bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, crispBitm
   addHashInfoWithMatch(ctx, fontFamily, fontStyle, fontWeight, fontSize, testCopyChoiceNumber);
 }
 
+
 function bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber) {
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing from glyphs sheet:'));
   const canvas = createCanvas(linesMeasures_CSS_Px.width, linesMeasures_CSS_Px.height);
@@ -215,6 +215,7 @@ function drawGlyphSheet(crispBitmapGlyphStore_Full, fontFamily, fontSize, fontSt
   const canvas = crispBitmapGlyphStore_Full.getGlyphsSheet(fontFamily, fontSize, fontStyle, fontWeight);
   addElementToDOM(canvas);
 }
+
 
 function addHashInfoWithMatch(ctx, fontFamily, fontStyle, fontWeight, fontSize, testCopyChoiceNumber) {
   const crispTextHashString = ctx.getHashString();
