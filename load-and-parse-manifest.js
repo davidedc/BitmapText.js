@@ -38,14 +38,8 @@ for (const element of bitmapFontsManifest.files) {
     // (note that in the editor we indeed use the canvas, we can't use the image directly because
     // it's tricky to wait for the image to be created from the canvas as it's an async operation).
 
-    // create a canvas element and draw the image on it
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
-    let ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    // attach the canvas to the document
-    document.body.appendChild(canvas);
+    // attach the image to the document
+    document.body.appendChild(img);
     // and then a newline
     document.body.appendChild(document.createElement('br'));
     // extract the pixel density, font family, style, weight, size from the filename of the type:
@@ -57,7 +51,7 @@ for (const element of bitmapFontsManifest.files) {
     const weight = parts[8];
     const size = parts[10];
     // add the canvas to the crispBitmapGlyphStore
-    setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], canvas);
+    setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], img);
     
     bitmapFontJsOrImageLoaded();
   }
