@@ -33,5 +33,7 @@ function buildAndShowGlyphs() {
   removeAllCanvasesAndDivs();
   createGlyphsAndAddToFullStore(fontSize, fontFamilySelect.value, fontStyleSelect.value, fontWeightSelect.value);
   drawTestText(fontStyleSelect.value, fontWeightSelect.value, fontSize, fontFamilySelect.value, crispBitmapGlyphStore_Full);
-
+  const crispBitmapGlyphStore = crispBitmapGlyphStore_Full.extractCrispBitmapGlyphStoreInstance();
+  drawTestText_withStandardClass(fontStyleSelect.value, fontWeightSelect.value, fontSize, fontFamilySelect.value, crispBitmapGlyphStore);  
+  
 }

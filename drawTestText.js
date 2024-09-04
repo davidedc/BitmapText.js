@@ -113,13 +113,18 @@ function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGl
   // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
   bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, crispBitmapText_Full, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
 
+}
 
-  const crispBitmapGlyphStore = crispBitmapGlyphStore_Full.extractCrispBitmapGlyphStoreInstance();
+function drawTestText_withStandardClass(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGlyphStore) {
+  const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
+  const testCopyLines = testCopy.split("\n");
+
   // this is going to be the class that is going to be used to render the text
   // outside of the editor.
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
 
-  // now do the measurements and drawing with the CrispBitmapText "normal" class
+
+  // do the measurements and drawing with the CrispBitmapText "normal" class
   // note how also this one doesn't need a canvas
   const measureTextCrispBitmap = (text) => crispBitmapText.measureText(text, fontSize, fontFamily, fontStyle, fontWeight);
   let linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
@@ -127,9 +132,9 @@ function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGl
 
   addElementToDOM(document.createElement('br'));
 
-  stdDrawCrispText(crispTestCopyMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
-  stdDrawCrispThinLines(crispTestCopyMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
-  stdDrawSmoothText(smoothTestTextMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
+  stdDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
+  stdDrawCrispThinLines(linesMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
+  stdDrawSmoothText(linesMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
 
 }
 

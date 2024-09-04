@@ -106,5 +106,6 @@ function ingestBitmapFontsData() {
   const ctx = canvas.getContext('2d');
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
   PIXEL_DENSITY = 1;
-  crispBitmapText.drawTextFromGlyphSheet(ctx, 'Access to this information is provided as part of the WorldWideWeb project. The WWW', 50,50, 18, "Arial", "normal", "normal");
+
+  drawTestText_withStandardClass("normal", "normal", 18, "Arial", crispBitmapGlyphStore);
 }
