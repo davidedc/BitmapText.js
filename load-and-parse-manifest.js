@@ -13,49 +13,115 @@ function bitmapFontJsOrImageLoaded() {
   // if all the scripts/images have been loaded, call the buildAndShowGlyphs function
   // do the check by comparing the number of files in the manifest to the number of loaded scripts
   loadedScripts++;
+  console.log(`loadedScripts: ${loadedScripts} out of ${bitmapFontsManifest.files.length * 2}`);
   if (loadedScripts === bitmapFontsManifest.files.length * 2) {
-    debugger;
     ingestBitmapFontsData();
   }
 }
 
-
-for (const element of bitmapFontsManifest.files) {
-  let filename = element;
-  let script = document.createElement('script')
-  script.src = "bitmap-fonts-data/" + filename + '.js';
-  document.head.appendChild(script);
-  // when the script is loaded, call a "bitmapFontJsLoaded" function
-  script.onload = function() {
-    bitmapFontJsOrImageLoaded();
-  }
-  let img = new Image();
-  img.src = "bitmap-fonts-data/" + filename + '.png';
-  img.onload = function() {
-    
-    // TODO we create a Canvas element and draw the image on it HOWEVER
-    // we could just use the image directly in the drawImage function.
-    // (note that in the editor we indeed use the canvas, we can't use the image directly because
-    // it's tricky to wait for the image to be created from the canvas as it's an async operation).
-
-    // attach the image to the document
-    document.body.appendChild(img);
-    // and then a newline
-    document.body.appendChild(document.createElement('br'));
-    // extract the pixel density, font family, style, weight, size from the filename of the type:
-    //   glyphs-sheet-density-1-arial-style-normal-weight-normal-size-18
-    const parts = filename.split('-');
-    const density = parts[3];
-    const fontFamily = parts[4];
-    const style = parts[6];
-    const weight = parts[8];
-    const size = parts[10];
-    // add the canvas to the crispBitmapGlyphStore
-    setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], img);
-    
-    bitmapFontJsOrImageLoaded();
+function loadSheetsFromPNGs() {
+  for (const element of bitmapFontsManifest.files) {
+    let filename = element;
+    let script = document.createElement('script')
+    script.src = "bitmap-fonts-data/" + filename + '.js';
+    document.head.appendChild(script);
+    // when the script is loaded, call a "bitmapFontJsLoaded" function
+    script.onload = function() {
+      bitmapFontJsOrImageLoaded();
+    }
+    let img = new Image();
+    img.src = "bitmap-fonts-data/" + filename + '.png';
+    img.onload = function() {
+      
+      // TODO we create a Canvas element and draw the image on it HOWEVER
+      // we could just use the image directly in the drawImage function.
+      // (note that in the editor we indeed use the canvas, we can't use the image directly because
+      // it's tricky to wait for the image to be created from the canvas as it's an async operation).
+  
+      // attach the image to the document
+      document.body.appendChild(img);
+      // and then a newline
+      document.body.appendChild(document.createElement('br'));
+      // extract the pixel density, font family, style, weight, size from the filename of the type:
+      //   glyphs-sheet-density-1-arial-style-normal-weight-normal-size-18
+      const parts = filename.split('-');
+      const density = parts[3];
+      const fontFamily = parts[4];
+      const style = parts[6];
+      const weight = parts[8];
+      const size = parts[10];
+      // add the canvas to the crispBitmapGlyphStore
+      setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], img);
+      
+      bitmapFontJsOrImageLoaded();
+    }
   }
 }
+
+// instead of loading the sheets from PNGs named
+//   glyphs-sheet-density-1-Arial-style-normal-weight-normal-size-18.png
+//  , load them from JSs titled
+//   image-glyphs-sheet-density-1-Arial-style-normal-weight-normal-size-18.js
+// Loading that JS file will create
+// imagesFromJs['glyphs-sheet-density-1-Arial-style-normal-weight-normal-size-18']
+// which will contain the base64 encoded image data
+
+// TODO this function and the one above are very similar, should be refactored
+function loadSheetsFromJSs() {
+  for (const filename of bitmapFontsManifest.files) {
+    let script = document.createElement('script');
+    script.src = `bitmap-fonts-data/${filename}.js`;
+    document.head.appendChild(script);
+    
+    // when the script is loaded, call a "bitmapFontJsLoaded" function
+    script.onload = function() {
+      // now we have to load the JS file that contains the image data
+      let imageScript = document.createElement('script');
+      imageScript.src = `bitmap-fonts-data/image-${filename}.js`;
+      console.log(`loading image-${filename}.js ...`);
+      document.head.appendChild(imageScript);
+      
+      imageScript.onload = function() {
+        bitmapFontJsOrImageLoaded();
+        console.log(`...loaded image-${filename}.js`);
+        // now take the image data from the imagesFromJs object
+        let imageData = imagesFromJs[filename];
+        // print the image data length
+        console.log(`image data length: ${imageData.length}`);
+        // create an image from the image data
+        let img = new Image();
+        img.src = `data:image/png;base64,${imageData}`;
+        img.onload = function() {
+          console.log("image loaded from JS base64 data");
+          // attach the image to the document
+          document.body.appendChild(img);
+          // and then a newline
+          document.body.appendChild(document.createElement('br'));
+          // extract the pixel density, font family, style, weight, size from the filename of the type:
+          // glyphs-sheet-density-1-arial-style-normal-weight-normal-size-18
+          const [, , , density, fontFamily, , style, , weight, , size] = filename.split('-');
+          // add the canvas to the crispBitmapGlyphStore
+          setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], img);
+          bitmapFontJsOrImageLoaded();
+        }
+      }
+    }
+  }
+}
+
+// If you use the renderer from filesystem, it will load the image sheets from the filesystem
+// the problem with that is that when loading images, the browser considers each of them
+// as a separate domain, so they are tainted as cross-origin. You CAN still paint them on a canvas
+// however you can't read the pixels from the canvas, and hence you can't check the hash of the image of
+// generated text.
+//
+// Loading images from .js files instead, the browser considers all of them as the same domain (strange but true),
+// so the images are not tainted as cross-origin.
+// This way you can read the pixels from the canvas and check the hash of the image of generated text.
+
+loadSheetsFromJSs();
+//loadSheetsFromPNGs();
+
 
 function ingestBitmapFontsData() {
   crispBitmapGlyphStore.glyphsSheetsMetrics = {
