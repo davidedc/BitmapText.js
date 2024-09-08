@@ -109,18 +109,21 @@ function loadSheetsFromJSs() {
   }
 }
 
-// If you use the renderer from filesystem, it will load the image sheets from the filesystem
-// the problem with that is that when loading images, the browser considers each of them
-// as a separate domain, so they are tainted as cross-origin. You CAN still paint them on a canvas
-// however you can't read the pixels from the canvas, and hence you can't check the hash of the image of
-// generated text.
-//
-// Loading images from .js files instead, the browser considers all of them as the same domain (strange but true),
-// so the images are not tainted as cross-origin.
-// This way you can read the pixels from the canvas and check the hash of the image of generated text.
-
-loadSheetsFromJSs();
-//loadSheetsFromPNGs();
+  // peek into the URL to decide whether to load the sheets from PNGs or JSs
+if (window.location.href.includes("file://")) {
+  // If you use the renderer from filesystem, it will load the image sheets from the filesystem
+  // the problem with that is that when loading images, the browser considers each of them
+  // as a separate domain, so they are tainted as cross-origin. You CAN still paint them on a canvas
+  // however you can't read the pixels from the canvas, and hence you can't check the hash of the image of
+  // generated text.
+  //
+  // Loading images from .js files instead, the browser considers all of them as the same domain (strange but true),
+  // so the images are not tainted as cross-origin.
+  // This way you can read the pixels from the canvas and check the hash of the image of generated text.
+  loadSheetsFromJSs();
+} else {
+  loadSheetsFromPNGs();
+}
 
 
 function ingestBitmapFontsData() {
