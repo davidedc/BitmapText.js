@@ -15,6 +15,8 @@ function bitmapFontJsOrImageLoaded() {
   loadedScripts++;
   console.log(`loadedScripts: ${loadedScripts} out of ${bitmapFontsManifest.files.length * 2}`);
   if (loadedScripts === bitmapFontsManifest.files.length * 2) {
+    console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
+    startTiming('ingestingFontData');
     ingestBitmapFontsData();
   }
 }
@@ -109,7 +111,8 @@ function loadSheetsFromJSs() {
   }
 }
 
-  // peek into the URL to decide whether to load the sheets from PNGs or JSs
+// peek into the URL to decide whether to load the sheets from PNGs or JSs
+startTiming('loadingFontData');
 if (window.location.href.includes("file://")) {
   // If you use the renderer from filesystem, it will load the image sheets from the filesystem
   // the problem with that is that when loading images, the browser considers each of them
@@ -165,6 +168,7 @@ function ingestBitmapFontsData() {
 
     }
   }
+  console.log("⏱️ ingestingFontData took " + stopTiming('ingestingFontData') + " milliseconds");
   // create a canvas and draw the text "Hello World" using the CrispBitmapText class
   // using the method
   //   drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight)
@@ -173,8 +177,10 @@ function ingestBitmapFontsData() {
   canvas.height = 1000;
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
+
+  startTiming('drawTestText_withStandardClass');
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
   PIXEL_DENSITY = 1;
-
   drawTestText_withStandardClass("normal", "normal", 18, "Arial", crispBitmapGlyphStore);
+  console.log("⏱️ drawTestText_withStandardClass took " + stopTiming('drawTestText_withStandardClass') + " milliseconds");
 }
