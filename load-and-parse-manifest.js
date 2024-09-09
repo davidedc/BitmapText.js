@@ -7,6 +7,9 @@
 // i.e. [filename].js and [filename].png
 
 let loadedScripts = 0;
+
+// TODO bitmapFontsData should be called something different, as this is really the data loaded from the JS files
+// which is then processed, put in the crispBitmapGlyphStore and then deleted
 let bitmapFontsData;
 
 function bitmapFontJsOrImageLoaded() {
