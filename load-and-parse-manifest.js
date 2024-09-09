@@ -94,6 +94,9 @@ function loadSheetsFromJSs() {
         let img = new Image();
         img.src = `data:image/png;base64,${imageData}`;
         img.onload = function() {
+          // remove the script with the image data from the document
+          imageScript.remove();
+
           console.log("image loaded from JS base64 data");
           // attach the image to the document
           document.body.appendChild(img);
@@ -166,8 +169,27 @@ function ingestBitmapFontsData() {
       // same for spaceAdvancementOverrideForSmallSizesInPx
       setNestedProperty(crispBitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx, [density, fontFamily, style, weight, size], bitmapFontsData[key].spaceAdvancementOverrideForSmallSizesInPx);
 
+      // remove the script element from the document
+      // the source of the script follows the format "bitmap-fonts-data/glyphs-sheet-density-1-arial-style-normal-weight-normal-size-18.js"
+      // so from the key we have to replace the underscores with dashes
+      let script = document.querySelector(`script[src="bitmap-fonts-data/${key.replace(/_/g, '-')}.js"]`);
+      script.remove();
+
+      // remove the  bitmapFontsData entry
+      delete bitmapFontsData[key];      
     }
   }
+
+  // remove the bitmapFontsData object from the window
+  delete window.bitmapFontsData;
+
+  // remove the script tag with the manifest
+  let manifestScript = document.querySelector('script[src="bitmap-fonts-data/manifest.js"]');
+  manifestScript.remove();
+
+  // remove the bitmapFontsManifest object from the window
+  delete window.bitmapFontsManifest;
+
   console.log("⏱️ ingestingFontData took " + stopTiming('ingestingFontData') + " milliseconds");
 
   startTiming('drawTestText_withStandardClass');
