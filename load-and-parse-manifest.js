@@ -100,6 +100,9 @@ function loadSheetsFromJSs() {
           // remove the script with the image data from the document
           imageScript.remove();
 
+          // remove the image data from the imagesFromJs object
+          delete imagesFromJs[filename];
+
           console.log("image loaded from JS base64 data");
           // attach the image to the document
           document.body.appendChild(img);
@@ -192,6 +195,11 @@ function ingestBitmapFontsData() {
 
   // remove the bitmapFontsManifest object from the window
   delete window.bitmapFontsManifest;
+
+  // remove the imagesFromJs object from the window if it exists
+  if (window.imagesFromJs) {
+    delete window.imagesFromJs;
+  }
 
   console.log("⏱️ ingestingFontData took " + stopTiming('ingestingFontData') + " milliseconds");
 
