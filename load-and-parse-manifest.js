@@ -104,7 +104,7 @@ function loadSheetsFromJSs() {
           delete imagesFromJs[filename];
 
           console.log("image loaded from JS base64 data");
-          // attach the image to the document
+          // attach the glyphs sheet to the document, for debugging purposes only
           document.body.appendChild(img);
           // and then a newline
           document.body.appendChild(document.createElement('br'));
