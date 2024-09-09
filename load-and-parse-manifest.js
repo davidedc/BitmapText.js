@@ -169,14 +169,6 @@ function ingestBitmapFontsData() {
     }
   }
   console.log("⏱️ ingestingFontData took " + stopTiming('ingestingFontData') + " milliseconds");
-  // create a canvas and draw the text "Hello World" using the CrispBitmapText class
-  // using the method
-  //   drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight)
-  const canvas = document.createElement('canvas');
-  canvas.width = 1000;
-  canvas.height = 1000;
-  document.body.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
 
   startTiming('drawTestText_withStandardClass');
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
