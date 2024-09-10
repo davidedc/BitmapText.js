@@ -118,6 +118,7 @@ function drawTestText_withStandardClass(fontStyle, fontWeight, fontSize, fontFam
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
 
+  startTiming('drawTestText via glyphs sheet');
   // this is going to be the class that is going to be used to render the text
   // outside of the editor.
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
@@ -125,15 +126,24 @@ function drawTestText_withStandardClass(fontStyle, fontWeight, fontSize, fontFam
 
   // do the measurements and drawing with the CrispBitmapText "normal" class
   // note how also this one doesn't need a canvas
+  startTiming('crispBitmapText measureText multiline');
   const measureTextCrispBitmap = (text) => crispBitmapText.measureText(text, fontSize, fontFamily, fontStyle, fontWeight);
   let linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
+  console.log("⏱️ crispBitmapText measureText multiline " + stopTiming('crispBitmapText measureText multiline') + " milliseconds");
   bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontSize, fontFamily, fontStyle, fontWeight, testCopyChoiceNumber);
+  console.log("⏱️ drawTestText via glyphs sheet " + stopTiming('drawTestText via glyphs sheet') + " milliseconds");
 
   addElementToDOM(document.createElement('br'));
 
+  startTiming('drawTestText standard draw crisp');
   stdDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
+  console.log("⏱️ drawTestText standard draw crisp " + stopTiming('drawTestText standard draw crisp') + " milliseconds");
+
   stdDrawCrispThinLines(linesMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
+
+  startTiming('drawTestText standard draw');
   stdDrawSmoothText(linesMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight);
+  console.log("⏱️ drawTestText standard draw " + stopTiming('drawTestText standard draw') + " milliseconds");
 
 }
 

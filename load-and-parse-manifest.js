@@ -203,8 +203,8 @@ function ingestBitmapFontsData() {
 
   console.log("⏱️ ingestingFontData took " + stopTiming('ingestingFontData') + " milliseconds");
 
-  startTiming('drawTestText_withStandardClass');
+  startTiming('drawTestText');
   PIXEL_DENSITY = 1;
   drawTestText_withStandardClass("normal", "normal", 18, "Arial", crispBitmapGlyphStore);
-  console.log("⏱️ drawTestText_withStandardClass took " + stopTiming('drawTestText_withStandardClass') + " milliseconds");
+  console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
 }
