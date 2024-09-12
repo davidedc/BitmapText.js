@@ -1,75 +1,16 @@
 <!DOCTYPE html>
 <html lang="">
-
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Uniform Pixel Perfect JS Canvas Text Renderer</title>
-  <style>
-    body {
-      padding: 0;
-      margin: 0;
-      background-color: #d4ffd4;
-    }
-    canvas {
-      font-smooth: never;
-      -webkit-font-smoothing: none;
-      -moz-osx-font-smoothing: none;
-      /* 1 pixel border around canvas */
-      /* border: 1px solid #000; */
-      margin-left: 3px;
-    }
-  </style>
-</head>
-
-<body>
-  <main>
-    <div id="selectors"></div>
-    <div id="testCopyCanvases" style="clear:both;"></div>
-  </main>
-</body>
-
-<script src="libs/jszip.min.js"></script>
-<script src="libs/FileSaver.min.js"></script>
-
-<script src="timing.js"></script>
-
-<script >
-  let specsText;
-  function updatePageContent() {
-    buildAndShowGlyphs();
-  }
-</script>
-
-<script src="nested-properties.js"></script>
-<script src="hashes-repo.js"></script>
-<script src="canvas-extentions.js"></script>
-<script src="CrispBitmapGlyph_Full.js"></script>
-<script src="CrispBitmapGlyphStore.js"></script>
-<script src="CrispBitmapGlyphStore_Full.js"></script>
-<script src="CrispBitmapText.js"></script>
-<script src="CrispBitmapText_Full.js"></script>
-<script src="SpecsParser.js"></script>
-<script src="Specs.js"></script>
-<script src="test-copy.js"></script>
-<script src="drawTestText.js"></script>
-<script src="remove-canvases-and-divs.js"></script>
-<script src="buildAndShowGlyphs.js"></script>
-<script src="createGlyphsAndAddToFullStore.js"></script>
-<script src="ui-copy-choice-radio-buttons.js"></script>
-<script src="ui-pixel-density-choice-radio-buttons.js"></script>
-<script src="ui-font-families-dropdown.js"></script>
-<script src="ui-font-style-dropdown.js"></script>
-<script src="ui-font-weight-dropdown.js"></script>
-<script src="ui-size-buttons.js"></script>
-<script src="ui.js"></script>
-
-<script >
-  const crispBitmapGlyphStore_Full = new CrispBitmapGlyphStore_Full();
-  const crispBitmapText_Full = new CrispBitmapText_Full(crispBitmapGlyphStore_Full);
-    
-  updatePageContent();
-</script>
-
-
+  <head>
+    <title>Font Builder</title>
+    <!--<link rel="stylesheet" type="text/css" href="font-builder.css">-->
+  </head>
+  <body>
+    <h1>BitmapText.js</h1>
+    <p>
+      <a href="font-builder.html">Font Builder</a>
+    </p>
+    <p>
+      <a href="text-render-tests.html">Font Render Tests</a>
+    </p>
+  </body>
 </html>
