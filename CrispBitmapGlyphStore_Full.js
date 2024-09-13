@@ -1,7 +1,7 @@
 // a class to store all the crispBitmapGlyph_Fulls
 // so that we can retrieve them by font family, font size and letter
 class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
-  constructor() {    
+  constructor() {
     super();
     // these objects contain all kinds of other
     // intermediate data useful for construction/inspection
@@ -63,9 +63,8 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
       // if the bottomRightCorner or the topLeftCorner is not defined, then the glyph is not valid
       // and just continue
-      if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
+      if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner)
         continue;
-      }
 
       // Note that PIXEL_DENSITY can be an integer or a fractional number.
       // In both cases, JavaScript will automatically convert the number to a string when using it as an object key.
@@ -87,10 +86,10 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
       if (tightHeight > maxHeight) maxHeight = tightHeight;
     }
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = fittingWidth;
     canvas.height = maxHeight;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     let x = 0;
 
     for (let letter in glyphs) {
@@ -124,6 +123,6 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.
-    return glyphsSheetsPNG
+    return glyphsSheetsPNG;
   }
 }
