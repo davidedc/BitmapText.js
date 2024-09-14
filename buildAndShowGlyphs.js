@@ -13,7 +13,7 @@ function buildAndShowGlyphs() {
     fontSize = selectedFontSize;
   }
 
-  // set the PIXEL_DENSITY variable depending on the scale radio buttons
+  // Set the PIXEL_DENSITY variable depending on the scale radio buttons
   if (document.getElementById('pixel-density-2-radio-button').checked) {
     PIXEL_DENSITY = 2;
   }
@@ -29,7 +29,7 @@ function buildAndShowGlyphs() {
 
   if (isNaN(fontSize)) return;
 
-  // remove all canvases and divs from the page
+  // Remove all canvases and divs from the page
   removeAllCanvasesAndDivs();
   createGlyphsAndAddToFullStore(fontSize, fontFamilySelect.value, fontStyleSelect.value, fontWeightSelect.value);
   drawTestText(fontStyleSelect.value, fontWeightSelect.value, fontSize, fontFamilySelect.value, crispBitmapGlyphStore_Full);

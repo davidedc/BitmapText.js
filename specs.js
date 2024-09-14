@@ -88,6 +88,7 @@ class Specs {
   }
 }
 
+// TODO this specs text needs to go in a separate file
 specsText =
 `Font family: Arial
 Font style: normal

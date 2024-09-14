@@ -28,7 +28,7 @@ class CrispBitmapText {
         fontBoundingBoxAscent: 0,
         fontBoundingBoxDescent: 0
       };
-    
+
     let width_CSS_Px = 0;
     let letterTextMetrics = getNestedProperty(this.glyphStore.glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, text[0]]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;

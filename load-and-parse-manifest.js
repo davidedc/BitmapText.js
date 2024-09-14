@@ -13,8 +13,8 @@ let loadedScripts = 0;
 let bitmapFontsData;
 
 function bitmapFontJsOrImageLoaded() {
-  // if all the scripts/images have been loaded, call the buildAndShowGlyphs function
-  // do the check by comparing the number of files in the manifest to the number of loaded scripts
+  // If all the scripts/images have been loaded, call the buildAndShowGlyphs function
+  // Do the check by comparing the number of files in the manifest to the number of loaded scripts
   loadedScripts++;
   console.log(`loadedScripts: ${loadedScripts} out of ${bitmapFontsManifest.files.length * 2}`);
   if (loadedScripts === bitmapFontsManifest.files.length * 2) {
@@ -181,12 +181,12 @@ function ingestBitmapFontsData() {
       let script = document.querySelector(`script[src="bitmap-fonts-data/${key.replace(/_/g, '-')}.js"]`);
       script.remove();
 
-      // remove the  bitmapFontsData entry
-      delete bitmapFontsData[key];      
+      // Remove the bitmapFontsData entry
+      delete bitmapFontsData[key];
     }
   }
 
-  // remove the bitmapFontsData object from the window
+  // Clean up global variables
   delete window.bitmapFontsData;
 
   // remove the script tag with the manifest

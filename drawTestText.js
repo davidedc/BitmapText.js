@@ -18,7 +18,7 @@ function createDivWithText(text) {
 }
 
 function measureMultilineText(lines, measureTextFn) {
-  let linesMeasures_CSS_Px = { width: 0, height: 0 };
+  const linesMeasures_CSS_Px = { width: 0, height: 0 };
   for (const line of lines) {
     const lineMeasures_CSS_Px = measureTextFn(line);
     linesMeasures_CSS_Px.width = Math.max(linesMeasures_CSS_Px.width, lineMeasures_CSS_Px.width);
