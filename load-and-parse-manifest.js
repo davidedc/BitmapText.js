@@ -33,7 +33,7 @@ function loadSheetsFromPNGs() {
     // when the script is loaded, call a "bitmapFontJsLoaded" function
     script.onload = function() {
       bitmapFontJsOrImageLoaded();
-    }
+    };
     let img = new Image();
     img.src = "bitmap-fonts-data/" + filename + '.png';
     img.onload = function() {
@@ -45,10 +45,9 @@ function loadSheetsFromPNGs() {
   
       // attach the image to the document
       document.body.appendChild(img);
-      // and then a newline
       document.body.appendChild(document.createElement('br'));
-      // extract the pixel density, font family, style, weight, size from the filename of the type:
-      //   glyphs-sheet-density-1-arial-style-normal-weight-normal-size-18
+
+      // Extract font properties from the filename
       const parts = filename.split('-');
       const density = parts[3];
       const fontFamily = parts[4];
@@ -59,7 +58,7 @@ function loadSheetsFromPNGs() {
       setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], img);
       
       bitmapFontJsOrImageLoaded();
-    }
+    };
   }
 }
 
@@ -77,23 +76,21 @@ function loadSheetsFromJSs() {
     let script = document.createElement('script');
     script.src = `bitmap-fonts-data/${filename}.js`;
     document.head.appendChild(script);
-    
-    // when the script is loaded, call a "bitmapFontJsLoaded" function
     script.onload = function() {
       // now we have to load the JS file that contains the image data
+
       let imageScript = document.createElement('script');
       imageScript.src = `bitmap-fonts-data/image-${filename}.js`;
       console.log(`loading image-${filename}.js ...`);
       document.head.appendChild(imageScript);
-      
-      imageScript.onload = function() {
+
+      imageScript.onload = function () {
         bitmapFontJsOrImageLoaded();
         console.log(`...loaded image-${filename}.js`);
         // now take the image data from the imagesFromJs object
         let imageData = imagesFromJs[filename];
-        // print the image data length
-        console.log(`image data length: ${imageData.length}`);
-        // create an image from the image data
+
+        // create an Image from the base64 data
         let img = new Image();
         img.src = `data:image/png;base64,${imageData}`;
         img.onload = function() {
@@ -114,14 +111,14 @@ function loadSheetsFromJSs() {
           // add the canvas to the crispBitmapGlyphStore
           setNestedProperty(crispBitmapGlyphStore.glyphsSheets, [density, fontFamily, style, weight, size], img);
           bitmapFontJsOrImageLoaded();
-        }
-      }
-    }
+        };
+      };
+    };
   }
 }
 
-// peek into the URL to decide whether to load the sheets from PNGs or JSs
 startTiming('loadingFontData');
+// peek into the URL to decide whether to load the sheets from PNGs or JSs
 if (window.location.href.includes("file://")) {
   // If you use the renderer from filesystem, it will load the image sheets from the filesystem
   // the problem with that is that when loading images, the browser considers each of them
@@ -133,7 +130,8 @@ if (window.location.href.includes("file://")) {
   // so the images are not tainted as cross-origin.
   // This way you can read the pixels from the canvas and check the hash of the image of generated text.
   loadSheetsFromJSs();
-} else {
+}
+else {
   loadSheetsFromPNGs();
 }
 

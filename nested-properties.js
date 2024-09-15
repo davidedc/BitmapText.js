@@ -15,7 +15,8 @@ function setNestedProperty(obj, properties, value) {
         const prop = properties[i];
         if (i === properties.length - 1) {
             current[prop] = value;
-        } else {
+        }
+        else {
             if (!current[prop]) {
                 current[prop] = {};
             }

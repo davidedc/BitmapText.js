@@ -21,8 +21,9 @@ class CrispBitmapGlyph_Full {
   displayCanvasesAndData() {
     document.body.appendChild(this.canvas);
     if (!this.tightCanvas) {
-      document.body.appendChild(document.createElement('div'));
-    } else {
+      document.body.appendChild(document.createElement("div"));
+    }
+    else {
       document.body.appendChild(this.tightCanvas);
     }
   }
@@ -41,8 +42,8 @@ class CrispBitmapGlyph_Full {
     // but it didn't work
     document.body.appendChild(canvas);
 
-    const ctx = canvas.getContext('2d');
     ctx.font = `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
+    const ctx = canvas.getContext("2d");
 
     // size the canvas so it fits the this.letter
     const letterTextMetricsOrig = ctx.measureText(this.letter);
@@ -118,7 +119,6 @@ class CrispBitmapGlyph_Full {
     if (letterTextMetrics.actualBoundingBoxLeft !== 0) {
       div.style.color = "red";
     }
-
     document.body.appendChild(div);
 
     const canvasPixelsHeight = Math.round(letterTextMetrics.fontBoundingBoxAscent + letterTextMetrics.fontBoundingBoxDescent);;

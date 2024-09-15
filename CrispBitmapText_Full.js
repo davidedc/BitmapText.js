@@ -70,10 +70,8 @@ class CrispBitmapText_Full extends CrispBitmapText {
           }
         }
       }
-
       return 0;
     }
-
     return 0;
   }
 

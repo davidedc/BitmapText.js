@@ -52,7 +52,7 @@ function standardDrawTextOnCanvas(ctx, lines, measures, fontSize, fontFamily, fo
   for (let i = 0; i < lines.length; i++) {
     ctx.fillText(lines[i], 0, Math.round((i + 1) * measures.height / lines.length));
   }
-  console.log("⏱️ drawTestText standard draw " + stopTiming('drawTestText standard draw') + " milliseconds");
+  console.log(`⏱️ drawTestText standard draw ${stopTiming('drawTestText standard draw')} milliseconds`);
 }
 
 function getTestCopyChoiceAndText() {
@@ -79,7 +79,7 @@ function drawTestText(fontStyle, fontWeight, fontSize, fontFamily, crispBitmapGl
   // measurements
   // ------------------------------------------------
 
-  // measures the text drawn smoothly
+  // Measurements for smooth text
   // (it's drawn smoothly because it's attached to the DOM before the drawing of the text
   // and there is a CSS rule that makes the canvas crisp)
   const canvasMeasuringSmooth = createCanvas(1, 1);
@@ -124,7 +124,7 @@ function drawTestText_withStandardClass(fontStyle, fontWeight, fontSize, fontFam
   // outside of the editor.
   const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
 
-
+  // Measure and draw with CrispBitmapText
   // do the measurements and drawing with the CrispBitmapText "normal" class
   // note how also this one doesn't need a canvas
   startTiming('crispBitmapText measureText multiline');
@@ -190,7 +190,7 @@ function stdDrawSmoothText(smoothTestTextMeasures_CSS_Px, testCopyLines, fontSiz
   const ctx = canvas.getContext('2d');
   standardDrawTextOnCanvas(ctx, testCopyLines, smoothTestTextMeasures_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight);
   addElementToDOM(canvas);
-  addElementToDOM(createDivWithText('hash: ' + ctx.getHashString()));
+  addElementToDOM(createDivWithText(`hash: ${ctx.getHashString()}`));
 }
 
 function stdDrawCrispThinLines(crispTestCopyMeasures_CSS_Px, testCopyLines, fontSize, fontFamily, fontStyle, fontWeight) {
@@ -229,10 +229,11 @@ function addHashInfoWithMatch(ctx, fontFamily, fontStyle, fontWeight, fontSize, 
   const hashKey = `fontFamily ${fontFamily} // fontStyle ${fontStyle} // fontWeight ${fontWeight} // fontSize ${fontSize} // testCopyChoiceNumber ${testCopyChoiceNumber} // pixelDensity ${PIXEL_DENSITY}`;
   thisRunsHashes[hashKey] = crispTextHashString;
 
-  let hashText = 'hash: ' + crispTextHashString;
+  let hashText = `hash: ${crispTextHashString}`;
   if (storedReferenceCrispTextRendersHashes[hashKey] === crispTextHashString) {
     hashText += " ✔ same hash as stored one";
-  } else {
+  }
+  else {
     hashText += " ✘ different hash from stored one";
     // turn the background of the page light pink
     document.body.style.backgroundColor = '#FFC0CB';

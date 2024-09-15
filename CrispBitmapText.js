@@ -59,7 +59,7 @@ class CrispBitmapText {
     return {
       width: width_CSS_Px,
       // note that standard measureText returns a TextMetrics object
-      // which has no height, so so let's make things uniform and resist the temptation to provide it.
+      // which has no height, so let's make things uniform and resist the temptation to provide it.
       actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
       actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
       actualBoundingBoxAscent,
@@ -101,20 +101,13 @@ class CrispBitmapText {
     }
     // Non-space characters ------------------------------------------
     else {
-        x_CSS_Px += letterTextMetrics.width;
+      x_CSS_Px += letterTextMetrics.width;
     }
-
 
     // Next, apply the kerning correction ----------------------------
     let kerningCorrection = this.getKerningCorrection(fontFamily, fontStyle, fontWeight, fontSize, nextLetter, letter);
 
-    // console.log("kerningCorrection: " + kerningCorrection);   (fontFamily, fontSize, fontStyle, fontWeight, correctionKey, kerning)
-    
     // We multiply the advancement of the letter by the kerning
-    //
-    //if (fontSize === 16) {
-    //  debugger
-    //}
     // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
     // We don't use ems, rather we use pxs, however we still want to keep Kerning as strictly proportional to the current type size,
     // and also to keep it as a measure "in thousands".
@@ -177,5 +170,4 @@ class CrispBitmapText {
 
     }
   }
-
 }
