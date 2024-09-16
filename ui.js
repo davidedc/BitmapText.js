@@ -21,8 +21,10 @@ function buildKerningTableIfDoesntExist() {
     if (hoverFontSize !== null) {
         fontSize = hoverFontSize;
     }
+
+    const properties = {PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize};
  
-    crispBitmapText_Full.buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize);
+    crispBitmapText_Full.buildKerningTableIfDoesntExist(properties);
 }
 
 // Helper function to create and append elements

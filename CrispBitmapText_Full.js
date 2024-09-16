@@ -42,29 +42,32 @@ class CrispBitmapText_Full extends CrispBitmapText {
     return ['a', 'c', 'e', 'g', 'i', 'j', 'm', 'n', 'o', 'p', 'q', 'r', 's', 'u', 'v', 'w', 'x', 'y', 'z', '.', ',', ':', ';', '—', '·', 'Ç', 'à', 'ç', '•'].indexOf(letter) !== -1;
   }
 
+  getKerningCorrectionFromSpec(fontProperties, letter, nextLetter) {
+    const { fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
 
-  getKerningCorrectionFromSpec(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) {
-
-    if (specs.specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning cutoff")) {
-      if (fontSize <= specs.kerningCutoff(fontFamily,fontStyle,fontWeight)) {
+    if (specs.specCombinationExists(fontProperties, "Kerning cutoff")) {
+      if (fontSize <= specs.kerningCutoff(fontProperties)) {
         return 0;
       }
     }
 
-    if (specs.specCombinationExists(fontFamily, fontStyle, fontWeight, "Kerning")) {
-  
+    if (specs.specCombinationExists(fontProperties, "Kerning")) {
       // for all entries in the Kerning array with a sizeRange that includes the current font size
       //   get the kerning array and for each one:
       //     if letter matches any of the letters in the "left" object or the "left" object is "*any*" and the nextLetter matches any of the letters in the "right" object or the "right" object is "*any*"
       //       return the value of the "adjustment" property
-      for (const element of specs.kerning(fontFamily,fontStyle,fontWeight)) {
-        const kerningEntry = element;
-        if (kerningEntry.sizeRange.from <= fontSize && kerningEntry.sizeRange.to >= fontSize) {
-          // scan the kerningEntry.kerning array
-          for (const element of kerningEntry.kerning) {
-            const kerning = element;
-            if ((kerning.left.indexOf(letter) !== -1 || kerning.left.indexOf("*any*") !== -1) && (kerning.right.indexOf(nextLetter) !== -1 || kerning.right.indexOf("*any*") !== -1)) {
-              //console.log("kerning correction for " + letter + " " + nextLetter + " is " + kerning.adjustment);
+      for (const kerningEntry of specs.kerning(fontProperties)) {
+        if (
+          kerningEntry.sizeRange.from <= fontSize &&
+          kerningEntry.sizeRange.to >= fontSize
+        ) {
+          for (const kerning of kerningEntry.kerning) {
+            if (
+              (kerning.left.includes(letter) ||
+                kerning.left.includes("*any*")) &&
+              (kerning.right.includes(nextLetter) ||
+                kerning.right.includes("*any*"))
+            ) {
               return kerning.adjustment;
             }
           }
@@ -75,12 +78,9 @@ class CrispBitmapText_Full extends CrispBitmapText {
     return 0;
   }
 
-  buildKerningTableIfDoesntExist(fontFamily, fontStyle, fontWeight, fontSize) {
-
-    // check if the kerningTable already exists in the glyphs store
-    if (checkNestedPropertiesExist(this.glyphStore.kerningTables, [PIXEL_DENSITY,fontFamily, fontStyle, fontWeight, fontSize])) {
+  buildKerningTableIfDoesntExist(fontProperties) {
+    if (this.glyphStore.kerningTableExists(fontProperties))
       return;
-    }
 
     // go through all the letters and for each letter, go through all the other letters
     // and calculate the kerning correction between the two letters
@@ -89,7 +89,11 @@ class CrispBitmapText_Full extends CrispBitmapText {
     for (const letter of characterSet) {
       kerningTable[letter] = {};
       for (const nextLetter of characterSet) {
-        const kerningCorrection = this.getKerningCorrectionFromSpec(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight);
+        const kerningCorrection = this.getKerningCorrectionFromSpec(
+          fontProperties,
+          letter,
+          nextLetter
+        );
         if (kerningCorrection !== 0) {
           kerningTable[letter][nextLetter] = kerningCorrection;
         }
@@ -103,16 +107,11 @@ class CrispBitmapText_Full extends CrispBitmapText {
       }
     }
 
-    // create the object level by level if it doesn't exist
-    // in this.glyphStore.kerningTables
-    setNestedProperty(this.glyphStore.kerningTables, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], kerningTable);
-    
-    // store the spaceAdvancementOverrideForSmallSizesInPx
-    // by doing getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
-    // and store it in the spaceAdvancementOverrideForSmallSizesInPx object at the right level
-    const spaceAdvancementOverrideForSmallSizesInPx = specs.getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, "Space advancement override for small sizes in px");
-    setNestedProperty(this.glyphStore.spaceAdvancementOverrideForSmallSizesInPx, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize], spaceAdvancementOverrideForSmallSizesInPx);
+    this.glyphStore.setKerningTable(fontProperties, kerningTable);
 
+    const spaceAdvancementOverrideForSmallSizesInPx =
+      specs.getSingleFloatCorrection(fontProperties, "Space advancement override for small sizes in px");
+    this.glyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
   }
 
   // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string
@@ -121,76 +120,79 @@ class CrispBitmapText_Full extends CrispBitmapText {
   // and see if it's bold or not. This is not a good idea because it's slow.
   // So, the best way is to keep track of the font-family, font-size and
   // font-style that you use in your own code and pass as params.
-  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontSize, fontFamily, fontStyle, fontWeight) {
-
-    let x_Phys_Px = x_CSS_Px * PIXEL_DENSITY;
-    const y_Phys_Px = y_CSS_Px * PIXEL_DENSITY;
+  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties) {
+    let x_Phys_Px = x_CSS_Px * fontProperties.pixelDensity;
+    const y_Phys_Px = y_CSS_Px * fontProperties.pixelDensity;
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
       const nextLetter = text[i + 1];
-      const glyph = this.glyphStore.getGlyph(fontFamily, fontSize, letter, fontStyle, fontWeight);
-      const letterTextMetrics = getNestedProperty(this.glyphStore.glyphsTextMetrics, [PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize, letter]);
+      const glyph = this.glyphStore.getGlyph(
+        fontProperties,
+        letter
+      );
+      const letterTextMetrics = this.glyphStore.getGlyphsTextMetrics(fontProperties, letter);
 
+      if (glyph && glyph.tightCanvas) {
+        // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
+        // actualBoundingBoxLeft > 0, for example it's quite large for the
+        // italic f in Times New Roman. The other glyphs that don't protrude to the left
+        // simply have actualBoundingBoxLeft = 0.
+        //
+        // (Note that actualBoundingBoxLeft comes from the canvas measureText method, i.e.
+        // it's not inferred from looking at how the canvas paints the glyph.)
+        //
+        // Hence, to render all glyphs correctly, you need to blit the glyph at
+        //    x_Phys_Px - actualBoundingBoxLeft
+        // so the part that should protrude to the left is actually partially blitted to
+        // the left of x, as it should be.
+        //
+        // Note that if the fist character has a positive actualBoundingBoxLeft and we draw
+        // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
+        // it happens with a standard Canvas - one should just position the text
+        // carefully to avoid this (although it's rare that people actually take care of this).
+        const actualBoundingBoxLeftPull_CSS_Px = Math.round(
+          letterTextMetrics.actualBoundingBoxLeft
+        );
 
-      if (glyph) {
-        if (glyph.tightCanvas) {
+        const yPos_Phys_Px =
+          y_Phys_Px -
+          glyph.tightCanvas.height -
+          glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas +
+          fontProperties.pixelDensity;
+        const xPos_Phys_Px =
+          x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * fontProperties.pixelDensity;
 
-          // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
-          // actualBoundingBoxLeft > 0, for example it's quite large for the
-          // italic f in Times New Roman. The other glyphs that don't protrude to the left
-          // simply have actualBoundingBoxLeft = 0.
-          //
-          // (Note that actualBoundingBoxLeft comes from the canvas measureText method, i.e.
-          // it's not inferred from looking at how the canvas paints the glyph.)
-          //
-          // Hence, to render all glyphs correctly, you need to blit the glyph at
-          //    x_Phys_Px - actualBoundingBoxLeft
-          // so the part that should protrude to the left is actually partially blitted to
-          // the left of x, as it should be.
-          //
-          // Note that if the fist character has a positive actualBoundingBoxLeft and we draw
-          // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
-          // it happens with a standard Canvas - one should just position the text
-          // carefully to avoid this (although it's rare that people actually take care of this).
+        const leftSpacing_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
 
-          const actualBoundingBoxLeftPull_CSS_Px = Math.round(letterTextMetrics.actualBoundingBoxLeft);
-
-          const yPos_Phys_Px = y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY;
-          const xPos_Phys_Px = x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * PIXEL_DENSITY;
-
-          // For normal sizes:
-          //    we use the same spacing as the canvas gave us for each glyph
-
-          // normal sizes
-          const leftSpacingAsGivenToUsByTheCanvas_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
-          // Example: the user asks to draw the potential bottom of the text (i.e. including the most descending parts
-          // that might or might not be painted on that last row of pixels, depending on the letter, typically
-          // "Ç" or "ç" or italic f in Times New Roman are the most descending letters, and they touch the bottom
-          // because we set textBaseline to 'bottom'. If the letter does not touch the bottom, the number of empty rows
-          // (obviously not in the tightCanvas because... it's tight) is measured by distanceBetweenBottomAndBottomOfCanvas)
-          // at y = 20 (i.e. the 21st pixel starting from the top).
-          // I.e. y = 20 (line 21) is the bottom-most row of pixels that the most descending letters would touch.
-          // The tight canvas of the glyph is 10px tall, and
-          // the distance between the bottom of the tight canvas and the bottom of the canvas is 5px.
-          // Hence we paint the letter starting the top at row (20 + 1) - (10-1) - 5 = row 7. Row 7 i.e. y = 6.
-          //   explained: (20+1) is the row of y = 20; - (10-1) brings you to the top of the tight canvas,
-          //              and to leave 5 spaces below you have to subtract 5.
-          // That's what we do below applying the formula below:
-          //     y = 20 - 10 - 5 + 1 = 6.
-          // Let's verify that: painting the first row of the letter at y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
-          // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
-          // (which is what we wanted).
-          // See https://www.w3schools.com/jsref/canvas_drawimage.asp
-          ctx.drawImage(glyph.tightCanvas,
-            // x, y -------------------
-            xPos_Phys_Px + leftSpacingAsGivenToUsByTheCanvas_Phys_Px,
-            y_Phys_Px - glyph.tightCanvas.height - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * PIXEL_DENSITY);
-        }
-
-        x_Phys_Px += this.calculateAdvancement_CSS_Px(fontFamily, letter, nextLetter, fontSize, fontStyle, fontWeight) * PIXEL_DENSITY;
-
+        // Example: the user asks to draw the potential bottom of the text (i.e. including the most descending parts
+        // that might or might not be painted on that last row of pixels, depending on the letter, typically
+        // "Ç" or "ç" or italic f in Times New Roman are the most descending letters, and they touch the bottom
+        // because we set textBaseline to 'bottom'. If the letter does not touch the bottom, the number of empty rows
+        // (obviously not in the tightCanvas because... it's tight) is measured by distanceBetweenBottomAndBottomOfCanvas)
+        // at y = 20 (i.e. the 21st pixel starting from the top).
+        // I.e. y = 20 (line 21) is the bottom-most row of pixels that the most descending letters would touch.
+        // The tight canvas of the glyph is 10px tall, and
+        // the distance between the bottom of the tight canvas and the bottom of the canvas is 5px.
+        // Hence we paint the letter starting the top at row (20 + 1) - (10-1) - 5 = row 7. Row 7 i.e. y = 6.
+        //   explained: (20+1) is the row of y = 20; - (10-1) brings you to the top of the tight canvas,
+        //              and to leave 5 spaces below you have to subtract 5.
+        // That's what we do below applying the formula below:
+        //     y = 20 - 10 - 5 + 1 = 6.
+        // Let's verify that: painting the first row of the letter at y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
+        // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
+        // (which is what we wanted).
+        // See https://www.w3schools.com/jsref/canvas_drawimage.asp
+        ctx.drawImage(
+          glyph.tightCanvas,
+          xPos_Phys_Px + leftSpacing_Phys_Px,
+          yPos_Phys_Px
+        );
       }
+
+      x_Phys_Px +=
+        this.calculateAdvancement_CSS_Px(fontProperties, letter, nextLetter) *
+        fontProperties.pixelDensity;
     }
   }
 }

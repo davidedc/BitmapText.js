@@ -20,20 +20,28 @@ function buildAndShowGlyphs() {
   else {
     PIXEL_DENSITY = 1;
   }
-  
+
+  // Create the fontProperties object
+  const fontProperties = {
+    fontSize,
+    fontFamily: fontFamilySelect.value,
+    fontStyle: fontStyleSelect.value,
+    fontWeight: fontWeightSelect.value,
+    pixelDensity: PIXEL_DENSITY
+  };
+
   // If the contents of the specs textarea have changed, parse them, clear all the kerning tables and build
   // the one for the current size.
   // If the contents have not changed, check if the kerning table for the current size exists and if not, build it.
   specs = specsParser.parseSpecsIfChanged(settingsTextarea.value);
-  buildKerningTableIfDoesntExist();
+  buildKerningTableIfDoesntExist(fontProperties);
 
   if (isNaN(fontSize)) return;
 
   // Remove all canvases and divs from the page
   removeAllCanvasesAndDivs();
-  createGlyphsAndAddToFullStore(fontSize, fontFamilySelect.value, fontStyleSelect.value, fontWeightSelect.value);
-  drawTestText(fontStyleSelect.value, fontWeightSelect.value, fontSize, fontFamilySelect.value, crispBitmapGlyphStore_Full);
+  createGlyphsAndAddToFullStore(fontProperties);
+  drawTestText(fontProperties, crispBitmapGlyphStore_Full);
   const crispBitmapGlyphStore = crispBitmapGlyphStore_Full.extractCrispBitmapGlyphStoreInstance();
-  drawTestText_withStandardClass(fontStyleSelect.value, fontWeightSelect.value, fontSize, fontFamilySelect.value, crispBitmapGlyphStore);  
-  
+  drawTestText_withStandardClass(fontProperties, crispBitmapGlyphStore);
 }

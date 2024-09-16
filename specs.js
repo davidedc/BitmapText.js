@@ -4,33 +4,49 @@ class Specs {
     this.specs = specs;
   }
 
-  kerning(fontFamily,fontStyle,fontWeight) {
+  kerning(fontProperties) {
+    const { fontFamily, fontStyle, fontWeight } = fontProperties;
     return this.specs[fontFamily][fontStyle][fontWeight]["Kerning"];
   }
 
-  kerningCutoff(fontFamily,fontStyle,fontWeight) {
+  kerningCutoff(fontProperties) {
+    const { fontFamily, fontStyle, fontWeight } = fontProperties;
     return this.specs[fontFamily][fontStyle][fontWeight]["Kerning cutoff"];
   }
 
-  specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey) {
+  specCombinationExists(fontProperties, correctionKey) {
+    const { fontFamily, fontStyle, fontWeight } = fontProperties;
     return checkNestedPropertiesExist(this.specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
   }
 
-  getCorrectionEntries(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
-    if (!this.specCombinationExists(fontFamily, fontStyle, fontWeight, correctionKey)) {
+  getCorrectionEntries(fontProperties, correctionKey) {
+    const {
+      fontFamily,
+      fontStyle,
+      fontWeight,
+      fontSize,
+      pixelDensity = PIXEL_DENSITY
+    } = fontProperties;
+
+    if (!this.specCombinationExists(fontProperties, correctionKey)) {
       return null;
     }
 
-    if (fontSize <= this.specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
+    const specEntry = this.specs[fontFamily][fontStyle][fontWeight][correctionKey];
+    if (fontSize <= specEntry) {
       return null;
     }
 
     const correctionEntries = [];
-    for (const element of this.specs[fontFamily][fontStyle][fontWeight][correctionKey]) {
-      const correctionEntry = element;
+    for (const correctionEntry of specEntry) {
       if (correctionEntry.sizeRange == undefined) continue;
       // if the pixel density is specified and it doesn't match, skip this entry
-      if (PIXEL_DENSITY !== null && correctionEntry.sizeRange.pixelDensity !== null && PIXEL_DENSITY !== correctionEntry.sizeRange.pixelDensity) continue;
+      if (
+        pixelDensity !== null &&
+        correctionEntry.sizeRange.pixelDensity !== null &&
+        pixelDensity !== correctionEntry.sizeRange.pixelDensity
+      )
+        continue;
       if (correctionEntry.sizeRange.from <= fontSize && correctionEntry.sizeRange.to >= fontSize) {
         correctionEntries.push(correctionEntry);
       }
@@ -50,11 +66,10 @@ class Specs {
   //    5
   //  14 to 14
   //    4
-  getSingleFloatCorrection(fontFamily, fontSize, fontStyle, fontWeight, correctionKey) {
-    const correctionEntries = this.getCorrectionEntries(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
+  getSingleFloatCorrection(fontProperties, correctionKey) {
+    const correctionEntries = this.getCorrectionEntries(fontProperties, correctionKey);
     // if there is a first element with a correcttion, return it, otherwise return null
     return correctionEntries ? correctionEntries[0].correction : null;
-    
   }
 
   // for this one, the sizes don't form a partition, so we need to check all the entries
@@ -71,13 +86,12 @@ class Specs {
   //    W: 1
   //  13 to 13 at pixel density 1
   //    v: 1
-  getSingleFloatCorrectionForLetter(fontFamily, letter, fontSize, fontStyle, fontWeight, correctionKey, pixelDensity) {
-    const correctionEntries = this.getCorrectionEntries(fontFamily, fontSize, fontStyle, fontWeight, correctionKey);
+  getSingleFloatCorrectionForLetter(fontProperties, letter, correctionKey) {
+    const correctionEntries = this.getCorrectionEntries(fontProperties, correctionKey);
     if (!correctionEntries) return 0;
 
     for (const correctionEntry of correctionEntries) {
-      for (const element of correctionEntry.lettersAndTheirCorrections) {
-        const charAndOffset = element;
+      for (const charAndOffset of correctionEntry.lettersAndTheirCorrections) {
         if (charAndOffset.string.indexOf(letter) !== -1) {
           return charAndOffset.adjustment;
         }
