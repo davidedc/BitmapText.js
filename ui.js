@@ -182,8 +182,8 @@ function setupGlyphUI() {
 
     // Add settings textarea
     settingsTextarea = createElement('textarea', 'settings-textarea', null, selectorsDiv);
-    // value is specsText variable if it exists, otherwise it is an empty string
-    settingsTextarea.value = specsText || '';
+    // value is specsDefault variable if it exists, otherwise it is an empty string
+    settingsTextarea.value = specsDefault || '';
     settingsTextarea.style.cssText = 'float: left; height: 200px; width: 333px;';
 
     // Add size buttons
