@@ -34,14 +34,14 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
 
   addGlyph(glyph) {
-    setNestedProperty(this.glyphs, this.destructureFontPropsFamily2Size(glyph.fontProperties).concat(glyph.letter), glyph);
+    setNestedProperty(this.glyphs, this.destructureFontPropsDensity2Size(glyph.fontProperties).concat(glyph.letter), glyph);
     // glyphsSheets is actually part of the narrower CrispBitmapGlyphStore class
     // however we also need it here in the Full class for construction of things.
     ensureNestedPropertiesExist(this.glyphsSheets, this.destructureFontPropsDensity2Size(glyph.fontProperties));
   }
 
   getGlyph(fontProperties, letter) {
-    return getNestedProperty(this.glyphs, this.destructureFontPropsFamily2Size(fontProperties).concat(letter));
+    return getNestedProperty(this.glyphs, this.destructureFontPropsDensity2Size(fontProperties).concat(letter));
   }
 
   // Get a canvas with all the glyphs of a certain font family, font size and font style
@@ -50,7 +50,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
   // 3. draw each glyph in the canvas
   buildGlyphsSheet(fontProperties) {
-    const glyphs = getNestedProperty(this.glyphs, this.destructureFontPropsFamily2Size(fontProperties));
+    const glyphs = getNestedProperty(this.glyphs, this.destructureFontPropsDensity2Size(fontProperties));
     if (!glyphs) return null;
 
     let fittingWidth = 0;

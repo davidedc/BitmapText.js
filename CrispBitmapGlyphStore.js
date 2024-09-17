@@ -25,19 +25,6 @@ class CrispBitmapGlyphStore {
   }
 
   // method that de-structure a fontProperties object
-  // into an array [fontFamily, fontStyle, fontWeight, fontSize]
-  destructureFontPropsFamily2Size(fontProperties) {
-    const {
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    return [fontFamily, fontStyle, fontWeight, fontSize];
-  }
-
-
-  // method that de-structure a fontProperties object
   // into an array [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
   destructureFontPropsDensity2Size(fontProperties) {
     const {
