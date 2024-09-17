@@ -25,7 +25,7 @@ class Specs {
       fontStyle,
       fontWeight,
       fontSize,
-      pixelDensity = PIXEL_DENSITY
+      pixelDensity
     } = fontProperties;
 
     if (!this.specCombinationExists(fontProperties, correctionKey)) {

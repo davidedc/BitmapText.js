@@ -24,98 +24,53 @@ class CrispBitmapGlyphStore {
     };
   }
 
-  getKerningTable(fontProperties) {
+  // method that de-structure a fontProperties object
+  // into an array [fontFamily, fontStyle, fontWeight, fontSize]
+  destructureFontPropsFamily2Size(fontProperties) {
     const {
-      pixelDensity = PIXEL_DENSITY,
       fontFamily,
       fontStyle,
       fontWeight,
       fontSize
     } = fontProperties;
-    ensureNestedPropertiesExist(this.kerningTables, [
+    return [fontFamily, fontStyle, fontWeight, fontSize];
+  }
+
+
+  // method that de-structure a fontProperties object
+  // into an array [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
+  destructureFontPropsDensity2Size(fontProperties) {
+    const {
       pixelDensity,
       fontFamily,
       fontStyle,
       fontWeight,
       fontSize
-    ]);
-    return getNestedProperty(this.kerningTables, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ]);
+    } = fontProperties;
+    return [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize];
+  }
+
+  getKerningTable(fontProperties) {
+    ensureNestedPropertiesExist(this.kerningTables, this.destructureFontPropsDensity2Size(fontProperties));
+    return getNestedProperty(this.kerningTables, this.destructureFontPropsDensity2Size(fontProperties));
   }
 
   setKerningTable(fontProperties, kerningTable) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    setNestedProperty(this.kerningTables, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ], kerningTable);
+    setNestedProperty(this.kerningTables,this.destructureFontPropsDensity2Size(fontProperties), kerningTable);
   }
   
   getGlyphsSheet(fontProperties) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    ensureNestedPropertiesExist(this.glyphsSheets, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ]);
-    return getNestedProperty(this.glyphsSheets, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ]);
+    ensureNestedPropertiesExist(this.glyphsSheets,this.destructureFontPropsDensity2Size(fontProperties));
+    return getNestedProperty(this.glyphsSheets,this.destructureFontPropsDensity2Size(fontProperties));
   }
 
   setGlyphsSheet(fontProperties, glyphsSheet) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    setNestedProperty(this.glyphsSheets, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ], glyphsSheet);
+    setNestedProperty(this.glyphsSheets,this.destructureFontPropsDensity2Size(fontProperties), glyphsSheet);
   }
 
   // return an object with xInGlyphSheet, tightWidth, tightHeight, dx, dy
   getGlyphsSheetMetrics(fontProperties, letter) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    const address = [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter];
+    const address = this.destructureFontPropsDensity2Size(fontProperties).concat(letter);
     const glyphsSheetsMetrics = this.glyphsSheetsMetrics;
     return {
       xInGlyphSheet: getNestedProperty(glyphsSheetsMetrics.xInGlyphSheet, address),
@@ -127,110 +82,30 @@ class CrispBitmapGlyphStore {
   }
 
   setGlyphsSheetMetrics(fontProperties, metrics) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
     const glyphsSheetsMetrics = this.glyphsSheetsMetrics;
     for (const metricKey in metrics) {
-      setNestedProperty(glyphsSheetsMetrics[metricKey], [
-        pixelDensity,
-        fontFamily,
-        fontStyle,
-        fontWeight,
-        fontSize
-      ], metrics[metricKey]);
+      setNestedProperty(glyphsSheetsMetrics[metricKey],this.destructureFontPropsDensity2Size(fontProperties), metrics[metricKey]);
     }
   }
 
   getGlyphsTextMetrics(fontProperties, letter) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    return getNestedProperty(this.glyphsTextMetrics, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize,
-      letter
-    ]);
+    return getNestedProperty(this.glyphsTextMetrics, this.destructureFontPropsDensity2Size(fontProperties).concat(letter));
   }
 
   setGlyphsTextMetrics(fontProperties, metrics) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    setNestedProperty(this.glyphsTextMetrics, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ], metrics);
+    setNestedProperty(this.glyphsTextMetrics,this.destructureFontPropsDensity2Size(fontProperties), metrics);
   }
 
   setGlyphTextMetrics(fontProperties, letter, metrics) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    setNestedProperty(this.glyphsTextMetrics, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize,
-      letter
-    ], metrics);
+    setNestedProperty(this.glyphsTextMetrics, this.destructureFontPropsDensity2Size(fontProperties).concat(letter), metrics);
   }
 
   getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    return getNestedProperty(this.spaceAdvancementOverrideForSmallSizesInPx, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ]);
+    return getNestedProperty(this.spaceAdvancementOverrideForSmallSizesInPx, this.destructureFontPropsDensity2Size(fontProperties));
   }
 
   setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    setNestedProperty(this.spaceAdvancementOverrideForSmallSizesInPx, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ], spaceAdvancementOverrideForSmallSizesInPx);
+    setNestedProperty(this.spaceAdvancementOverrideForSmallSizesInPx, this.destructureFontPropsDensity2Size(fontProperties), spaceAdvancementOverrideForSmallSizesInPx);
   }
 
 }

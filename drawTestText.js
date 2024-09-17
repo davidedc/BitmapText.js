@@ -39,7 +39,7 @@ function measureMultilineText(lines, measureTextFn) {
 }
 
 function setupCanvas(ctx, fontProperties) {
-  const { pixelDensity = PIXEL_DENSITY } = fontProperties;
+  const pixelDensity = fontProperties.pixelDensity;
   ctx.scale(pixelDensity, pixelDensity);
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, ctx.canvas.width / pixelDensity, ctx.canvas.height / pixelDensity);
@@ -199,8 +199,7 @@ function stdDrawCrispThinLines(measures, testCopyLines, fontProperties) {
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
   setupCanvas(ctx, fontProperties);
-  const { pixelDensity = PIXEL_DENSITY } = fontProperties;
-  ctx.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas.height / pixelDensity - 1);
+  ctx.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas.height / fontProperties.pixelDensity - 1);
 }
 
 function stdDrawCrispText(measures, testCopyLines, fontProperties) {
@@ -221,7 +220,7 @@ function drawGlyphSheet(crispBitmapGlyphStore, fontProperties) {
 }
 
 function addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber) {
-  const { fontFamily, fontStyle, fontWeight, fontSize, pixelDensity = PIXEL_DENSITY } = fontProperties;
+  const { fontFamily, fontStyle, fontWeight, fontSize, pixelDensity } = fontProperties;
   const crispTextHashString = ctx.getHashString();
   const hashKey = `fontFamily ${fontFamily} // fontStyle ${fontStyle} // fontWeight ${fontWeight} // fontSize ${fontSize} // testCopyChoiceNumber ${testCopyChoiceNumber} // pixelDensity ${pixelDensity}`;
   thisRunsHashes[hashKey] = crispTextHashString;

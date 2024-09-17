@@ -13,6 +13,7 @@ function buildKerningTableIfDoesntExist() {
     // if the kerning table for this font family, style, weight and size doesn't exist yet, generate it
 
     // first get the font family, style, weight, size
+    const pixelDensity = PIXEL_DENSITY;
     const fontFamily = fontFamilySelect.value;
     const fontStyle = fontStyleSelect.value;
     const fontWeight = fontWeightSelect.value;
@@ -22,7 +23,7 @@ function buildKerningTableIfDoesntExist() {
         fontSize = hoverFontSize;
     }
 
-    const properties = {PIXEL_DENSITY, fontFamily, fontStyle, fontWeight, fontSize};
+    const properties = {pixelDensity, fontFamily, fontStyle, fontWeight, fontSize};
  
     crispBitmapText_Full.buildKerningTableIfDoesntExist(properties);
 }

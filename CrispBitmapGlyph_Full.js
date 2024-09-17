@@ -31,7 +31,7 @@ class CrispBitmapGlyph_Full {
   }
 
   createCanvasWithLetter() {
-    const { fontFamily, fontStyle, fontWeight, fontSize } = this.fontProperties;
+    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = this.fontProperties;
     const canvas = document.createElement("canvas");
     // add the canvas to the page otherwise the
     // CSS font smoorhing properties are not applied
@@ -131,8 +131,6 @@ class CrispBitmapGlyph_Full {
     // END OF LETTER-LEVEL RENDERING CORRECTIONS
     /////////////////////////////////////////////
 
-    const { pixelDensity = PIXEL_DENSITY } = this.fontProperties;
-
     // Happens at small sizes due to a browser rendering defect.
     // This correction will simply paint the letter
     // n pixel more to the right in the mini canvas
@@ -190,7 +188,6 @@ class CrispBitmapGlyph_Full {
 
   getBoundingBoxOfOnPixels(canvas) {
     // get the image data, and from it get the tight bounding box of the letter/text
-    const { pixelDensity = PIXEL_DENSITY } = this.fontProperties;
     const onPixelsArray = this.getOnPixelsArray(canvas);
     const tightCanvasBox = this.getBoundingBox(canvas, onPixelsArray);
 
@@ -219,9 +216,9 @@ class CrispBitmapGlyph_Full {
 
     const tightCanvasPixelsWidth =
       tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x +
-      1 * pixelDensity;
+      1 * this.fontProperties.pixelDensity;
     tightCanvas.style.width =
-      tightCanvasPixelsWidth / pixelDensity + "px";
+      tightCanvasPixelsWidth / this.fontProperties.pixelDensity + "px";
     tightCanvas.width = tightCanvasPixelsWidth;
 
     // Always add one to these coordinatest subtractions!
@@ -229,9 +226,9 @@ class CrispBitmapGlyph_Full {
     // then the height of the tight canvas is 15 - 5 + 1 = 11
     const tightCanvasPixelsHeight =
       tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y +
-      1 * pixelDensity;
+      1 * this.fontProperties.pixelDensity;
     tightCanvas.style.height =
-      tightCanvasPixelsHeight / pixelDensity + "px";
+      tightCanvasPixelsHeight / this.fontProperties.pixelDensity + "px";
     tightCanvas.height = tightCanvasPixelsHeight;
 
     // This one is a distance so you have to subtract 1
@@ -239,7 +236,7 @@ class CrispBitmapGlyph_Full {
     // is 5 (which means it's on the SIXTH pixel down from the top), then
     // the distance between the bottom of the canvas and the bottom of the tight canvas box is 15 - 5 - 1 = 9
     tightCanvas.distanceBetweenBottomAndBottomOfCanvas =
-      canvas.height - tightCanvasBox.bottomRightCorner.y - 1 * pixelDensity;
+      canvas.height - tightCanvasBox.bottomRightCorner.y - 1 * this.fontProperties.pixelDensity;
 
     const tightCanvasBoxCtx = tightCanvas.getContext("2d");
     tightCanvasBoxCtx.drawImage(
@@ -270,14 +267,12 @@ class CrispBitmapGlyph_Full {
         letterTextMetrics
       };
 
-    const { pixelDensity = PIXEL_DENSITY } = this.fontProperties;
-
     const div = document.createElement("div");
     div.textContent = `tightCanvasBox width in px, phys: ${
       tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x
     } css: ${
       (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) /
-      pixelDensity
+      this.fontProperties.pixelDensity
     }`;
     document.body.appendChild(div);
 

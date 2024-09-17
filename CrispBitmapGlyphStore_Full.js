@@ -24,69 +24,24 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
   }
 
   kerningTableExists(fontProperties) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    return checkNestedPropertiesExist(this.kerningTables, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ]);
+    return checkNestedPropertiesExist(this.kerningTables,this.destructureFontPropsDensity2Size(fontProperties));
   }
 
   setKerningTable(fontProperties, kerningTable) {
-    const {
-      pixelDensity = PIXEL_DENSITY,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    setNestedProperty(this.kerningTables, [
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ], kerningTable);
+    setNestedProperty(this.kerningTables,this.destructureFontPropsDensity2Size(fontProperties), kerningTable);
   }
 
 
 
   addGlyph(glyph) {
-    setNestedProperty(this.glyphs, [
-      glyph.fontProperties.fontFamily,
-      glyph.fontProperties.fontStyle,
-      glyph.fontProperties.fontWeight,
-      glyph.fontProperties.fontSize,
-      glyph.letter
-    ], glyph);
+    setNestedProperty(this.glyphs, this.destructureFontPropsFamily2Size(glyph.fontProperties).concat(glyph.letter), glyph);
     // glyphsSheets is actually part of the narrower CrispBitmapGlyphStore class
     // however we also need it here in the Full class for construction of things.
-    ensureNestedPropertiesExist(this.glyphsSheets, [
-      PIXEL_DENSITY,
-      glyph.fontProperties.fontFamily,
-      glyph.fontProperties.fontStyle,
-      glyph.fontProperties.fontWeight,
-      glyph.fontProperties.fontSize
-    ]);
+    ensureNestedPropertiesExist(this.glyphsSheets, this.destructureFontPropsDensity2Size(glyph.fontProperties));
   }
 
   getGlyph(fontProperties, letter) {
-    const { fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
-    return getNestedProperty(this.glyphs, [
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize,
-      letter
-    ]);
+    return getNestedProperty(this.glyphs, this.destructureFontPropsFamily2Size(fontProperties).concat(letter));
   }
 
   // Get a canvas with all the glyphs of a certain font family, font size and font style
@@ -95,19 +50,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
   // 3. draw each glyph in the canvas
   buildGlyphsSheet(fontProperties) {
-    const {
-      fontFamily,
-      fontSize,
-      fontStyle,
-      fontWeight,
-      pixelDensity = PIXEL_DENSITY
-    } = fontProperties;
-    const glyphs = getNestedProperty(this.glyphs, [
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    ]);
+    const glyphs = getNestedProperty(this.glyphs, this.destructureFontPropsFamily2Size(fontProperties));
     if (!glyphs) return null;
 
     let fittingWidth = 0;
@@ -115,11 +58,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      let letterTextMetrics = getNestedProperty(
-        this.glyphsTextMetrics,
-        [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-      );
-
+      let letterTextMetrics = getNestedProperty(this.glyphsTextMetrics, this.destructureFontPropsDensity2Size(fontProperties).concat(letter));
 
       // the width is calculated from the glyph.tightCanvasBox
       // example: bottomRightCorner: {x: 40, y: 71}
@@ -139,34 +78,18 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
       const tightWidth =
         glyph.tightCanvasBox.bottomRightCorner.x -
         glyph.tightCanvasBox.topLeftCorner.x +
-        1 * pixelDensity;
+        1 * fontProperties.pixelDensity;
       const tightHeight =
         glyph.tightCanvasBox.bottomRightCorner.y -
         glyph.tightCanvasBox.topLeftCorner.y +
-        1 * pixelDensity;
-      setNestedProperty(
-        this.glyphsSheetsMetrics.tightWidth,
-        [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter],
-        tightWidth
-      );
-      setNestedProperty(
-        this.glyphsSheetsMetrics.tightHeight,
-        [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter],
-        tightHeight
-      );
+        1 * fontProperties.pixelDensity;
+      setNestedProperty( this.glyphsSheetsMetrics.tightWidth, this.destructureFontPropsDensity2Size(fontProperties).concat(letter), tightWidth);
+      setNestedProperty( this.glyphsSheetsMetrics.tightHeight, this.destructureFontPropsDensity2Size(fontProperties).concat(letter), tightHeight);
 
-      const dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
-      const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * pixelDensity;
-      setNestedProperty(
-        this.glyphsSheetsMetrics.dx,
-        [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter],
-        dx
-      );
-      setNestedProperty(
-        this.glyphsSheetsMetrics.dy,
-        [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter],
-        dy
-      );
+      const dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
+      const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
+      setNestedProperty( this.glyphsSheetsMetrics.dx, this.destructureFontPropsDensity2Size(fontProperties).concat(letter), dx);
+      setNestedProperty( this.glyphsSheetsMetrics.dy, this.destructureFontPropsDensity2Size(fontProperties).concat(letter), dy);
 
       if (!isNaN(tightWidth)) fittingWidth += tightWidth;
       if (tightHeight > maxHeight) maxHeight = tightHeight;
@@ -180,25 +103,18 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      const tightWidth = getNestedProperty(
-        this.glyphsSheetsMetrics.tightWidth,
-        [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-      );
+      const tightWidth = getNestedProperty( this.glyphsSheetsMetrics.tightWidth, this.destructureFontPropsDensity2Size(fontProperties).concat(letter));
       // if there is no glyph.tightCanvas, then just continue
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
         if (!tightWidth)
-          console.warn(`glyph ${fontStyle} ${fontWeight} ${fontFamily} ${fontSize} ${letter} has no tightWidth[pixelDensity]`);
+          console.warn(`glyph ${fontProperties.fontStyle} ${fontProperties.fontWeight} ${fontProperties.fontFamily} ${fontProperties.fontSize} ${letter} has no tightWidth[fontProperties.pixelDensity]`);
         if (!glyph.tightCanvas)
-          console.warn(`glyph ${fontStyle} ${fontWeight} ${fontFamily} ${fontSize} ${letter} has no tightCanvas`);
+          console.warn(`glyph ${fontProperties.fontStyle} ${fontProperties.fontWeight} ${fontProperties.fontFamily} ${fontProperties.fontSize} ${letter} has no tightCanvas`);
         continue;
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
 
-      setNestedProperty(
-        this.glyphsSheetsMetrics.xInGlyphSheet,
-        [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter],
-        x
-      );
+      setNestedProperty( this.glyphsSheetsMetrics.xInGlyphSheet, this.destructureFontPropsDensity2Size(fontProperties).concat(letter), x);
 
       x += tightWidth;
     }
@@ -210,7 +126,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
     // amount of time to process the data and make it available for rendering.
     // This processing time is typically very brief, but if you try it here, you'll get frequent
     // failures to paint the letters from this image.
-    this.glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight][fontSize] = canvas;
+    setNestedProperty(this.glyphsSheets, this.destructureFontPropsDensity2Size(fontProperties), canvas);
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.
