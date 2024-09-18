@@ -8,9 +8,9 @@
 
 let loadedScripts = 0;
 
-// TODO bitmapFontsData should be called something different, as this is really the data loaded from the JS files
+// TODO loadedBitmapFontData should be called something different, as this is really the data loaded from the JS files
 // which is then processed, put in the crispBitmapGlyphStore and then deleted
-let bitmapFontsData;
+let loadedBitmapFontData;
 
 function bitmapFontJsOrImageLoaded() {
   // If all the scripts/images have been loaded, call the buildAndShowGlyphs function
@@ -20,7 +20,7 @@ function bitmapFontJsOrImageLoaded() {
   if (loadedScripts === bitmapFontsManifest.files.length * 2) {
     console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
     startTiming('ingestingFontData');
-    ingestBitmapFontsData();
+    ingestLoadedBitmapFontData();
   }
 }
 
@@ -133,7 +133,7 @@ else {
   loadSheetsFromPNGs();
 }
 
-function ingestBitmapFontsData() {
+function ingestLoadedBitmapFontData() {
   crispBitmapGlyphStore.glyphsSheetsMetrics = {
     tightWidth: {},
     tightHeight: {},
@@ -141,7 +141,7 @@ function ingestBitmapFontsData() {
     dy: {},
     xInGlyphSheet: {}
   };
-  for (const key in bitmapFontsData) {
+  for (const key in loadedBitmapFontData) {
     if (key.startsWith('glyphs_sheet_density_')) {
       const parts = key.split('_');
       const fontProperties = {
@@ -152,30 +152,30 @@ function ingestBitmapFontsData() {
         fontSize: parts[10]
       };
 
-      // Put the bitmapFontsData "kerningTable" in the crispBitmapGlyphStore "kerningTables"
-      crispBitmapGlyphStore.setKerningTable(fontProperties, bitmapFontsData[key].kerningTable);
+      // Put the loadedBitmapFontData "kerningTable" in the crispBitmapGlyphStore "kerningTables"
+      crispBitmapGlyphStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
 
-      // Put the bitmapFontsData "glyphsSheetMetrics" in the crispBitmapGlyphStore "glyphsSheetsMetrics"
-      crispBitmapGlyphStore.setGlyphsTextMetrics(fontProperties, bitmapFontsData[key].glyphsTextMetrics);
+      // Put the loadedBitmapFontData "glyphsSheetMetrics" in the crispBitmapGlyphStore "glyphsSheetsMetrics"
+      crispBitmapGlyphStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
 
       // Same for glyphsSheetsMetrics
-      const metrics = bitmapFontsData[key].glyphsSheetsMetrics;
+      const metrics = loadedBitmapFontData[key].glyphsSheetsMetrics;
       crispBitmapGlyphStore.setGlyphsSheetMetrics(fontProperties, metrics);
 
       // Same for spaceAdvancementOverrideForSmallSizesInPx
-      crispBitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, bitmapFontsData[key].spaceAdvancementOverrideForSmallSizesInPx);
+      crispBitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
 
       // Remove the script element from the document
       let script = document.querySelector(`script[src="bitmap-fonts-data/${key.replace(/_/g, '-')}.js"]`);
       script.remove();
 
-      // Remove the bitmapFontsData entry
-      delete bitmapFontsData[key];
+      // Remove the loadedBitmapFontData entry
+      delete loadedBitmapFontData[key];
     }
   }
 
   // Clean up global variables
-  delete window.bitmapFontsData;
+  delete window.loadedBitmapFontData;
 
   // remove the script tag with the manifest
   let manifestScript = document.querySelector('script[src="bitmap-fonts-data/manifest.js"]');

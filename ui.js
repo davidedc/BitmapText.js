@@ -154,7 +154,7 @@ function setupGlyphUI() {
             glyphsSheetsMetrics.xInGlyphSheet = crispBitmapGlyphStore.glyphsSheetsMetrics.xInGlyphSheet[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
 
             // save all the data in a JSON file with the same name as the png file
-            folder.file(fileName + '.js', "(bitmapFontsData ??= {})." + fileName.replace(/-/g, '_') + " = " + JSON.stringify({
+            folder.file(fileName + '.js', "(loadedBitmapFontData ??= {})." + fileName.replace(/-/g, '_') + " = " + JSON.stringify({
                 kerningTable,
                 glyphsTextMetrics,
                 spaceAdvancementOverrideForSmallSizesInPx,
