@@ -75,7 +75,7 @@ function getTestCopyChoiceAndText() {
   return { testCopy: '', testCopyChoiceNumber: 0 };
 }
 
-function drawTestText(fontProperties, crispBitmapGlyphStore_Full) {
+function drawTestText(fontProperties, bitmapGlyphStore_Full) {
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
   const fontString = getFontString(fontProperties);
@@ -108,33 +108,33 @@ function drawTestText(fontProperties, crispBitmapGlyphStore_Full) {
   console.log(`crispTestCopyMeasures_CSS_Px.width: ${crispMeasures.width}`);
   console.log(`crispTestCopyMeasures_CSS_Px.height: ${crispMeasures.height}`);
 
-  // Measurements with CrispBitmapText_Full
-  // now do the measurements, generation of glyphs sheet and rendering of text with the CrispBitmapText_Full class
+  // Measurements with BitmapText_Full
+  // now do the measurements, generation of glyphs sheet and rendering of text with the BitmapText_Full class
   // note how this one doesn't need a canvas
-  const measureTextCrispBitmap_Full = text => crispBitmapText_Full.measureText(text, fontProperties);
+  const measureTextCrispBitmap_Full = text => bitmapText_Full.measureText(text, fontProperties);
   const linesMeasures_CSS_Px_Full = measureMultilineText(testCopyLines, measureTextCrispBitmap_Full);
   // generating the glyphs sheet with the full class is necessary to then being able to draw the text with the "normal" class
-  drawGlyphSheet(crispBitmapGlyphStore_Full, fontProperties);
+  drawGlyphSheet(bitmapGlyphStore_Full, fontProperties);
   // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
-  bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, crispBitmapText_Full, fontProperties, testCopyChoiceNumber);
+  bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, bitmapText_Full, fontProperties, testCopyChoiceNumber);
 }
 
-function drawTestText_withStandardClass(fontProperties, crispBitmapGlyphStore) {
+function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
 
   // this is going to be the class that is going to be used to render the text
   // outside of the editor.
-  const crispBitmapText = new CrispBitmapText(crispBitmapGlyphStore);
+  const bitmapText = new BitmapText(bitmapGlyphStore);
 
-  // Measure and draw with CrispBitmapText
-  // do the measurements and drawing with the CrispBitmapText "normal" class
+  // Measure and draw with BitmapText
+  // do the measurements and drawing with the BitmapText "normal" class
   // note how also this one doesn't need a canvas
-  startTiming('crispBitmapText measureText multiline');
-  const measureTextCrispBitmap = text => crispBitmapText.measureText(text, fontProperties);
+  startTiming('bitmapText measureText multiline');
+  const measureTextCrispBitmap = text => bitmapText.measureText(text, fontProperties);
   const linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
-  console.log(`⏱️ crispBitmapText measureText multiline ${stopTiming('crispBitmapText measureText multiline')} milliseconds`);
-  bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, crispBitmapText, fontProperties, testCopyChoiceNumber);
+  console.log(`⏱️ bitmapText measureText multiline ${stopTiming('bitmapText measureText multiline')} milliseconds`);
+  bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
 
   addElementToDOM(document.createElement('br'));
   stdDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontProperties);
@@ -142,7 +142,7 @@ function drawTestText_withStandardClass(fontProperties, crispBitmapGlyphStore) {
   stdDrawSmoothText(linesMeasures_CSS_Px, testCopyLines, fontProperties);
 }
 
-function bitmapDrawCrispText(linesMeasures, testCopyLines, crispBitmapText, fontProperties, testCopyChoiceNumber) {
+function bitmapDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing:'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
@@ -156,13 +156,13 @@ function bitmapDrawCrispText(linesMeasures, testCopyLines, crispBitmapText, font
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    crispBitmapText.drawText(ctx, line, 0, yPosition, fontProperties);
+    bitmapText.drawText(ctx, line, 0, yPosition, fontProperties);
   });
 
   addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber);
 }
 
-function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, crispBitmapText, fontProperties, testCopyChoiceNumber) {
+function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing from glyphs sheet:'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
@@ -173,7 +173,7 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, crispBitma
   startTiming('drawTestText via glyphs sheet');
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    crispBitmapText.drawTextFromGlyphSheet(ctx, line, 0, yPosition, fontProperties);
+    bitmapText.drawTextFromGlyphSheet(ctx, line, 0, yPosition, fontProperties);
   });
   console.log(`⏱️ drawTestText via glyphs sheet ${stopTiming('drawTestText via glyphs sheet')} milliseconds`);
 
@@ -213,9 +213,9 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   addElementToDOM(createDivWithText(`hash: ${ctx.getHashString()}`));
 }
 
-function drawGlyphSheet(crispBitmapGlyphStore, fontProperties) {
+function drawGlyphSheet(bitmapGlyphStore, fontProperties) {
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
-  const canvas = crispBitmapGlyphStore.buildGlyphsSheet(fontProperties);
+  const canvas = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
   addElementToDOM(canvas);
 }
 

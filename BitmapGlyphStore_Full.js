@@ -1,6 +1,6 @@
-// a class to store all the crispBitmapGlyph_Fulls
+// a class to store all the BitmapGlyph_Full objects
 // so that we can retrieve them by font family, font size and letter
-class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
+class BitmapGlyphStore_Full extends BitmapGlyphStore {
   constructor() {
     super();
     // these objects contain all kinds of other
@@ -9,8 +9,8 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
     this.glyphs = {};
   }
 
-  extractCrispBitmapGlyphStoreInstance() {
-    const instance = new CrispBitmapGlyphStore();
+  extractBitmapGlyphStoreInstance() {
+    const instance = new BitmapGlyphStore();
     instance.kerningTables = this.kerningTables;
     instance.glyphsTextMetrics = this.glyphsTextMetrics;
     instance.spaceAdvancementOverrideForSmallSizesInPx = this.spaceAdvancementOverrideForSmallSizesInPx;
@@ -35,7 +35,7 @@ class CrispBitmapGlyphStore_Full extends CrispBitmapGlyphStore {
 
   addGlyph(glyph) {
     setNestedProperty(this.glyphs, this.destructureFontPropsDensity2Size(glyph.fontProperties).concat(glyph.letter), glyph);
-    // glyphsSheets is actually part of the narrower CrispBitmapGlyphStore class
+    // glyphsSheets is actually part of the narrower BitmapGlyphStore class
     // however we also need it here in the Full class for construction of things.
     ensureNestedPropertiesExist(this.glyphsSheets, this.destructureFontPropsDensity2Size(glyph.fontProperties));
   }

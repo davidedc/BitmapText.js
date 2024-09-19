@@ -9,7 +9,7 @@
 let loadedScripts = 0;
 
 // TODO loadedBitmapFontData should be called something different, as this is really the data loaded from the JS files
-// which is then processed, put in the crispBitmapGlyphStore and then deleted
+// which is then processed, put in the bitmapGlyphStore and then deleted
 let loadedBitmapFontData;
 
 function bitmapFontJsOrImageLoaded() {
@@ -49,8 +49,8 @@ function loadSheetsFromPNGs() {
         fontSize: parts[10]
       };
 
-      // Add the canvas to the crispBitmapGlyphStore
-      crispBitmapGlyphStore.setGlyphsSheet(fontProperties, img);
+      // Add the canvas to the bitmapGlyphStore
+      bitmapGlyphStore.setGlyphsSheet(fontProperties, img);
 
       bitmapFontJsOrImageLoaded();
     };
@@ -106,8 +106,8 @@ function loadSheetsFromJSs() {
             fontSize: parts[10]
           };
 
-          // Add the canvas to the crispBitmapGlyphStore
-          crispBitmapGlyphStore.setGlyphsSheet(fontProperties, img);
+          // Add the canvas to the bitmapGlyphStore
+          bitmapGlyphStore.setGlyphsSheet(fontProperties, img);
           bitmapFontJsOrImageLoaded();
         };
       };
@@ -134,7 +134,7 @@ else {
 }
 
 function ingestLoadedBitmapFontData() {
-  crispBitmapGlyphStore.glyphsSheetsMetrics = {
+  bitmapGlyphStore.glyphsSheetsMetrics = {
     tightWidth: {},
     tightHeight: {},
     dx: {},
@@ -152,18 +152,18 @@ function ingestLoadedBitmapFontData() {
         fontSize: parts[10]
       };
 
-      // Put the loadedBitmapFontData "kerningTable" in the crispBitmapGlyphStore "kerningTables"
-      crispBitmapGlyphStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
+      // Put the loadedBitmapFontData "kerningTable" in the bitmapGlyphStore "kerningTables"
+      bitmapGlyphStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
 
-      // Put the loadedBitmapFontData "glyphsSheetMetrics" in the crispBitmapGlyphStore "glyphsSheetsMetrics"
-      crispBitmapGlyphStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
+      // Put the loadedBitmapFontData "glyphsSheetMetrics" in the bitmapGlyphStore "glyphsSheetsMetrics"
+      bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
 
       // Same for glyphsSheetsMetrics
       const metrics = loadedBitmapFontData[key].glyphsSheetsMetrics;
-      crispBitmapGlyphStore.setGlyphsSheetMetrics(fontProperties, metrics);
+      bitmapGlyphStore.setGlyphsSheetMetrics(fontProperties, metrics);
 
       // Same for spaceAdvancementOverrideForSmallSizesInPx
-      crispBitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
+      bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
 
       // Remove the script element from the document
       let script = document.querySelector(`script[src="bitmap-fonts-data/${key.replace(/_/g, '-')}.js"]`);
@@ -199,6 +199,6 @@ function ingestLoadedBitmapFontData() {
     fontWeight: "normal",
     pixelDensity: 1
   };
-  drawTestText_withStandardClass(fontProperties, crispBitmapGlyphStore);
+  drawTestText_withStandardClass(fontProperties, bitmapGlyphStore);
   console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
 }

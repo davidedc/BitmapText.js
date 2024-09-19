@@ -25,7 +25,7 @@ function buildKerningTableIfDoesntExist() {
 
     const properties = {pixelDensity, fontFamily, fontStyle, fontWeight, fontSize};
  
-    crispBitmapText_Full.buildKerningTableIfDoesntExist(properties);
+    bitmapText_Full.buildKerningTableIfDoesntExist(properties);
 }
 
 // Helper function to create and append elements
@@ -106,8 +106,8 @@ function setupGlyphUI() {
         // for this font family, style, weight and all sizes
         const zip = new JSZip();
         const folder = zip.folder("glyphsSheets");
-        const crispBitmapGlyphStore = crispBitmapGlyphStore_Full.extractCrispBitmapGlyphStoreInstance();
-        const glyphsSheets = crispBitmapGlyphStore.glyphsSheets;
+        const bitmapGlyphStore = bitmapGlyphStore_Full.extractBitmapGlyphStoreInstance();
+        const glyphsSheets = bitmapGlyphStore.glyphsSheets;
         const fontFamily = fontFamilySelect.value;
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;
@@ -128,7 +128,7 @@ function setupGlyphUI() {
             fileName = fileName.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-');
             folder.file(fileName + '.png', data, { base64: true });
 
-            // navigate through the crispBitmapGlyphStore, which contains:
+            // navigate through the bitmapGlyphStore, which contains:
             //   kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
             //   glyphsTextMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
             //   spaceAdvancementOverrideForSmallSizesInPx = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
@@ -143,15 +143,15 @@ function setupGlyphUI() {
             //   };
             // and filter all the objects that are relevant to the current PIXEL_DENSITY, font family, style, weight and size
             // and save them in a JSON file
-            const kerningTable = crispBitmapGlyphStore.kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            const glyphsTextMetrics = crispBitmapGlyphStore.glyphsTextMetrics[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            const spaceAdvancementOverrideForSmallSizesInPx = crispBitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const kerningTable = bitmapGlyphStore.kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const glyphsTextMetrics = bitmapGlyphStore.glyphsTextMetrics[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const spaceAdvancementOverrideForSmallSizesInPx = bitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
             const glyphsSheetsMetrics = {};
-            glyphsSheetsMetrics.tightWidth = crispBitmapGlyphStore.glyphsSheetsMetrics.tightWidth[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.tightHeight = crispBitmapGlyphStore.glyphsSheetsMetrics.tightHeight[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.dx = crispBitmapGlyphStore.glyphsSheetsMetrics.dx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.dy = crispBitmapGlyphStore.glyphsSheetsMetrics.dy[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.xInGlyphSheet = crispBitmapGlyphStore.glyphsSheetsMetrics.xInGlyphSheet[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.tightWidth = bitmapGlyphStore.glyphsSheetsMetrics.tightWidth[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.tightHeight = bitmapGlyphStore.glyphsSheetsMetrics.tightHeight[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.dx = bitmapGlyphStore.glyphsSheetsMetrics.dx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.dy = bitmapGlyphStore.glyphsSheetsMetrics.dy[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.xInGlyphSheet = bitmapGlyphStore.glyphsSheetsMetrics.xInGlyphSheet[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
 
             // save all the data in a JSON file with the same name as the png file
             folder.file(fileName + '.js', "(loadedBitmapFontData ??= {})." + fileName.replace(/-/g, '_') + " = " + JSON.stringify({

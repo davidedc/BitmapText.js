@@ -1,9 +1,9 @@
-// a class constructed with a CrispBitmapGlyphStore_Full
+// a class constructed with a BitmapGlyphStore_Full
 // has a method to draw text on a canvas
-// the text is drawn by looking up the glyphs in the CrispBitmapGlyphStore_Full
+// the text is drawn by looking up the glyphs in the BitmapGlyphStore_Full
 // and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
 // the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
-class CrispBitmapText_Full extends CrispBitmapText {
+class BitmapText_Full extends BitmapText {
 
   hasLotsOfSpaceAtBottomRight(letter) {
     return ['V', '7', '/', 'T', 'Y'].indexOf(letter) !== -1;

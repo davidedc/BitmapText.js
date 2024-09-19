@@ -1,4 +1,4 @@
-class CrispBitmapGlyph_Full {
+class BitmapGlyph_Full {
   constructor(letter, fontProperties) {
     this.letter = letter;
     this.fontProperties = fontProperties;
@@ -13,9 +13,9 @@ class CrispBitmapGlyph_Full {
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
 
-    // glyphsTextMetrics actually belongs to the base class crispBitmapGlyphStore
-    // which underlies the CrispBitmapGlyphStore_Full clas
-    crispBitmapGlyphStore_Full.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
+    // glyphsTextMetrics actually belongs to the base class bitmapGlyphStore
+    // which underlies the BitmapGlyphStore_Full clas
+    bitmapGlyphStore_Full.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
 
     this.displayCanvasesAndData();
   }

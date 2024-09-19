@@ -1,6 +1,6 @@
 // A class to store all the glyph sheets and kerning tables
 // and the minimal set of info necessary to draw text.
-class CrispBitmapGlyphStore {
+class BitmapGlyphStore {
   constructor() {
     // Only use these three "compact" data structures in the measuring and drawing methods
     // "compact" means that they are the final data structures that are used to measure
