@@ -1,5 +1,5 @@
 // Globals
-let ENABLE_KERNING = true;
+let isKerningEnabled = true;
 let PIXEL_DENSITY = 0;
 let hoverFontSize = 19;
 let selectedFontSize = 19;
@@ -52,9 +52,9 @@ function setupGlyphUI() {
     // Add kerning checkbox
     const enableKerningCheckbox = createElement('input', 'enable-kerning-checkbox', null, selectorsDiv);
     enableKerningCheckbox.type = 'checkbox';
-    enableKerningCheckbox.checked = ENABLE_KERNING;
+    enableKerningCheckbox.checked = isKerningEnabled;
     enableKerningCheckbox.addEventListener('change', function() {
-        ENABLE_KERNING = this.checked;
+        isKerningEnabled = this.checked;
         updatePageContent();
     });
 
