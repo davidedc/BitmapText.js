@@ -4,7 +4,7 @@ let specs = null;
 const specsParser = new SpecsParser();
 
 function buildAndShowGlyphs() {
-  let fontSize;
+  let fontSize, pixelDensity;
 
   if (hoverFontSize !== null) {
     fontSize = hoverFontSize;
@@ -13,12 +13,11 @@ function buildAndShowGlyphs() {
     fontSize = selectedFontSize;
   }
 
-  // Set the PIXEL_DENSITY variable depending on the scale radio buttons
   if (document.getElementById('pixel-density-2-radio-button').checked) {
-    PIXEL_DENSITY = 2;
+    pixelDensity = 2;
   }
   else {
-    PIXEL_DENSITY = 1;
+    pixelDensity = 1;
   }
 
   // Create the fontProperties object
@@ -27,7 +26,7 @@ function buildAndShowGlyphs() {
     fontFamily: fontFamilySelect.value,
     fontStyle: fontStyleSelect.value,
     fontWeight: fontWeightSelect.value,
-    pixelDensity: PIXEL_DENSITY
+    pixelDensity
   };
 
   // If the contents of the specs textarea have changed, parse them, clear all the kerning tables and build

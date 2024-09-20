@@ -1,6 +1,5 @@
 // Globals
 let isKerningEnabled = true;
-let PIXEL_DENSITY = 0;
 let hoverFontSize = 19;
 let selectedFontSize = 19;
 let settingsTextarea = null;
@@ -12,8 +11,15 @@ let fontWeightSelect = null;
 function buildKerningTableIfDoesntExist() {
     // if the kerning table for this font family, style, weight and size doesn't exist yet, generate it
 
+    let pixelDensity;
+    if (document.getElementById('pixel-density-2-radio-button').checked) {
+        pixelDensity = 2;
+    }
+    else {
+        pixelDensity = 1;
+    }
+
     // first get the font family, style, weight, size
-    const pixelDensity = PIXEL_DENSITY;
     const fontFamily = fontFamilySelect.value;
     const fontStyle = fontStyleSelect.value;
     const fontWeight = fontWeightSelect.value;
@@ -108,23 +114,31 @@ function setupGlyphUI() {
         const folder = zip.folder("glyphsSheets");
         const bitmapGlyphStore = bitmapGlyphStore_Full.extractBitmapGlyphStoreInstance();
         const glyphsSheets = bitmapGlyphStore.glyphsSheets;
+        let pixelDensity;
+        if (document.getElementById('pixel-density-2-radio-button').checked) {
+            pixelDensity = 2;
+        }
+        else {
+            pixelDensity = 1;
+        }
+            
         const fontFamily = fontFamilySelect.value;
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;
-        const sizes = Object.keys(glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight]);
+        const sizes = Object.keys(glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight]);
         let files = [];
         sizes.forEach(size => {
             // if there is no entry for the current pixel density, then do nothing
-            if (!glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size]) {
+            if (!glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size]) {
                 return;
             }
 
-            const canvas = glyphsSheets[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const canvas = glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size];
             const dataUrl = canvas.toDataURL('image/png');
             const data = dataUrl.split(',')[1];
             // the filename is the font family, style, weight, size and pixel density, all lowercase, with
             // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
-            let fileName = 'glyphs-sheet-density-' + PIXEL_DENSITY + '-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size;
+            let fileName = 'glyphs-sheet-density-' + pixelDensity + '-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size;
             fileName = fileName.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-');
             folder.file(fileName + '.png', data, { base64: true });
 
@@ -141,17 +155,17 @@ function setupGlyphUI() {
             //     dy: {},
             //     xInGlyphSheet: {}
             //   };
-            // and filter all the objects that are relevant to the current PIXEL_DENSITY, font family, style, weight and size
+            // and filter all the objects that are relevant to the current pixelDensity, font family, style, weight and size
             // and save them in a JSON file
-            const kerningTable = bitmapGlyphStore.kerningTables[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            const glyphsTextMetrics = bitmapGlyphStore.glyphsTextMetrics[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            const spaceAdvancementOverrideForSmallSizesInPx = bitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            const kerningTable = bitmapGlyphStore.kerningTables[pixelDensity][fontFamily][fontStyle][fontWeight][size];
+            const glyphsTextMetrics = bitmapGlyphStore.glyphsTextMetrics[pixelDensity][fontFamily][fontStyle][fontWeight][size];
+            const spaceAdvancementOverrideForSmallSizesInPx = bitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx[pixelDensity][fontFamily][fontStyle][fontWeight][size];
             const glyphsSheetsMetrics = {};
-            glyphsSheetsMetrics.tightWidth = bitmapGlyphStore.glyphsSheetsMetrics.tightWidth[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.tightHeight = bitmapGlyphStore.glyphsSheetsMetrics.tightHeight[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.dx = bitmapGlyphStore.glyphsSheetsMetrics.dx[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.dy = bitmapGlyphStore.glyphsSheetsMetrics.dy[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
-            glyphsSheetsMetrics.xInGlyphSheet = bitmapGlyphStore.glyphsSheetsMetrics.xInGlyphSheet[PIXEL_DENSITY][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.tightWidth = bitmapGlyphStore.glyphsSheetsMetrics.tightWidth[pixelDensity][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.tightHeight = bitmapGlyphStore.glyphsSheetsMetrics.tightHeight[pixelDensity][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.dx = bitmapGlyphStore.glyphsSheetsMetrics.dx[pixelDensity][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.dy = bitmapGlyphStore.glyphsSheetsMetrics.dy[pixelDensity][fontFamily][fontStyle][fontWeight][size];
+            glyphsSheetsMetrics.xInGlyphSheet = bitmapGlyphStore.glyphsSheetsMetrics.xInGlyphSheet[pixelDensity][fontFamily][fontStyle][fontWeight][size];
 
             // save all the data in a JSON file with the same name as the png file
             folder.file(fileName + '.js', "(loadedBitmapFontData ??= {})." + fileName.replace(/-/g, '_') + " = " + JSON.stringify({

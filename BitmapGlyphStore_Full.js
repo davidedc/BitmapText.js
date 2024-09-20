@@ -69,12 +69,12 @@ class BitmapGlyphStore_Full extends BitmapGlyphStore {
       if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner)
         continue;
 
-      // Note that PIXEL_DENSITY can be an integer or a fractional number.
+      // Note that pixelDensity can be an integer or a fractional number.
       // In both cases, JavaScript will automatically convert the number to a string when using it as an object key.
-      // For example, if PIXEL_DENSITY is 2, the key will be "2", and if it's 1.5, the key will be "1.5".
+      // For example, if pixelDensity is 2, the key will be "2", and if it's 1.5, the key will be "1.5".
 
-      // you use 1 * PIXEL_DENSITY because it's always good to do things in increments of PIXEL_DENSITY
-      // so that everything remains divisible by PIXEL_DENSITY
+      // you use 1 * pixelDensity because it's always good to do things in increments of pixelDensity
+      // so that everything remains divisible by pixelDensity
       const tightWidth =
         glyph.tightCanvasBox.bottomRightCorner.x -
         glyph.tightCanvasBox.topLeftCorner.x +

@@ -165,7 +165,7 @@ class BitmapGlyph_Full {
     ctx.scale(pixelDensity, pixelDensity);
     // make the background white
     // ctx.fillStyle = 'white';
-    // ctx.fillRect(0, 0, canvas.width / PIXEL_DENSITY, canvas.height / PIXEL_DENSITY);
+    // ctx.fillRect(0, 0, canvas.width / pixelDensity, canvas.height / pixelDensity);
     // draw the text so that it fits in the canvas.
     // The chosen x,y is at the crossing of the first column and last row
     // of where any pixel can be drawn.
@@ -204,8 +204,8 @@ class BitmapGlyph_Full {
       return { tightCanvas: null, tightCanvasBox: null };
     }
 
-    // Note on why you multiply +1 and -1 by PIXEL_DENSITY: -----------------------
-    // it's a good idea to keep the physical pixels divisible by PIXEL_DENSITY
+    // Note on why you multiply +1 and -1 by pixelDensity: -----------------------
+    // it's a good idea to keep the physical pixels divisible by pixelDensity
     // just for purity reasons, and also in theory it should make the scaling down
     // of the canvas look better.
     // ----------------------------------------------------------------------------
