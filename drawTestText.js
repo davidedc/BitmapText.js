@@ -5,8 +5,15 @@ function getFontString({ fontStyle = '', fontWeight = '', fontSize, fontFamily }
 
 function createCanvas(width, height, pixelDensity) {
   const canvas = document.createElement('canvas');
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
+  
+  // normally you would not multiply the CSS width and height by pixelDensity
+  // because the whole purpose od pixel density is that you paing n times more pixels
+  // in the *same* space. But here we are doing it so we can see the actual individual
+  // pixels on my screen so I can screenshot them to diff them with some reference
+  // images.
+  canvas.style.width = `${width * pixelDensity}px`;
+  canvas.style.height = `${height * pixelDensity}px`;
+  
   canvas.width = width * pixelDensity;
   canvas.height = height * pixelDensity;
   return canvas;
