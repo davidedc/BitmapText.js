@@ -130,6 +130,6 @@ class BitmapGlyphStore_Full extends BitmapGlyphStore {
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.
-    return glyphsSheetsPNG;
+    return [glyphsSheetsPNG, ctx];
   }
 }

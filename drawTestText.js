@@ -215,8 +215,10 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
 
 function drawGlyphSheet(bitmapGlyphStore, fontProperties) {
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
-  const canvas = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
-  addElementToDOM(canvas);
+  const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
+  addElementToDOM(glyphSheetImage);
+  addElementToDOM(createDivWithText(`hash: ${glyphSheetCtx.getHashString()}`));
+  addElementToDOM(createDivWithText(`width: ${glyphSheetCtx.canvas.width} height: ${glyphSheetCtx.canvas.height}`));
 }
 
 function addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber) {
