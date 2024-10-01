@@ -78,11 +78,11 @@ class BitmapGlyphStore_Full extends BitmapGlyphStore {
       const tightWidth =
         glyph.tightCanvasBox.bottomRightCorner.x -
         glyph.tightCanvasBox.topLeftCorner.x +
-        1 * fontProperties.pixelDensity;
+        1;
       const tightHeight =
         glyph.tightCanvasBox.bottomRightCorner.y -
         glyph.tightCanvasBox.topLeftCorner.y +
-        1 * fontProperties.pixelDensity;
+        1;
       setNestedProperty( this.glyphsSheetsMetrics.tightWidth, this.getFontPropertiesArray(fontProperties).concat(letter), tightWidth);
       setNestedProperty( this.glyphsSheetsMetrics.tightHeight, this.getFontPropertiesArray(fontProperties).concat(letter), tightHeight);
 

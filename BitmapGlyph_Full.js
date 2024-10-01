@@ -216,7 +216,7 @@ class BitmapGlyph_Full {
 
     const tightCanvasPixelsWidth =
       tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x +
-      1 * this.fontProperties.pixelDensity;
+      1;
     tightCanvas.style.width =
       tightCanvasPixelsWidth / this.fontProperties.pixelDensity + "px";
     tightCanvas.width = tightCanvasPixelsWidth;
@@ -226,7 +226,7 @@ class BitmapGlyph_Full {
     // then the height of the tight canvas is 15 - 5 + 1 = 11
     const tightCanvasPixelsHeight =
       tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y +
-      1 * this.fontProperties.pixelDensity;
+      1;
     tightCanvas.style.height =
       tightCanvasPixelsHeight / this.fontProperties.pixelDensity + "px";
     tightCanvas.height = tightCanvasPixelsHeight;
@@ -236,7 +236,7 @@ class BitmapGlyph_Full {
     // is 5 (which means it's on the SIXTH pixel down from the top), then
     // the distance between the bottom of the canvas and the bottom of the tight canvas box is 15 - 5 - 1 = 9
     tightCanvas.distanceBetweenBottomAndBottomOfCanvas =
-      canvas.height - tightCanvasBox.bottomRightCorner.y - 1 * this.fontProperties.pixelDensity;
+      canvas.height - tightCanvasBox.bottomRightCorner.y - 1;
 
     const tightCanvasBoxCtx = tightCanvas.getContext("2d");
     tightCanvasBoxCtx.drawImage(
@@ -307,6 +307,11 @@ class BitmapGlyph_Full {
         }
       }
     }
+
+    // print out the letter, and the bounding box width and height
+    // if both objects are not null
+    if (topLeftCorner !== null && bottomRightCorner !== null)
+      console.log(this.letter + " " + (bottomRightCorner.x - topLeftCorner.x + 1) + " " + (bottomRightCorner.y - topLeftCorner.y + 1));
 
     // return the bounding box
     return {
