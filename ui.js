@@ -63,7 +63,6 @@ function setupGlyphUI() {
         isKerningEnabled = this.checked;
         updatePageContent();
     });
-
     createElement('label', null, 'Enable kerning', selectorsDiv).htmlFor = 'enable-kerning-checkbox';
 
     // Add additional UI elements
