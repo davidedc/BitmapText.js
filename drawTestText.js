@@ -167,6 +167,7 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
   });
 
   addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber);
+  addElementToDOM(document.createElement('br'));
 }
 
 function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
@@ -204,6 +205,8 @@ function stdDrawCrispThinLines(measures, testCopyLines, fontProperties) {
   const canvasHeight = Math.round(measures.height / testCopyLines.length);
   const canvas = createCanvas(Math.round(measures.width), canvasHeight, fontProperties.pixelDensity);
   addElementToDOM(canvas);
+  addElementToDOM(document.createElement('br'));
+  addElementToDOM(document.createElement('br'));
   const ctx = canvas.getContext('2d');
   setupCanvas(ctx, fontProperties);
   ctx.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas.height / fontProperties.pixelDensity - 1);
@@ -218,6 +221,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   const ctx = canvas.getContext('2d');
   standardDrawTextOnCanvas(ctx, testCopyLines, measures, fontProperties);
   addElementToDOM(createDivWithText(`hash: ${ctx.getHashString()}`));
+  addElementToDOM(document.createElement('br'));
 }
 
 function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
@@ -226,6 +230,7 @@ function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
   addElementToDOM(glyphSheetImage);
   addElementToDOM(createDivWithText(`hash: ${glyphSheetCtx.getHashString()}`));
   addElementToDOM(createDivWithText(`width: ${glyphSheetCtx.canvas.width} height: ${glyphSheetCtx.canvas.height}`));
+  addElementToDOM(document.createElement('br'));
 }
 
 function addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber) {
