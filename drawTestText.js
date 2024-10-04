@@ -121,9 +121,9 @@ function drawTestText(fontProperties, bitmapGlyphStore_Full) {
   const measureTextCrispBitmap_Full = text => bitmapText_Full.measureText(text, fontProperties);
   const linesMeasures_CSS_Px_Full = measureMultilineText(testCopyLines, measureTextCrispBitmap_Full);
   // generating the glyphs sheet with the full class is necessary to then being able to draw the text with the "normal" class
-  drawGlyphSheet(bitmapGlyphStore_Full, fontProperties);
+  buildAndDisplayGlyphSheet(bitmapGlyphStore_Full, fontProperties);
   // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
-  bitmapDrawCrispText(linesMeasures_CSS_Px_Full, testCopyLines, bitmapText_Full, fontProperties, testCopyChoiceNumber);
+  drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_Full, testCopyLines, bitmapText_Full, fontProperties, testCopyChoiceNumber);
 }
 
 function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
@@ -149,7 +149,7 @@ function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
   stdDrawSmoothText(linesMeasures_CSS_Px, testCopyLines, fontProperties);
 }
 
-function bitmapDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
+function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing:'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
@@ -220,7 +220,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   addElementToDOM(createDivWithText(`hash: ${ctx.getHashString()}`));
 }
 
-function drawGlyphSheet(bitmapGlyphStore, fontProperties) {
+function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
   const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
   addElementToDOM(glyphSheetImage);
