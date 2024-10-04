@@ -127,6 +127,16 @@ function drawTestText(fontProperties, bitmapGlyphStore_Full) {
 }
 
 function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
+
+  // let's do a trick, let's silently convert a pixelDensity 2 size n to a pixelDensity 1 size 2n
+  let didFontReduction = false;
+  if (drawAllPixelDensitiesWithLargerPixelDensity1Text && fontProperties.pixelDensity === 2) {
+    fontProperties.pixelDensity = 1;
+    fontProperties.fontSize *= 2;
+    didFontReduction = true;
+  }
+
+
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
 
@@ -138,12 +148,21 @@ function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
   // do the measurements and drawing with the BitmapText "normal" class
   // note how also this one doesn't need a canvas
   startTiming('bitmapText measureText multiline');
-  const measureTextCrispBitmap = text => bitmapText.measureText(text, fontProperties);
-  const linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
+  let measureTextCrispBitmap = text => bitmapText.measureText(text, fontProperties);
+  let linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
   console.log(`⏱️ bitmapText measureText multiline ${stopTiming('bitmapText measureText multiline')} milliseconds`);
   bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
 
   addElementToDOM(document.createElement('br'));
+
+  // if we did the font reduction, let's revert it and redo the
+  // measurements before doing further text drawing
+  if (didFontReduction) {
+    fontProperties.pixelDensity = 2;
+    fontProperties.fontSize /= 2;
+    measureTextCrispBitmap = text => bitmapText.measureText(text, fontProperties);
+    linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
+  }
   stdDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontProperties);
   stdDrawCrispThinLines(linesMeasures_CSS_Px, testCopyLines, fontProperties);
   stdDrawSmoothText(linesMeasures_CSS_Px, testCopyLines, fontProperties);

@@ -1,5 +1,6 @@
 // Globals
 let isKerningEnabled = true;
+let drawAllPixelDensitiesWithLargerPixelDensity1Text = true;
 let hoverFontSize = 19;
 let selectedFontSize = 19;
 let settingsTextarea = null;
@@ -54,6 +55,17 @@ function setupGlyphUI() {
     // Add run button
     const runButton = createElement('button', 'run-button', 'Build and Show Glyphs', selectorsDiv);
     runButton.addEventListener('click', updatePageContent);
+
+    // Add checkbox to force the use of pixel density 1, tied to the drawAllPixelDensitiesWithLargerPixelDensity1Text variable
+    const drawAllPixelDensitiesWithLargerPixelDensity1TextCheckbox = createElement('input', 'draw-all-pixel-densities-with-larger-pixel-density-1-text-checkbox', null, selectorsDiv);
+    drawAllPixelDensitiesWithLargerPixelDensity1TextCheckbox.type = 'checkbox';
+    drawAllPixelDensitiesWithLargerPixelDensity1TextCheckbox.checked = drawAllPixelDensitiesWithLargerPixelDensity1Text;
+    drawAllPixelDensitiesWithLargerPixelDensity1TextCheckbox.addEventListener('change', function() {
+        drawAllPixelDensitiesWithLargerPixelDensity1Text = this.checked;
+        updatePageContent();
+    });
+    createElement('label', null, 'Draw all pixel densities via larger pixel density 1 text', selectorsDiv).htmlFor = 'draw-all-pixel-densities-with-larger-pixel-density-1-text-checkbox';
+    
 
     // Add kerning checkbox
     const enableKerningCheckbox = createElement('input', 'enable-kerning-checkbox', null, selectorsDiv);
