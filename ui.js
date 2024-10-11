@@ -94,14 +94,14 @@ function setupGlyphUI() {
         setTimeout(() => {
             let i = 3;
             const interval = setInterval(() => {
-                if (i >= 81) {
+                if (i > maxFontSize_px) {
                     clearInterval(interval);
                     return;
                 }
                 selectedFontSize = hoverFontSize = i;
 
                 // un-highlight all the buttons
-                for (let j = 0; j < 81; j++) {
+                for (let j = 0; j <= maxFontSize_px; j += fontSizeIncrement_px) {
                     const button = document.getElementById('button-size-' + j);
                     button.style.backgroundColor = 'white';
                 }
@@ -111,7 +111,7 @@ function setupGlyphUI() {
                 button.style.backgroundColor = 'darkgray';
 
                 updatePageContent();
-                i++;
+                i += 0.25;
             });
         }, 1);
     });
