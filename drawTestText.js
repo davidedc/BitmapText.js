@@ -185,8 +185,7 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
     bitmapText.drawText(ctx, line, 0, yPosition, fontProperties);
   });
 
-  const hashKey = calculateFontPropertiesHashKey(fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
-  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, hashKey));
+  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber));
   addElementToDOM(document.createElement('br'));
 }
 
@@ -205,8 +204,7 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
   });
   console.log(`⏱️ drawTestText via glyphs sheet ${stopTiming('drawTestText via glyphs sheet')} milliseconds`);
 
-  const hashKey = calculateFontPropertiesHashKey(fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
-  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, hashKey));
+  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber));
 }
 
 function stdDrawSmoothText(measures, testCopyLines, fontProperties) {
@@ -250,9 +248,7 @@ function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
   const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
   addElementToDOM(glyphSheetImage);
   
-  const hashKey = calculateFontPropertiesHashKey(fontProperties, 'glyphSheet');
-  
-  addCanvasInfoToDOM(glyphSheetCtx.canvas, getHashMatchInfo(glyphSheetCtx, hashKey));
+  addCanvasInfoToDOM(glyphSheetCtx.canvas, getHashMatchInfo(glyphSheetCtx, fontProperties, 'glyphSheet'));
   addElementToDOM(document.createElement('br'));
 }
 
@@ -267,7 +263,8 @@ function addCanvasInfoToDOM(canvas, additionalInfo = '') {
   addElementToDOM(infoDiv);
 }
 
-function getHashMatchInfo(ctx, hashKey) {
+function getHashMatchInfo(ctx, fontProperties, hashSuffix = '') {
+  const hashKey = calculateFontPropertiesHashKey(fontProperties, hashSuffix);
   const crispTextHashString = ctx.getHashString();
   thisRunsHashes[hashKey] = crispTextHashString;
 
