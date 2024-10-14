@@ -185,7 +185,8 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
     bitmapText.drawText(ctx, line, 0, yPosition, fontProperties);
   });
 
-  addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber);
+  const hashKey = calculateFontPropertiesHashKey(fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
+  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, hashKey));
   addElementToDOM(document.createElement('br'));
 }
 
@@ -204,7 +205,8 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
   });
   console.log(`⏱️ drawTestText via glyphs sheet ${stopTiming('drawTestText via glyphs sheet')} milliseconds`);
 
-  addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber);
+  const hashKey = calculateFontPropertiesHashKey(fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
+  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, hashKey));
 }
 
 function stdDrawSmoothText(measures, testCopyLines, fontProperties) {
@@ -216,7 +218,7 @@ function stdDrawSmoothText(measures, testCopyLines, fontProperties) {
   const ctx = canvas.getContext('2d');
   standardDrawTextOnCanvas(ctx, testCopyLines, measures, fontProperties);
   addElementToDOM(canvas);
-  addElementToDOM(createDivWithText(`hash: ${ctx.getHashString()}`));
+  addCanvasInfoToDOM(canvas);
 }
 
 function stdDrawCrispThinLines(measures, testCopyLines, fontProperties) {
@@ -239,7 +241,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
   standardDrawTextOnCanvas(ctx, testCopyLines, measures, fontProperties);
-  addElementToDOM(createDivWithText(`hash: ${ctx.getHashString()}`));
+  addCanvasInfoToDOM(canvas);
   addElementToDOM(document.createElement('br'));
 }
 
@@ -247,25 +249,39 @@ function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
   const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
   addElementToDOM(glyphSheetImage);
-  addElementToDOM(createDivWithText(`hash: ${glyphSheetCtx.getHashString()}`));
-  addElementToDOM(createDivWithText(`width: ${glyphSheetCtx.canvas.width} height: ${glyphSheetCtx.canvas.height}`));
+  
+  const hashKey = calculateFontPropertiesHashKey(fontProperties, 'glyphSheet');
+  
+  addCanvasInfoToDOM(glyphSheetCtx.canvas, getHashMatchInfo(glyphSheetCtx, hashKey));
   addElementToDOM(document.createElement('br'));
 }
 
-function addHashInfoWithMatch(ctx, fontProperties, testCopyChoiceNumber) {
-  const { fontFamily, fontStyle, fontWeight, fontSize, pixelDensity } = fontProperties;
+function addCanvasInfoToDOM(canvas, additionalInfo = '') {
+  const ctx = canvas.getContext('2d');
+  const hashString = ctx.getHashString();
+  const infoDiv = document.createElement('div');
+  infoDiv.innerHTML = `
+    width: ${canvas.width}, height: ${canvas.height}<br>
+    hash: ${hashString}${additionalInfo ? '<br>' + additionalInfo : ''}
+  `;
+  addElementToDOM(infoDiv);
+}
+
+function getHashMatchInfo(ctx, hashKey) {
   const crispTextHashString = ctx.getHashString();
-  const hashKey = `fontFamily ${fontFamily} // fontStyle ${fontStyle} // fontWeight ${fontWeight} // fontSize ${fontSize} // testCopyChoiceNumber ${testCopyChoiceNumber} // pixelDensity ${pixelDensity}`;
   thisRunsHashes[hashKey] = crispTextHashString;
 
-  let hashText = `hash: ${crispTextHashString}`;
-  if (storedReferenceCrispTextRendersHashes[hashKey] === crispTextHashString) {
-    hashText += " ✔ same hash as stored one";
-  }
-  else {
-    hashText += " ✘ different hash from stored one";
-    // turn the background of the page light pink
+  if (storedReferenceCrispTextRendersHashes[hashKey] === undefined) {
+    //console.log("ℹ️ No stored hash" + hashKey);
+    return "ℹ️ No stored hash";
+  } else if (storedReferenceCrispTextRendersHashes[hashKey] === crispTextHashString) {
+    return "✔ Same hash as stored one";
+  } else {
     document.body.style.backgroundColor = '#FFC0CB';
+    return "✘ Different hash from stored one";
   }
-  addElementToDOM(createDivWithText(hashText));
+}
+function calculateFontPropertiesHashKey(fontProperties, hashSuffix = '') {
+  const { fontFamily, fontStyle, fontWeight, fontSize, pixelDensity } = fontProperties;
+  return `fontFamily ${fontFamily} // fontStyle ${fontStyle} // fontWeight ${fontWeight} // fontSize ${fontSize} // ${hashSuffix} // pixelDensity ${pixelDensity}`;
 }
