@@ -216,19 +216,19 @@ function stdDrawSmoothText(measures, testCopyLines, fontProperties) {
   const ctx = canvas.getContext('2d');
   standardDrawTextOnCanvas(ctx, testCopyLines, measures, fontProperties);
   addElementToDOM(canvas);
-  addCanvasInfoToDOM(canvas);
+  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, fontProperties, 'standard draw smooth text'));
 }
 
 function stdDrawCrispThinLines(measures, testCopyLines, fontProperties) {
   addElementToDOM(createDivWithText('Standard Canvas Text Drawing with no smoothing - thin characters to see monospaced fonts:'));
   const canvasHeight = Math.round(measures.height / testCopyLines.length);
   const canvas = createCanvas(Math.round(measures.width), canvasHeight, fontProperties.pixelDensity);
-  addElementToDOM(canvas);
-  addElementToDOM(document.createElement('br'));
-  addElementToDOM(document.createElement('br'));
   const ctx = canvas.getContext('2d');
   setupCanvas(ctx, fontProperties);
   ctx.fillText('|||||||||||||||||||||||||||||||||||||', 0, canvas.height / fontProperties.pixelDensity - 1);
+  addElementToDOM(canvas);
+  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, fontProperties, 'standard draw crisp thin lines'));
+  addElementToDOM(document.createElement('br'));
 }
 
 function stdDrawCrispText(measures, testCopyLines, fontProperties) {
@@ -239,7 +239,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
   standardDrawTextOnCanvas(ctx, testCopyLines, measures, fontProperties);
-  addCanvasInfoToDOM(canvas);
+  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, fontProperties, 'standard draw crisp text'));
   addElementToDOM(document.createElement('br'));
 }
 
