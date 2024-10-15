@@ -257,8 +257,7 @@ function addCanvasInfoToDOM(canvas, additionalInfo = '') {
   const hashString = ctx.getHashString();
   const infoDiv = document.createElement('div');
   infoDiv.innerHTML = `
-    width: ${canvas.width}, height: ${canvas.height}<br>
-    hash: ${hashString}${additionalInfo ? '<br>' + additionalInfo : ''}
+    ${canvas.width} x ${canvas.height} hash: ${hashString} ${additionalInfo ? additionalInfo : ''}
   `;
   addElementToDOM(infoDiv);
 }
