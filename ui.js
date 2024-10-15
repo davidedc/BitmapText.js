@@ -111,7 +111,7 @@ function setupGlyphUI() {
                 button.style.backgroundColor = 'darkgray';
 
                 updatePageContent();
-                i += 0.25;
+                i += fontSizeIncrement_px;
             });
         }, 1);
     });
