@@ -163,12 +163,12 @@ function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
     // then we will call again bitmapGlyphsSheetDrawCrispText with the same canvas and blending mode 'multiply'
     // drawing the text with the "pixelDensity 2" font and the blending mode 'difference'
     // this way we can see the differences between the two renderings
-    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
+    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
     fontProperties.pixelDensity = 2;
     fontProperties.fontSize /= 2;
     measureTextCrispBitmap = text => bitmapText.measureText(text, fontProperties);
     linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
-    bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas, 'multiply');
+    bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas, 'multiply', null, 'red');
   }
   stdDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontProperties);
   stdDrawCrispThinLines(linesMeasures_CSS_Px, testCopyLines, fontProperties);
@@ -196,7 +196,7 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
   addElementToDOM(document.createElement('br'));
 }
 
-function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, blendingMode = null) {
+function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from glyphs sheet:', textColor = null) {
   
   let drawOverExistingCanvas = false;
 
@@ -204,7 +204,7 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
     drawOverExistingCanvas = true;
 
   if (!drawOverExistingCanvas) {
-    addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing from glyphs sheet:'));
+    addElementToDOM(createDivWithText(sectionLabel));
     canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
     addElementToDOM(canvas);
   }
@@ -221,7 +221,7 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
   startTiming('drawTestText via glyphs sheet');
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    bitmapText.drawTextFromGlyphSheet(ctx, line, 0, yPosition, fontProperties);
+    bitmapText.drawTextFromGlyphSheet(ctx, line, 0, yPosition, fontProperties, textColor);
   });
   console.log(`⏱️ drawTestText via glyphs sheet ${stopTiming('drawTestText via glyphs sheet')} milliseconds`);
 

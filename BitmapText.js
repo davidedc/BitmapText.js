@@ -128,11 +128,15 @@ class BitmapText {
     return 0;
   }
 
-  drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties) {
+  drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textColor = 'black') {
     let x_Phys_Px = x_CSS_Px * fontProperties.pixelDensity;
     const y_Phys_Px = y_CSS_Px * fontProperties.pixelDensity;
 
     const glyphsSheet = this.glyphStore.getGlyphsSheet(fontProperties);
+
+    // Create a temporary canvas for tinting
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
@@ -142,22 +146,40 @@ class BitmapText {
         this.glyphStore.getGlyphsSheetMetrics(fontProperties, letter);
 
       if (xInGlyphSheet) {
+        // Set the temporary canvas size to the glyph size
+        tempCanvas.width = tightWidth;
+        tempCanvas.height = tightHeight;
+
+        // Reset composite operation
+        tempCtx.globalCompositeOperation = 'source-over';
+
+        // Clear the temporary canvas
+        tempCtx.clearRect(0, 0, tightWidth, tightHeight);
+
+        // Draw the glyph on the temporary canvas
+        // see https://stackoverflow.com/a/6061102
+        tempCtx.drawImage(
+          glyphsSheet,
+          xInGlyphSheet, 0,
+          tightWidth, tightHeight,
+          0, 0,
+          tightWidth, tightHeight
+        );
+
+        // Apply the tint color
+        tempCtx.globalCompositeOperation = 'source-in';
+        tempCtx.fillStyle = textColor;
+        tempCtx.fillRect(0, 0, tightWidth, tightHeight);
+
+        // Draw the tinted glyph on the main canvas
         // see https://stackoverflow.com/a/6061102
         ctx.drawImage(
-          glyphsSheet,
-          // Source x, y
-          xInGlyphSheet,
-          0,
-          // Source width, height
-          tightWidth,
-          tightHeight,
-          // Destination x, y
+          tempCanvas,
+          0, 0,
+          tightWidth, tightHeight,
           x_Phys_Px + dx,
-          // same formula for the y as ctx.drawText above, see explanation there
           y_Phys_Px + dy,
-          // Destination width, height
-          tightWidth,
-          tightHeight
+          tightWidth, tightHeight
         );
       }
 
