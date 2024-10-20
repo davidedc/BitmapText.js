@@ -39,7 +39,7 @@ function measureMultilineText(lines, measureTextFn) {
     // (which would measure the actual text) but instead, just take the fontBoundingBoxAscent and fontBoundingBoxDescent
     // This is all the lines are equally spaced vertically and have all the space needed for particularly ascending and descending
     // characters such as "À", "Ç", "ç".
-    console.log(`lineMeasures_CSS_Px.fontBoundingBoxAscent: ${fontBoundingBoxAscent} lineMeasures_CSS_Px.fontBoundingBoxDescent: ${fontBoundingBoxDescent}`);
+    console.log(`linesMeasures_CSS_Px.fontBoundingBoxAscent: ${fontBoundingBoxAscent} linesMeasures_CSS_Px.fontBoundingBoxDescent: ${fontBoundingBoxDescent}`);
     linesMeasures_CSS_Px.height += fontBoundingBoxAscent + fontBoundingBoxDescent;
   }
   return linesMeasures_CSS_Px;
@@ -126,16 +126,9 @@ function drawTestText(fontProperties, bitmapGlyphStore_Full) {
   drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_Full, testCopyLines, bitmapText_Full, fontProperties, testCopyChoiceNumber);
 }
 
-function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
+function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore) {
 
-  // let's do a trick, let's silently convert a pixelDensity 2 size n to a pixelDensity 1 size 2n
-  let didFontReduction = false;
-  if (drawAllPixelDensitiesWithLargerPixelDensity1Text && fontProperties.pixelDensity === 2) {
-    fontProperties.pixelDensity = 1;
-    fontProperties.fontSize *= 2;
-    didFontReduction = true;
-  }
-
+  let linesMeasures_CSS_PxForcedPixelDensity1 = null;
 
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
@@ -144,35 +137,47 @@ function drawTestText_withStandardClass(fontProperties, bitmapGlyphStore) {
   // outside of the editor.
   const bitmapText = new BitmapText(bitmapGlyphStore);
 
-  // Measure and draw with BitmapText
-  // do the measurements and drawing with the BitmapText "normal" class
-  // note how also this one doesn't need a canvas
-  startTiming('bitmapText measureText multiline');
-  let measureTextCrispBitmap = text => bitmapText.measureText(text, fontProperties);
-  let linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
-  console.log(`⏱️ bitmapText measureText multiline ${stopTiming('bitmapText measureText multiline')} milliseconds`);
+  let fontProperties = originalFontProperties;
+
+  let measureTextCrispBitmap = text => bitmapText.measureText(text, originalFontProperties);
+  let originalLinesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
+  let linesMeasures_CSS_Px = originalLinesMeasures_CSS_Px;
+
+
+
+  let fontPropertiesForcedPixelDensity1 = null;
+
+  // pixel-density-1-forcing is a trick where we draw at pixelDensity 1 size 2n
+  // the advantage is that we can reuse a glyph sheet that was generated for pixelDensity 1
+  let didPixelDensity1Forcing = false;
+  if (drawAllPixelDensitiesWithLargerPixelDensity1Text && originalFontProperties.pixelDensity === 2) {
+    // make another deep copy of the fontProperties and call it fontPropertiesForcedPixelDensity1
+    fontPropertiesForcedPixelDensity1 = JSON.parse(JSON.stringify(originalFontProperties));
+    fontPropertiesForcedPixelDensity1.pixelDensity = 1;
+    fontPropertiesForcedPixelDensity1.fontSize *= 2;
+
+    measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesForcedPixelDensity1);
+    linesMeasures_CSS_PxForcedPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);
+
+    fontProperties = fontPropertiesForcedPixelDensity1;
+    linesMeasures_CSS_Px = linesMeasures_CSS_PxForcedPixelDensity1;
+
+    didPixelDensity1Forcing = true;
+  }
+
 
   bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
-  addElementToDOM(document.createElement('br'));
 
-  // if we did the font reduction, let's revert it and redo the
-  // measurements before doing further text drawing
-  if (didFontReduction) {
-    // If we did the font reduction, let's
-    // run bitmapGlyphsSheetDrawCrispText and keep the returned canvas
-    // then we will call again bitmapGlyphsSheetDrawCrispText with the same canvas and blending mode 'multiply'
-    // drawing the text with the "pixelDensity 2" font and the blending mode 'difference'
-    // this way we can see the differences between the two renderings
-    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
-    fontProperties.pixelDensity = 2;
-    fontProperties.fontSize /= 2;
-    measureTextCrispBitmap = text => bitmapText.measureText(text, fontProperties);
-    linesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
-    bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas, 'multiply', null, 'red');
+  // If we did the pixel-density-1-forcing, let's
+  // compare the text rendering done normally with the text rendering done with the pixel-density-1-forcing
+  if (didPixelDensity1Forcing) {
+    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
+    bitmapGlyphsSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, 'multiply', null, 'red');
   }
-  stdDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontProperties);
-  stdDrawCrispThinLines(linesMeasures_CSS_Px, testCopyLines, fontProperties);
-  stdDrawSmoothText(linesMeasures_CSS_Px, testCopyLines, fontProperties);
+
+  stdDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
+  stdDrawCrispThinLines(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
+  stdDrawSmoothText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
 }
 
 function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
