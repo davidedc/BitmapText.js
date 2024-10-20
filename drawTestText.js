@@ -168,11 +168,22 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
 
   bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
 
+  if (originalFontProperties.pixelDensity === 2) {
+    let fontPropertiesPixelDensity1 = JSON.parse(JSON.stringify(originalFontProperties));
+    fontPropertiesPixelDensity1.pixelDensity = 1;
+
+    measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesPixelDensity1);
+    const linesMeasures_CSS_PxPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);
+
+    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_PxPixelDensity1, testCopyLines, bitmapText, fontPropertiesPixelDensity1, testCopyChoiceNumber, null, 2, false, null, "Comparison pixel density 2 (red) and pixel density 1 scaled (black)");
+    bitmapGlyphsSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
+  }
+  
   // If we did the pixel-density-1-forcing, let's
   // compare the text rendering done normally with the text rendering done with the pixel-density-1-forcing
   if (didPixelDensity1Forcing) {
-    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
-    bitmapGlyphsSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, 'multiply', null, 'red');
+    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
+    bitmapGlyphsSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
   }
 
   stdDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
@@ -201,16 +212,19 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
   addElementToDOM(document.createElement('br'));
 }
 
-function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from glyphs sheet:', textColor = null) {
+function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from glyphs sheet:', textColor = null) {
   
   let drawOverExistingCanvas = false;
 
   if (canvas)
     drawOverExistingCanvas = true;
 
+  // if scale is null then set it to 1
+  if (!scale) scale = 1;
+
   if (!drawOverExistingCanvas) {
     addElementToDOM(createDivWithText(sectionLabel));
-    canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
+    canvas = createCanvas(linesMeasures.width * scale, linesMeasures.height * scale, fontProperties.pixelDensity);
     addElementToDOM(canvas);
   }
   
@@ -218,6 +232,11 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
 
   if (blendingMode) {
     ctx.globalCompositeOperation = blendingMode;
+  }
+
+  if (scale != 1) {
+    ctx.save();
+    ctx.scale(scale, scale);
   }
 
   ctx.fillStyle = 'white';
@@ -231,9 +250,15 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
   console.log(`⏱️ drawTestText via glyphs sheet ${stopTiming('drawTestText via glyphs sheet')} milliseconds`);
 
   if (!drawOverExistingCanvas) {
-    addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber));
+    let hashMatchInfo = '';
+    if (checkTheHashes)
+      hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
+    
+    addCanvasInfoToDOM(canvas, hashMatchInfo);
     addElementToDOM(document.createElement('br'));
   }  
+
+  if (scale) ctx.restore();
 
   return canvas;
 }
