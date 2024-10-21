@@ -192,7 +192,7 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
 }
 
 function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
-  addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing:'));
+  addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing with individual glyphs (not using glyph sheet):'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
