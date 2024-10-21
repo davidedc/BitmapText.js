@@ -1,6 +1,7 @@
 // Globals
 let isKerningEnabled = true;
 let drawAllPixelDensitiesWithLargerPixelDensity1Text = true;
+let drawCheckeredBackgrounds = false;
 let hoverFontSize = 19;
 let selectedFontSize = 19;
 let settingsTextarea = null;
@@ -65,6 +66,16 @@ function setupGlyphUI() {
         updatePageContent();
     });
     createElement('label', null, 'Draw all pixel densities via larger pixel density 1 text', selectorsDiv).htmlFor = 'draw-all-pixel-densities-with-larger-pixel-density-1-text-checkbox';
+
+    // Add checkbox to draw checkered bacgrounds instead of white
+    const drawCheckeredBackgroundsCheckbox = createElement('input', 'draw-checkered-backgrounds-checkbox', null, selectorsDiv);
+    drawCheckeredBackgroundsCheckbox.type = 'checkbox';
+    drawCheckeredBackgroundsCheckbox.checked = drawCheckeredBackgrounds;
+    drawCheckeredBackgroundsCheckbox.addEventListener('change', function() {
+        drawCheckeredBackgrounds = this.checked;
+        updatePageContent();
+    });
+    createElement('label', null, 'Draw checkered backgrounds', selectorsDiv).htmlFor = 'draw-checkered-backgrounds-checkbox';
     
 
     // Add kerning checkbox

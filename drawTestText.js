@@ -196,8 +196,7 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  createCheckerboardBackground(ctx);
 
   // note that we assume that we draw with baseline = 'bottom' i.e.
   // the chosen x,y is at the crossing of the first column and last row
@@ -208,8 +207,38 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
     bitmapText.drawText(ctx, line, 0, yPosition, fontProperties);
   });
 
-  addCanvasInfoToDOM(canvas, getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber));
+  let hashMatchInfo = '';
+  if (!drawCheckeredBackgrounds)
+    hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
+
+  addCanvasInfoToDOM(canvas, hashMatchInfo);
   addElementToDOM(document.createElement('br'));
+}
+
+// This is useful to show that one can draw text without disrupting the existing canvas,
+// which is worth checking because for exammple drawing the text with a specific color
+// involves some non-trivial canvas operations that could indeed disrupt what's underneath.
+function createCheckerboardBackground(ctx) {
+  if (drawCheckeredBackgrounds) {
+    const gridColor1 = '#E0E0E0';
+    const gridColor2 = '#F0F0F0';
+    const gridWidth = 10;
+    const gridHeight = 10;
+
+    const canvasWidth = ctx.canvas.width;
+    const canvasHeight = ctx.canvas.height;
+
+    for (let x = 0; x < canvasWidth; x += gridWidth) {
+        for (let y = 0; y < canvasHeight; y += gridHeight) {
+            ctx.fillStyle = (x / gridWidth + y / gridHeight) % 2 === 0 ? gridColor1 : gridColor2;
+            ctx.fillRect(x, y, gridWidth, gridHeight);
+        }
+    }
+  }
+  else {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
 }
 
 function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from glyphs sheet:', textColor = null) {
@@ -234,13 +263,21 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
     ctx.globalCompositeOperation = blendingMode;
   }
 
+  //ctx.fillStyle = 'white';
+  //ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!drawOverExistingCanvas) {
+    createCheckerboardBackground(ctx);
+  }
+  else {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
   if (scale != 1) {
     ctx.save();
     ctx.scale(scale, scale);
   }
 
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   startTiming('drawTestText via glyphs sheet');
   testCopyLines.forEach((line, i) => {
@@ -251,7 +288,7 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
 
   if (!drawOverExistingCanvas) {
     let hashMatchInfo = '';
-    if (checkTheHashes)
+    if (checkTheHashes && !drawCheckeredBackgrounds)
       hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
     
     addCanvasInfoToDOM(canvas, hashMatchInfo);
