@@ -1,6 +1,6 @@
 // Globals
 let isKerningEnabled = true;
-let drawAllPixelDensitiesWithLargerPixelDensity1Text = true;
+let drawAllPixelDensitiesWithLargerPixelDensity1Text = false;
 let drawCheckeredBackgrounds = false;
 let hoverFontSize = 19;
 let selectedFontSize = 19;
