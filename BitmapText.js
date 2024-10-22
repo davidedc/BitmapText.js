@@ -134,6 +134,10 @@ class BitmapText {
 
     const glyphsSheet = this.glyphStore.getGlyphsSheet(fontProperties);
 
+    // There are several optimisations possible here:
+    // 1. We could cache make a special case when the color is black
+    // 2. We could cache the tinted glyph sheets in a small LRU cache
+
     // Create a temporary canvas for tinting
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
