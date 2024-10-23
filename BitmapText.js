@@ -6,6 +6,9 @@
 class BitmapText {
   constructor(glyphStore) {
     this.glyphStore = glyphStore;
+    // we keep one canvas and a context for coloring all the glyphs
+    this.coloredGlyphCanvas = document.createElement('canvas');
+    this.coloredGlyphCtx = this.coloredGlyphCanvas.getContext('2d');
   }
 
   // This returns an object of the same shape
@@ -129,67 +132,84 @@ class BitmapText {
   }
 
   drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textColor = 'black') {
-    let x_Phys_Px = x_CSS_Px * fontProperties.pixelDensity;
-    const y_Phys_Px = y_CSS_Px * fontProperties.pixelDensity;
-
+    const position = {
+      x: x_CSS_Px * fontProperties.pixelDensity,
+      y: y_CSS_Px * fontProperties.pixelDensity
+    };
+    
     const glyphsSheet = this.glyphStore.getGlyphsSheet(fontProperties);
 
-    // There are several optimisations possible here:
-    // 1. We could cache make a special case when the color is black
-    // 2. We could cache the tinted glyph sheets in a small LRU cache
-
-    // Create a temporary canvas for tinting
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-
     for (let i = 0; i < text.length; i++) {
-      const letter = text[i];
+      const currentLetter = text[i];
       const nextLetter = text[i + 1];
+      
+      this.drawLetter(ctx,
+        currentLetter,
+        position,
+        glyphsSheet,
+        fontProperties,
+        textColor
+      );
 
-      const {xInGlyphSheet, tightWidth, tightHeight, dx, dy} =
-        this.glyphStore.getGlyphsSheetMetrics(fontProperties, letter);
-
-      if (xInGlyphSheet) {
-        // Set the temporary canvas size to the glyph size
-        tempCanvas.width = tightWidth;
-        tempCanvas.height = tightHeight;
-
-        // Reset composite operation
-        tempCtx.globalCompositeOperation = 'source-over';
-
-        // Clear the temporary canvas
-        tempCtx.clearRect(0, 0, tightWidth, tightHeight);
-
-        // Draw the glyph on the temporary canvas
-        // see https://stackoverflow.com/a/6061102
-        tempCtx.drawImage(
-          glyphsSheet,
-          xInGlyphSheet, 0,
-          tightWidth, tightHeight,
-          0, 0,
-          tightWidth, tightHeight
-        );
-
-        // Apply the tint color
-        tempCtx.globalCompositeOperation = 'source-in';
-        tempCtx.fillStyle = textColor;
-        tempCtx.fillRect(0, 0, tightWidth, tightHeight);
-
-        // Draw the tinted glyph on the main canvas
-        // see https://stackoverflow.com/a/6061102
-        ctx.drawImage(
-          tempCanvas,
-          0, 0,
-          tightWidth, tightHeight,
-          x_Phys_Px + dx,
-          y_Phys_Px + dy,
-          tightWidth, tightHeight
-        );
-      }
-
-      x_Phys_Px +=
-        this.calculateAdvancement_CSS_Px(fontProperties, letter, nextLetter) *
-        fontProperties.pixelDensity;
+      position.x += this.calculateLetterAdvancement(fontProperties, currentLetter, nextLetter);
     }
+  }
+
+  drawLetter(ctx, letter, position, glyphsSheet, fontProperties, textColor) {
+    // There are several optimisations possible here:
+    // 1. We could make a special case when the color is black
+    // 2. We could cache the colored glyph sheets in a small LRU cache
+
+    const metrics = this.glyphStore.getGlyphsSheetMetrics(fontProperties, letter);
+    if (!metrics.xInGlyphSheet) return;
+
+    const coloredGlyphCanvas = this.createColoredGlyph(glyphsSheet, metrics, textColor);
+    this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, metrics);
+  }
+
+  createColoredGlyph(glyphsSheet, metrics, textColor) {
+    const { xInGlyphSheet, tightWidth, tightHeight } = metrics;
+    
+    // Setup temporary canvas, same size as the glyph
+    this.coloredGlyphCanvas.width = tightWidth;
+    this.coloredGlyphCanvas.height = tightHeight;
+    this.coloredGlyphCtx.clearRect(0, 0, tightWidth, tightHeight);
+
+    // Draw original glyph
+    this.coloredGlyphCtx.globalCompositeOperation = 'source-over'; // reset the composite operation
+    // see https://stackoverflow.com/a/6061102
+    this.coloredGlyphCtx.drawImage(
+      glyphsSheet,
+      xInGlyphSheet, 0,
+      tightWidth, tightHeight,
+      0, 0,
+      tightWidth, tightHeight
+    );
+
+    // Apply color
+    this.coloredGlyphCtx.globalCompositeOperation = 'source-in';
+    this.coloredGlyphCtx.fillStyle = textColor;
+    this.coloredGlyphCtx.fillRect(0, 0, tightWidth, tightHeight);
+
+    return this.coloredGlyphCanvas;
+  }
+
+  renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, metrics) {
+    const { tightWidth, tightHeight, dx, dy } = metrics;
+    
+     // see https://stackoverflow.com/a/6061102
+    ctx.drawImage(
+      coloredGlyphCanvas,
+      0, 0,
+      tightWidth, tightHeight,
+      position.x + dx,
+      position.y + dy,
+      tightWidth, tightHeight
+    );
+  }
+
+  calculateLetterAdvancement(fontProperties, currentLetter, nextLetter) {
+    return this.calculateAdvancement_CSS_Px(fontProperties, currentLetter, nextLetter) 
+      * fontProperties.pixelDensity;
   }
 }
