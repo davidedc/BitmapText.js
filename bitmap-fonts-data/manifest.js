@@ -1,1 +1,1 @@
-(bitmapFontsManifest ??= {}).files = ["glyphs-sheet-density-1-Arial-style-normal-weight-normal-size-18","glyphs-sheet-density-1-Arial-style-normal-weight-normal-size-19"];
+(bitmapFontsManifest ??= {}).files = ["glyphs-sheet-density-1-0-Arial-style-normal-weight-normal-size-18-0","glyphs-sheet-density-1-0-Arial-style-normal-weight-normal-size-19-0","glyphs-sheet-density-1-0-Arial-style-normal-weight-normal-size-18-5"];
