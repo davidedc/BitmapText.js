@@ -40,13 +40,22 @@ function loadSheetsFromPNGs() {
       document.body.appendChild(document.createElement('br'));
 
       // Extract font properties from the filename
+      // the filename is the font family, style, weight, size and pixel density, all lowercase, with
+      // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
+      // note that the pixel density and the weight have two parts because they could have decimals
+      // e.g.
+      // glyphs-sheet-density-1-5-Arial-style-normal-weight-normal-size-18-5 for pixel density 1.5 and size 18.5
+      // glyphs-sheet-density-1-0-Arial-style-normal-weight-normal-size-18-0 for pixel density 1 and size 18
       const parts = filename.split('-');
+      // note for the pixel density and the weight we need to join the decimal part to the integer part
+      const pixelDensity = parts[3] + (parts[4] === '0' ? '' : `.${parts[4]}`);
+      const fontSize = parts[11] + (parts[12] === '0' ? '' : `.${parts[12]}`);
       const fontProperties = {
-        pixelDensity: parts[3],
-        fontFamily: parts[4],
-        fontStyle: parts[6],
-        fontWeight: parts[8],
-        fontSize: parts[10]
+        pixelDensity: pixelDensity,
+        fontFamily: parts[5],
+        fontStyle: parts[7],
+        fontWeight: parts[9],
+        fontSize: fontSize
       };
 
       // Add the canvas to the bitmapGlyphStore
@@ -97,13 +106,22 @@ function loadSheetsFromJSs() {
           document.body.appendChild(document.createElement('br'));
 
           // Extract font properties from the filename
+          // the filename is the font family, style, weight, size and pixel density, all lowercase, with
+          // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
+          // note that the pixel density and the weight have two parts because they could have decimals
+          // e.g.
+          // glyphs-sheet-density-1-5-Arial-style-normal-weight-normal-size-18-5 for pixel density 1.5 and size 18.5
+          // glyphs-sheet-density-1-0-Arial-style-normal-weight-normal-size-18-0 for pixel density 1 and size 18
           const parts = filename.split('-');
+          // note for the pixel density and the weight we need to join the decimal part to the integer part
+          const pixelDensity = parts[3] + (parts[4] === '0' ? '' : `.${parts[4]}`);
+          const fontSize = parts[11] + (parts[12] === '0' ? '' : `.${parts[12]}`);
           const fontProperties = {
-            pixelDensity: parts[3],
-            fontFamily: parts[4],
-            fontStyle: parts[6],
-            fontWeight: parts[8],
-            fontSize: parts[10]
+            pixelDensity: pixelDensity,
+            fontFamily: parts[5],
+            fontStyle: parts[7],
+            fontWeight: parts[9],
+            fontSize: fontSize
           };
 
           // Add the canvas to the bitmapGlyphStore
@@ -143,14 +161,25 @@ function ingestLoadedBitmapFontData() {
   };
   for (const key in loadedBitmapFontData) {
     if (key.startsWith('glyphs_sheet_density_')) {
+
+      // Extract font properties from the variable, which is the filename with underscores instead of dashes
+      // the filename is the font family, style, weight, size and pixel density, all lowercase, with
+      // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
+      // note that the pixel density and the weight have two parts because they could have decimals
+      // e.g.
+      // glyphs-sheet-density-1-5-Arial-style-normal-weight-normal-size-18-5 for pixel density 1.5 and size 18.5
+      // glyphs-sheet-density-1-0-Arial-style-normal-weight-normal-size-18-0 for pixel density 1 and size 18
       const parts = key.split('_');
+      // note for the pixel density and the weight we need to join the decimal part to the integer part
+      const pixelDensity = parts[3] + (parts[4] === '0' ? '' : `.${parts[4]}`);
+      const fontSize = parts[11] + (parts[12] === '0' ? '' : `.${parts[12]}`);
       const fontProperties = {
-        pixelDensity: parts[3],
-        fontFamily: parts[4],
-        fontStyle: parts[6],
-        fontWeight: parts[8],
-        fontSize: parts[10]
-      };
+        pixelDensity: pixelDensity,
+        fontFamily: parts[5],
+        fontStyle: parts[7],
+        fontWeight: parts[9],
+        fontSize: fontSize
+      };      
 
       // Put the loadedBitmapFontData "kerningTable" in the bitmapGlyphStore "kerningTables"
       bitmapGlyphStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
@@ -193,7 +222,7 @@ function ingestLoadedBitmapFontData() {
 
   startTiming('drawTestText');
   const fontProperties = {
-    fontSize: 18,
+    fontSize: 18.5,
     fontFamily: "Arial",
     fontStyle: "normal",
     fontWeight: "normal",

@@ -160,8 +160,17 @@ function setupGlyphUI() {
             const data = dataUrl.split(',')[1];
             // the filename is the font family, style, weight, size and pixel density, all lowercase, with
             // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
-            let fileName = 'glyphs-sheet-density-' + pixelDensity + '-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + size;
+            // note that the pixel density and the weight have two parts because they could have decimals
+            // e.g.
+            // glyphs-sheet-density-1-5-Arial-style-normal-weight-normal-size-18-5.js fir pixel density 1.5 and size 18.5
+            // glyphs-sheet-density-1-0-Arial-style-normal-weight-normal-size-18-0.js fir pixel density 1 and size 18
+
+            // for the density string, make sure that there is always at least digit before the decimal point and after it
+            // e.g. 0.0 instead of .0, or 1.0 instead of 1
+            const formatNumber = num => num.toString().split('.')[0] + '.' + (num.toString().split('.')[1] || '0');
+            let fileName = 'glyphs-sheet-density-' + formatNumber(pixelDensity) + '-' + fontFamily + '-style-' + fontStyle + '-weight-' + fontWeight + '-size-' + formatNumber(size);
             fileName = fileName.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-');
+
             folder.file(fileName + '.png', data, { base64: true });
 
             // navigate through the bitmapGlyphStore, which contains:
