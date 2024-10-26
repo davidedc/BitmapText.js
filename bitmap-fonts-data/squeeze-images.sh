@@ -8,19 +8,26 @@ fi
 
 # Loop through all PNG files in the directory
 for file in *.png; do
-    # Skip files that have already been renamed with .orig extension
-    if [[ $file == *.orig.png ]]; then
+    # Skip if no PNG files found
+    [[ -e "$file" ]] || continue
+    
+    # Skip files that end with .orig.png
+    if [[ "$file" == *.orig.png ]]; then
+        echo "Skipping $file"
         continue
     fi
-
-    # Rename original file to .orig.png
-    mv "$file" "${file%.png}.orig.png"
-
-    # Optimize the newly renamed .orig.png file
-    imageoptim --quality=100 --speed=1 "${file%.png}.orig.png"
-
-    # Copy optimized file back to original name
-    cp "${file%.png}.orig.png" "$file"
-
+    
+    # Check if .orig version already exists
+    if [[ -f "${file%.png}.orig.png" ]]; then
+        echo "Original backup already exists for $file, skipping..."
+        continue
+    fi
+    
+    # Create backup of original file
+    cp "$file" "${file%.png}.orig.png"
+    
+    # Optimize the file in place
+    imageoptim --quality=100 --speed=1 "$file"
+    
     echo "Optimized $file"
 done
