@@ -148,7 +148,7 @@ function setupGlyphUI() {
         const fontStyle = fontStyleSelect.value;
         const fontWeight = fontWeightSelect.value;
         const sizes = Object.keys(glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight]);
-        let files = [];
+        let IDs = [];
         sizes.forEach(size => {
             // if there is no entry for the current pixel density, then do nothing
             if (!glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size]) {
@@ -159,7 +159,7 @@ function setupGlyphUI() {
             const dataUrl = canvas.toDataURL('image/png');
             const data = dataUrl.split(',')[1];
 
-            // the filename is the font family, style, weight, size and pixel density, all lowercase, with
+            // the IDString is the font family, style, weight, size and pixel density, all lowercase, with
             // any special characters and spaces replaced by dashes and all multiple dashes replaced by a single dash
             // note that the pixel density and the weight have two parts because they could have decimals
             // e.g.
@@ -173,9 +173,9 @@ function setupGlyphUI() {
                 fontSize: size
             };
         
-            const fileName = GlyphIDString_Full.getFilename(properties);
+            const IDString = GlyphIDString_Full.getIDString(properties);
         
-            folder.file(fileName + '.png', data, { base64: true });
+            folder.file('glyphs-sheet-' + IDString + '.png', data, { base64: true });
 
             // navigate through the bitmapGlyphStore, which contains:
             //   kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
@@ -204,18 +204,18 @@ function setupGlyphUI() {
 
             // Store all the data in a JSON file with the same name as
             // the png file (apart from the extension of course)
-            folder.file(fileName + '.js', 
-                `(loadedBitmapFontData ??= {})['${fileName}'] = ${JSON.stringify({
+            folder.file('glyphs-sheet-' + IDString + '.js', 
+                `(loadedBitmapFontData ??= {})['${IDString}'] = ${JSON.stringify({
                     kerningTable,
                     glyphsTextMetrics,
                     spaceAdvancementOverrideForSmallSizesInPx,
                     glyphsSheetsMetrics
                 })};`
             );
-            files.push(fileName);
+            IDs.push(IDString);
         });
-        // add one last file i.e. the manifest file that contains the list of all the files
-        folder.file('manifest.js', "(bitmapFontsManifest ??= {}).files = " + JSON.stringify(files) + ";");
+        // add one last file i.e. the manifest file that contains the list of all the IDs
+        folder.file('manifest.js', "(bitmapFontsManifest ??= {}).IDs = " + JSON.stringify(IDs) + ";");
 
         zip.generateAsync({ type: "blob" }).then(function(content) {
             saveAs(content, "glyphsSheets.zip");

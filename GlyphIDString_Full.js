@@ -1,5 +1,5 @@
 class GlyphIDString_Full extends GlyphIDString {
-  static getFilename(properties) {
+  static getIDString(properties) {
       const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = properties;
       
       // Format numbers to always have a digit before and after decimal point
@@ -9,9 +9,8 @@ class GlyphIDString_Full extends GlyphIDString {
           return `${intPart}.${decPart}`;
       };
       
-      // Construct the filename with all components
-      let filename = [
-          'glyphs-sheet',
+      // Construct the IDString with all components
+      let IDString = [
           'density-' + formatNumber(pixelDensity),
           fontFamily,
           'style-' + fontStyle,
@@ -19,7 +18,7 @@ class GlyphIDString_Full extends GlyphIDString {
           'size-' + formatNumber(fontSize)
       ].join('-');
       
-      // Clean up the filename by replacing special characters and multiple dashes
-      return filename.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-');
+      // Clean up the IDString by replacing special characters and multiple dashes
+      return IDString.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-');
   }
 }

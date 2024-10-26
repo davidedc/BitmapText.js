@@ -1,10 +1,10 @@
 // the bitmapFontsManifest variable now contains the manifest data
 // which looks like:
-// bitmapFontsManifest.files = ["glyphs-sheet-density-1-arial-style-normal-weight-normal-size-18","glyphs-sheet-density-1-arial-style-normal-weight-normal-size-19"];
+// bitmapFontsManifest.IDs = ["density-1-arial-style-normal-weight-normal-size-18","density-1-arial-style-normal-weight-normal-size-19"];
 
-// Go through each filename in the manifest and load two files
+// Go through each IDString in the manifest and load two files
 // via script tag
-// i.e. [filename].js and [filename].png
+// i.e. [IDString].js and [IDString].png
 
 let loadedScripts = 0;
 
@@ -16,8 +16,8 @@ function bitmapFontJsOrImageLoaded() {
   // If all the scripts/images have been loaded, call the buildAndShowGlyphs function
   // Do the check by comparing the number of files in the manifest to the number of loaded scripts
   loadedScripts++;
-  console.log(`loadedScripts: ${loadedScripts} out of ${bitmapFontsManifest.files.length * 2}`);
-  if (loadedScripts === bitmapFontsManifest.files.length * 2) {
+  console.log(`loadedScripts: ${loadedScripts} out of ${bitmapFontsManifest.IDs.length * 2}`);
+  if (loadedScripts === bitmapFontsManifest.IDs.length * 2) {
     console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
     startTiming('ingestingFontData');
     ingestLoadedBitmapFontData();
@@ -25,21 +25,21 @@ function bitmapFontJsOrImageLoaded() {
 }
 
 function loadSheetsFromPNGs() {
-  for (const filename of bitmapFontsManifest.files) {
+  for (const IDString of bitmapFontsManifest.IDs) {
     let script = document.createElement('script');
-    script.src = `bitmap-fonts-data/${filename}.js`;
+    script.src = `bitmap-fonts-data/glyphs-sheet-${IDString}.js`;
     document.head.appendChild(script);
     script.onload = function () {
       bitmapFontJsOrImageLoaded();
     };
     let img = new Image();
-    img.src = `bitmap-fonts-data/${filename}.png`;
+    img.src = `bitmap-fonts-data/glyphs-sheet-${IDString}.png`;
     img.onload = function () {
       // Attach the image to the document
       document.body.appendChild(img);
       document.body.appendChild(document.createElement('br'));
 
-      const fontProperties = GlyphIDString.parseFilename(filename);
+      const fontProperties = GlyphIDString.parseIDString(IDString);
 
       // Add the canvas to the bitmapGlyphStore
       bitmapGlyphStore.setGlyphsSheet(fontProperties, img);
@@ -59,36 +59,36 @@ function loadSheetsFromPNGs() {
 
 // TODO this function and the one above are very similar, should be refactored
 function loadSheetsFromJSs() {
-  for (const filename of bitmapFontsManifest.files) {
+  for (const IDString of bitmapFontsManifest.IDs) {
     let script = document.createElement('script');
-    script.src = `bitmap-fonts-data/${filename}.js`;
+    script.src = `bitmap-fonts-data/glyphs-sheet-${IDString}.js`;
     document.head.appendChild(script);
 
     script.onload = function () {
       let imageScript = document.createElement('script');
-      imageScript.src = `bitmap-fonts-data/image-${filename}.js`;
-      console.log(`loading image-${filename}.js ...`);
+      imageScript.src = `bitmap-fonts-data/image-glyphs-sheet-${IDString}.js`;
+      console.log(`loading image-glyphs-sheet-${IDString}.js ...`);
       document.head.appendChild(imageScript);
 
       imageScript.onload = function () {
         bitmapFontJsOrImageLoaded();
-        console.log(`...loaded image-${filename}.js`);
+        console.log(`...loaded image-glyphs-sheet-${IDString}.js`);
 
         // now take the image data from the imagesFromJs object
-        let imageData = imagesFromJs[filename];
+        let imageData = imagesFromJs[IDString];
 
         // create an Image from the base64 data
         let img = new Image();
         img.src = `data:image/png;base64,${imageData}`;
         img.onload = function () {
           imageScript.remove();
-          delete imagesFromJs[filename];
+          delete imagesFromJs[IDString];
 
           console.log("image loaded from JS base64 data");
           document.body.appendChild(img);
           document.body.appendChild(document.createElement('br'));
 
-          const fontProperties = GlyphIDString.parseFilename(filename);
+          const fontProperties = GlyphIDString.parseIDString(IDString);
 
           // Add the canvas to the bitmapGlyphStore
           bitmapGlyphStore.setGlyphsSheet(fontProperties, img);
@@ -127,30 +127,27 @@ function ingestLoadedBitmapFontData() {
   };
   
   for (const key in loadedBitmapFontData) {
-    if (key.startsWith('glyphs-sheet-density-')) {
+    const fontProperties = GlyphIDString.parseIDString(key);
 
-      const fontProperties = GlyphIDString.parseFilename(key);
+    // Put the loadedBitmapFontData "kerningTable" in the bitmapGlyphStore "kerningTables"
+    bitmapGlyphStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
 
-      // Put the loadedBitmapFontData "kerningTable" in the bitmapGlyphStore "kerningTables"
-      bitmapGlyphStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
+    // Put the loadedBitmapFontData "glyphsSheetMetrics" in the bitmapGlyphStore "glyphsSheetsMetrics"
+    bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
 
-      // Put the loadedBitmapFontData "glyphsSheetMetrics" in the bitmapGlyphStore "glyphsSheetsMetrics"
-      bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
+    // Same for glyphsSheetsMetrics
+    const metrics = loadedBitmapFontData[key].glyphsSheetsMetrics;
+    bitmapGlyphStore.setGlyphsSheetMetrics(fontProperties, metrics);
 
-      // Same for glyphsSheetsMetrics
-      const metrics = loadedBitmapFontData[key].glyphsSheetsMetrics;
-      bitmapGlyphStore.setGlyphsSheetMetrics(fontProperties, metrics);
+    // Same for spaceAdvancementOverrideForSmallSizesInPx
+    bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
 
-      // Same for spaceAdvancementOverrideForSmallSizesInPx
-      bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
+    // Remove the script element from the document
+    let script = document.querySelector(`script[src="bitmap-fonts-data/glyphs-sheet-${key.replace(/_/g, '-')}.js"]`);
+    script.remove();
 
-      // Remove the script element from the document
-      let script = document.querySelector(`script[src="bitmap-fonts-data/${key.replace(/_/g, '-')}.js"]`);
-      script.remove();
-
-      // Remove the loadedBitmapFontData entry
-      delete loadedBitmapFontData[key];
-    }
+    // Remove the loadedBitmapFontData entry
+    delete loadedBitmapFontData[key];
   }
 
   // Clean up global variables
