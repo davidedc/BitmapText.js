@@ -209,7 +209,7 @@ function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testC
 
   let hashMatchInfo = '';
   if (!drawCheckeredBackgrounds)
-    hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
+    hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "individual glyphs testCopyChoiceNumber " + testCopyChoiceNumber);
 
   addCanvasInfoToDOM(canvas, hashMatchInfo);
   addElementToDOM(document.createElement('br'));
@@ -289,7 +289,7 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
   if (!drawOverExistingCanvas) {
     let hashMatchInfo = '';
     if (checkTheHashes && !drawCheckeredBackgrounds)
-      hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "testCopyChoiceNumber " + testCopyChoiceNumber);
+      hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "glyph sheet testCopyChoiceNumber " + testCopyChoiceNumber);
     
     addCanvasInfoToDOM(canvas, hashMatchInfo);
     addElementToDOM(document.createElement('br'));
@@ -341,7 +341,7 @@ function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
   const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
   addElementToDOM(glyphSheetImage);
   
-  addCanvasInfoToDOM(glyphSheetCtx.canvas, getHashMatchInfo(glyphSheetCtx, fontProperties, 'glyphSheet'));
+  addCanvasInfoToDOM(glyphSheetCtx.canvas, getHashMatchInfo(glyphSheetCtx, fontProperties, 'glyph sheet'));
   addElementToDOM(document.createElement('br'));
 }
 
@@ -371,6 +371,5 @@ function getHashMatchInfo(ctx, fontProperties, hashSuffix = '') {
   }
 }
 function calculateFontPropertiesHashKey(fontProperties, hashSuffix = '') {
-  const { fontFamily, fontStyle, fontWeight, fontSize, pixelDensity } = fontProperties;
-  return `fontFamily ${fontFamily} // fontStyle ${fontStyle} // fontWeight ${fontWeight} // fontSize ${fontSize} // ${hashSuffix} // pixelDensity ${pixelDensity}`;
+  return GlyphIDString_Full.getIDString(fontProperties) + (hashSuffix ? ' ' + hashSuffix : '');
 }
