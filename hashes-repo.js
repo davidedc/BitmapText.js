@@ -1,5 +1,3 @@
-const thisRunsHashes = {};
-
 // Note that some are missing because we fail to render some very small sizes
 const storedReferenceCrispTextRendersHashes = {
   "density-1-0-Arial-style-normal-weight-normal-size-10-0 glyph sheet":"e5a58cf",
@@ -2176,3 +2174,5 @@ const storedReferenceCrispTextRendersHashes = {
   "density-2-0-Arial-style-normal-weight-normal-size-9-5 individual glyphs testCopyChoiceNumber 2":"c441492",
   "density-2-0-Arial-style-normal-weight-normal-size-9-5 individual glyphs testCopyChoiceNumber 3":"2d72c896"
 };
+
+const hashStore = new HashStore(storedReferenceCrispTextRendersHashes);

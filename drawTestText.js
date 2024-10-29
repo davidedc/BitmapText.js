@@ -358,18 +358,15 @@ function addCanvasInfoToDOM(canvas, additionalInfo = '') {
 function getHashMatchInfo(ctx, fontProperties, hashSuffix = '') {
   const hashKey = calculateFontPropertiesHashKey(fontProperties, hashSuffix);
   const crispTextHashString = ctx.getHashString();
-  thisRunsHashes[hashKey] = crispTextHashString;
-
-  if (storedReferenceCrispTextRendersHashes[hashKey] === undefined) {
-    //console.log("ℹ️ No stored hash" + hashKey);
-    return "ℹ️ No stored hash";
-  } else if (storedReferenceCrispTextRendersHashes[hashKey] === crispTextHashString) {
-    return "✔ Same hash as stored one";
-  } else {
-    document.body.style.backgroundColor = '#FFC0CB';
-    return "✘ Different hash from stored one";
+  const result = hashStore.compareHash(hashKey, crispTextHashString);
+  
+  if (result.status === 'mismatch') {
+      document.body.style.backgroundColor = '#FFC0CB';
   }
+  
+  return result.message;
 }
+
 function calculateFontPropertiesHashKey(fontProperties, hashSuffix = '') {
   return GlyphIDString_Full.getIDString(fontProperties) + (hashSuffix ? ' ' + hashSuffix : '');
 }
