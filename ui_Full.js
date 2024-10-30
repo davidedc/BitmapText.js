@@ -1,7 +1,23 @@
 function setupGlyphUI_Full() {
     const selectorsDiv = document.getElementById("selectors");
+
     const copyToClipboardButton = createElement('button', 'copy-to-clipboard-button', 'Copy collected hashes to clipboard', selectorsDiv);
     copyToClipboardButton.addEventListener('click', () => hashStore.copyHashesToClipboard());
+
+
+    // button to download all the png glyphs sheets
+    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download glyphs sheets & kerning maps', selectorsDiv);
+    downloadAllSheetsButton.addEventListener('click', function() {
+        const pixelDensity = document.getElementById('pixel-density-2-radio-button').checked ? 2 : 1;
+        
+        downloadGlyphSheetsAndKerningMaps({
+            bitmapGlyphStore_Full,
+            pixelDensity,
+            fontFamily: fontFamilySelect.value,
+            fontStyle: fontStyleSelect.value,
+            fontWeight: fontWeightSelect.value
+        });
+    });
 }
 
-  setupGlyphUI_Full();
+setupGlyphUI_Full();
