@@ -8,6 +8,7 @@ let settingsTextarea = null;
 let fontFamilySelect = null;
 let fontStyleSelect = null;
 let fontWeightSelect = null;
+let drawCrisply = true;
 
 
 function buildKerningTableIfDoesntExist() {
@@ -56,6 +57,17 @@ function setupGlyphUI() {
     // Add run button
     const runButton = createElement('button', 'run-button', 'Build and Show Glyphs', selectorsDiv);
     runButton.addEventListener('click', updatePageContent);
+
+    // add a checkbox to draw the glyphs crisply or not
+    const drawCrisplyCheckbox = createElement('input', 'draw-crisp-checkbox', null, selectorsDiv);
+    drawCrisplyCheckbox.type = 'checkbox';
+    drawCrisplyCheckbox.checked = drawCrisply;
+    drawCrisplyCheckbox.addEventListener('change', function() {
+        drawCrisply = this.checked;
+        updatePageContent();
+    });
+    createElement('label', null, 'Draw crisply', selectorsDiv).htmlFor = 'draw-crisp-checkbox';
+
 
     // Add checkbox to force the use of pixel density 1, tied to the drawAllPixelDensitiesWithLargerPixelDensity1Text variable
     const drawAllPixelDensitiesWithLargerPixelDensity1TextCheckbox = createElement('input', 'draw-all-pixel-densities-with-larger-pixel-density-1-text-checkbox', null, selectorsDiv);

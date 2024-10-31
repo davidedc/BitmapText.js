@@ -33,15 +33,18 @@ class BitmapGlyph_Full {
   createCanvasWithLetter() {
     const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = this.fontProperties;
     const canvas = document.createElement("canvas");
-    // add the canvas to the page otherwise the
-    // CSS font smoorhing properties are not applied
-    // I tried setting the properties via javascript
-    // like this:
-    //   canvas.style["-webkit-font-smoothing"] = "none";
-    //   canvas.style["-moz-osx-font-smoothing"] = "none";
-    //   canvas.style["font-smooth"] = "never";
-    // but it didn't work
-    document.body.appendChild(canvas);
+
+    if (drawCrisply) {
+      // add the canvas to the page otherwise the
+      // CSS font smoorhing properties are not applied
+      // I tried setting the properties via javascript
+      // like this:
+      //   canvas.style["-webkit-font-smoothing"] = "none";
+      //   canvas.style["-moz-osx-font-smoothing"] = "none";
+      //   canvas.style["font-smooth"] = "never";
+      // but it didn't work
+      document.body.appendChild(canvas);
+    }
 
     const ctx = canvas.getContext("2d");
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
@@ -180,8 +183,10 @@ class BitmapGlyph_Full {
       canvas.height / pixelDensity - 1
     );
 
-    // now can remove the canvas from the page
-    canvas.remove();
+    if (drawCrisply) {
+      // now can remove the canvas from the page
+      canvas.remove();
+    }
 
     return { canvas, letterTextMetrics };
   }
