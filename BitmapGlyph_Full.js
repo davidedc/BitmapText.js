@@ -330,7 +330,7 @@ class BitmapGlyph_Full {
     // for pixels that are not transparent
     const pixels = [];
     for (let i = 0; i < data.length; i += 4) {
-      // isOn is when any of the components is 0 AND the alpha is not 0
+      // isOn is when there is any opacity
       // that's because we are working with canvases with transparent backgrounds
       // because glyphs often have are painted on top of other content AND also
       // because glyphs actually often have to overlap with each other e.g. in the case of "ff" in Times New Roman
