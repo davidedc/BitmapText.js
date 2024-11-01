@@ -116,11 +116,11 @@ function drawTestText(fontProperties, bitmapGlyphStore_Full) {
   console.log(`crispTestCopyMeasures_CSS_Px.height: ${crispMeasures.height}`);
 
   // Measurements with BitmapText_Full
-  // now do the measurements, generation of glyphs sheet and rendering of text with the BitmapText_Full class
+  // now do the measurements, generation of glyph sheet and rendering of text with the BitmapText_Full class
   // note how this one doesn't need a canvas
   const measureTextCrispBitmap_Full = text => bitmapText_Full.measureText(text, fontProperties);
   const linesMeasures_CSS_Px_Full = measureMultilineText(testCopyLines, measureTextCrispBitmap_Full);
-  // generating the glyphs sheet with the full class is necessary to then being able to draw the text with the "normal" class
+  // generating the glyph sheet with the full class is necessary to then being able to draw the text with the "normal" class
   buildAndDisplayGlyphSheet(bitmapGlyphStore_Full, fontProperties);
   // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
   drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_Full, testCopyLines, bitmapText_Full, fontProperties, testCopyChoiceNumber);
@@ -166,7 +166,7 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
   }
 
 
-  bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
+  bitmapGlyphSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
 
   if (originalFontProperties.pixelDensity === 2) {
     let fontPropertiesPixelDensity1 = JSON.parse(JSON.stringify(originalFontProperties));
@@ -175,15 +175,15 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
     measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesPixelDensity1);
     const linesMeasures_CSS_PxPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);
 
-    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_PxPixelDensity1, testCopyLines, bitmapText, fontPropertiesPixelDensity1, testCopyChoiceNumber, null, 2, false, null, "Comparison pixel density 2 (red) and pixel density 1 scaled (black, should be blurred)");
-    bitmapGlyphsSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
+    const canvas = bitmapGlyphSheetDrawCrispText(linesMeasures_CSS_PxPixelDensity1, testCopyLines, bitmapText, fontPropertiesPixelDensity1, testCopyChoiceNumber, null, 2, false, null, "Comparison pixel density 2 (red) and pixel density 1 scaled (black, should be blurred)");
+    bitmapGlyphSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
   }
   
   // If we did the pixel-density-1-forcing, let's
   // compare the text rendering done normally with the text rendering done with the pixel-density-1-forcing
   if (didPixelDensity1Forcing) {
-    const canvas = bitmapGlyphsSheetDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
-    bitmapGlyphsSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
+    const canvas = bitmapGlyphSheetDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
+    bitmapGlyphSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
   }
 
   stdDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
@@ -241,7 +241,7 @@ function createCheckerboardBackground(ctx) {
   }
 }
 
-function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from glyphs sheet:', textColor = null) {
+function bitmapGlyphSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from glyph sheet:', textColor = null) {
   
   let drawOverExistingCanvas = false;
 
@@ -279,12 +279,12 @@ function bitmapGlyphsSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText
   }
 
 
-  startTiming('drawTestText via glyphs sheet');
+  startTiming('drawTestText via glyph sheet');
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
     bitmapText.drawTextFromGlyphSheet(ctx, line, 0, yPosition, fontProperties, textColor);
   });
-  console.log(`⏱️ drawTestText via glyphs sheet ${stopTiming('drawTestText via glyphs sheet')} milliseconds`);
+  console.log(`⏱️ drawTestText via glyph sheet ${stopTiming('drawTestText via glyph sheet')} milliseconds`);
 
   if (!drawOverExistingCanvas) {
     let hashMatchInfo = '';
@@ -338,7 +338,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
 
 function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
   addElementToDOM(createDivWithText("Glyphs' Sheet:"));
-  const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphsSheet(fontProperties);
+  const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphSheet(fontProperties);
   addElementToDOM(glyphSheetImage);
   
   addCanvasInfoToDOM(glyphSheetCtx.canvas, getHashMatchInfo(glyphSheetCtx, fontProperties, 'glyph sheet'));

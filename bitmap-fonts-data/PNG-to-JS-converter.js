@@ -29,7 +29,7 @@ pngFiles.forEach(pngFile => {
 if (typeof imagesFromJs === 'undefined') {
     var imagesFromJs = {};
 }
-imagesFromJs['${pngFile.replace('.png', '').replace('glyphs-sheet-','')}'] = '${base64Data}';
+imagesFromJs['${pngFile.replace('.png', '').replace('glyph-sheet-','')}'] = '${base64Data}';
 `;
 
     fs.writeFileSync(jsFileName, jsContent);

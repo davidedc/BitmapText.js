@@ -8,22 +8,22 @@ function downloadGlyphSheetsAndKerningMaps(options) {
   } = options;
 
   const zip = new JSZip();
-  const folder = zip.folder("glyphsSheets");
+  const folder = zip.folder("glyphSheets");
   const bitmapGlyphStore = bitmapGlyphStore_Full.extractBitmapGlyphStoreInstance();
-  const glyphsSheets = bitmapGlyphStore.glyphsSheets;
+  const glyphSheets = bitmapGlyphStore.glyphSheets;
   
   // Get all available sizes for the current font configuration
-  const sizes = Object.keys(glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight]);
+  const sizes = Object.keys(glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight]);
   const IDs = [];
 
   sizes.forEach(size => {
       // Skip if no entry exists for current pixel density
-      if (!glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size]) {
+      if (!glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size]) {
           return;
       }
 
       // Generate PNG from canvas
-      const canvas = glyphsSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size];
+      const canvas = glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size];
       const dataUrl = canvas.toDataURL('image/png');
       const data = dataUrl.split(',')[1];
 
@@ -33,15 +33,15 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       IDs.push(IDString);
 
       // Add PNG to zip
-      folder.file(`glyphs-sheet-${IDString}.png`, data, { base64: true });
+      folder.file(`glyph-sheet-${IDString}.png`, data, { base64: true });
 
       // navigate through the bitmapGlyphStore, which contains:
       //   kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
       //   glyphsTextMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
       //   spaceAdvancementOverrideForSmallSizesInPx = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
       //   // these two needed to precisely paint a glyph from the sheet into the destination canvas
-      //   glyphsSheets = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
-      //   glyphsSheetsMetrics = { // all objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
+      //   glyphSheets = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
+      //   glyphSheetsMetrics = { // all objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
       //     tightWidth: {},
       //     tightHeight: {},
       //     dx: {},
@@ -54,18 +54,18 @@ function downloadGlyphSheetsAndKerningMaps(options) {
           kerningTable: bitmapGlyphStore.kerningTables[pixelDensity][fontFamily][fontStyle][fontWeight][size],
           glyphsTextMetrics: bitmapGlyphStore.glyphsTextMetrics[pixelDensity][fontFamily][fontStyle][fontWeight][size],
           spaceAdvancementOverrideForSmallSizesInPx: bitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-          glyphsSheetsMetrics: {
-              tightWidth: bitmapGlyphStore.glyphsSheetsMetrics.tightWidth[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              tightHeight: bitmapGlyphStore.glyphsSheetsMetrics.tightHeight[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              dx: bitmapGlyphStore.glyphsSheetsMetrics.dx[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              dy: bitmapGlyphStore.glyphsSheetsMetrics.dy[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              xInGlyphSheet: bitmapGlyphStore.glyphsSheetsMetrics.xInGlyphSheet[pixelDensity][fontFamily][fontStyle][fontWeight][size]
+          glyphSheetsMetrics: {
+              tightWidth: bitmapGlyphStore.glyphSheetsMetrics.tightWidth[pixelDensity][fontFamily][fontStyle][fontWeight][size],
+              tightHeight: bitmapGlyphStore.glyphSheetsMetrics.tightHeight[pixelDensity][fontFamily][fontStyle][fontWeight][size],
+              dx: bitmapGlyphStore.glyphSheetsMetrics.dx[pixelDensity][fontFamily][fontStyle][fontWeight][size],
+              dy: bitmapGlyphStore.glyphSheetsMetrics.dy[pixelDensity][fontFamily][fontStyle][fontWeight][size],
+              xInGlyphSheet: bitmapGlyphStore.glyphSheetsMetrics.xInGlyphSheet[pixelDensity][fontFamily][fontStyle][fontWeight][size]
           }
       };
 
       // Add metadata JS file to zip
       folder.file(
-          `glyphs-sheet-${IDString}.js`,
+          `glyph-sheet-${IDString}.js`,
           `(loadedBitmapFontData ??= {})['${IDString}'] = ${JSON.stringify(metadata)};`
       );
   });
@@ -75,5 +75,5 @@ function downloadGlyphSheetsAndKerningMaps(options) {
 
   // Generate and download zip file
   return zip.generateAsync({ type: "blob" })
-      .then(content => saveAs(content, "glyphsSheets.zip"));
+      .then(content => saveAs(content, "glyphSheets.zip"));
 }

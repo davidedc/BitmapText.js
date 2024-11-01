@@ -5,8 +5,8 @@ function setupGlyphUI_Full() {
     copyToClipboardButton.addEventListener('click', () => hashStore.copyHashesToClipboard());
 
 
-    // button to download all the png glyphs sheets
-    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download glyphs sheets & kerning maps', selectorsDiv);
+    // button to download all the png glyph sheets
+    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download glyph sheets & kerning maps', selectorsDiv);
     downloadAllSheetsButton.addEventListener('click', function() {
         const pixelDensity = document.getElementById('pixel-density-2-radio-button').checked ? 2 : 1;
         

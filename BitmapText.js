@@ -137,7 +137,7 @@ class BitmapText {
       y: y_CSS_Px * fontProperties.pixelDensity
     };
     
-    const glyphsSheet = this.glyphStore.getGlyphsSheet(fontProperties);
+    const glyphSheet = this.glyphStore.getGlyphSheet(fontProperties);
 
     for (let i = 0; i < text.length; i++) {
       const currentLetter = text[i];
@@ -146,7 +146,7 @@ class BitmapText {
       this.drawLetter(ctx,
         currentLetter,
         position,
-        glyphsSheet,
+        glyphSheet,
         fontProperties,
         textColor
       );
@@ -155,19 +155,19 @@ class BitmapText {
     }
   }
 
-  drawLetter(ctx, letter, position, glyphsSheet, fontProperties, textColor) {
+  drawLetter(ctx, letter, position, glyphSheet, fontProperties, textColor) {
     // There are several optimisations possible here:
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored glyph sheets in a small LRU cache
 
-    const metrics = this.glyphStore.getGlyphsSheetMetrics(fontProperties, letter);
+    const metrics = this.glyphStore.getGlyphSheetMetrics(fontProperties, letter);
     if (!metrics.xInGlyphSheet) return;
 
-    const coloredGlyphCanvas = this.createColoredGlyph(glyphsSheet, metrics, textColor);
+    const coloredGlyphCanvas = this.createColoredGlyph(glyphSheet, metrics, textColor);
     this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, metrics);
   }
 
-  createColoredGlyph(glyphsSheet, metrics, textColor) {
+  createColoredGlyph(glyphSheet, metrics, textColor) {
     const { xInGlyphSheet, tightWidth, tightHeight } = metrics;
     
     // Setup temporary canvas, same size as the glyph
@@ -179,7 +179,7 @@ class BitmapText {
     this.coloredGlyphCtx.globalCompositeOperation = 'source-over'; // reset the composite operation
     // see https://stackoverflow.com/a/6061102
     this.coloredGlyphCtx.drawImage(
-      glyphsSheet,
+      glyphSheet,
       xInGlyphSheet, 0,
       tightWidth, tightHeight,
       0, 0,
