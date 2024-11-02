@@ -40,7 +40,7 @@ function buildAndShowGlyphs() {
   // Remove all canvases and divs from the page
   removeAllCanvasesAndDivs();
   createGlyphsAndAddToFullStore(fontProperties);
-  drawTestText(fontProperties, bitmapGlyphStore_Full);
-  const bitmapGlyphStore = bitmapGlyphStore_Full.extractBitmapGlyphStoreInstance();
+  drawTestText(fontProperties, bitmapGlyphStore_Editor);
+  const bitmapGlyphStore = bitmapGlyphStore_Editor.extractBitmapGlyphStoreInstance();
   drawTestText_withStandardClass(fontProperties, bitmapGlyphStore);
 }

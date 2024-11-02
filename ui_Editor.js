@@ -1,4 +1,4 @@
-function setupGlyphUI_Full() {
+function setupGlyphUI_Editor() {
     const selectorsDiv = document.getElementById("selectors");
 
     const copyToClipboardButton = createElement('button', 'copy-to-clipboard-button', 'Copy collected hashes to clipboard', selectorsDiv);
@@ -11,7 +11,7 @@ function setupGlyphUI_Full() {
         const pixelDensity = document.getElementById('pixel-density-2-radio-button').checked ? 2 : 1;
         
         downloadGlyphSheetsAndKerningMaps({
-            bitmapGlyphStore_Full,
+            bitmapGlyphStore_Editor,
             pixelDensity,
             fontFamily: fontFamilySelect.value,
             fontStyle: fontStyleSelect.value,
@@ -20,4 +20,4 @@ function setupGlyphUI_Full() {
     });
 }
 
-setupGlyphUI_Full();
+setupGlyphUI_Editor();

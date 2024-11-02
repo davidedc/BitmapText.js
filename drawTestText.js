@@ -82,7 +82,7 @@ function getTestCopyChoiceAndText() {
   return { testCopy: '', testCopyChoiceNumber: 0 };
 }
 
-function drawTestText(fontProperties, bitmapGlyphStore_Full) {
+function drawTestText(fontProperties, bitmapGlyphStore_Editor) {
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
   const fontString = getFontString(fontProperties);
@@ -115,15 +115,15 @@ function drawTestText(fontProperties, bitmapGlyphStore_Full) {
   console.log(`crispTestCopyMeasures_CSS_Px.width: ${crispMeasures.width}`);
   console.log(`crispTestCopyMeasures_CSS_Px.height: ${crispMeasures.height}`);
 
-  // Measurements with BitmapText_Full
-  // now do the measurements, generation of glyph sheet and rendering of text with the BitmapText_Full class
+  // Measurements with BitmapText_Editor
+  // now do the measurements, generation of glyph sheet and rendering of text with the BitmapText_Editor class
   // note how this one doesn't need a canvas
-  const measureTextCrispBitmap_Full = text => bitmapText_Full.measureText(text, fontProperties);
-  const linesMeasures_CSS_Px_Full = measureMultilineText(testCopyLines, measureTextCrispBitmap_Full);
+  const measureTextCrispBitmap_Editor = text => bitmapText_Editor.measureText(text, fontProperties);
+  const linesMeasures_CSS_Px_Editor = measureMultilineText(testCopyLines, measureTextCrispBitmap_Editor);
   // generating the glyph sheet with the full class is necessary to then being able to draw the text with the "normal" class
-  buildAndDisplayGlyphSheet(bitmapGlyphStore_Full, fontProperties);
+  buildAndDisplayGlyphSheet(bitmapGlyphStore_Editor, fontProperties);
   // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
-  drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_Full, testCopyLines, bitmapText_Full, fontProperties, testCopyChoiceNumber);
+  drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_Editor, testCopyLines, bitmapText_Editor, fontProperties, testCopyChoiceNumber);
 }
 
 function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore) {
@@ -368,5 +368,5 @@ function getHashMatchInfo(ctx, fontProperties, hashSuffix = '') {
 }
 
 function calculateFontPropertiesHashKey(fontProperties, hashSuffix = '') {
-  return GlyphIDString_Full.getIDString(fontProperties) + (hashSuffix ? ' ' + hashSuffix : '');
+  return GlyphIDString_Editor.getIDString(fontProperties) + (hashSuffix ? ' ' + hashSuffix : '');
 }

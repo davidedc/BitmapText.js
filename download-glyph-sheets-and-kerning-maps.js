@@ -1,6 +1,6 @@
 function downloadGlyphSheetsAndKerningMaps(options) {
   const {
-      bitmapGlyphStore_Full,
+      bitmapGlyphStore_Editor,
       pixelDensity,
       fontFamily,
       fontStyle, 
@@ -9,7 +9,7 @@ function downloadGlyphSheetsAndKerningMaps(options) {
 
   const zip = new JSZip();
   const folder = zip.folder("glyphSheets");
-  const bitmapGlyphStore = bitmapGlyphStore_Full.extractBitmapGlyphStoreInstance();
+  const bitmapGlyphStore = bitmapGlyphStore_Editor.extractBitmapGlyphStoreInstance();
   const glyphSheets = bitmapGlyphStore.glyphSheets;
   
   // Get all available sizes for the current font configuration
@@ -29,7 +29,7 @@ function downloadGlyphSheetsAndKerningMaps(options) {
 
       // Generate ID string for the current configuration
       const properties = { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize: size };
-      const IDString = GlyphIDString_Full.getIDString(properties);
+      const IDString = GlyphIDString_Editor.getIDString(properties);
       IDs.push(IDString);
 
       // Add PNG to zip

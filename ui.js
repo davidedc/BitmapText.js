@@ -34,7 +34,7 @@ function buildKerningTableIfDoesntExist() {
 
     const properties = {pixelDensity, fontFamily, fontStyle, fontWeight, fontSize};
  
-    bitmapText_Full.buildKerningTableIfDoesntExist(properties);
+    bitmapText_Editor.buildKerningTableIfDoesntExist(properties);
 }
 
 // Helper function to create and append elements

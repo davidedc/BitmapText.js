@@ -1,6 +1,6 @@
-// a class to store all the BitmapGlyph_Full objects
+// a class to store all the BitmapGlyph_Editor objects
 // so that we can retrieve them by font family, font size and letter
-class BitmapGlyphStore_Full extends BitmapGlyphStore {
+class BitmapGlyphStore_Editor extends BitmapGlyphStore {
   constructor() {
     super();
     // these objects contain all kinds of other

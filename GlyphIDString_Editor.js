@@ -1,4 +1,4 @@
-class GlyphIDString_Full extends GlyphIDString {
+class GlyphIDString_Editor extends GlyphIDString {
   static getIDString(properties) {
       const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = properties;
       
