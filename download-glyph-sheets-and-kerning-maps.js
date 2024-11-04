@@ -66,7 +66,7 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       // Add metadata JS file to zip
       folder.file(
           `glyph-sheet-${IDString}.js`,
-          `(loadedBitmapFontData ??= {})['${IDString}'] = ${JSON.stringify(metadata)};`
+          `(loadedBitmapFontData ??= {})['${IDString}'] = decompressFontMetrics(${JSON.stringify(compressFontMetrics(metadata))});`
       );
   });
 
