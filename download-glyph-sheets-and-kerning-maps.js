@@ -63,6 +63,14 @@ function downloadGlyphSheetsAndKerningMaps(options) {
           }
       };
 
+      // do a little test, check if compression and decompression lead to the same result as the original data
+      const decompressed = decompressFontMetrics(compressFontMetrics(metadata));
+      if (!deepEqual(decompressed,metadata)) {
+        console.error('Compression and decompression failed for metadata:', metadata);
+        debugger
+        throw new Error('Compression and decompression failed');
+     }
+      
       // Add metadata JS file to zip
       folder.file(
           `glyph-sheet-${IDString}.js`,

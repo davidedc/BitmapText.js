@@ -1,11 +1,9 @@
+// Decompress font metrics back to original format
 function decompressFontMetrics(compressed) {
   // Decompress kerning table
   const kerningTable = {};
-  Object.keys(compressed.g).forEach(char => {
-    kerningTable[char] = { s: 20 }; // Set default kerning
-  });
   Object.entries(compressed.k).forEach(([char, values]) => {
-    kerningTable[char] = { ...kerningTable[char], ...values };
+    kerningTable[char] = values;
   });
 
   // Decompress glyph metrics

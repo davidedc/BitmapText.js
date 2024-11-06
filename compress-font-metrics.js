@@ -11,30 +11,21 @@ function compressFontMetrics(data) {
     ib: metrics.glyphsTextMetrics['0'].ideographicBaseline,
   };
 
-  // Compress kerning table by removing redundant entries
+  // Compress kerning table directly
   const compressedKerning = {};
   Object.entries(metrics.kerningTable).forEach(([char, values]) => {
-    // Only store non-default kerning values
-    const nonDefault = {};
-    Object.entries(values).forEach(([target, value]) => {
-      if (value !== 20) { // 20 is the default kerning value
-        nonDefault[target] = value; 
-      }
-    });
-    if (Object.keys(nonDefault).length > 0) {
-      compressedKerning[char] = nonDefault;
-    }
+    compressedKerning[char] = values;
   });
 
-  // Compress glyph metrics into arrays
+  // Compress glyph metrics into arrays with exact values
   const compressedGlyphs = {};
   Object.entries(metrics.glyphsTextMetrics).forEach(([char, glyph]) => {
     compressedGlyphs[char] = [
-      Number(glyph.width.toFixed(2)),
-      Number(glyph.actualBoundingBoxLeft.toFixed(2)),
-      Number(glyph.actualBoundingBoxRight.toFixed(2)),
-      Number(glyph.actualBoundingBoxAscent.toFixed(2)),
-      Number(glyph.actualBoundingBoxDescent.toFixed(2))
+      glyph.width, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
+      glyph.actualBoundingBoxLeft, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
+      glyph.actualBoundingBoxRight, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
+      glyph.actualBoundingBoxAscent, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
+      glyph.actualBoundingBoxDescent // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
     ];
   });
 
@@ -48,10 +39,10 @@ function compressFontMetrics(data) {
   };
 
   return {
-      k: compressedKerning, // kerningTable
-      b: baseMetrics,       // base metrics
-      g: compressedGlyphs,  // glyphs
-      t: compressedTight,   // tight metrics
-      s: metrics.spaceAdvancementOverrideForSmallSizesInPx
+    k: compressedKerning,  // kerningTable
+    b: baseMetrics,        // base metrics
+    g: compressedGlyphs,   // glyphs
+    t: compressedTight,    // tight metrics
+    s: metrics.spaceAdvancementOverrideForSmallSizesInPx
   };
 }
