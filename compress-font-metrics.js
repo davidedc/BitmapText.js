@@ -20,12 +20,17 @@ function compressFontMetrics(data) {
   // Compress glyph metrics into arrays with exact values
   const compressedGlyphs = {};
   Object.entries(metrics.glyphsTextMetrics).forEach(([char, glyph]) => {
+    // TODO to check if in all the glyph.* fields below BEFORE COMPRESSING rounding to
+    // two decimal places also gives a good result (i.e. toFixed(2))
+    // because we are storing a lot of decimal places here! and when I tried
+    // a toFixed(2) we still got a hash match on the generated rendered text image
+    // so probably 2 decumal places is enough and it would make things more compact.
     compressedGlyphs[char] = [
-      glyph.width, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
-      glyph.actualBoundingBoxLeft, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
-      glyph.actualBoundingBoxRight, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
-      glyph.actualBoundingBoxAscent, // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
-      glyph.actualBoundingBoxDescent // TODO to check if BEFORE COMPRESSING rounding to two decimal places also works i.e. toFixed(2)
+      glyph.width, 
+      glyph.actualBoundingBoxLeft,
+      glyph.actualBoundingBoxRight,
+      glyph.actualBoundingBoxAscent,
+      glyph.actualBoundingBoxDescent
     ];
   });
 
