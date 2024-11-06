@@ -9,6 +9,7 @@ let fontFamilySelect = null;
 let fontStyleSelect = null;
 let fontWeightSelect = null;
 let drawCrisply = true;
+let truncateMetrics = true;
 
 
 function buildKerningTableIfDoesntExist() {
@@ -99,6 +100,17 @@ function setupGlyphUI() {
         updatePageContent();
     });
     createElement('label', null, 'Enable kerning', selectorsDiv).htmlFor = 'enable-kerning-checkbox';
+
+    // Add checkbox to truncate metrics
+    const truncateMetricsCheckbox = createElement('input', 'truncate-metrics-checkbox', null, selectorsDiv);
+    truncateMetricsCheckbox.type = 'checkbox';
+    truncateMetricsCheckbox.checked = truncateMetrics;
+    truncateMetricsCheckbox.addEventListener('change', function() {
+        truncateMetrics = this.checked;
+        updatePageContent();
+    });
+    createElement('label', null, 'Truncate metrics', selectorsDiv).htmlFor = 'truncate-metrics-checkbox';
+
 
     // Add additional UI elements
     addCopyChoiceRadioButtons();

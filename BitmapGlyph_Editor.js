@@ -131,6 +131,13 @@ class BitmapGlyph_Editor {
         )
     );
 
+    if (truncateMetrics) {
+      // go through all letterTextMetrics values and truncate them to fewer decimal places
+      for (let key in letterTextMetrics) {
+        letterTextMetrics[key] = Math.round(letterTextMetrics[key] * 10000) / 10000;
+      }
+    }
+
     // END OF LETTER-LEVEL RENDERING CORRECTIONS
     /////////////////////////////////////////////
 
