@@ -24,7 +24,7 @@ function compressFontMetrics(data) {
     // two decimal places also gives a good result (i.e. toFixed(2))
     // because we are storing a lot of decimal places here! and when I tried
     // a toFixed(2) we still got a hash match on the generated rendered text image
-    // so probably 2 decumal places is enough and it would make things more compact.
+    // so probably 2 decimal places is enough and it would make things more compact.
     compressedGlyphs[char] = [
       glyph.width, 
       glyph.actualBoundingBoxLeft,
