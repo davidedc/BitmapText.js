@@ -30,7 +30,7 @@ class BitmapGlyph_Editor {
     }
   }
 
-  createCanvasWithLetter() {
+  createCanvasWithLetterAndGetLetterTextMetrics() {
     const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = this.fontProperties;
     const canvas = document.createElement("canvas");
 
@@ -260,7 +260,7 @@ class BitmapGlyph_Editor {
   }
 
   createCanvasesAndLetterTextMetrics() {
-    const { canvas, letterTextMetrics } = this.createCanvasWithLetter();
+    const { canvas, letterTextMetrics } = this.createCanvasWithLetterAndGetLetterTextMetrics();
     const { tightCanvas, tightCanvasBox } =
       this.getBoundingBoxOfOnPixels(canvas);
 
