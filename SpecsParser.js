@@ -282,11 +282,11 @@ class SpecsParser {
   }
 
   // examples:
-  //   2 to 10
-  //   9 to 9 at pixel density 2
+  //   2 to 10.5
+  //   9.5 to 9 at pixel density 2
   parseSizeRange(line) {
     const [range, pixelDensity] = line.split(' at pixel density ');
-    const [from, to] = range.split(' to').map(s => this.parseIntAndCheck(s.trim(), line));
+    const [from, to] = range.split(' to').map(s => this.parseFloatAndCheck(s.trim(), line));
     return {
       from,
       to,
@@ -295,10 +295,10 @@ class SpecsParser {
   }
 
   // Checks if a given line represents a size range in the format of either
-  //   "[integer] to [integer]"
+  //   "[integer or float] to [integer or float]"
   // or
-  //   "[integer] to [integer] at pixel density [integer]"
+  //   "[integer or float] to [integer or float] at pixel density [integer]"
   isSizeRange(line) {
-    return /^\d+\s+to\s+\d+(\s+at\s+pixel\s+density\s+\d+)?$/.test(line);
+    return /^(\d*\.?\d+)\s+to\s+(\d*\.?\d+)(\s+at\s+pixel\s+density\s+\d+)?$/.test(line);
   }
 }
