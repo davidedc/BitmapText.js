@@ -1,0 +1,127 @@
+  # BitmapText.js
+
+  A JavaScript library for rendering pixel-perfect, consistent bitmap text on HTML5 Canvas across all browsers and devices.
+
+  ## Problem Statement
+
+  Browser text rendering on Canvas is inconsistent - different browsers apply anti-aliasing differently, making pixel-perfect text rendering impossible with standard
+  Canvas APIs. This library solves that by pre-rendering glyphs as bitmaps.
+
+  ## Features
+
+  - ✅ Pixel-perfect text rendering across all browsers
+  - ✅ Pre-rendered glyph sheets for consistent output
+  - ✅ Advanced kerning with fine-grained control
+  - ✅ Multiple pixel density support (retina displays)
+  - ✅ Hash-based verification for consistency
+  - ✅ Font builder tool for generating bitmap fonts
+  - ✅ Minimal runtime dependencies
+
+  ## Quick Start
+
+  ### Using Pre-built Fonts
+
+  ```javascript
+  // Load the library and font data
+  const bitmapGlyphStore = new BitmapGlyphStore();
+  const bitmapText = new BitmapText(bitmapGlyphStore);
+
+  // Load font data (from pre-generated sheets)
+  // This happens automatically when you include the manifest
+
+  // Render text
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const fontProperties = {
+    fontSize: 18,
+    fontFamily: "Arial",
+    fontStyle: "normal",
+    fontWeight: "normal",
+    pixelDensity: window.devicePixelRatio || 1
+  };
+
+  // Measure text
+  const metrics = bitmapText.measureText("Hello World", fontProperties);
+
+  // Draw text at position (x, y)
+  bitmapText.drawTextFromGlyphSheet(ctx, "Hello World", 10, 50, fontProperties, '#000000');
+
+  Generating Your Own Bitmap Fonts
+
+  1. Open font-builder.html in a web browser
+  2. Select font family, style, weight, and size range
+  3. Click "Download Glyph Sheets" to generate bitmap font data
+  4. Include generated files in your project
+
+  API Reference
+
+  BitmapText Class
+
+  Constructor
+
+  new BitmapText(glyphStore)
+
+  Methods
+
+  measureText(text, fontProperties)
+  - Returns TextMetrics-compatible object with width, bounding box info
+  - Parameters:
+    - text: String to measure
+    - fontProperties: Object with fontSize, fontFamily, fontStyle, fontWeight, pixelDensity
+
+  drawTextFromGlyphSheet(ctx, text, x, y, fontProperties, textColor)
+  - Draws text using pre-rendered glyphs
+  - Parameters:
+    - ctx: Canvas 2D rendering context
+    - text: String to render
+    - x, y: Position in CSS pixels
+    - fontProperties: Font configuration object
+    - textColor: CSS color string (optional, default: 'black')
+
+  BitmapGlyphStore Class
+
+  Manages glyph sheets and metrics. Usually populated automatically from manifest.
+
+  Build Instructions
+
+  Development Setup
+
+  # Clone repository
+  git clone [repository-url]
+
+  # Serve locally (required for CORS)
+  python -m http.server
+  # or
+  npx http-server
+
+  # Open in browser
+  http://localhost:8000/font-builder.html
+
+  Building Font Data
+
+  1. Configure specs in specs-default.js or via UI
+  2. Use Font Builder to generate glyph sheets
+  3. Compressed data saved to bitmap-fonts-data/
+
+  Testing
+
+  Open text-render-tests.html to run visual tests and hash verification.
+
+  Tests verify:
+  - Pixel-perfect rendering consistency
+  - Kerning accuracy
+  - Multi-line text layout
+  - Cross-browser compatibility
+
+  Browser Support
+
+  Works on all modern browsers supporting Canvas API:
+  - Chrome/Edge 90+
+  - Firefox 88+
+  - Safari 14+
+  - Mobile browsers
+
+  License
+
+  See LICENSE file.
