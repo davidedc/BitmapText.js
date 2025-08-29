@@ -4,30 +4,7 @@ let specs = null;
 const specsParser = new SpecsParser();
 
 function buildAndShowGlyphs() {
-  let fontSize, pixelDensity;
-
-  if (hoverFontSize !== null) {
-    fontSize = hoverFontSize;
-  }
-  else {
-    fontSize = selectedFontSize;
-  }
-
-  if (document.getElementById('pixel-density-2-radio-button').checked) {
-    pixelDensity = 2;
-  }
-  else {
-    pixelDensity = 1;
-  }
-
-  // Create the fontProperties object
-  const fontProperties = {
-    fontSize,
-    fontFamily: fontFamilySelect.value,
-    fontStyle: fontStyleSelect.value,
-    fontWeight: fontWeightSelect.value,
-    pixelDensity
-  };
+  const fontProperties = getFontPropertiesFromUI();
 
   // If the contents of the specs textarea have changed, parse them, clear all the kerning tables and build
   // the one for the current size.
@@ -35,11 +12,15 @@ function buildAndShowGlyphs() {
   specs = specsParser.parseSpecsIfChanged(settingsTextarea.value);
   buildKerningTableIfDoesntExist(fontProperties);
 
-  if (isNaN(fontSize)) return;
+  if (isNaN(fontProperties.fontSize)) return;
 
-  // Remove all canvases and divs from the page
+  // Clear the DOM
   removeAllCanvasesAndDivs();
+  
+  // BUILD operations - generate glyphs
   createGlyphsAndAddToFullStore(fontProperties);
+  
+  // SHOW operations - display the built glyphs
   drawTestText(fontProperties, bitmapGlyphStore_Editor);
   const bitmapGlyphStore = bitmapGlyphStore_Editor.extractBitmapGlyphStoreInstance();
   drawTestText_withStandardClass(fontProperties, bitmapGlyphStore);

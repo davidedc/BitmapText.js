@@ -13,6 +13,11 @@ let truncateMetrics = true;
 
 
 function buildKerningTableIfDoesntExist() {
+    // Guard against missing Editor class in text-render-tests.html
+    if (typeof bitmapText_Editor === 'undefined') {
+        return;
+    }
+    
     // if the kerning table for this font family, style, weight and size doesn't exist yet, generate it
 
     let pixelDensity;
