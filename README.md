@@ -46,6 +46,7 @@
 
   // Draw text at position (x, y)
   bitmapText.drawTextFromGlyphSheet(ctx, "Hello World", 10, 50, fontProperties, '#000000');
+  ```
 
   Generating Your Own Bitmap Fonts
 
