@@ -14,7 +14,7 @@
   4. **Hash Verification**: verification of rendering consistency
 
   ### Component Organization
-
+```
   ┌─────────────────────────────────────────┐
   │          Font Builder (Editor)          │
   │  ┌────────────────┐  ┌─────────────┐    │
@@ -42,6 +42,7 @@
   │  │                │  │ Store       │    │
   │  └────────────────┘  └─────────────┘    │
   └─────────────────────────────────────────┘
+```
 
   ## Class Hierarchy
 
