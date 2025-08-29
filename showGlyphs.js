@@ -18,6 +18,12 @@ function isFontDataAvailable(fontProperties, bitmapGlyphStore) {
   }
 }
 
+// Clear error messages explicitly
+function clearErrors() {
+  const errors = document.querySelectorAll('#testCopyCanvases > div[style*="color: red"]');
+  errors.forEach(error => error.remove());
+}
+
 // Show user-friendly error message
 function showFontError(message) {
   const errorDiv = document.createElement('div');
@@ -37,6 +43,7 @@ function showGlyphs() {
 
   // Clear the DOM
   removeAllCanvasesAndDivs();
+  clearErrors();  // Also explicitly clear any lingering error messages
   
   // Check if font data is available
   if (!isFontDataAvailable(fontProperties, bitmapGlyphStore)) {
