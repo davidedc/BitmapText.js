@@ -10,7 +10,7 @@ function buildAndShowGlyphs() {
   // the one for the current size.
   // If the contents have not changed, check if the kerning table for the current size exists and if not, build it.
   specs = specsParser.parseSpecsIfChanged(settingsTextarea.value);
-  buildKerningTableIfDoesntExist(fontProperties);
+  ensureKerningTable();
 
   if (isNaN(fontProperties.fontSize)) return;
 

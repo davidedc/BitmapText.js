@@ -11,35 +11,42 @@ let fontWeightSelect = null;
 let drawCrisply = true;
 let truncateMetrics = true;
 
+// Consolidated function to extract font properties from UI elements
+function getFontPropertiesFromUI() {
+  let fontSize, pixelDensity;
 
-function buildKerningTableIfDoesntExist() {
+  if (hoverFontSize !== null) {
+    fontSize = hoverFontSize;
+  }
+  else {
+    fontSize = selectedFontSize;
+  }
+
+  if (document.getElementById('pixel-density-2-radio-button').checked) {
+    pixelDensity = 2;
+  }
+  else {
+    pixelDensity = 1;
+  }
+
+  return {
+    fontSize,
+    fontFamily: fontFamilySelect.value,
+    fontStyle: fontStyleSelect.value,
+    fontWeight: fontWeightSelect.value,
+    pixelDensity
+  };
+}
+
+// UI wrapper for kerning table building - ensures kerning table exists for current font
+function ensureKerningTable() {
     // Guard against missing Editor class in text-render-tests.html
     if (typeof bitmapText_Editor === 'undefined') {
         return;
     }
     
-    // if the kerning table for this font family, style, weight and size doesn't exist yet, generate it
-
-    let pixelDensity;
-    if (document.getElementById('pixel-density-2-radio-button').checked) {
-        pixelDensity = 2;
-    }
-    else {
-        pixelDensity = 1;
-    }
-
-    // first get the font family, style, weight, size
-    const fontFamily = fontFamilySelect.value;
-    const fontStyle = fontStyleSelect.value;
-    const fontWeight = fontWeightSelect.value;
-    let fontSize = selectedFontSize;
-
-    if (hoverFontSize !== null) {
-        fontSize = hoverFontSize;
-    }
-
-    const properties = {pixelDensity, fontFamily, fontStyle, fontWeight, fontSize};
- 
+    // Get current font properties and build kerning table if needed
+    const properties = getFontPropertiesFromUI();
     bitmapText_Editor.buildKerningTableIfDoesntExist(properties);
 }
 

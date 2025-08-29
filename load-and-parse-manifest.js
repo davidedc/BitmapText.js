@@ -168,13 +168,8 @@ function ingestLoadedBitmapFontData() {
   console.log("⏱️ ingestingFontData took " + stopTiming('ingestingFontData') + " milliseconds");
 
   startTiming('drawTestText');
-  const fontProperties = {
-    fontSize: 18.5,
-    fontFamily: "Arial",
-    fontStyle: "normal",
-    fontWeight: "normal",
-    pixelDensity: 1
-  };
+  // Use UI's selected font properties for initial render instead of hardcoded values
+  const fontProperties = getFontPropertiesFromUI();
   drawTestText_withStandardClass(fontProperties, bitmapGlyphStore);
   console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
 }
