@@ -82,7 +82,7 @@ class BitmapGlyph_Editor {
     // likely specific to the OS, browser and possibly
     // depend on other factors like the screen resolution, etc.
     // HOWEVER once we fix them, we bake the letters and their sizes and
-    // the kerning info into a format that we re-use pixel-perfectly in all
+    // the kerning info into a format that we re-use pixel-identically in all
     // OSs and browsers, so these corrections only need to be done in
     // one place to get a good rendering everywhere.
     // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...

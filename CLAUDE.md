@@ -2,7 +2,7 @@
 
   ## Quick Context
 
-  You're working on BitmapText.js, a library that pre-renders fonts as bitmaps to achieve pixel-perfect text rendering on Canvas. The key challenge it solves: browsers
+  You're working on BitmapText.js, a library that pre-renders fonts as bitmaps to achieve pixel-identical text rendering on Canvas. The key challenge it solves: browsers
   render text inconsistently with different anti-aliasing.
 
   ## Project Structure at a Glance
@@ -39,7 +39,7 @@
   ## Testing Approach
 
   The project uses visual regression testing:
-  - Renders text and computes cryptographic hashes
+  - Renders text and computes hashes
   - Compares against stored reference hashes
   - Background turns pink on mismatch
 

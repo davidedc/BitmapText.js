@@ -2,7 +2,7 @@
 
   ## System Overview
 
-  BitmapText.js is a bitmap font rendering system that pre-renders glyphs to ensure pixel-perfect consistency across browsers.
+  BitmapText.js is a bitmap font rendering system that pre-renders glyphs to ensure pixel-identical consistency across browsers.
 
   ## Core Architecture
 
@@ -11,7 +11,7 @@
   1. **Pre-rendering**: All glyphs rendered once at generation time
   2. **Immutability**: Runtime uses read-only bitmap data
   3. **Separation of Concerns**: Clear boundary between generation (Editor classes) and rendering (runtime classes)
-  4. **Hash Verification**: Cryptographic verification of rendering consistency
+  4. **Hash Verification**: verification of rendering consistency
 
   ### Component Organization
 
@@ -88,8 +88,8 @@
   - Converts human-readable specs to data structures
 
   **HashStore**
-  - Cryptographic hash generation for rendered output
-  - Verification of pixel-perfect consistency
+  - Hash generation for rendered output
+  - Verification of pixel-identical consistency
   - Test infrastructure support
 
   ## Data Flow

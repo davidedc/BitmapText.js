@@ -1,15 +1,15 @@
   # BitmapText.js
 
-  A JavaScript library for rendering pixel-perfect, consistent bitmap text on HTML5 Canvas across all browsers and devices.
+  A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.
 
   ## Problem Statement
 
-  Browser text rendering on Canvas is inconsistent - different browsers apply anti-aliasing differently, making pixel-perfect text rendering impossible with standard
+  Browser text rendering on Canvas is inconsistent - different browsers apply anti-aliasing differently, making pixel-identical text rendering impossible with standard
   Canvas APIs. This library solves that by pre-rendering glyphs as bitmaps.
 
   ## Features
 
-  - ✅ Pixel-perfect text rendering across all browsers
+  - ✅ Pixel-identical text rendering across all browsers
   - ✅ Pre-rendered glyph sheets for consistent output
   - ✅ Advanced kerning with fine-grained control
   - ✅ Multiple pixel density support (retina displays)
@@ -109,7 +109,7 @@
   Open text-render-tests.html to run visual tests and hash verification.
 
   Tests verify:
-  - Pixel-perfect rendering consistency
+  - Pixel-identical rendering consistency
   - Kerning accuracy
   - Multi-line text layout
   - Cross-browser compatibility
