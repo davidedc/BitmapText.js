@@ -2,6 +2,10 @@
 
   A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.
 
+  **Documentation Navigation:**
+  - **System Architecture** → See ARCHITECTURE.md for detailed design information
+  - **Development with Claude** → See CLAUDE.md for Claude-specific development guidance
+
   ## Problem Statement
 
   Browser text rendering on Canvas is inconsistent - different browsers apply anti-aliasing differently, making pixel-identical text rendering impossible with standard
@@ -84,6 +88,57 @@
 
   Manages glyph sheets and metrics. Usually populated automatically from manifest.
 
+  Constructor
+  
+  new BitmapGlyphStore()
+
+  Methods
+
+  getKerningTable(fontProperties)
+  - Returns kerning table for the specified font properties
+  - Parameters: fontProperties object with fontSize, fontFamily, fontStyle, fontWeight, pixelDensity
+
+  setKerningTable(fontProperties, kerningTable)
+  - Sets kerning table for the specified font properties
+  - Parameters:
+    - fontProperties: Font configuration object
+    - kerningTable: Kerning data structure
+
+  getGlyphSheet(fontProperties)
+  - Returns glyph sheet canvas/image for the specified font properties
+  - Parameters: fontProperties object
+
+  setGlyphSheet(fontProperties, glyphSheet)
+  - Sets glyph sheet for the specified font properties
+  - Parameters:
+    - fontProperties: Font configuration object
+    - glyphSheet: Canvas or Image element
+
+  getGlyphSheetMetrics(fontProperties, letter)
+  - Returns metrics for a specific glyph including position in sheet and dimensions
+  - Returns object with: xInGlyphSheet, tightWidth, tightHeight, dx, dy
+  - Parameters:
+    - fontProperties: Font configuration object
+    - letter: Character to get metrics for
+
+  setGlyphSheetMetrics(fontProperties, metrics)
+  - Sets glyph sheet metrics for the specified font properties
+  - Parameters:
+    - fontProperties: Font configuration object
+    - metrics: Metrics data structure
+
+  getGlyphsTextMetrics(fontProperties, letter)
+  - Returns TextMetrics-compatible object for a specific glyph
+  - Parameters:
+    - fontProperties: Font configuration object
+    - letter: Character to get metrics for
+
+  setGlyphsTextMetrics(fontProperties, metrics)
+  - Sets text metrics for glyphs
+  - Parameters:
+    - fontProperties: Font configuration object
+    - metrics: Text metrics data structure
+
   Build Instructions
 
   Development Setup
@@ -115,7 +170,24 @@
   - Multi-line text layout
   - Cross-browser compatibility
 
-  Browser Support
+  ## Troubleshooting
+
+  **CORS Issues**
+  - Always serve files via HTTP server, not file:// protocol
+  - Use `python -m http.server` or `npx http-server` for local development
+  - Required for loading PNG glyph sheets and calculating hashes
+
+  **Rendering Issues**
+  - Ensure canvases are attached to DOM before rendering for crisp text
+  - Check pixel density scaling is applied correctly
+  - Verify font data is loaded before attempting to render
+
+  **Performance Issues**
+  - Pre-load glyph sheets during initialization
+  - Reuse BitmapText instances rather than creating new ones
+  - Consider caching frequently used text measurements
+
+  ## Browser Support
 
   Works on all modern browsers supporting Canvas API:
   - Chrome/Edge 90+
@@ -123,6 +195,10 @@
   - Safari 14+
   - Mobile browsers
 
-  License
+  ## Architecture
+
+  See ARCHITECTURE.md for detailed system design information.
+
+  ## License
 
   See LICENSE file.

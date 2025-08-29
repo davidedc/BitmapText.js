@@ -89,9 +89,10 @@
   - Converts human-readable specs to data structures
 
   **HashStore**
-  - Hash generation for rendered output
-  - Verification of pixel-identical consistency
-  - Test infrastructure support
+  - Hash generation for rendered output using djb2-style algorithm
+  - Verification of pixel-identical consistency across browsers
+  - Test infrastructure support with reference hash storage
+  - Includes canvas dimensions in hash calculation for robustness
 
   ## Data Flow
 
@@ -118,7 +119,29 @@
 
   ### Tight Bounding Box Detection
 
-  The system scans rendered glyphs pixel-by-pixel to find minimal bounding boxes, eliminating browser-specific padding.
+  The system scans rendered glyphs pixel-by-pixel to find minimal bounding boxes, eliminating browser-specific padding:
+
+  1. **Pixel Scanning**: Iterates through canvas image data
+  2. **Edge Detection**: Finds first/last non-transparent pixels in each direction
+  3. **Coordinate Calculation**: Computes tight dx, dy, width, height values
+  4. **Validation**: Ensures bounding box contains all visible pixels
+
+  ### Hash Verification System
+
+  Ensures pixel-identical rendering across browsers and sessions:
+
+  **Algorithm (canvas-extensions.js:1)**:
+  1. Extract RGBA pixel data from canvas
+  2. Pack each pixel into 32-bit integer (R<<24 | G<<16 | B<<8 | A)
+  3. Apply djb2-style hash function: `hash = ((hash << 5) - hash) + pixel`
+  4. Include canvas width and height in final hash
+  5. Convert to 8-character hexadecimal string
+
+  **Usage**:
+  - Runtime verification during testing
+  - Background color changes to pink on hash mismatch
+  - Reference hashes stored in hashes-repo.js
+  - Enables detection of sub-pixel rendering differences
 
   ### Kerning Application
 
@@ -136,11 +159,32 @@
   3. Fill with target color
   4. Copy to destination
 
+  ## Data Compression/Decompression
+
+  Font data is compressed for efficient storage and network transfer:
+
+  **Compression (compress-font-metrics.js)**:
+  1. **Nested Structure Flattening**: Converts multi-level font property objects to flat arrays
+  2. **Data Deduplication**: Removes redundant entries across similar font configurations
+  3. **String Compression**: Optimizes repeated font family/style/weight combinations
+  4. **Metrics Quantization**: Rounds values to reduce precision where acceptable
+
+  **Decompression (decompress-font-metrics.js)**:
+  1. **Array to Object Mapping**: Rebuilds nested property structures
+  2. **Property Reconstruction**: Restores font property hierarchies
+  3. **Metrics Expansion**: Reconstructs full glyph metrics from compressed data
+  4. **Validation**: Ensures roundtrip compression maintains data integrity
+
   ## Memory Management
 
-  - Single shared temporary canvas for color operations
-  - Glyph sheets loaded on-demand
-  - Automatic cleanup of generation-time data
+  Optimized for minimal memory footprint and efficient access:
+
+  - **Shared Resources**: Single temporary canvas reused for all color operations
+  - **Lazy Loading**: Glyph sheets loaded on-demand when first accessed
+  - **Automatic Cleanup**: Generation-time data structures cleared after font building
+  - **Canvas Reuse**: BitmapText instances reuse coloredGlyphCanvas for all glyphs
+  - **Integer Coordinates**: All positions rounded to prevent floating-point accumulation
+  - **Minimal DOM**: Only necessary canvases attached to document during rendering
 
   ## Performance Optimizations
 
@@ -148,6 +192,33 @@
   2. **Batch Rendering**: Multiple glyphs drawn from single sheet
   3. **Integer Coordinates**: Rounding for pixel alignment
   4. **Minimal DOM Operations**: Reuses canvases
+
+  ## Sequence Diagrams
+
+  ### Glyph Generation Workflow
+  ```
+  User → font-builder.html → BitmapText_Editor → BitmapGlyphStore_Editor
+    1. Load font specifications (specs-default.js)
+    2. Parse specs (SpecsParser.parseSubSpec:98)
+    3. Create individual glyph canvases
+    4. Apply tight bounding box detection
+    5. Calculate kerning tables
+    6. Build optimized glyph sheets
+    7. Generate compressed metadata
+    8. Export .js + .png files
+  ```
+
+  ### Runtime Text Rendering Workflow
+  ```
+  User → BitmapText.drawTextFromGlyphSheet → BitmapGlyphStore
+    1. Measure text (BitmapText.measureText)
+    2. For each character:
+       a. Get glyph metrics (BitmapGlyphStore.getGlyphSheetMetrics)
+       b. Create colored glyph (BitmapText.createColoredGlyph)
+       c. Render to main canvas (BitmapText.renderGlyphToMainCanvas)
+       d. Calculate advancement with kerning (BitmapText.calculateAdvancement_CSS_Px:78)
+    3. Return final rendered text
+  ```
 
   ## Extension Points
 
@@ -166,3 +237,7 @@
   - **Strategy**: Pluggable specs and kerning algorithms
   - **Facade**: BitmapText provides simple API over complex internals
   - **Repository**: BitmapGlyphStore manages data access
+
+  ## API Usage
+
+  See README.md for complete API documentation and usage examples.

@@ -1,5 +1,9 @@
   # Claude Development Guide for BitmapText.js
 
+  **Documentation Navigation:**
+  - **API Usage Examples** → See README.md
+  - **System Architecture** → See ARCHITECTURE.md
+
   ## Quick Context
 
   You're working on BitmapText.js, a library that pre-renders fonts as bitmaps to achieve pixel-identical text rendering on Canvas. The key challenge it solves: browsers
@@ -36,12 +40,9 @@
   2. **Pixel Density**: Remember to scale coordinates by pixelDensity
   3. **Anti-aliasing**: Canvases must be attached to DOM before rendering for crisp text
 
-  ## Testing Approach
-
-  The project uses visual regression testing:
-  - Renders text and computes hashes
-  - Compares against stored reference hashes
-  - Background turns pink on mismatch
+  ## Testing
+  
+  See README.md for testing approach and instructions.
 
   ## Key Invariants
 
