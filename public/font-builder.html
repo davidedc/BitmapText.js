@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uniform Pixel Perfect JS Canvas Text Renderer</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #d4ffd4;
+    }
+    canvas {
+      font-smooth: never;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: none;
+      /* 1 pixel border around canvas */
+      /* border: 1px solid #000; */
+      margin-left: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div id="selectors"></div>
+    <div id="testCopyCanvases" style="clear:both;"></div>
+  </main>
+</body>
+
+<script src="../lib/jszip.min.js"></script>
+<script src="../lib/FileSaver.min.js"></script>
+
+<script src="../src/utils/timing.js"></script>
+
+<script >
+  const maxFontSize_px = 80;
+  const fontSizeIncrement_px = 0.5;
+  let specsDefault;
+  function updatePageContent() {
+    buildAndShowGlyphs();
+  }
+</script>
+
+<script src="../src/utils/nested-properties.js"></script>
+<script src="../src/utils/HashStore.js"></script>
+<script src="../test/data/reference-hashes.js"></script>
+<script src="../src/utils/canvas-extensions.js"></script>
+<script src="../src/editor/BitmapGlyphEditor.js"></script>
+<script src="../src/core/BitmapGlyphStore.js"></script>
+<script src="../src/editor/BitmapGlyphStoreEditor.js"></script>
+<script src="../src/core/BitmapText.js"></script>
+<script src="../src/editor/BitmapTextEditor.js"></script>
+<script src="../src/specs/SpecsParser.js"></script>
+<script src="../src/specs/Specs.js"></script>
+<script src="../src/specs/default-specs.js"></script>
+<script src="../test/utils/test-copy.js"></script>
+<script src="../test/utils/draw-test-text.js"></script>
+<script src="../src/utils/dom-cleanup.js"></script>
+<script src="../test/utils/show-glyphs.js"></script>
+<script src="../test/utils/build-show-glyphs.js"></script>
+<script src="../test/utils/create-glyphs.js"></script>
+<script src="../src/ui/components/copy-choice.js"></script>
+<script src="../src/ui/components/pixel-density.js"></script>
+<script src="../src/ui/components/font-family-dropdown.js"></script>
+<script src="../src/ui/components/font-style-dropdown.js"></script>
+<script src="../src/ui/components/font-weight-dropdown.js"></script>
+<script src="../src/ui/components/size-buttons.js"></script>
+<script src="../src/core/GlyphIDString.js"></script>
+<script src="../src/editor/GlyphIDStringEditor.js"></script>
+<script src="../src/ui/base-ui.js"></script>
+<script src="../src/ui/editor-ui.js"></script>
+<script src="../tools/export-font-data.js"></script>
+<script src="../src/compression/compress.js"></script>
+<!-- needed to test the roundtrip compression + decompression works -->
+<script src="../src/compression/decompress.js"></script>
+<script src="../src/utils/deep-equal.js"></script>
+
+<script >
+  const bitmapGlyphStore_Editor = new BitmapGlyphStore_Editor();
+  const bitmapText_Editor = new BitmapText_Editor(bitmapGlyphStore_Editor);
+    
+  updatePageContent();
+</script>
+
+
+</html>

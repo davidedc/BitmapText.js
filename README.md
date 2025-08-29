@@ -3,8 +3,8 @@
   A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.
 
   **Documentation Navigation:**
-  - **System Architecture** → See ARCHITECTURE.md for detailed design information
-  - **Development with Claude** → See CLAUDE.md for Claude-specific development guidance
+  - **System Architecture** → See docs/ARCHITECTURE.md for detailed design information
+  - **Development with Claude** → See docs/CLAUDE.md for Claude-specific development guidance
 
   ## Problem Statement
 
@@ -54,7 +54,7 @@
 
   Generating Your Own Bitmap Fonts
 
-  1. Open font-builder.html in a web browser
+  1. Open public/font-builder.html in a web browser
   2. Select font family, style, weight, and size range
   3. Click "Download Glyph Sheets" to generate bitmap font data
   4. Include generated files in your project
@@ -152,17 +152,17 @@
   npx http-server
 
   # Open in browser
-  http://localhost:8000/font-builder.html
+  http://localhost:8000/public/font-builder.html
 
   Building Font Data
 
-  1. Configure specs in specs-default.js or via UI
+  1. Configure specs in src/specs/default-specs.js or via UI
   2. Use Font Builder to generate glyph sheets
-  3. Compressed data saved to bitmap-fonts-data/
+  3. Compressed data saved to data/
 
   Testing
 
-  Open text-render-tests.html to run visual tests and hash verification.
+  Open public/test-renderer.html to run visual tests and hash verification.
 
   Tests verify:
   - Pixel-identical rendering consistency
@@ -176,6 +176,7 @@
   - Always serve files via HTTP server, not file:// protocol
   - Use `python -m http.server` or `npx http-server` for local development
   - Required for loading PNG glyph sheets and calculating hashes
+  - For file:// protocol: Convert PNGs to JS files using `node scripts/png-to-js-converter.js` in data/ directory
 
   **Rendering Issues**
   - Ensure canvases are attached to DOM before rendering for crisp text
@@ -195,9 +196,29 @@
   - Safari 14+
   - Mobile browsers
 
+  ## Project Structure
+
+  ```
+  /
+  ├── src/               # Source code
+  │   ├── core/          # Runtime library classes
+  │   ├── editor/        # Font generation classes
+  │   ├── utils/         # Utility functions
+  │   ├── ui/            # UI components
+  │   ├── specs/         # Font specifications
+  │   └── compression/   # Data compression utilities
+  ├── public/            # HTML entry points
+  ├── data/              # Generated font data
+  ├── test/              # Test utilities and data
+  ├── tools/             # Development tools
+  ├── lib/               # Third-party libraries
+  ├── docs/              # Documentation
+  └── scripts/           # Build scripts
+  ```
+
   ## Architecture
 
-  See ARCHITECTURE.md for detailed system design information.
+  See docs/ARCHITECTURE.md for detailed system design information.
 
   ## License
 

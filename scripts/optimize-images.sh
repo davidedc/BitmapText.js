@@ -2,7 +2,9 @@
 
 # Check if ImageOptim is installed
 if ! command -v imageoptim &> /dev/null; then
-    echo "ImageOptim is not installed. Please install it first."
+    echo "ImageOptim is not installed. Please install it first by running BOTH:"
+    echo "brew install --cask imageoptim"
+    echo "brew install imageoptim-cli"
     exit 1
 fi
 

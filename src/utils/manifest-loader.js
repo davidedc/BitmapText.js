@@ -27,13 +27,13 @@ function bitmapFontJsOrImageLoaded() {
 function loadSheetsFromPNGs() {
   for (const IDString of bitmapFontsManifest.IDs) {
     let script = document.createElement('script');
-    script.src = `bitmap-fonts-data/glyph-sheet-${IDString}.js`;
+    script.src = `../data/glyph-sheet-${IDString}.js`;
     document.head.appendChild(script);
     script.onload = function () {
       bitmapFontJsOrImageLoaded();
     };
     let img = new Image();
-    img.src = `bitmap-fonts-data/glyph-sheet-${IDString}.png`;
+    img.src = `../data/glyph-sheet-${IDString}.png`;
     img.onload = function () {
       // Attach the image to the document
       document.body.appendChild(img);
@@ -61,12 +61,12 @@ function loadSheetsFromPNGs() {
 function loadSheetsFromJSs() {
   for (const IDString of bitmapFontsManifest.IDs) {
     let script = document.createElement('script');
-    script.src = `bitmap-fonts-data/glyph-sheet-${IDString}.js`;
+    script.src = `../data/glyph-sheet-${IDString}.js`;
     document.head.appendChild(script);
 
     script.onload = function () {
       let imageScript = document.createElement('script');
-      imageScript.src = `bitmap-fonts-data/image-glyph-sheet-${IDString}.js`;
+      imageScript.src = `../data/image-glyph-sheet-${IDString}.js`;
       console.log(`loading image-glyph-sheet-${IDString}.js ...`);
       document.head.appendChild(imageScript);
 
@@ -143,7 +143,7 @@ function ingestLoadedBitmapFontData() {
     bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
 
     // Remove the script element from the document
-    let script = document.querySelector(`script[src="bitmap-fonts-data/glyph-sheet-${key.replace(/_/g, '-')}.js"]`);
+    let script = document.querySelector(`script[src="../data/glyph-sheet-${key.replace(/_/g, '-')}.js"]`);
     script.remove();
 
     // Remove the loadedBitmapFontData entry
@@ -154,7 +154,7 @@ function ingestLoadedBitmapFontData() {
   delete window.loadedBitmapFontData;
 
   // remove the script tag with the manifest
-  let manifestScript = document.querySelector('script[src="bitmap-fonts-data/manifest.js"]');
+  let manifestScript = document.querySelector('script[src="../data/manifest.js"]');
   manifestScript.remove();
 
   // remove the bitmapFontsManifest object from the window

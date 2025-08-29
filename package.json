@@ -1,0 +1,47 @@
+{
+  "name": "bitmaptext-js",
+  "version": "1.0.0",
+  "description": "A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.",
+  "main": "src/core/BitmapText.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test",
+    "doc": "docs"
+  },
+  "scripts": {
+    "serve": "python -m http.server 8000",
+    "font-builder": "open http://localhost:8000/public/font-builder.html",
+    "test-renderer": "open http://localhost:8000/public/test-renderer.html"
+  },
+  "keywords": [
+    "canvas",
+    "text",
+    "rendering",
+    "bitmap",
+    "font",
+    "pixel-perfect",
+    "typography",
+    "cross-browser"
+  ],
+  "author": "",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "files": [
+    "src/",
+    "public/",
+    "data/",
+    "docs/",
+    "LICENSE",
+    "README.md"
+  ]
+}

@@ -18,7 +18,7 @@
   ┌─────────────────────────────────────────┐
   │          Font Builder (Editor)          │
   │  ┌────────────────┐  ┌─────────────┐    │
-  │  │ BitmapText_    │  │ BitmapGlyph │    │
+  │  │ BitmapText     │  │ BitmapGlyph │    │
   │  │ Editor         │  │ Store_Editor│    │
   │  └────────────────┘  └─────────────┘    │
   │           │                 │           │
@@ -67,12 +67,12 @@
 
   ### Editor Classes (Generation)
 
-  **BitmapText_Editor extends BitmapText**
+  **BitmapTextEditor extends BitmapText**
   - Additional capabilities for glyph generation
   - Creates individual glyph canvases
   - Calculates precise bounding boxes
 
-  **BitmapGlyphStore_Editor extends BitmapGlyphStore**
+  **BitmapGlyphStoreEditor extends BitmapGlyphStore**
   - Builds glyph sheets from individual glyphs
   - Optimizes glyph packing
   - Generates compressed metadata
@@ -130,7 +130,7 @@
 
   Ensures pixel-identical rendering across browsers and sessions:
 
-  **Algorithm (canvas-extensions.js:1)**:
+  **Algorithm (src/utils/canvas-extensions.js:1)**:
   1. Extract RGBA pixel data from canvas
   2. Pack each pixel into 32-bit integer (R<<24 | G<<16 | B<<8 | A)
   3. Apply djb2-style hash function: `hash = ((hash << 5) - hash) + pixel`
@@ -140,7 +140,7 @@
   **Usage**:
   - Runtime verification during testing
   - Background color changes to pink on hash mismatch
-  - Reference hashes stored in hashes-repo.js
+  - Reference hashes stored in test/data/reference-hashes.js
   - Enables detection of sub-pixel rendering differences
 
   ### Kerning Application
@@ -163,17 +163,17 @@
 
   Font data is compressed for efficient storage and network transfer:
 
-  **Compression (compress-font-metrics.js)**:
-  1. **Nested Structure Flattening**: Converts multi-level font property objects to flat arrays
-  2. **Data Deduplication**: Removes redundant entries across similar font configurations
-  3. **String Compression**: Optimizes repeated font family/style/weight combinations
-  4. **Metrics Quantization**: Rounds values to reduce precision where acceptable
+  **Compression (src/compression/compress.js)**:
+  1. **Dynamic Base Metrics**: Uses first available character for base font metrics extraction
+  2. **Nested Structure Flattening**: Converts multi-level font property objects to flat arrays
+  3. **Data Deduplication**: Removes redundant entries across similar font configurations
+  4. **String Compression**: Optimizes repeated font family/style/weight combinations
 
-  **Decompression (decompress-font-metrics.js)**:
+  **Decompression (src/compression/decompress.js)**:
   1. **Array to Object Mapping**: Rebuilds nested property structures
   2. **Property Reconstruction**: Restores font property hierarchies
   3. **Metrics Expansion**: Reconstructs full glyph metrics from compressed data
-  4. **Validation**: Ensures roundtrip compression maintains data integrity
+  4. **Essential Property Validation**: Verifies key metrics are preserved during roundtrip
 
   ## Memory Management
 
@@ -197,9 +197,9 @@
 
   ### Glyph Generation Workflow
   ```
-  User → font-builder.html → BitmapText_Editor → BitmapGlyphStore_Editor
-    1. Load font specifications (specs-default.js)
-    2. Parse specs (SpecsParser.parseSubSpec:98)
+  User → public/font-builder.html → BitmapTextEditor → BitmapGlyphStoreEditor
+    1. Load font specifications (src/specs/default-specs.js)
+    2. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     3. Create individual glyph canvases
     4. Apply tight bounding box detection
     5. Calculate kerning tables
@@ -210,20 +210,20 @@
 
   ### Runtime Text Rendering Workflow
   ```
-  User → BitmapText.drawTextFromGlyphSheet → BitmapGlyphStore
-    1. Measure text (BitmapText.measureText)
+  User → src/core/BitmapText.drawTextFromGlyphSheet → src/core/BitmapGlyphStore
+    1. Measure text (src/core/BitmapText.measureText)
     2. For each character:
-       a. Get glyph metrics (BitmapGlyphStore.getGlyphSheetMetrics)
-       b. Create colored glyph (BitmapText.createColoredGlyph)
-       c. Render to main canvas (BitmapText.renderGlyphToMainCanvas)
-       d. Calculate advancement with kerning (BitmapText.calculateAdvancement_CSS_Px:78)
+       a. Get glyph metrics (src/core/BitmapGlyphStore.getGlyphSheetMetrics)
+       b. Create colored glyph (src/core/BitmapText.createColoredGlyph)
+       c. Render to main canvas (src/core/BitmapText.renderGlyphToMainCanvas)
+       d. Calculate advancement with kerning (src/core/BitmapText.calculateAdvancement_CSS_Px:78)
     3. Return final rendered text
   ```
 
   ## Extension Points
 
   ### Custom Glyph Sources
-  Override `BitmapGlyphStore_Editor.createCanvasesAndLetterTextMetrics()`
+  Override `src/editor/BitmapGlyphStoreEditor.createCanvasesAndLetterTextMetrics()`
 
   ### Custom Kerning Rules
   Extend `Specs` class or modify specs DSL

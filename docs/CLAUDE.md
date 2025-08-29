@@ -11,25 +11,25 @@
 
   ## Project Structure at a Glance
 
-  - **Core runtime**: BitmapText.js, BitmapGlyphStore.js
-  - **Generation tools**: *_Editor.js files
-  - **Font data**: bitmap-fonts-data/
-  - **Entry points**: font-builder.html (generation), text-render-tests.html (testing)
+  - **Core runtime**: src/core/BitmapText.js, src/core/BitmapGlyphStore.js
+  - **Generation tools**: src/editor/*Editor.js files
+  - **Font data**: data/
+  - **Entry points**: public/font-builder.html (generation), public/test-renderer.html (testing)
 
   ## Key Development Workflows
 
   ### Adding New Font Support
-  1. Modify specs in specs-default.js for kerning rules
-  2. Use font-builder.html to generate sheets
-  3. Test with text-render-tests.html
+  1. Modify specs in src/specs/default-specs.js for kerning rules
+  2. Use public/font-builder.html to generate sheets
+  3. Test with public/test-renderer.html
 
   ### Debugging Rendering Issues
-  - Check hash mismatches in HashStore
-  - Use canvas-extensions.js debugging methods
+  - Check hash mismatches in src/utils/HashStore
+  - Use src/utils/canvas-extensions.js debugging methods
   - Compare with browser's native rendering
 
   ### Performance Testing
-  Look for timing.js calls throughout - they measure:
+  Look for src/utils/timing.js calls throughout - they measure:
   - Glyph generation time
   - Sheet building time
   - Runtime rendering speed
@@ -52,15 +52,16 @@
 
   ## Where to Find Things
 
-  - **Kerning logic**: BitmapText.calculateAdvancement_CSS_Px:78
-  - **Glyph rendering**: BitmapText.drawLetter:158
-  - **Hash verification**: canvas-extensions.getHash:1
-  - **Specs parsing**: SpecsParser.parseSubSpec:98
+  - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
+  - **Glyph rendering**: src/core/BitmapText.drawLetter:158
+  - **Hash verification**: src/utils/canvas-extensions.getHash:1
+  - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
 
   ## Development Tips
 
   - The "kern king" test text contains challenging character pairs
   - Use drawCheckeredBackgrounds flag for transparency testing
   - Browser DevTools may show anti-aliased text - trust the hashes
+  - PNG to JS conversion: Use `node scripts/png-to-js-converter.js` in data/ directory for file:// protocol compatibility
 
   See README.md for API usage, ARCHITECTURE.md for system design.

@@ -3,12 +3,16 @@ function compressFontMetrics(data) {
   const metrics = data;
   
   // Extract base metrics that are common across most glyphs
+  // Use the first available character to get base metrics
+  const firstChar = Object.keys(metrics.glyphsTextMetrics)[0];
+  const firstGlyph = metrics.glyphsTextMetrics[firstChar];
+  
   const baseMetrics = {
-    fba: metrics.glyphsTextMetrics['0'].fontBoundingBoxAscent,
-    fbd: metrics.glyphsTextMetrics['0'].fontBoundingBoxDescent,
-    hb: metrics.glyphsTextMetrics['0'].hangingBaseline,
-    ab: metrics.glyphsTextMetrics['0'].alphabeticBaseline,
-    ib: metrics.glyphsTextMetrics['0'].ideographicBaseline,
+    fba: firstGlyph.fontBoundingBoxAscent,
+    fbd: firstGlyph.fontBoundingBoxDescent,
+    hb: firstGlyph.hangingBaseline,
+    ab: firstGlyph.alphabeticBaseline,
+    ib: firstGlyph.ideographicBaseline,
   };
 
   // Compress kerning table directly
@@ -20,11 +24,6 @@ function compressFontMetrics(data) {
   // Compress glyph metrics into arrays with exact values
   const compressedGlyphs = {};
   Object.entries(metrics.glyphsTextMetrics).forEach(([char, glyph]) => {
-    // TODO to check if in all the glyph.* fields below BEFORE COMPRESSING rounding to
-    // two decimal places also gives a good result (i.e. toFixed(2))
-    // because we are storing a lot of decimal places here! and when I tried
-    // a toFixed(2) we still got a hash match on the generated rendered text image
-    // so probably 2 decimal places is enough and it would make things more compact.
     compressedGlyphs[char] = [
       glyph.width, 
       glyph.actualBoundingBoxLeft,
