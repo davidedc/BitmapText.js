@@ -11,7 +11,10 @@
   "scripts": {
     "serve": "python -m http.server 8000",
     "font-builder": "open http://localhost:8000/public/font-builder.html",
-    "test-renderer": "open http://localhost:8000/public/test-renderer.html"
+    "test-renderer": "open http://localhost:8000/public/test-renderer.html",
+    "watch-fonts": "./scripts/watch-glyph-sheets.sh",
+    "optimize-images": "./scripts/optimize-images.sh",
+    "png-to-js": "node scripts/png-to-js-converter.js"
   },
   "keywords": [
     "canvas",

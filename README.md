@@ -52,12 +52,24 @@
   bitmapText.drawTextFromGlyphSheet(ctx, "Hello World", 10, 50, fontProperties, '#000000');
   ```
 
-  Generating Your Own Bitmap Fonts
+  ## Generating Your Own Bitmap Fonts
 
+  ### Automated Pipeline (Recommended)
+  ```bash
+  npm run watch-fonts
+  # or
+  ./scripts/watch-glyph-sheets.sh
+  ```
+  Then use the font-builder.html - files will be processed automatically!
+
+  ### Manual Process
   1. Open public/font-builder.html in a web browser
   2. Select font family, style, weight, and size range
   3. Click "Download Glyph Sheets" to generate bitmap font data
-  4. Include generated files in your project
+  4. Manually process files (see scripts/README.md for details)
+  5. Include generated files in your project
+
+  For complete automation documentation, see `scripts/README.md`.
 
   API Reference
 
@@ -176,7 +188,7 @@
   - Always serve files via HTTP server, not file:// protocol
   - Use `python -m http.server` or `npx http-server` for local development
   - Required for loading PNG glyph sheets and calculating hashes
-  - For file:// protocol: Convert PNGs to JS files using `node scripts/png-to-js-converter.js` in data/ directory
+  - For file:// protocol: Convert PNGs to JS files using `node scripts/png-to-js-converter.js [directory]`
 
   **Rendering Issues**
   - Ensure canvases are attached to DOM before rendering for crisp text
@@ -213,7 +225,7 @@
   ├── tools/             # Development tools
   ├── lib/               # Third-party libraries
   ├── docs/              # Documentation
-  └── scripts/           # Build scripts
+  └── scripts/           # Automation and build scripts
   ```
 
   ## Architecture

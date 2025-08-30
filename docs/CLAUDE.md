@@ -14,6 +14,7 @@
   - **Core runtime**: src/core/BitmapText.js, src/core/BitmapGlyphStore.js
   - **Generation tools**: src/editor/*Editor.js files
   - **Font data**: data/
+  - **Automation scripts**: scripts/ (watch-glyph-sheets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-builder.html (generation), public/test-renderer.html (testing)
 
   ## Key Development Workflows
@@ -21,7 +22,8 @@
   ### Adding New Font Support
   1. Modify specs in src/specs/default-specs.js for kerning rules
   2. Use public/font-builder.html to generate sheets
-  3. Test with public/test-renderer.html
+  3. Use automated pipeline: `./scripts/watch-glyph-sheets.sh` for processing
+  4. Test with public/test-renderer.html
 
   ### Debugging Rendering Issues
   - Check hash mismatches in src/utils/HashStore
@@ -62,6 +64,8 @@
   - The "kern king" test text contains challenging character pairs
   - Use drawCheckeredBackgrounds flag for transparency testing
   - Browser DevTools may show anti-aliased text - trust the hashes
-  - PNG to JS conversion: Use `node scripts/png-to-js-converter.js` in data/ directory for file:// protocol compatibility
+  - PNG to JS conversion: Use `node scripts/png-to-js-converter.js [directory]` for file:// protocol compatibility
+  - Automated pipeline available: See `scripts/README.md` for complete automation guide
+  - Use `--preserve-originals` flag to keep unoptimized PNGs for comparison during development
 
   See README.md for API usage, ARCHITECTURE.md for system design.
