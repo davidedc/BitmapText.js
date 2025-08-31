@@ -5,6 +5,7 @@
 
 # Parse command line arguments
 PRESERVE_ORIGINALS=false
+REMOVE_QOI=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -16,23 +17,29 @@ while [[ $# -gt 0 ]]; do
             PRESERVE_ORIGINALS=false
             shift
             ;;
+        --remove-qoi)
+            REMOVE_QOI=true
+            shift
+            ;;
         -h|--help)
-            echo "Usage: $0 [--preserve-originals|--no-preserve-originals]"
+            echo "Usage: $0 [options]"
             echo ""
             echo "Automated font data pipeline that monitors ~/Downloads/glyphSheets.zip"
             echo ""
             echo "Options:"
             echo "  --preserve-originals     Keep .orig.png backup files after optimization"
             echo "  --no-preserve-originals  Remove .orig.png backup files after optimization (default)"
+            echo "  --remove-qoi            Remove .qoi files after conversion to PNG"
             echo "  -h, --help              Show this help message"
             echo ""
             echo "The script will:"
             echo "  1. Monitor ~/Downloads/glyphSheets.zip"
             echo "  2. Create timestamped backups of data/ directory"
             echo "  3. Extract new glyphSheets.zip to data/"
-            echo "  4. Optimize PNG files"
-            echo "  5. Convert PNGs to JS wrappers"
-            echo "  6. Continue monitoring"
+            echo "  4. Convert QOI files to PNG format"
+            echo "  5. Optimize PNG files"
+            echo "  6. Convert PNGs to JS wrappers"
+            echo "  7. Continue monitoring"
             echo ""
             echo "Press Ctrl+C to stop monitoring."
             exit 0
@@ -235,6 +242,26 @@ function move_zip_to_trash() {
     fi
 }
 
+function run_qoi_to_png_conversion() {
+    log "INFO" "Converting QOI files to PNG format..."
+    
+    local qoi_flag=""
+    if [ "$REMOVE_QOI" = "true" ]; then
+        qoi_flag="--remove-qoi"
+        log "INFO" "QOI files will be removed after conversion"
+    else
+        log "INFO" "QOI files will be preserved after conversion"
+    fi
+    
+    if node "$PROJECT_ROOT/scripts/qoi-to-png-converter.js" "$DATA_DIR" $qoi_flag; then
+        log "SUCCESS" "QOI to PNG conversion completed"
+        return 0
+    else
+        log "ERROR" "QOI to PNG conversion failed"
+        return 1
+    fi
+}
+
 function run_optimization() {
     log "INFO" "Running PNG optimization..."
     
@@ -289,17 +316,22 @@ function process_glyph_sheets() {
         return 1
     fi
     
-    # Step 4: Run PNG optimization
+    # Step 4: Convert QOI files to PNG format
+    if ! run_qoi_to_png_conversion; then
+        log "WARNING" "QOI to PNG conversion failed, but continuing..."
+    fi
+    
+    # Step 5: Run PNG optimization
     if ! run_optimization; then
         log "WARNING" "PNG optimization failed, but continuing..."
     fi
     
-    # Step 5: Convert PNGs to JS
+    # Step 6: Convert PNGs to JS
     if ! run_js_conversion; then
         log "WARNING" "PNG to JS conversion failed, but continuing..."
     fi
     
-    # Step 6: Move zip to trash
+    # Step 7: Move zip to trash
     move_zip_to_trash
     
     log "SUCCESS" "Glyph sheets processing pipeline completed!"
@@ -333,6 +365,7 @@ function main() {
     log "INFO" "Data directory: $DATA_DIR"
     log "INFO" "Monitoring: $GLYPH_SHEETS_FILE"
     log "INFO" "Preserve originals: $PRESERVE_ORIGINALS"
+    log "INFO" "Remove QOI files: $REMOVE_QOI"
     
     # Change to project root
     cd "$PROJECT_ROOT" || {

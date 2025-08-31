@@ -65,7 +65,7 @@
   ### Manual Process
   1. Open public/font-builder.html in a web browser
   2. Select font family, style, weight, and size range
-  3. Click "Download Glyph Sheets" to generate bitmap font data
+  3. Click "Download Glyph Sheets" to generate QOI bitmap font data
   4. Manually process files (see scripts/README.md for details)
   5. Include generated files in your project
 
@@ -189,6 +189,11 @@
   - Use `python -m http.server` or `npx http-server` for local development
   - Required for loading PNG glyph sheets and calculating hashes
   - For file:// protocol: Convert PNGs to JS files using `node scripts/png-to-js-converter.js [directory]`
+
+  **QOI Format Issues**
+  - Browser exports QOI format, pipeline converts to PNG automatically
+  - Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI files
+  - QOI files preserved by default for future Node.js compatibility
 
   **Rendering Issues**
   - Ensure canvases are attached to DOM before rendering for crisp text

@@ -105,7 +105,7 @@
      Individual Glyphs → Packed Layout → Glyph Sheet Image + Metrics
 
   3. **Data Export**
-     Glyph Sheet + Metrics → Compressed JS + PNG Files
+     Glyph Sheet + Metrics → QOI Files + Compressed JS
 
   ### Runtime Phase
 
@@ -159,6 +159,26 @@
   3. Fill with target color
   4. Copy to destination
 
+  ## QOI Image Format
+
+  The system uses QOI (Quite OK Image format) for glyph sheet export and storage:
+
+  **Browser Export (tools/export-font-data.js:25)**:
+  1. Extract RGBA image data from canvas via `getImageData()`
+  2. Encode using QOIEncode with 4 channels (RGBA) and sRGB colorspace
+  3. Package as base64 in zip for download
+
+  **Pipeline Conversion (scripts/qoi-to-png-converter.js)**:
+  1. Decode QOI files using QOIDecode library
+  2. Convert to uncompressed PNG using PngEncoder for ImageOptim processing
+  3. Preserve QOI files by default for future Node.js font rendering
+
+  **Benefits**:
+  - **Minimal Dependencies**: Small, self-contained encoder/decoder (~200 lines each)
+  - **Reasonable Compression**: Better than raw RGBA, smaller than browser PNG
+  - **Node.js Compatibility**: Easy parsing without external dependencies
+  - **Future-Ready**: QOI files preserved for direct Node.js font renderer consumption
+
   ## Data Compression/Decompression
 
   Font data is compressed for efficient storage and network transfer:
@@ -205,7 +225,7 @@
     5. Calculate kerning tables
     6. Build optimized glyph sheets
     7. Generate compressed metadata
-    8. Export .js + .png files
+    8. Export .js + .qoi files
   ```
 
   ### Runtime Text Rendering Workflow

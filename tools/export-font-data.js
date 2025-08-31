@@ -22,18 +22,30 @@ function downloadGlyphSheetsAndKerningMaps(options) {
           return;
       }
 
-      // Generate PNG from canvas
+      // Generate QOI from canvas
       const canvas = glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size];
-      const dataUrl = canvas.toDataURL('image/png');
-      const data = dataUrl.split(',')[1];
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Encode to QOI format
+      const qoiBuffer = QOIEncode(imageData.data, {
+          width: canvas.width,
+          height: canvas.height,
+          channels: 4, // RGBA
+          colorspace: 0 // sRGB with linear alpha
+      });
+      
+      // Convert ArrayBuffer to base64 for zip storage
+      const qoiUint8Array = new Uint8Array(qoiBuffer);
+      const qoiBase64 = btoa(String.fromCharCode(...qoiUint8Array));
 
       // Generate ID string for the current configuration
       const properties = { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize: size };
       const IDString = GlyphIDString_Editor.getIDString(properties);
       IDs.push(IDString);
 
-      // Add PNG to zip
-      folder.file(`glyph-sheet-${IDString}.png`, data, { base64: true });
+      // Add QOI to zip
+      folder.file(`glyph-sheet-${IDString}.qoi`, qoiBase64, { base64: true });
 
       // navigate through the bitmapGlyphStore, which contains:
       //   kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
