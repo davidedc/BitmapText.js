@@ -15,7 +15,8 @@
     "watch-fonts": "./scripts/watch-glyph-sheets.sh",
     "optimize-images": "./scripts/optimize-images.sh",
     "qoi-to-png": "node scripts/qoi-to-png-converter.js",
-    "png-to-js": "node scripts/png-to-js-converter.js"
+    "png-to-js": "node scripts/png-to-js-converter.js",
+    "qoi-memory": "node scripts/qoi-memory-calculator.js"
   },
   "keywords": [
     "canvas",

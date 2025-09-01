@@ -72,5 +72,6 @@
   - Automated pipeline available: See `scripts/README.md` for complete automation guide
   - Use `--preserve-originals` flag to keep unoptimized PNGs for comparison during development
   - Use `--remove-qoi` flag to cleanup QOI files if disk space is limited
+  - QOI memory analysis: Use `npm run qoi-memory` or `node scripts/qoi-memory-calculator.js [directory]` to analyze uncompressed memory usage of bitmap fonts
 
   See README.md for API usage, ARCHITECTURE.md for system design.

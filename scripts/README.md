@@ -122,6 +122,32 @@ node scripts/png-to-js-converter.js data/     # Explicitly specify data/
 node scripts/png-to-js-converter.js /path/to/pngs/  # Use custom directory
 ```
 
+### 5. QOI Memory Calculator Script
+```bash
+node scripts/qoi-memory-calculator.js [directory]
+# or
+npm run qoi-memory
+```
+
+**Options:**
+- `--help, -h` - Show help message
+
+**Examples:**
+```bash
+node scripts/qoi-memory-calculator.js                    # Default: data/ directory
+node scripts/qoi-memory-calculator.js data/              # Explicitly specify data/
+node scripts/qoi-memory-calculator.js /path/to/qoi/      # Custom directory
+npm run qoi-memory                                       # Using npm script
+```
+
+**What it does:**
+- Analyzes all QOI files in the specified directory
+- Extracts dimensions from QOI headers without full decoding
+- Calculates uncompressed memory: width × height × 4 bytes (RGBA)
+- Shows per-file statistics and total memory usage
+- Displays compression ratios and memory savings
+- Identifies largest files by uncompressed size
+
 ---
 
 ## 📁 File Structure
@@ -131,6 +157,7 @@ scripts/
 ├── watch-glyph-sheets.sh     # Main monitoring script
 ├── optimize-images.sh        # PNG compression
 ├── png-to-js-converter.js    # PNG → JS wrapper conversion
+├── qoi-memory-calculator.js  # QOI memory usage analyzer
 ├── test-pipeline.sh          # One-time pipeline test
 └── README.md                 # This file
 
