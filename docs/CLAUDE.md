@@ -16,6 +16,7 @@
   - **Font data**: data/
   - **Automation scripts**: scripts/ (watch-glyph-sheets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-builder.html (generation), public/test-renderer.html (testing)
+  - **Examples**: examples/node/ (Node.js demos showing library usage outside browser)
 
   ## Key Development Workflows
 
@@ -44,7 +45,7 @@
 
   ## Testing
   
-  See README.md for testing approach and instructions.
+  See README.md for testing approach and instructions. Node.js example (examples/node/hello-world-node.js) demonstrates library functionality outside browser environment using QOI format and PNG export.
 
   ## Key Invariants
 

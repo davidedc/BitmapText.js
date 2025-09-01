@@ -180,6 +180,12 @@
   **Multi-Size Demo**
   Open public/hello-world-multi-size.html to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
 
+  **Node.js Usage**
+  ```bash
+  node examples/node/hello-world-node.js
+  ```
+  Renders "Hello World" using QOI glyph sheets and exports as uncompressed PNG. Self-contained script with no npm dependencies.
+
   **Full Test Suite**  
   Open public/test-renderer.html to run visual tests and hash verification.
 
