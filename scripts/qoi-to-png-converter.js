@@ -173,8 +173,11 @@ for (const qoiFile of qoiFiles) {
         // Read QOI file
         const qoiBuffer = fs.readFileSync(qoiFile);
         
-        // Decode QOI
-        const qoiData = QOIDecode(qoiBuffer.buffer);
+        // Decode QOI - Create a properly sized ArrayBuffer
+        // qoiBuffer.buffer may contain extra padding beyond the actual data
+        const properArrayBuffer = qoiBuffer.buffer.slice(qoiBuffer.byteOffset, qoiBuffer.byteOffset + qoiBuffer.length);
+        
+        const qoiData = QOIDecode(properArrayBuffer);
         
         if (qoiData.error) {
             throw new Error('QOI decode error');
