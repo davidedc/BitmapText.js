@@ -4,10 +4,16 @@
 // and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
 // the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
 class BitmapText {
-  constructor(glyphStore) {
+  constructor(glyphStore, canvasFactory) {
     this.glyphStore = glyphStore;
     // we keep one canvas and a context for coloring all the glyphs
-    this.coloredGlyphCanvas = document.createElement('canvas');
+    if (canvasFactory) {
+      this.coloredGlyphCanvas = canvasFactory();
+    } else if (typeof document !== 'undefined') {
+      this.coloredGlyphCanvas = document.createElement('canvas');
+    } else {
+      throw new Error('Canvas factory required in Node.js environment');
+    }
     this.coloredGlyphCtx = this.coloredGlyphCanvas.getContext('2d');
   }
 

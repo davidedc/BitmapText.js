@@ -68,6 +68,7 @@
   - QOI format: Browser exports QOI, pipeline auto-converts to PNG for processing
   - QOI conversion: Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI files
   - PNG to JS conversion: Use `node scripts/png-to-js-converter.js [directory]` for file:// protocol compatibility
+  - Node.js demo build: Use `./scripts/build-node-demo.sh` to rebuild concatenated Node.js executable
   - Automated pipeline available: See `scripts/README.md` for complete automation guide
   - Use `--preserve-originals` flag to keep unoptimized PNGs for comparison during development
   - Use `--remove-qoi` flag to cleanup QOI files if disk space is limited

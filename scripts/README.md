@@ -87,7 +87,31 @@ brew install trash         # Safe file deletion
 ./scripts/optimize-images.sh /path/to/pngs/            # Custom directory, remove backups
 ```
 
-### 3. PNG to JS Converter Script
+### 3. Node.js Demo Build Script
+```bash
+./scripts/build-node-demo.sh
+```
+
+**What it does:**
+- Concatenates existing source files into a single Node.js executable
+- Includes Canvas mock, utilities, image libraries, and core classes
+- Creates `examples/node/hello-world-node.js` with proper permissions
+- Maintains single source of truth for all components
+
+**Source files used:**
+- `src/node/canvas-mock.js` - Minimal Canvas implementation
+- `src/utils/nested-properties.js` - Nested object utilities
+- `src/compression/decompress.js` - Font metrics decompression
+- `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
+- `src/core/BitmapGlyphStore.js`, `src/core/BitmapText.js` - Core classes
+- `src/node/hello-world-main.js` - Main execution code
+
+**Output:**
+- Self-contained executable: `examples/node/hello-world-node.js`
+- File size: ~52KB, ~1450 lines
+- No external dependencies required
+
+### 4. PNG to JS Converter Script
 ```bash
 node scripts/png-to-js-converter.js [directory]
 ```

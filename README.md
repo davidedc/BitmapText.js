@@ -182,9 +182,13 @@
 
   **Node.js Usage**
   ```bash
+  # Build the demo (automatically concatenates source files)
+  ./scripts/build-node-demo.sh
+  
+  # Run the demo
   node examples/node/hello-world-node.js
   ```
-  Renders "Hello World" using QOI glyph sheets and exports as uncompressed PNG. Self-contained script with no npm dependencies.
+  Renders "Hello World" using QOI glyph sheets and exports as uncompressed PNG. Self-contained script with no npm dependencies, built from modular source files.
 
   **Full Test Suite**  
   Open public/test-renderer.html to run visual tests and hash verification.
