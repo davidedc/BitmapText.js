@@ -177,6 +177,9 @@
   **Minimal Demo**
   Open public/hello-world-demo.html for a simple "Hello World" example showing basic usage.
 
+  **Multi-Size Demo**
+  Open public/hello-world-multi-size.html to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
+
   **Full Test Suite**  
   Open public/test-renderer.html to run visual tests and hash verification.
 

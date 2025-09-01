@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js - Hello World Multi-Size Demo</title>
+  <style>
+    body {
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+    
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    canvas {
+      border: 1px solid #ccc;
+      background: white;
+      margin-top: 10px;
+    }
+    
+    .info {
+      margin-top: 15px;
+      padding: 10px;
+      background: #e8f4f8;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>BitmapText.js - Hello World Multi-Size Demo</h1>
+  <p>This demo shows "Hello World" rendered at three different font sizes (18, 18.5, 19) to demonstrate what's required for multi-size bitmap text rendering.</p>
+  <canvas id="demo-canvas" width="400" height="200"></canvas>
+
+  <div class="info">
+    <strong>Key Learning:</strong> Each font size requires its own pre-generated bitmap font data.
+    This demo loads 6 files total (3 JS metrics files + 3 glyph sheet images).
+  </div>
+
+  <!-- Essential dependencies -->
+  <!-- Utility functions for accessing nested object properties (used by glyph store) -->
+  <script src="../src/utils/nested-properties.js"></script>
+  <!-- Decompression utility to unpack compressed font metrics data -->
+  <script src="../src/compression/decompress.js"></script>
+  <!-- Data store for glyph sheets, metrics, and kerning tables -->
+  <script src="../src/core/BitmapGlyphStore.js"></script>
+  <!-- Main bitmap text rendering engine -->
+  <script src="../src/core/BitmapText.js"></script>
+
+  <script>
+    // Font properties for each size - Arial normal normal with pixel density 1
+    const fontSizes = [18, 18.5, 19];
+    const fontPropertiesArray = fontSizes.map(size => ({
+      pixelDensity: 1,
+      fontFamily: "Arial",
+      fontStyle: "normal",
+      fontWeight: "normal",
+      fontSize: size
+    }));
+
+    // Initialize bitmap text system
+    const bitmapGlyphStore = new BitmapGlyphStore();
+    const bitmapText = new BitmapText(bitmapGlyphStore);
+
+    // Canvas setup
+    const canvas = document.getElementById('demo-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Initialize global variables (required by the font JS files)
+    window.loadedBitmapFontData = {};
+    window.imagesFromJs = {};
+    window.isKerningEnabled = true;  // Enable kerning for better text rendering
+
+    // Font data loading tracking - 6 files total (3 sizes × 2 files each)
+    let loadedFiles = 0;
+    const totalFiles = fontSizes.length * 2;
+
+    function onFileLoaded() {
+      loadedFiles++;
+      console.log(`Loaded ${loadedFiles} of ${totalFiles} files`);
+      if (loadedFiles === totalFiles) {
+        renderMultiSizeHelloWorld();
+      }
+    }
+
+    // Function to create IDString from font size
+    function createIDString(fontSize) {
+      // Handle fractional sizes: 18.5 becomes "18-5", whole numbers get "-0" suffix
+      const sizeStr = fontSize.toString().replace('.', '-');
+      // Add "-0" suffix for whole numbers (18 -> "18-0"), fractional already have second part (18.5 -> "18-5")
+      const finalSizeStr = sizeStr.includes('-') ? sizeStr : `${sizeStr}-0`;
+      return `density-1-0-Arial-style-normal-weight-normal-size-${finalSizeStr}`;
+    }
+
+    // Load font data for all three sizes
+    fontSizes.forEach((fontSize, index) => {
+      const IDString = createIDString(fontSize);
+      const fontProperties = fontPropertiesArray[index];
+
+      // Load JS metrics file
+      const dataScript = document.createElement('script');
+      dataScript.src = `../data/glyph-sheet-${IDString}.js`;
+      dataScript.onload = function() {
+        // Process loaded font data
+        const fontData = window.loadedBitmapFontData[IDString];
+        
+        // Set up glyph store with loaded data for this font size
+        bitmapGlyphStore.setKerningTable(fontProperties, fontData.kerningTable);
+        bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+        bitmapGlyphStore.setGlyphSheetMetrics(fontProperties, fontData.glyphSheetsMetrics);
+        bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+          fontProperties,
+          fontData.spaceAdvancementOverrideForSmallSizesInPx
+        );
+
+        onFileLoaded();
+      };
+      document.head.appendChild(dataScript);
+
+      // Load glyph sheet image for this font size
+      if (window.location.href.includes("file://")) {
+        // Load from JS-wrapped image for file:// protocol
+        const imageScript = document.createElement('script');
+        imageScript.src = `../data/image-glyph-sheet-${IDString}.js`;
+        imageScript.onload = function() {
+          const img = new Image();
+          img.src = `data:image/png;base64,${window.imagesFromJs[IDString]}`;
+          img.onload = function() {
+            bitmapGlyphStore.setGlyphSheet(fontProperties, img);
+            onFileLoaded();
+          };
+        };
+        document.head.appendChild(imageScript);
+      } else {
+        // Load PNG directly for http:// protocol
+        const img = new Image();
+        img.src = `../data/glyph-sheet-${IDString}.png`;
+        img.onload = function() {
+          bitmapGlyphStore.setGlyphSheet(fontProperties, img);
+          onFileLoaded();
+        };
+      }
+    });
+
+    function renderMultiSizeHelloWorld() {
+      // Clear canvas with white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw "Hello World" at each font size
+      fontPropertiesArray.forEach((fontProperties, index) => {
+        const yPosition = 50 + (index * 50); // Space lines 50px apart
+        const text = `Hello World (size ${fontProperties.fontSize})`;
+        
+        bitmapText.drawTextFromGlyphSheet(
+          ctx,
+          text,
+          20,  // x position
+          yPosition,
+          fontProperties,
+          '#000000'  // black color
+        );
+        
+        console.log(`Rendered "${text}" at y=${yPosition}`);
+      });
+
+      console.log('Multi-size Hello World rendered successfully!');
+    }
+  </script>
+</body>
+
+</html>
