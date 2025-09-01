@@ -172,8 +172,12 @@
   2. Use Font Builder to generate glyph sheets
   3. Compressed data saved to data/
 
-  Testing
+  Testing and Examples
 
+  **Minimal Demo**
+  Open public/hello-world-demo.html for a simple "Hello World" example showing basic usage.
+
+  **Full Test Suite**  
   Open public/test-renderer.html to run visual tests and hash verification.
 
   Tests verify:
