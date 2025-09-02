@@ -130,12 +130,31 @@
         const imageScript = document.createElement('script');
         imageScript.src = `../data/image-glyph-sheet-${IDString}.js`;
         imageScript.onload = function() {
+          const imageData = window.imagesFromJs[IDString];
+          
+          // Check if image data actually exists
+          if (!imageData) {
+            console.warn(`Image data not found in JS file for ${IDString} - will use placeholder rectangles`);
+            imageScript.remove();
+            onFileLoaded();
+            return;
+          }
+          
           const img = new Image();
-          img.src = `data:image/png;base64,${window.imagesFromJs[IDString]}`;
+          img.src = `data:image/png;base64,${imageData}`;
           img.onload = function() {
             bitmapGlyphStore.setGlyphSheet(fontProperties, img);
             onFileLoaded();
           };
+          img.onerror = function() {
+            console.warn(`Failed to decode base64 image data for ${IDString} - will use placeholder rectangles`);
+            onFileLoaded();
+          };
+        };
+        imageScript.onerror = function() {
+          console.warn(`Glyph sheet JS not found: image-glyph-sheet-${IDString}.js - will use placeholder rectangles`);
+          imageScript.remove();
+          onFileLoaded();
         };
         document.head.appendChild(imageScript);
       } else {
@@ -144,6 +163,10 @@
         img.src = `../data/glyph-sheet-${IDString}.png`;
         img.onload = function() {
           bitmapGlyphStore.setGlyphSheet(fontProperties, img);
+          onFileLoaded();
+        };
+        img.onerror = function() {
+          console.warn(`Glyph sheet image not found: glyph-sheet-${IDString}.png - will use placeholder rectangles`);
           onFileLoaded();
         };
       }

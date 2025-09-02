@@ -167,6 +167,17 @@ class BitmapText {
     // 2. We could cache the colored glyph sheets in a small LRU cache
 
     const metrics = this.glyphStore.getGlyphSheetMetrics(fontProperties, letter);
+    
+    // If glyph sheet is missing but metrics exist, draw placeholder rectangle
+    if (!glyphSheet || typeof glyphSheet !== 'object' || !glyphSheet.width) {
+      // For placeholder rectangles, we need tightWidth and tightHeight, but not xInGlyphSheet
+      if (metrics.tightWidth && metrics.tightHeight) {
+        this.drawPlaceholderRectangle(ctx, position, metrics, textColor);
+      }
+      return;
+    }
+    
+    // For normal glyph rendering, we need xInGlyphSheet
     if (!metrics.xInGlyphSheet) return;
 
     const coloredGlyphCanvas = this.createColoredGlyph(glyphSheet, metrics, textColor);
@@ -212,6 +223,20 @@ class BitmapText {
       position.y + dy,
       tightWidth, tightHeight
     );
+  }
+
+  drawPlaceholderRectangle(ctx, position, metrics, textColor) {
+    const { tightWidth, tightHeight, dx, dy } = metrics;
+    
+    const rectX = position.x + dx;
+    const rectY = position.y + dy;
+    
+    // Default to black if textColor is null or undefined
+    const actualColor = textColor || 'black';
+    
+    // Draw a filled rectangle at the same position and size as the glyph would be
+    ctx.fillStyle = actualColor;
+    ctx.fillRect(rectX, rectY, tightWidth, tightHeight);
   }
 
   calculateLetterAdvancement(fontProperties, currentLetter, nextLetter) {

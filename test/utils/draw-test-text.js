@@ -251,8 +251,21 @@ function bitmapGlyphSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText,
   // if scale is null then set it to 1
   if (!scale) scale = 1;
 
+  // Check if we're in placeholder mode (metrics available but glyph sheet missing)
+  let isPlaceholderMode = false;
+  if (bitmapText && bitmapText.glyphStore) {
+    const glyphSheet = bitmapText.glyphStore.getGlyphSheet(fontProperties);
+    isPlaceholderMode = !glyphSheet || typeof glyphSheet !== 'object' || !glyphSheet.width;
+  }
+
+  // Update section label if in placeholder mode
+  let actualSectionLabel = sectionLabel;
+  if (isPlaceholderMode && sectionLabel === 'Crisp Bitmap Text Drawing from glyph sheet:') {
+    actualSectionLabel = 'Crisp Bitmap Text Drawing with placeholder rectangles (glyph sheet missing):';
+  }
+
   if (!drawOverExistingCanvas) {
-    addElementToDOM(createDivWithText(sectionLabel));
+    addElementToDOM(createDivWithText(actualSectionLabel));
     canvas = createCanvas(linesMeasures.width * scale, linesMeasures.height * scale, fontProperties.pixelDensity);
     addElementToDOM(canvas);
   }
