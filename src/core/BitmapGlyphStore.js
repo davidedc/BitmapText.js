@@ -95,4 +95,9 @@ class BitmapGlyphStore {
     setNestedProperty(this.spaceAdvancementOverrideForSmallSizesInPx, this.getFontPropertiesArray(fontProperties), spaceAdvancementOverrideForSmallSizesInPx);
   }
 
+  // Helper method to check if a glyph sheet is valid for rendering
+  isValidGlyphSheet(glyphSheet) {
+    return glyphSheet && typeof glyphSheet === 'object' && glyphSheet.width > 0;
+  }
+
 }

@@ -2,67 +2,22 @@
 // which looks like:
 // bitmapFontsManifest.IDs = ["density-1-arial-style-normal-weight-normal-size-18","density-1-arial-style-normal-weight-normal-size-19"];
 
-// Go through each IDString in the manifest and load two files
-// via script tag
-// i.e. [IDString].js and [IDString].png
-
-let loadedScripts = 0;
-
 // TODO loadedBitmapFontData should be called something different, as this is really the data loaded from the JS files
 // which is then processed, put in the bitmapGlyphStore and then deleted
 let loadedBitmapFontData;
 
-function bitmapFontJsOrImageLoaded() {
-  // If all the scripts/images have been loaded, call the buildAndShowGlyphs function
-  // Do the check by comparing the number of files in the manifest to the number of loaded scripts
-  loadedScripts++;
-  console.log(`loadedScripts: ${loadedScripts} out of ${bitmapFontsManifest.IDs.length * 2}`);
-  if (loadedScripts === bitmapFontsManifest.IDs.length * 2) {
-    console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
-    startTiming('ingestingFontData');
-    ingestLoadedBitmapFontData();
-  }
-}
-
+// Legacy function for PNG loading (HTTP protocol)
 function loadSheetsFromPNGs() {
-  for (const IDString of bitmapFontsManifest.IDs) {
-    let script = document.createElement('script');
-    script.src = `../data/glyph-sheet-${IDString}.js`;
-    document.head.appendChild(script);
-    
-    script.onload = function () {
-      bitmapFontJsOrImageLoaded();
-      
-      // Only try to load image if metrics loaded successfully
-      let img = new Image();
-      img.src = `../data/glyph-sheet-${IDString}.png`;
-      img.onload = function () {
-        // Attach the image to the document
-        document.body.appendChild(img);
-        document.body.appendChild(document.createElement('br'));
+  const fontLoader = new FontLoader(bitmapGlyphStore, (loaded, total) => {
+    console.log(`loadedScripts: ${loaded} out of ${total}`);
+  });
 
-        const fontProperties = GlyphIDString.parseIDString(IDString);
-
-        // Add the canvas to the bitmapGlyphStore
-        bitmapGlyphStore.setGlyphSheet(fontProperties, img);
-
-        bitmapFontJsOrImageLoaded();
-      };
-      img.onerror = function () {
-        console.warn(`Glyph sheet image not found: glyph-sheet-${IDString}.png - will use placeholder rectangles`);
-        // Still count this as "loaded" to avoid hanging the loading process
-        bitmapFontJsOrImageLoaded();
-      };
-    };
-    
-    script.onerror = function () {
-      console.warn(`Metrics JS not found: glyph-sheet-${IDString}.js - font will not be available`);
-      script.remove();
-      // Still need to count both the missing metrics JS and the missing image to maintain the expected count
-      bitmapFontJsOrImageLoaded(); // Count for missing metrics JS
-      bitmapFontJsOrImageLoaded(); // Count for missing image (since we won't try to load it)
-    };
-  }
+  fontLoader.loadFonts(bitmapFontsManifest.IDs, false)
+    .then(() => {
+      console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
+      startTiming('ingestingFontData');
+      ingestLoadedBitmapFontData();
+    });
 }
 
 // instead of loading the sheets from PNGs named
@@ -73,77 +28,18 @@ function loadSheetsFromPNGs() {
 // imagesFromJs['glyph-sheet-density-1-Arial-style-normal-weight-normal-size-18']
 // which will contain the base64 encoded image data
 
-// TODO this function and the one above are very similar, should be refactored
+// Function for JS loading (file:// protocol) 
 function loadSheetsFromJSs() {
-  for (const IDString of bitmapFontsManifest.IDs) {
-    let script = document.createElement('script');
-    script.src = `../data/glyph-sheet-${IDString}.js`;
-    document.head.appendChild(script);
+  const fontLoader = new FontLoader(bitmapGlyphStore, (loaded, total) => {
+    console.log(`loadedScripts: ${loaded} out of ${total}`);
+  });
 
-    script.onload = function () {
-      bitmapFontJsOrImageLoaded(); // Count the metrics JS as loaded
-      
-      // Now try to load the image script
-      let imageScript = document.createElement('script');
-      imageScript.src = `../data/image-glyph-sheet-${IDString}.js`;
-      console.log(`loading image-glyph-sheet-${IDString}.js ...`);
-      document.head.appendChild(imageScript);
-
-      imageScript.onload = function () {
-        console.log(`...loaded image-glyph-sheet-${IDString}.js`);
-
-        // now take the image data from the imagesFromJs object
-        let imageData = imagesFromJs[IDString];
-
-        // Check if image data actually exists
-        if (!imageData) {
-          console.warn(`Image data not found in JS file for ${IDString} - will use placeholder rectangles`);
-          imageScript.remove();
-          bitmapFontJsOrImageLoaded();
-          return;
-        }
-
-        // create an Image from the base64 data
-        let img = new Image();
-        img.src = `data:image/png;base64,${imageData}`;
-        img.onload = function () {
-          imageScript.remove();
-          delete imagesFromJs[IDString];
-
-          console.log("image loaded from JS base64 data");
-          document.body.appendChild(img);
-          document.body.appendChild(document.createElement('br'));
-
-          const fontProperties = GlyphIDString.parseIDString(IDString);
-
-          // Add the canvas to the bitmapGlyphStore
-          bitmapGlyphStore.setGlyphSheet(fontProperties, img);
-          bitmapFontJsOrImageLoaded();
-        };
-        img.onerror = function () {
-          console.warn(`Failed to decode base64 image data for ${IDString} - will use placeholder rectangles`);
-          imageScript.remove();
-          delete imagesFromJs[IDString];
-          bitmapFontJsOrImageLoaded();
-        };
-      };
-      imageScript.onerror = function () {
-        console.warn(`Glyph sheet JS not found: image-glyph-sheet-${IDString}.js - will use placeholder rectangles`);
-        imageScript.remove();
-        // Still count this as "loaded" to avoid hanging the loading process
-        bitmapFontJsOrImageLoaded();
-      };
-    };
-    
-    // Add error handler for the metrics JS file itself
-    script.onerror = function () {
-      console.warn(`Metrics JS not found: glyph-sheet-${IDString}.js - font will not be available`);
-      script.remove();
-      // Still need to count both the missing metrics JS and the missing image JS to maintain the expected count
-      bitmapFontJsOrImageLoaded(); // Count for missing metrics JS
-      bitmapFontJsOrImageLoaded(); // Count for missing image JS (since we won't try to load it)
-    };
-  }
+  fontLoader.loadFonts(bitmapFontsManifest.IDs, true)
+    .then(() => {
+      console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
+      startTiming('ingestingFontData');
+      ingestLoadedBitmapFontData();
+    });
 }
 
 startTiming('loadingFontData');

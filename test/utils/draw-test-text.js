@@ -255,7 +255,7 @@ function bitmapGlyphSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText,
   let isPlaceholderMode = false;
   if (bitmapText && bitmapText.glyphStore) {
     const glyphSheet = bitmapText.glyphStore.getGlyphSheet(fontProperties);
-    isPlaceholderMode = !glyphSheet || typeof glyphSheet !== 'object' || !glyphSheet.width;
+    isPlaceholderMode = !bitmapText.glyphStore.isValidGlyphSheet(glyphSheet);
   }
 
   // Update section label if in placeholder mode

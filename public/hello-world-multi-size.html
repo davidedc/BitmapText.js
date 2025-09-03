@@ -49,6 +49,10 @@
   <script src="../src/utils/nested-properties.js"></script>
   <!-- Decompression utility to unpack compressed font metrics data -->
   <script src="../src/compression/decompress.js"></script>
+  <!-- Font loading utilities -->
+  <script src="../src/utils/font-loader-config.js"></script>
+  <script src="../src/utils/font-loader.js"></script>
+  <script src="../src/core/GlyphIDString.js"></script>
   <!-- Data store for glyph sheets, metrics, and kerning tables -->
   <script src="../src/core/BitmapGlyphStore.js"></script>
   <!-- Main bitmap text rendering engine -->
@@ -78,18 +82,6 @@
     window.imagesFromJs = {};
     window.isKerningEnabled = true;  // Enable kerning for better text rendering
 
-    // Font data loading tracking - 6 files total (3 sizes × 2 files each)
-    let loadedFiles = 0;
-    const totalFiles = fontSizes.length * 2;
-
-    function onFileLoaded() {
-      loadedFiles++;
-      console.log(`Loaded ${loadedFiles} of ${totalFiles} files`);
-      if (loadedFiles === totalFiles) {
-        renderMultiSizeHelloWorld();
-      }
-    }
-
     // Function to create IDString from font size
     function createIDString(fontSize) {
       // Handle fractional sizes: 18.5 becomes "18-5", whole numbers get "-0" suffix
@@ -99,78 +91,37 @@
       return `density-1-0-Arial-style-normal-weight-normal-size-${finalSizeStr}`;
     }
 
-    // Load font data for all three sizes
-    fontSizes.forEach((fontSize, index) => {
-      const IDString = createIDString(fontSize);
-      const fontProperties = fontPropertiesArray[index];
-
-      // Load JS metrics file
-      const dataScript = document.createElement('script');
-      dataScript.src = `../data/glyph-sheet-${IDString}.js`;
-      dataScript.onload = function() {
-        // Process loaded font data
-        const fontData = window.loadedBitmapFontData[IDString];
-        
-        // Set up glyph store with loaded data for this font size
-        bitmapGlyphStore.setKerningTable(fontProperties, fontData.kerningTable);
-        bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-        bitmapGlyphStore.setGlyphSheetMetrics(fontProperties, fontData.glyphSheetsMetrics);
-        bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(
-          fontProperties,
-          fontData.spaceAdvancementOverrideForSmallSizesInPx
-        );
-
-        onFileLoaded();
-      };
-      document.head.appendChild(dataScript);
-
-      // Load glyph sheet image for this font size
-      if (window.location.href.includes("file://")) {
-        // Load from JS-wrapped image for file:// protocol
-        const imageScript = document.createElement('script');
-        imageScript.src = `../data/image-glyph-sheet-${IDString}.js`;
-        imageScript.onload = function() {
-          const imageData = window.imagesFromJs[IDString];
-          
-          // Check if image data actually exists
-          if (!imageData) {
-            console.warn(`Image data not found in JS file for ${IDString} - will use placeholder rectangles`);
-            imageScript.remove();
-            onFileLoaded();
-            return;
-          }
-          
-          const img = new Image();
-          img.src = `data:image/png;base64,${imageData}`;
-          img.onload = function() {
-            bitmapGlyphStore.setGlyphSheet(fontProperties, img);
-            onFileLoaded();
-          };
-          img.onerror = function() {
-            console.warn(`Failed to decode base64 image data for ${IDString} - will use placeholder rectangles`);
-            onFileLoaded();
-          };
-        };
-        imageScript.onerror = function() {
-          console.warn(`Glyph sheet JS not found: image-glyph-sheet-${IDString}.js - will use placeholder rectangles`);
-          imageScript.remove();
-          onFileLoaded();
-        };
-        document.head.appendChild(imageScript);
-      } else {
-        // Load PNG directly for http:// protocol
-        const img = new Image();
-        img.src = `../data/glyph-sheet-${IDString}.png`;
-        img.onload = function() {
-          bitmapGlyphStore.setGlyphSheet(fontProperties, img);
-          onFileLoaded();
-        };
-        img.onerror = function() {
-          console.warn(`Glyph sheet image not found: glyph-sheet-${IDString}.png - will use placeholder rectangles`);
-          onFileLoaded();
-        };
-      }
+    // Create IDStrings for all font sizes
+    const IDStrings = fontSizes.map(createIDString);
+    
+    // Use FontLoader to load all font data
+    const isFileProtocol = window.location.href.includes("file://");
+    const fontLoader = new FontLoader(bitmapGlyphStore, (loaded, total) => {
+      console.log(`Loaded ${loaded} of ${total} files`);
     });
+
+    // Load fonts and handle completion
+    fontLoader.loadFonts(IDStrings, isFileProtocol)
+      .then(() => {
+        // Ingest the loaded bitmap font data (same as in manifest-loader.js)
+        for (const IDString of IDStrings) {
+          const fontProperties = fontPropertiesArray[IDStrings.indexOf(IDString)];
+          const fontData = window.loadedBitmapFontData[IDString];
+          
+          if (fontData) {
+            bitmapGlyphStore.setKerningTable(fontProperties, fontData.kerningTable);
+            bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+            bitmapGlyphStore.setGlyphSheetMetrics(fontProperties, fontData.glyphSheetsMetrics);
+            bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+              fontProperties,
+              fontData.spaceAdvancementOverrideForSmallSizesInPx
+            );
+          }
+        }
+        
+        // Render the multi-size text
+        renderMultiSizeHelloWorld();
+      });
 
     function renderMultiSizeHelloWorld() {
       // Clear canvas with white background

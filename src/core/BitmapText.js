@@ -169,7 +169,7 @@ class BitmapText {
     const metrics = this.glyphStore.getGlyphSheetMetrics(fontProperties, letter);
     
     // If glyph sheet is missing but metrics exist, draw placeholder rectangle
-    if (!glyphSheet || typeof glyphSheet !== 'object' || !glyphSheet.width) {
+    if (!this.glyphStore.isValidGlyphSheet(glyphSheet)) {
       // For placeholder rectangles, we need tightWidth and tightHeight, but not xInGlyphSheet
       if (metrics.tightWidth && metrics.tightHeight) {
         this.drawPlaceholderRectangle(ctx, position, metrics, textColor);
