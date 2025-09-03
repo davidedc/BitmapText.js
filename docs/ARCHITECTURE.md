@@ -55,6 +55,7 @@
     - Glyph positioning with kerning
     - Color application via composite operations
     - Canvas rendering
+    - Placeholder rectangle rendering for missing glyph sheets
 
   **BitmapGlyphStore**
   - Purpose: Glyph data repository
@@ -64,6 +65,8 @@
     - `glyphsTextMetrics`: Text measurement data
     - `kerningTables`: Pair-wise character adjustments
     - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
+  - Methods:
+    - `isValidGlyphSheet()`: Validates glyph sheet integrity
 
   ### Editor Classes (Generation)
 
@@ -78,6 +81,14 @@
   - Generates compressed metadata
 
   ### Supporting Classes
+
+  **FontLoader**
+  - Purpose: Consolidated font loading utility
+  - Responsibilities:
+    - Promise-based font data loading
+    - Error handling for missing files
+    - Progress tracking and callbacks
+    - Support for both PNG and JS glyph sheets
 
   **Specs**
   - Parses and manages font correction specifications
@@ -110,10 +121,11 @@
   ### Runtime Phase
 
   1. **Data Loading**
-     Manifest.js → Load Sheet JS → Load Sheet PNG → Populate Store
+     Manifest.js → FontLoader → Load Sheet JS → Load Sheet PNG → Populate Store
 
   2. **Text Rendering**
      Text String → Measure → Apply Kerning → Copy Glyphs → Composite Color
+     (If glyph sheet missing: Render placeholder rectangles)
 
   ## Key Algorithms
 
@@ -158,6 +170,14 @@
   2. Apply 'source-in' composite mode
   3. Fill with target color
   4. Copy to destination
+
+  ### Placeholder Rendering
+
+  When glyph sheets are missing but metrics are available:
+  1. Validate glyph sheet using `isValidGlyphSheet()`
+  2. Fall back to placeholder rectangle mode
+  3. Draw black rectangle with correct dimensions from metrics
+  4. Apply proper positioning using dx/dy offsets
 
   ## QOI Image Format
 

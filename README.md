@@ -19,6 +19,7 @@
   - ✅ Multiple pixel density support (retina displays)
   - ✅ Hash-based verification for consistency
   - ✅ Font builder tool for generating bitmap fonts
+  - ✅ Placeholder rectangle rendering when glyphs not loaded (to support dynamic loading)
   - ✅ Minimal runtime dependencies
 
   ## Quick Start
@@ -89,6 +90,7 @@
 
   drawTextFromGlyphSheet(ctx, text, x, y, fontProperties, textColor)
   - Draws text using pre-rendered glyphs
+  - When glyph sheets are missing but metrics are available, renders black placeholder rectangles
   - Parameters:
     - ctx: Canvas 2D rendering context
     - text: String to render
@@ -105,6 +107,11 @@
   new BitmapGlyphStore()
 
   Methods
+
+  isValidGlyphSheet(glyphSheet)
+  - Validates if a glyph sheet is properly loaded and usable
+  - Returns true if sheet has valid dimensions, false otherwise
+  - Parameters: glyphSheet object or canvas element
 
   getKerningTable(fontProperties)
   - Returns kerning table for the specified font properties
@@ -216,6 +223,7 @@
   - Ensure canvases are attached to DOM before rendering for crisp text
   - Check pixel density scaling is applied correctly
   - Verify font data is loaded before attempting to render
+  - If you see black rectangles instead of text, glyph sheets are missing but metrics are loaded (placeholder mode)
 
   **Performance Issues**
   - Pre-load glyph sheets during initialization
