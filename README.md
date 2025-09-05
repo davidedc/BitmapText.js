@@ -49,7 +49,7 @@
   // Measure text
   const metrics = bitmapText.measureText("Hello World", fontProperties);
 
-  // Draw text at baseline position (x, y) - equivalent to textBaseline='bottom'
+  // Draw text at position (x, y) - equivalent to textBaseline='bottom' (y is bottom of bounding box)
   bitmapText.drawTextFromGlyphSheet(ctx, "Hello World", 10, 50, fontProperties, '#000000');
   ```
 
