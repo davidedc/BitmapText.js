@@ -44,8 +44,13 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       const IDString = GlyphIDString_Editor.getIDString(properties);
       IDs.push(IDString);
 
-      // Add QOI to zip
-      folder.file(`glyph-sheet-${IDString}.qoi`, qoiBase64, { base64: true });
+      // Add QOI to zip with timezone-corrected date
+      // JavaScript Date() gives UTC, but JSZip interprets as local time
+      // We need to adjust for the timezone offset to get the correct local time
+      const now = new Date();
+      const timezoneOffset = now.getTimezoneOffset(); // minutes difference from UTC
+      const currentDate = new Date(now.getTime() - (timezoneOffset * 60 * 1000));
+      folder.file(`atlas-${IDString}.qoi`, qoiBase64, { base64: true, date: currentDate });
 
       // navigate through the bitmapGlyphStore, which contains:
       //   kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
@@ -100,15 +105,19 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       
       console.log('✅ Compression/decompression test passed for essential properties');
       
-      // Add metadata JS file to zip
+      // Add metadata JS file to zip with explicit current date
       folder.file(
-          `glyph-sheet-${IDString}.js`,
-          `(loadedBitmapFontData ??= {})['${IDString}'] = decompressFontMetrics(${JSON.stringify(compressFontMetrics(metadata))});`
+          `metrics-${IDString}.js`,
+          `(loadedBitmapFontData ??= {})['${IDString}'] = decompressFontMetrics(${JSON.stringify(compressFontMetrics(metadata))});`,
+          { date: currentDate }
       );
   });
 
-  // Add manifest file
-  folder.file('manifest.js', `(bitmapFontsManifest ??= {}).IDs = ${JSON.stringify(IDs)};`);
+  // Add manifest file with timezone-corrected date
+  const manifestNow = new Date();
+  const manifestTimezoneOffset = manifestNow.getTimezoneOffset();
+  const manifestDate = new Date(manifestNow.getTime() - (manifestTimezoneOffset * 60 * 1000));
+  folder.file('manifest.js', `(bitmapFontsManifest ??= {}).IDs = ${JSON.stringify(IDs)};`, { date: manifestDate });
 
   // Generate and download zip file
   return zip.generateAsync({ type: "blob" })

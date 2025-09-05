@@ -34,8 +34,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "The script will:"
             echo "  1. Monitor ~/Downloads/glyphSheets.zip"
-            echo "  2. Create timestamped backups of data/ directory"
-            echo "  3. Extract new glyphSheets.zip to data/"
+            echo "  2. Create timestamped backups of font-assets/ directory"
+            echo "  3. Extract new glyphSheets.zip to font-assets/"
             echo "  4. Convert QOI files to PNG format"
             echo "  5. Optimize PNG files"
             echo "  6. Convert PNGs to JS wrappers"
@@ -67,7 +67,7 @@ NC='\033[0m' # No Color
 # Configuration
 DOWNLOADS_DIR="$HOME/Downloads"
 GLYPH_SHEETS_FILE="$DOWNLOADS_DIR/glyphSheets.zip"
-DATA_DIR="data"
+DATA_DIR="font-assets"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKUP_DIR="$DATA_DIR"
 
@@ -171,13 +171,13 @@ function backup_current_data() {
         return 0
     fi
     
-    local backup_name="data-backup-$(date '+%Y-%m-%d-%H%M%S').zip"
+    local backup_name="font-assets-backup-$(date '+%Y-%m-%d-%H%M%S').zip"
     local backup_path="$BACKUP_DIR/$backup_name"
     
     log "INFO" "Creating backup: $backup_name"
     
     # Create backup excluding any existing backup files
-    if cd "$DATA_DIR" && zip -r "../$backup_name" . -x "data-backup-*.zip"; then
+    if cd "$DATA_DIR" && zip -r "../$backup_name" . -x "font-assets-backup-*.zip"; then
         log "SUCCESS" "Backup created: $backup_path"
         cd ..
         return 0
@@ -188,22 +188,22 @@ function backup_current_data() {
 }
 
 function clear_data_directory() {
-    log "INFO" "Clearing data directory (preserving backups)..."
+    log "INFO" "Clearing font-assets directory (preserving backups)..."
     
     if [ ! -d "$DATA_DIR" ]; then
         mkdir -p "$DATA_DIR"
-        log "INFO" "Created data directory"
+        log "INFO" "Created font-assets directory"
         return 0
     fi
     
     # Remove all files except backup files
-    find "$DATA_DIR" -type f ! -name "data-backup-*.zip" -delete
+    find "$DATA_DIR" -type f ! -name "font-assets-backup-*.zip" -delete
     
     if [ $? -eq 0 ]; then
         log "SUCCESS" "Data directory cleared"
         return 0
     else
-        log "ERROR" "Failed to clear data directory"
+        log "ERROR" "Failed to clear font-assets directory"
         return 1
     fi
 }
@@ -216,10 +216,10 @@ function extract_glyph_sheets() {
         
         # Check if files were extracted to a glyphSheets subdirectory and move them up
         if [ -d "$DATA_DIR/glyphSheets" ]; then
-            log "INFO" "Moving files from glyphSheets/ subdirectory to data/ root"
+            log "INFO" "Moving files from glyphSheets/ subdirectory to font-assets/ root"
             mv "$DATA_DIR/glyphSheets"/* "$DATA_DIR/" 2>/dev/null || true
             rmdir "$DATA_DIR/glyphSheets" 2>/dev/null || true
-            log "SUCCESS" "Files moved to data/ root directory"
+            log "SUCCESS" "Files moved to font-assets/ root directory"
         fi
         
         return 0
@@ -306,7 +306,7 @@ function process_glyph_sheets() {
     
     # Step 2: Clear data directory
     if ! clear_data_directory; then
-        log "ERROR" "Failed to clear data directory, aborting processing"
+        log "ERROR" "Failed to clear font-assets directory, aborting processing"
         return 1
     fi
     

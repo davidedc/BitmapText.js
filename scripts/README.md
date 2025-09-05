@@ -81,9 +81,9 @@ brew install trash         # Safe file deletion
 
 **Examples:**
 ```bash
-./scripts/optimize-images.sh                           # Default: data/, remove backups
-./scripts/optimize-images.sh --preserve-originals      # data/, keep .orig.png files
-./scripts/optimize-images.sh --preserve-originals data/ # Explicit directory, keep backups
+./scripts/optimize-images.sh                           # Default: font-assets/, remove backups
+./scripts/optimize-images.sh --preserve-originals      # font-assets/, keep .orig.png files
+./scripts/optimize-images.sh --preserve-originals font-assets/ # Explicit directory, keep backups
 ./scripts/optimize-images.sh /path/to/pngs/            # Custom directory, remove backups
 ```
 
@@ -117,8 +117,8 @@ node scripts/png-to-js-converter.js [directory]
 ```
 **Examples:**
 ```bash
-node scripts/png-to-js-converter.js           # Uses data/ directory
-node scripts/png-to-js-converter.js data/     # Explicitly specify data/
+node scripts/png-to-js-converter.js           # Uses font-assets/ directory
+node scripts/png-to-js-converter.js font-assets/     # Explicitly specify font-assets/
 node scripts/png-to-js-converter.js /path/to/pngs/  # Use custom directory
 ```
 
@@ -134,8 +134,8 @@ npm run qoi-memory
 
 **Examples:**
 ```bash
-node scripts/qoi-memory-calculator.js                    # Default: data/ directory
-node scripts/qoi-memory-calculator.js data/              # Explicitly specify data/
+node scripts/qoi-memory-calculator.js                    # Default: font-assets/ directory
+node scripts/qoi-memory-calculator.js font-assets/              # Explicitly specify font-assets/
 node scripts/qoi-memory-calculator.js /path/to/qoi/      # Custom directory
 npm run qoi-memory                                       # Using npm script
 ```
@@ -161,7 +161,7 @@ scripts/
 ├── test-pipeline.sh          # One-time pipeline test
 └── README.md                 # This file
 
-data/
+font-assets/
 ├── *.png                     # Optimized glyph sheet images
 ├── *.orig.png                # Original glyph sheets (if --preserve-originals used)
 ├── *.js                      # Glyph data and metrics
@@ -177,9 +177,9 @@ data/
 When you drop `glyphSheets.zip` in `~/Downloads/`:
 
 1. **🔍 Detection**: `fswatch` detects the new file
-2. **📦 Backup**: Current `data/` → `data-backup-YYYY-MM-DD-HHMMSS.zip`
-3. **🧹 Clear**: Empty `data/` directory (keeping backups)
-4. **📂 Extract**: Unzip contents to `data/`
+2. **📦 Backup**: Current `font-assets/` → `data-backup-YYYY-MM-DD-HHMMSS.zip`
+3. **🧹 Clear**: Empty `font-assets/` directory (keeping backups)
+4. **📂 Extract**: Unzip contents to `font-assets/`
 5. **🖼️ Optimize**: Compress PNGs with ImageOptim (optionally preserve originals)
 6. **🔧 Convert**: Create JS wrappers for CORS-free loading
 7. **🗑️ Cleanup**: Move processed zip to trash
@@ -209,7 +209,7 @@ brew install node
 
 **Files not in expected location**
 - Check that extraction worked correctly
-- Look for `glyphSheets/` subdirectory in `data/`
+- Look for `glyphSheets/` subdirectory in `font-assets/`
 - Script should automatically move files to root
 
 **Script keeps running/won't stop**

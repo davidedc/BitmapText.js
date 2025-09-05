@@ -44,7 +44,7 @@
   "files": [
     "src/",
     "public/",
-    "data/",
+    "font-assets/",
     "docs/",
     "LICENSE",
     "README.md"

@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Get directory parameter or default to 'data'
-const targetDir = process.argv[2] || 'data';
+const targetDir = process.argv[2] || 'font-assets';
 
 function log(message) {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
@@ -53,13 +53,13 @@ log(`Found ${pngFiles.length} PNG files to process`);
 pngFiles.forEach(pngFile => {
     const pngPath = path.join(targetDir, pngFile);
     const base64Data = pngToBase64(pngPath);
-    const jsFileName = 'image-' + pngFile.replace('.png', '.js');
+    const jsFileName = pngFile.replace('.png', '.js');
     const jsFilePath = path.join(targetDir, jsFileName);
     const jsContent = `
 if (typeof imagesFromJs === 'undefined') {
     var imagesFromJs = {};
 }
-imagesFromJs['${pngFile.replace('.png', '').replace('glyph-sheet-','')}'] = '${base64Data}';
+imagesFromJs['${pngFile.replace('.png', '').replace('atlas-','')}'] = '${base64Data}';
 `;
 
     fs.writeFileSync(jsFilePath, jsContent);

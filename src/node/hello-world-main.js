@@ -22,7 +22,7 @@ function main() {
     console.log('BitmapText.js Node.js Demo - Loading font data...');
     
     // Load font metrics (JS file)
-    const fontDataPath = path.resolve(__dirname, '../../data/glyph-sheet-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
+    const fontDataPath = path.resolve(__dirname, '../../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
     if (!fs.existsSync(fontDataPath)) {
       throw new Error(`Font data file not found: ${fontDataPath}`);
     }
@@ -40,7 +40,7 @@ function main() {
     console.log('Font metrics loaded successfully');
     
     // Load and decode QOI glyph sheet
-    const qoiPath = path.resolve(__dirname, '../../data/glyph-sheet-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
+    const qoiPath = path.resolve(__dirname, '../../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
     if (!fs.existsSync(qoiPath)) {
       throw new Error(`QOI file not found: ${qoiPath}`);
     }
@@ -124,7 +124,7 @@ function main() {
     console.error('Error:', error.message);
     console.error('\nTroubleshooting:');
     console.error('1. Make sure you run this from the project root directory');
-    console.error('2. Ensure font data exists: data/glyph-sheet-density-1-0-Arial-style-normal-weight-normal-size-19-0.*');
+    console.error('2. Ensure font data exists: font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js and font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
     console.error('3. Generate fonts using public/font-builder.html if needed');
     process.exit(1);
   }

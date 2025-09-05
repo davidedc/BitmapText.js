@@ -86,7 +86,7 @@ function ingestLoadedBitmapFontData() {
     bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
 
     // Remove the script element from the document
-    let script = document.querySelector(`script[src="../data/glyph-sheet-${key.replace(/_/g, '-')}.js"]`);
+    let script = document.querySelector(`script[src="../font-assets/metrics-${key.replace(/_/g, '-')}.js"]`);
     script.remove();
 
     // Remove the loadedBitmapFontData entry
@@ -97,7 +97,7 @@ function ingestLoadedBitmapFontData() {
   delete window.loadedBitmapFontData;
 
   // remove the script tag with the manifest
-  let manifestScript = document.querySelector('script[src="../data/manifest.js"]');
+  let manifestScript = document.querySelector('script[src="../font-assets/manifest.js"]');
   manifestScript.remove();
 
   // remove the bitmapFontsManifest object from the window

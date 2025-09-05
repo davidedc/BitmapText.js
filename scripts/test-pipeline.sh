@@ -62,7 +62,7 @@ function test_pipeline() {
     
     # Show final results
     log "INFO" "Final data directory contents:"
-    ls -la data/ | head -20
+    ls -la font-assets/ | head -20
 }
 
 # Run the test

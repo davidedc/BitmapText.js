@@ -1,17 +1,19 @@
 // Configuration constants for font loading
 const FontLoaderConfig = {
   paths: {
-    dataDir: '../data/',
-    metricsPrefix: 'glyph-sheet-',
-    imagePrefix: 'image-glyph-sheet-',
+    dataDir: '../font-assets/',
+    metricsPrefix: 'metrics-',
+    atlasPrefix: 'atlas-',
+    imagePrefix: 'atlas-',
     pngExtension: '.png',
+    qoiExtension: '.qoi',
     jsExtension: '.js'
   },
   
   messages: {
-    metricsNotFound: (IDString) => `Metrics JS not found: glyph-sheet-${IDString}.js - font will not be available`,
-    pngImageNotFound: (IDString) => `Glyph sheet image not found: glyph-sheet-${IDString}.png - will use placeholder rectangles`,
-    jsImageNotFound: (IDString) => `Glyph sheet JS not found: image-glyph-sheet-${IDString}.js - will use placeholder rectangles`,
+    metricsNotFound: (IDString) => `Metrics JS not found: metrics-${IDString}.js - font will not be available`,
+    pngImageNotFound: (IDString) => `Atlas image not found: atlas-${IDString}.png - will use placeholder rectangles`,
+    jsImageNotFound: (IDString) => `Atlas JS not found: atlas-${IDString}.js - will use placeholder rectangles`,
     imageDataMissing: (IDString) => `Image data not found in JS file for ${IDString} - will use placeholder rectangles`,
     base64DecodeFailed: (IDString) => `Failed to decode base64 image data for ${IDString} - will use placeholder rectangles`
   },
@@ -22,7 +24,11 @@ const FontLoaderConfig = {
   },
 
   getPngPath(IDString) {
-    return `${this.paths.dataDir}${this.paths.metricsPrefix}${IDString}${this.paths.pngExtension}`;
+    return `${this.paths.dataDir}${this.paths.atlasPrefix}${IDString}${this.paths.pngExtension}`;
+  },
+
+  getQoiPath(IDString) {
+    return `${this.paths.dataDir}${this.paths.atlasPrefix}${IDString}${this.paths.qoiExtension}`;
   },
 
   getImageJsPath(IDString) {

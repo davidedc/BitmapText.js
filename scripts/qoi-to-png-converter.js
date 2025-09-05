@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Parse command line arguments
-let targetDirectory = 'data';
+let targetDirectory = 'font-assets';
 let removeQoiFiles = false;
 let showHelp = false;
 

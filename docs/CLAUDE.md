@@ -14,7 +14,7 @@
   - **Core runtime**: src/core/BitmapText.js, src/core/BitmapGlyphStore.js
   - **Generation tools**: src/editor/*Editor.js files
   - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js, src/utils/manifest-loader.js
-  - **Font data**: data/
+  - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-glyph-sheets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-builder.html (generation), public/test-renderer.html (testing)
   - **Examples**: examples/node/ (Node.js demos showing library usage outside browser)

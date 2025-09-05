@@ -76,7 +76,7 @@
 
     // Load font data (JS file with metrics)
     const dataScript = document.createElement('script');
-    dataScript.src = '../data/glyph-sheet-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
+    dataScript.src = '../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
     dataScript.onload = function() {
       // Process loaded font data
       const IDString = "density-1-0-Arial-style-normal-weight-normal-size-19-0";
@@ -100,7 +100,7 @@
       if (window.location.href.includes("file://")) {
         // Load from JS-wrapped image for file:// protocol
         const imageScript = document.createElement('script');
-        imageScript.src = '../data/image-glyph-sheet-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
+        imageScript.src = '../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
         imageScript.onload = function() {
           const img = new Image();
           img.src = `data:image/png;base64,${window.imagesFromJs["density-1-0-Arial-style-normal-weight-normal-size-19-0"]}`;
@@ -113,7 +113,7 @@
       } else {
         // Load PNG directly for http:// protocol
         const img = new Image();
-        img.src = '../data/glyph-sheet-density-1-0-Arial-style-normal-weight-normal-size-19-0.png';
+        img.src = '../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.png';
         img.onload = function() {
           bitmapGlyphStore.setGlyphSheet(fontProperties, img);
           onFileLoaded();

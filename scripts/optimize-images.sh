@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help              Show this help message"
             echo ""
             echo "Arguments:"
-            echo "  directory               Target directory (default: data/)"
+            echo "  directory               Target directory (default: font-assets/)"
             exit 0
             ;;
         -*)
@@ -43,7 +43,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Set default directory if not provided
-TARGET_DIR="${TARGET_DIR:-data}"
+TARGET_DIR="${TARGET_DIR:-font-assets}"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting PNG optimization in directory: $TARGET_DIR"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Preserve originals: $PRESERVE_ORIGINALS"

@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Parse command line arguments
-let targetDirectory = 'data';
+let targetDirectory = 'font-assets';
 let showHelp = false;
 
 const args = process.argv.slice(2);

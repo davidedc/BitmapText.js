@@ -177,7 +177,7 @@
 
   1. Configure specs in src/specs/default-specs.js or via UI
   2. Use Font Builder to generate glyph sheets
-  3. Compressed data saved to data/
+  3. Compressed data saved to font-assets/
 
   Testing and Examples
 
@@ -250,7 +250,7 @@
   │   ├── specs/         # Font specifications
   │   └── compression/   # Data compression utilities
   ├── public/            # HTML entry points
-  ├── data/              # Generated font data
+  ├── font-assets/       # Generated font data
   ├── test/              # Test utilities and data
   ├── tools/             # Development tools
   ├── lib/               # Third-party libraries
