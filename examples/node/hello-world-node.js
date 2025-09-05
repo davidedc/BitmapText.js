@@ -1105,7 +1105,8 @@ class BitmapGlyphStore {
 // has a method to draw text on a canvas
 // the text is drawn by looking up the glyphs in the BitmapGlyphStore
 // and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
-// the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
+// the text is drawn with x, y positioning equivalent to textBaseline='bottom'
+// where x is the left edge of the first glyph and y is the bottom of the text bounding box (lowest point any character reaches)
 class BitmapText {
   constructor(glyphStore, canvasFactory) {
     this.glyphStore = glyphStore;
