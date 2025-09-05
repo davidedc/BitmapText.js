@@ -40,14 +40,8 @@ function isFontMetricsAvailable(fontProperties, bitmapGlyphStore) {
 // Check if glyph sheet images are available (needed for actual glyph rendering)
 function isGlyphSheetAvailable(fontProperties, bitmapGlyphStore) {
   try {
-    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
-    
-    return bitmapGlyphStore.glyphSheets &&
-           bitmapGlyphStore.glyphSheets[pixelDensity] &&
-           bitmapGlyphStore.glyphSheets[pixelDensity][fontFamily] &&
-           bitmapGlyphStore.glyphSheets[pixelDensity][fontFamily][fontStyle] &&
-           bitmapGlyphStore.glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight] &&
-           bitmapGlyphStore.glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight][fontSize];
+    const glyphSheet = bitmapGlyphStore.getGlyphSheet(fontProperties);
+    return bitmapGlyphStore.isValidGlyphSheet(glyphSheet);
   } catch (error) {
     return false;
   }

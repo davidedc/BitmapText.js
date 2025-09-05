@@ -38,8 +38,7 @@ class BitmapGlyphStore {
   }
 
   getKerningTable(fontProperties) {
-    ensureNestedPropertiesExist(this.kerningTables, this.getFontPropertiesArray(fontProperties));
-    return getNestedProperty(this.kerningTables, this.getFontPropertiesArray(fontProperties));
+    return getNestedProperty(this.kerningTables, this.getFontPropertiesArray(fontProperties)) || {};
   }
 
   setKerningTable(fontProperties, kerningTable) {
@@ -47,7 +46,6 @@ class BitmapGlyphStore {
   }
   
   getGlyphSheet(fontProperties) {
-    ensureNestedPropertiesExist(this.glyphSheets,this.getFontPropertiesArray(fontProperties));
     return getNestedProperty(this.glyphSheets,this.getFontPropertiesArray(fontProperties));
   }
 
