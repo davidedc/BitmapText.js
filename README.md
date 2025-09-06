@@ -195,7 +195,7 @@
   # Run the demo
   node examples/node/hello-world-node.js
   ```
-  Renders "Hello World" using QOI glyph sheets and exports as uncompressed PNG. Self-contained script with no npm dependencies, built from modular source files.
+  Renders "Hello World" using QOI glyph sheets and exports as PNG. Self-contained script with no npm dependencies, built from modular source files.
 
   **Full Test Suite**  
   Open public/test-renderer.html to run visual tests and hash verification.
@@ -248,7 +248,7 @@
   │   ├── utils/         # Utility functions
   │   ├── ui/            # UI components
   │   ├── specs/         # Font specifications
-  │   └── compression/   # Data compression utilities
+  │   └── minification/  # Data minification utilities
   ├── public/            # HTML entry points
   ├── font-assets/       # Generated font data
   ├── test/              # Test utilities and data

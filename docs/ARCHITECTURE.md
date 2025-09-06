@@ -78,7 +78,7 @@
   **BitmapGlyphStoreEditor extends BitmapGlyphStore**
   - Builds glyph sheets from individual glyphs
   - Optimizes glyph packing
-  - Generates compressed metadata
+  - Generates minified metadata
 
   ### Supporting Classes
 
@@ -199,20 +199,20 @@
   - **Node.js Compatibility**: Easy parsing without external dependencies
   - **Future-Ready**: QOI files preserved for direct Node.js font renderer consumption
 
-  ## Data Compression/Decompression
+  ## Data Minification/Expansion
 
-  Font data is compressed for efficient storage and network transfer:
+  Font data is minified for efficient storage and network transfer:
 
-  **Compression (src/compression/compress.js)**:
+  **Minification (src/minification/MetricsMinifier.js)**:
   1. **Dynamic Base Metrics**: Uses first available character for base font metrics extraction
   2. **Nested Structure Flattening**: Converts multi-level font property objects to flat arrays
   3. **Data Deduplication**: Removes redundant entries across similar font configurations
-  4. **String Compression**: Optimizes repeated font family/style/weight combinations
+  4. **Property Name Shortening**: Optimizes repeated font family/style/weight combinations
 
-  **Decompression (src/compression/decompress.js)**:
+  **Expansion (src/minification/MetricsExpander.js)**:
   1. **Array to Object Mapping**: Rebuilds nested property structures
   2. **Property Reconstruction**: Restores font property hierarchies
-  3. **Metrics Expansion**: Reconstructs full glyph metrics from compressed data
+  3. **Metrics Expansion**: Reconstructs full glyph metrics from minified data
   4. **Essential Property Validation**: Verifies key metrics are preserved during roundtrip
 
   ## Memory Management
@@ -244,7 +244,7 @@
     4. Apply tight bounding box detection
     5. Calculate kerning tables
     6. Build optimized glyph sheets
-    7. Generate compressed metadata
+    7. Generate minified metadata
     8. Export .js + .qoi files
   ```
 

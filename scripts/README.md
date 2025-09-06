@@ -101,7 +101,7 @@ brew install trash         # Safe file deletion
 **Source files used:**
 - `src/node/canvas-mock.js` - Minimal Canvas implementation
 - `src/utils/nested-properties.js` - Nested object utilities
-- `src/compression/decompress.js` - Font metrics decompression
+- `src/minification/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/core/BitmapGlyphStore.js`, `src/core/BitmapText.js` - Core classes
 - `src/node/hello-world-main.js` - Main execution code
