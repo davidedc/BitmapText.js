@@ -79,36 +79,36 @@ function downloadGlyphSheetsAndKerningMaps(options) {
           }
       };
 
-      // Test compression and decompression 
-      const compressed = compressFontMetrics(metadata);
-      const decompressed = decompressFontMetrics(compressed);
+      // Test minification and expansion 
+      const minified = MetricsMinifier.minify(metadata);
+      const expanded = MetricsExpander.expand(minified);
       
       // Instead of deep equality check, let's verify the essential properties are preserved
       const firstChar = Object.keys(metadata.glyphsTextMetrics)[0];
       const originalGlyph = metadata.glyphsTextMetrics[firstChar];
-      const decompressedGlyph = decompressed.glyphsTextMetrics[firstChar];
+      const expandedGlyph = expanded.glyphsTextMetrics[firstChar];
       
       // Check that the essential named properties match
       const essentialProps = ['width', 'actualBoundingBoxLeft', 'actualBoundingBoxRight', 'actualBoundingBoxAscent', 'actualBoundingBoxDescent'];
       let allPropsMatch = true;
       
       for (const prop of essentialProps) {
-        if (originalGlyph[prop] !== decompressedGlyph[prop]) {
-          console.error(`Property ${prop} mismatch: ${originalGlyph[prop]} vs ${decompressedGlyph[prop]}`);
+        if (originalGlyph[prop] !== expandedGlyph[prop]) {
+          console.error(`Property ${prop} mismatch: ${originalGlyph[prop]} vs ${expandedGlyph[prop]}`);
           allPropsMatch = false;
         }
       }
       
       if (!allPropsMatch) {
-        throw new Error('Essential properties do not match after compression/decompression');
+        throw new Error('Essential properties do not match after minification/expansion');
       }
       
-      console.log('✅ Compression/decompression test passed for essential properties');
+      console.log('✅ Minification/expansion test passed for essential properties');
       
       // Add metadata JS file to zip with explicit current date
       folder.file(
           `metrics-${IDString}.js`,
-          `(loadedBitmapFontData ??= {})['${IDString}'] = decompressFontMetrics(${JSON.stringify(compressFontMetrics(metadata))});`,
+          `(loadedBitmapFontData ??= {})['${IDString}'] = MetricsExpander.expand(${JSON.stringify(MetricsMinifier.minify(metadata))});`,
           { date: currentDate }
       );
   });

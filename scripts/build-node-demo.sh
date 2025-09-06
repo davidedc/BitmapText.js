@@ -27,7 +27,7 @@ mkdir -p "$OUTPUT_DIR"
 FILES_TO_CHECK=(
   "$SRC_DIR/node/canvas-mock.js"
   "$SRC_DIR/utils/nested-properties.js"
-  "$SRC_DIR/compression/decompress.js"
+  "$SRC_DIR/minification/MetricsExpander.js"
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
@@ -85,12 +85,12 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/utils/nested-properties.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate decompression utility
+# Concatenate expansion utility
 echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// DECOMPRESSION UTILITY - decompress.js" >> "$OUTPUT_FILE"
+echo "// EXPANSION UTILITY - MetricsExpander.js" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/compression/decompress.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/minification/MetricsExpander.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate QOI decoder

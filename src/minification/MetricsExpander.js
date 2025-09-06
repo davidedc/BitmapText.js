@@ -1,0 +1,79 @@
+// Static utility class for expanding minified font metrics data (runtime only)
+// Converts compact format back to full object structures for use by the rendering engine
+
+// Standalone function for backwards compatibility and Node.js support
+function decompressFontMetrics(minified) {
+  return MetricsExpander.expand(minified);
+}
+
+class MetricsExpander {
+  // Private constructor - prevent instantiation following Effective Java patterns
+  constructor() {
+    throw new Error('MetricsExpander cannot be instantiated - use static methods');
+  }
+  
+  /**
+   * Expands minified metrics back to full format for runtime use
+   * @param {Object} minified - Minified metrics object with shortened keys
+   * @returns {Object} Full metrics object with complete property names
+   */
+  static expand(minified) {
+    return {
+      kerningTable: this.#expandKerningTable(minified.k),
+      glyphsTextMetrics: this.#expandGlyphMetrics(minified.g, minified.b),
+      spaceAdvancementOverrideForSmallSizesInPx: minified.s,
+      glyphSheetsMetrics: this.#expandTightMetrics(minified.t)
+    };
+  }
+  
+  /**
+   * Expands kerning table (currently a direct copy, but kept for consistency)
+   * @private
+   */
+  static #expandKerningTable(minified) {
+    return { ...minified };
+  }
+  
+  /**
+   * Expands glyph metrics from arrays back to full objects
+   * Reconstructs full TextMetrics-compatible objects from compact arrays
+   * @private
+   */
+  static #expandGlyphMetrics(minifiedGlyphs, baseMetrics) {
+    const expanded = {};
+    Object.entries(minifiedGlyphs).forEach(([char, metrics]) => {
+      expanded[char] = {
+        // Glyph-specific metrics from the array
+        width: metrics[0],
+        actualBoundingBoxLeft: metrics[1],
+        actualBoundingBoxRight: metrics[2],
+        actualBoundingBoxAscent: metrics[3],
+        actualBoundingBoxDescent: metrics[4],
+        
+        // Common metrics restored from base metrics
+        fontBoundingBoxAscent: baseMetrics.fba,
+        fontBoundingBoxDescent: baseMetrics.fbd,
+        emHeightAscent: baseMetrics.fba,          // Same as fontBoundingBoxAscent
+        emHeightDescent: baseMetrics.fbd,         // Same as fontBoundingBoxDescent
+        hangingBaseline: baseMetrics.hb,
+        alphabeticBaseline: baseMetrics.ab,
+        ideographicBaseline: baseMetrics.ib
+      };
+    });
+    return expanded;
+  }
+  
+  /**
+   * Expands tight metrics from shortened property names
+   * @private
+   */
+  static #expandTightMetrics(minified) {
+    return {
+      tightWidth: minified.w,           // w -> tightWidth
+      tightHeight: minified.h,          // h -> tightHeight
+      dx: minified.dx,                  // dx unchanged
+      dy: minified.dy,                  // dy unchanged
+      xInGlyphSheet: minified.x         // x -> xInGlyphSheet
+    };
+  }
+}
