@@ -87,28 +87,39 @@ brew install trash         # Safe file deletion
 ./scripts/optimize-images.sh /path/to/pngs/            # Custom directory, remove backups
 ```
 
-### 3. Node.js Demo Build Script
+### 3. Node.js Demo Build Scripts
 ```bash
+# Single-size demo
 ./scripts/build-node-demo.sh
+
+# Multi-size demo
+./scripts/build-node-multi-size-demo.sh
+# or
+npm run build-multi-size-demo
 ```
 
-**What it does:**
+**Single-size demo (`build-node-demo.sh`):**
 - Concatenates existing source files into a single Node.js executable
 - Includes Canvas mock, utilities, image libraries, and core classes
 - Creates `examples/node/hello-world-node.js` with proper permissions
-- Maintains single source of truth for all components
+- Uses `src/node/hello-world-main.js` - renders "Hello World" at size 19
 
-**Source files used:**
+**Multi-size demo (`build-node-multi-size-demo.sh`):**
+- Same build process as single-size demo
+- Creates `examples/node/hello-world-multi-size-node.js`
+- Uses `src/node/hello-world-multi-size-main.js` - renders at sizes 18, 18.5, 19
+- Demonstrates placeholder rectangle fallback for missing glyph sheets
+
+**Common source files used:**
 - `src/node/canvas-mock.js` - Minimal Canvas implementation
 - `src/utils/nested-properties.js` - Nested object utilities
 - `src/minification/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/core/BitmapGlyphStore.js`, `src/core/BitmapText.js` - Core classes
-- `src/node/hello-world-main.js` - Main execution code
 
 **Output:**
-- Self-contained executable: `examples/node/hello-world-node.js`
-- File size: ~52KB, ~1450 lines
+- Self-contained executables: `examples/node/hello-world-node.js`, `examples/node/hello-world-multi-size-node.js`
+- File size: ~52-58KB, ~1450-1600 lines each
 - No external dependencies required
 
 ### 4. PNG to JS Converter Script

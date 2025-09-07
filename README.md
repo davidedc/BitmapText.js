@@ -189,13 +189,21 @@
 
   **Node.js Usage**
   ```bash
-  # Build the demo (automatically concatenates source files)
+  # Build and run single-size demo
   ./scripts/build-node-demo.sh
-  
-  # Run the demo
   node examples/node/hello-world-node.js
+  
+  # Build and run multi-size demo (demonstrates placeholder rectangles for missing atlases)
+  npm run build-multi-size-demo
+  node examples/node/hello-world-multi-size-node.js
+  
+  # Or build and run both demos at once
+  ./run-node-demos.sh
   ```
-  Renders "Hello World" using QOI glyph sheets and exports as PNG. Self-contained script with no npm dependencies, built from modular source files.
+  
+  **Single-size demo**: Renders "Hello World" at size 19 using QOI glyph sheets and exports as PNG.
+  
+  **Multi-size demo**: Renders "Hello World" at sizes 18, 18.5, and 19. Demonstrates multi-size font loading and placeholder rectangle fallback for missing glyph sheets. Self-contained scripts with no npm dependencies, built from modular source files.
 
   **Full Test Suite**  
   Open public/test-renderer.html to run visual tests and hash verification.

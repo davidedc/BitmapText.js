@@ -1,0 +1,2 @@
+#!/bin/bash
+./scripts/build-node-demo.sh && ./scripts/build-node-multi-size-demo.sh && echo "Running single-size demo..." && node examples/node/hello-world-node.js && echo -e "\nRunning multi-size demo..." && node examples/node/hello-world-multi-size-node.js

@@ -16,7 +16,8 @@
     "optimize-images": "./scripts/optimize-images.sh",
     "qoi-to-png": "node scripts/qoi-to-png-converter.js",
     "png-to-js": "node scripts/png-to-js-converter.js",
-    "qoi-memory": "node scripts/qoi-memory-calculator.js"
+    "qoi-memory": "node scripts/qoi-memory-calculator.js",
+    "build-multi-size-demo": "./scripts/build-node-multi-size-demo.sh"
   },
   "keywords": [
     "canvas",
