@@ -48,7 +48,7 @@ function main() {
       console.log(`Loading metrics for size ${fontSize}...`);
       
       // Load font metrics (JS file)
-      const fontDataPath = path.resolve(__dirname, `../../font-assets/metrics-${IDString}.js`);
+      const fontDataPath = path.resolve(__dirname, `font-assets/metrics-${IDString}.js`);
       if (!fs.existsSync(fontDataPath)) {
         throw new Error(`Font data file not found: ${fontDataPath}`);
       }
@@ -76,7 +76,7 @@ function main() {
       console.log(`Loading QOI glyph sheet for size ${fontSize}...`);
       
       // Only check main directory (like browser version)
-      const qoiPath = path.resolve(__dirname, `../../font-assets/atlas-${IDString}.qoi`);
+      const qoiPath = path.resolve(__dirname, `font-assets/atlas-${IDString}.qoi`);
       
       if (fs.existsSync(qoiPath)) {
         console.log(`  ↳ Loading: ${path.basename(qoiPath)}`);

@@ -22,7 +22,7 @@ function main() {
     console.log('BitmapText.js Node.js Demo - Loading font data...');
     
     // Load font metrics (JS file)
-    const fontDataPath = path.resolve(__dirname, '../../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
+    const fontDataPath = path.resolve(__dirname, 'font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
     if (!fs.existsSync(fontDataPath)) {
       throw new Error(`Font data file not found: ${fontDataPath}`);
     }
@@ -40,7 +40,7 @@ function main() {
     console.log('Font metrics loaded successfully');
     
     // Load and decode QOI glyph sheet
-    const qoiPath = path.resolve(__dirname, '../../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
+    const qoiPath = path.resolve(__dirname, 'font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
     if (!fs.existsSync(qoiPath)) {
       throw new Error(`QOI file not found: ${qoiPath}`);
     }

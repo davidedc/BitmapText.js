@@ -191,11 +191,11 @@
   ```bash
   # Build and run single-size demo
   ./scripts/build-node-demo.sh
-  node examples/node/hello-world-node.js
+  node examples/node/dist/hello-world.bundle.js
   
   # Build and run multi-size demo (demonstrates placeholder rectangles for missing atlases)
   npm run build-multi-size-demo
-  node examples/node/hello-world-multi-size-node.js
+  node examples/node/dist/hello-world-multi-size.bundle.js
   
   # Or build and run both demos at once
   ./run-node-demos.sh

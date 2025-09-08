@@ -17,7 +17,7 @@
   - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-glyph-sheets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-builder.html (generation), public/test-renderer.html (testing)
-  - **Examples**: examples/node/ (Node.js demos showing library usage outside browser)
+  - **Examples**: examples/node/dist/ (Built Node.js demo bundles), src/node/ (demo source code)
 
   ## Key Development Workflows
 
@@ -47,7 +47,7 @@
 
   ## Testing
   
-  See README.md for testing approach and instructions. Node.js example (examples/node/hello-world-node.js) demonstrates library functionality outside browser environment using QOI format and PNG export.
+  See README.md for testing approach and instructions. Node.js example (examples/node/dist/hello-world.bundle.js) demonstrates library functionality outside browser environment using QOI format and PNG export.
 
   ## Key Invariants
 
@@ -74,7 +74,7 @@
   - QOI format: Browser exports QOI, pipeline auto-converts to PNG for processing
   - QOI conversion: Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI files
   - PNG to JS conversion: Use `node scripts/png-to-js-converter.js [directory]` for file:// protocol compatibility
-  - Node.js demo build: Use `./scripts/build-node-demo.sh` to rebuild concatenated Node.js executable
+  - Node.js demo build: Use `./scripts/build-node-demo.sh` or `./run-node-demos.sh` (includes font asset setup)
   - Automated pipeline available: See `scripts/README.md` for complete automation guide
   - Use `--preserve-originals` flag to keep unoptimized PNGs for comparison during development
   - Use `--remove-qoi` flag to cleanup QOI files if disk space is limited

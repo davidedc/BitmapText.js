@@ -101,12 +101,12 @@ npm run build-multi-size-demo
 **Single-size demo (`build-node-demo.sh`):**
 - Concatenates existing source files into a single Node.js executable
 - Includes Canvas mock, utilities, image libraries, and core classes
-- Creates `examples/node/hello-world-node.js` with proper permissions
+- Creates `examples/node/dist/hello-world.bundle.js` with proper permissions
 - Uses `src/node/hello-world-main.js` - renders "Hello World" at size 19
 
 **Multi-size demo (`build-node-multi-size-demo.sh`):**
 - Same build process as single-size demo
-- Creates `examples/node/hello-world-multi-size-node.js`
+- Creates `examples/node/dist/hello-world-multi-size.bundle.js`
 - Uses `src/node/hello-world-multi-size-main.js` - renders at sizes 18, 18.5, 19
 - Demonstrates placeholder rectangle fallback for missing glyph sheets
 
@@ -118,7 +118,7 @@ npm run build-multi-size-demo
 - `src/core/BitmapGlyphStore.js`, `src/core/BitmapText.js` - Core classes
 
 **Output:**
-- Self-contained executables: `examples/node/hello-world-node.js`, `examples/node/hello-world-multi-size-node.js`
+- Self-contained executables: `examples/node/dist/hello-world.bundle.js`, `examples/node/dist/hello-world-multi-size.bundle.js`
 - File size: ~52-58KB, ~1450-1600 lines each
 - No external dependencies required
 
