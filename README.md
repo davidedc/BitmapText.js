@@ -38,13 +38,14 @@
   const canvas = document.getElementById('myCanvas');
   const ctx = canvas.getContext('2d');
 
-  const fontProperties = {
-    fontSize: 18,
-    fontFamily: "Arial",
-    fontStyle: "normal",
-    fontWeight: "normal",
-    pixelDensity: window.devicePixelRatio || 1
-  };
+  // Create FontProperties instance (immutable, pre-computed keys for performance)
+  const fontProperties = new FontProperties(
+    window.devicePixelRatio || 1, // pixelDensity
+    "Arial",                      // fontFamily
+    "normal",                     // fontStyle
+    "normal",                     // fontWeight
+    18                           // fontSize
+  );
 
   // Measure text
   const metrics = bitmapText.measureText("Hello World", fontProperties);
@@ -86,7 +87,7 @@
   - Returns TextMetrics-compatible object with width, bounding box info
   - Parameters:
     - text: String to measure
-    - fontProperties: Object with fontSize, fontFamily, fontStyle, fontWeight, pixelDensity
+    - fontProperties: FontProperties instance
 
   drawTextFromGlyphSheet(ctx, text, x, y, fontProperties, textColor)
   - Draws text using pre-rendered glyphs
@@ -95,10 +96,33 @@
     - ctx: Canvas 2D rendering context
     - text: String to render
     - x, y: Position in CSS pixels
-    - fontProperties: Font configuration object
+    - fontProperties: FontProperties instance
     - textColor: CSS color string (optional, default: 'black')
 
-  BitmapGlyphStore Class
+  ## FontProperties Class
+
+  Immutable font configuration class with pre-computed keys for performance.
+
+  ### Constructor
+  ```javascript
+  new FontProperties(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize)
+  ```
+
+  ### Parameters
+  - **pixelDensity**: Number (can be non-integer, e.g., 1.5 for some displays)
+  - **fontFamily**: String (e.g., "Arial", "Helvetica")
+  - **fontStyle**: String ("normal", "italic", "oblique")
+  - **fontWeight**: String ("normal", "bold", "100"-"900")
+  - **fontSize**: Number (can be non-integer, e.g., 18.5)
+
+  ### Properties
+  - **key**: String - Pre-computed key for fast Map lookups
+  - **idString**: String - Pre-computed ID string for asset file naming
+
+  ### Methods
+  - **toObject()**: Returns plain object representation for compatibility
+
+  ## BitmapGlyphStore Class
 
   Manages glyph sheets and metrics. Usually populated automatically from manifest.
 
@@ -115,22 +139,22 @@
 
   getKerningTable(fontProperties)
   - Returns kerning table for the specified font properties
-  - Parameters: fontProperties object with fontSize, fontFamily, fontStyle, fontWeight, pixelDensity
+  - Parameters: fontProperties - FontProperties instance
 
   setKerningTable(fontProperties, kerningTable)
   - Sets kerning table for the specified font properties
   - Parameters:
-    - fontProperties: Font configuration object
+    - fontProperties: FontProperties instance
     - kerningTable: Kerning data structure
 
   getGlyphSheet(fontProperties)
   - Returns glyph sheet canvas/image for the specified font properties
-  - Parameters: fontProperties object
+  - Parameters: fontProperties - FontProperties instance
 
   setGlyphSheet(fontProperties, glyphSheet)
   - Sets glyph sheet for the specified font properties
   - Parameters:
-    - fontProperties: Font configuration object
+    - fontProperties: FontProperties instance
     - glyphSheet: Canvas or Image element
 
   getGlyphSheetMetrics(fontProperties, letter)

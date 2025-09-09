@@ -35,6 +35,8 @@
   <script src="../src/utils/nested-properties.js"></script>
   <!-- Expander utility to unpack minified font metrics data -->
   <script src="../src/minification/MetricsExpander.js"></script>
+  <!-- FontProperties class for font configuration -->
+  <script src="../src/core/FontProperties.js"></script>
   <!-- Data store for glyph sheets, metrics, and kerning tables -->
   <script src="../src/core/BitmapGlyphStore.js"></script>
   <!-- Main bitmap text rendering engine -->
@@ -42,13 +44,7 @@
 
   <script>
     // Font properties for Arial normal normal 19 with pixel density 1
-    const fontProperties = {
-      pixelDensity: 1,
-      fontFamily: "Arial",
-      fontStyle: "normal",
-      fontWeight: "normal", 
-      fontSize: 19
-    };
+    const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 
     // Initialize bitmap text system
     const bitmapGlyphStore = new BitmapGlyphStore();

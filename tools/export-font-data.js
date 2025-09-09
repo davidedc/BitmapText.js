@@ -6,24 +6,40 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       fontStyle, 
       fontWeight
   } = options;
+  
+  // Create FontPropertiesEditor for this font configuration (without fontSize yet)
+  // We'll create specific instances for each size below
 
   const zip = new JSZip();
   const folder = zip.folder("glyphSheets");
   const bitmapGlyphStore = bitmapGlyphStore_Editor.extractBitmapGlyphStoreInstance();
-  const glyphSheets = bitmapGlyphStore.glyphSheets;
   
-  // Get all available sizes for the current font configuration
-  const sizes = Object.keys(glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight]);
+  // Find all available sizes by examining Map keys
+  // as glyphSheets is a Map with FontProperties.key as keys
+  const sizes = new Set();
+  const baseKeyPrefix = `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:`;
+  
+  for (const [key, canvas] of bitmapGlyphStore.glyphSheets) {
+    if (key.startsWith(baseKeyPrefix)) {
+      // Extract fontSize from key: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
+      const fontSize = key.substring(baseKeyPrefix.length);
+      sizes.add(parseFloat(fontSize));
+    }
+  }
+  
   const IDs = [];
 
   sizes.forEach(size => {
-      // Skip if no entry exists for current pixel density
-      if (!glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size]) {
+      // Create FontPropertiesEditor for this specific size
+      const fontProperties = new FontPropertiesEditor(pixelDensity, fontFamily, fontStyle, fontWeight, size);
+      
+      // Get canvas from Map-based storage
+      const canvas = bitmapGlyphStore.glyphSheets.get(fontProperties.key);
+      
+      // Skip if no canvas exists for this configuration
+      if (!canvas) {
           return;
       }
-
-      // Generate QOI from canvas
-      const canvas = glyphSheets[pixelDensity][fontFamily][fontStyle][fontWeight][size];
       const ctx = canvas.getContext('2d');
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       
@@ -39,9 +55,8 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       const qoiUint8Array = new Uint8Array(qoiBuffer);
       const qoiBase64 = btoa(String.fromCharCode(...qoiUint8Array));
 
-      // Generate ID string for the current configuration
-      const properties = { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize: size };
-      const IDString = GlyphIDString_Editor.getIDString(properties);
+      // Use pre-computed ID string from FontPropertiesEditor
+      const IDString = fontProperties.idString;
       IDs.push(IDString);
 
       // Add QOI to zip with timezone-corrected date
@@ -52,31 +67,68 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       const currentDate = new Date(now.getTime() - (timezoneOffset * 60 * 1000));
       folder.file(`atlas-${IDString}.qoi`, qoiBase64, { base64: true, date: currentDate });
 
-      // navigate through the bitmapGlyphStore, which contains:
-      //   kerningTables = {}; // [pixelDensity,fontFamily, fontStyle, fontWeight, fontSize]    
-      //   glyphsTextMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-      //   spaceAdvancementOverrideForSmallSizesInPx = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
-      //   // these two needed to precisely paint a glyph from the sheet into the destination canvas
-      //   glyphSheets = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
-      //   glyphSheetsMetrics = { // all objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-      //     tightWidth: {},
-      //     tightHeight: {},
-      //     dx: {},
-      //     dy: {},
-      //     xInGlyphSheet: {}
-      //   };
-      // and filter all the objects that are relevant to the current pixelDensity, font family, style, weight and size
-      const metadata = {
-          kerningTable: bitmapGlyphStore.kerningTables[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-          glyphsTextMetrics: bitmapGlyphStore.glyphsTextMetrics[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-          spaceAdvancementOverrideForSmallSizesInPx: bitmapGlyphStore.spaceAdvancementOverrideForSmallSizesInPx[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-          glyphSheetsMetrics: {
-              tightWidth: bitmapGlyphStore.glyphSheetsMetrics.tightWidth[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              tightHeight: bitmapGlyphStore.glyphSheetsMetrics.tightHeight[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              dx: bitmapGlyphStore.glyphSheetsMetrics.dx[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              dy: bitmapGlyphStore.glyphSheetsMetrics.dy[pixelDensity][fontFamily][fontStyle][fontWeight][size],
-              xInGlyphSheet: bitmapGlyphStore.glyphSheetsMetrics.xInGlyphSheet[pixelDensity][fontFamily][fontStyle][fontWeight][size]
+      // REFACTORED: Extract metadata using new Map-based getters
+      // Collect all glyph metrics for this font configuration
+      const glyphSheetsMetrics = {
+          tightWidth: {},
+          tightHeight: {},
+          dx: {},
+          dy: {},
+          xInGlyphSheet: {}
+      };
+      
+      const glyphsTextMetrics = {};
+      const baseGlyphKey = fontProperties.key + ':';
+      
+      // Iterate through all Map entries to find glyphs for this font
+      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.tightWidth) {
+          if (key.startsWith(baseGlyphKey)) {
+              const letter = key.substring(baseGlyphKey.length);
+              glyphSheetsMetrics.tightWidth[letter] = value;
           }
+      }
+      
+      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.tightHeight) {
+          if (key.startsWith(baseGlyphKey)) {
+              const letter = key.substring(baseGlyphKey.length);
+              glyphSheetsMetrics.tightHeight[letter] = value;
+          }
+      }
+      
+      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.dx) {
+          if (key.startsWith(baseGlyphKey)) {
+              const letter = key.substring(baseGlyphKey.length);
+              glyphSheetsMetrics.dx[letter] = value;
+          }
+      }
+      
+      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.dy) {
+          if (key.startsWith(baseGlyphKey)) {
+              const letter = key.substring(baseGlyphKey.length);
+              glyphSheetsMetrics.dy[letter] = value;
+          }
+      }
+      
+      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.xInGlyphSheet) {
+          if (key.startsWith(baseGlyphKey)) {
+              const letter = key.substring(baseGlyphKey.length);
+              glyphSheetsMetrics.xInGlyphSheet[letter] = value;
+          }
+      }
+      
+      // Collect glyph text metrics
+      for (const [key, value] of bitmapGlyphStore.glyphsTextMetrics) {
+          if (key.startsWith(baseGlyphKey)) {
+              const letter = key.substring(baseGlyphKey.length);
+              glyphsTextMetrics[letter] = value;
+          }
+      }
+      
+      const metadata = {
+          kerningTable: bitmapGlyphStore.getKerningTable(fontProperties),
+          glyphsTextMetrics: glyphsTextMetrics,
+          spaceAdvancementOverrideForSmallSizesInPx: bitmapGlyphStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties),
+          glyphSheetsMetrics: glyphSheetsMetrics
       };
 
       // Test minification and expansion 

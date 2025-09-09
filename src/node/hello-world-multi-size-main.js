@@ -11,30 +11,22 @@ global.isKerningEnabled = true;
 // Font sizes to demonstrate
 const fontSizes = [18, 18.5, 19];
 
-// Create font properties for each size
-const fontPropertiesArray = fontSizes.map(size => ({
-  pixelDensity: 1,
-  fontFamily: "Arial",
-  fontStyle: "normal",
-  fontWeight: "normal",
-  fontSize: size
-}));
+// Create font properties for each size using FontProperties class
+const fontPropertiesArray = fontSizes.map(size => 
+  new FontProperties(1, "Arial", "normal", "normal", size) // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+);
 
-// Function to create IDString from font size (matches browser version logic)
-function createIDString(fontSize) {
-  // Handle fractional sizes: 18.5 becomes "18-5", whole numbers get "-0" suffix
-  const sizeStr = fontSize.toString().replace('.', '-');
-  // Add "-0" suffix for whole numbers (18 -> "18-0"), fractional already have second part (18.5 -> "18-5")
-  const finalSizeStr = sizeStr.includes('-') ? sizeStr : `${sizeStr}-0`;
-  return `density-1-0-Arial-style-normal-weight-normal-size-${finalSizeStr}`;
+// Function to create IDString from FontProperties (uses pre-computed idString)
+function createIDString(fontProperties) {
+  return fontProperties.idString;
 }
 
 function main() {
   try {
     console.log('BitmapText.js Node.js Multi-Size Demo - Loading font data...');
     
-    // Create IDStrings for all font sizes
-    const IDStrings = fontSizes.map(createIDString);
+    // Create IDStrings for all font configurations
+    const IDStrings = fontPropertiesArray.map(createIDString);
     console.log('Font sizes:', fontSizes);
     console.log('IDStrings:', IDStrings);
     

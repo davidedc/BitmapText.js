@@ -1,5 +1,18 @@
+// Uses FontProperties.idString
 class GlyphIDString_Editor extends GlyphIDString {
-  static getIDString(properties) {
+  static getIDString(fontProperties) {
+      // Use pre-computed idString from FontProperties for performance
+      if (fontProperties.idString) {
+          return fontProperties.idString;
+      }
+      
+      // Legacy fallback for plain objects (will be removed after migration)
+      return GlyphIDString_Editor.getIDStringLegacy(fontProperties);
+  }
+  
+  // DEPRECATED: Legacy method for backward compatibility
+  // Will be removed once all code uses FontProperties instances
+  static getIDStringLegacy(properties) {
       const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = properties;
       
       // Format numbers to always have a digit before and after decimal point

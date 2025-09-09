@@ -4,32 +4,18 @@
 // Check if font metrics and kerning data are available (needed for text measurement and positioning)
 function isFontMetricsAvailable(fontProperties, bitmapGlyphStore) {
   try {
-    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
+    // Use BitmapGlyphStore's getter methods which work with both Maps and legacy objects
+    const kerningTable = bitmapGlyphStore.getKerningTable(fontProperties);
+    const hasKerningTables = kerningTable !== undefined && kerningTable !== null;
     
-    // Check if kerning tables exist
-    const hasKerningTables = bitmapGlyphStore.kerningTables &&
-                           bitmapGlyphStore.kerningTables[pixelDensity] &&
-                           bitmapGlyphStore.kerningTables[pixelDensity][fontFamily] &&
-                           bitmapGlyphStore.kerningTables[pixelDensity][fontFamily][fontStyle] &&
-                           bitmapGlyphStore.kerningTables[pixelDensity][fontFamily][fontStyle][fontWeight] &&
-                           bitmapGlyphStore.kerningTables[pixelDensity][fontFamily][fontStyle][fontWeight][fontSize];
+    // Check if any glyphs exist for this font by looking for keys that start with the base key
+    const baseKey = fontProperties.key;
+    const hasGlyphsTextMetrics = [...bitmapGlyphStore.glyphsTextMetrics.keys()]
+      .some(key => key.startsWith(baseKey + ':'));
     
-    // Check if glyph text metrics exist
-    const hasGlyphsTextMetrics = bitmapGlyphStore.glyphsTextMetrics &&
-                               bitmapGlyphStore.glyphsTextMetrics[pixelDensity] &&
-                               bitmapGlyphStore.glyphsTextMetrics[pixelDensity][fontFamily] &&
-                               bitmapGlyphStore.glyphsTextMetrics[pixelDensity][fontFamily][fontStyle] &&
-                               bitmapGlyphStore.glyphsTextMetrics[pixelDensity][fontFamily][fontStyle][fontWeight] &&
-                               bitmapGlyphStore.glyphsTextMetrics[pixelDensity][fontFamily][fontStyle][fontWeight][fontSize];
-    
-    // Check if glyph sheet metrics exist (for positioning)
-    const hasGlyphSheetMetrics = bitmapGlyphStore.glyphSheetsMetrics &&
-                               bitmapGlyphStore.glyphSheetsMetrics.tightWidth &&
-                               bitmapGlyphStore.glyphSheetsMetrics.tightWidth[pixelDensity] &&
-                               bitmapGlyphStore.glyphSheetsMetrics.tightWidth[pixelDensity][fontFamily] &&
-                               bitmapGlyphStore.glyphSheetsMetrics.tightWidth[pixelDensity][fontFamily][fontStyle] &&
-                               bitmapGlyphStore.glyphSheetsMetrics.tightWidth[pixelDensity][fontFamily][fontStyle][fontWeight] &&
-                               bitmapGlyphStore.glyphSheetsMetrics.tightWidth[pixelDensity][fontFamily][fontStyle][fontWeight][fontSize];
+    // Check if any glyph sheet metrics exist for this font
+    const hasGlyphSheetMetrics = [...bitmapGlyphStore.glyphSheetsMetrics.tightWidth.keys()]
+      .some(key => key.startsWith(baseKey + ':'));
     
     return hasKerningTables && hasGlyphsTextMetrics && hasGlyphSheetMetrics;
   } catch (error) {

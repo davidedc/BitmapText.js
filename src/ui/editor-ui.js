@@ -10,6 +10,8 @@ function setupGlyphUI_Editor() {
     downloadAllSheetsButton.addEventListener('click', function() {
         const pixelDensity = document.getElementById('pixel-density-2-radio-button').checked ? 2 : 1;
         
+        // Pass individual properties to downloadGlyphSheetsAndKerningMaps
+        // (The function will create FontPropertiesEditor instances internally for each size)
         downloadGlyphSheetsAndKerningMaps({
             bitmapGlyphStore_Editor,
             pixelDensity,

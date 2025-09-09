@@ -53,6 +53,8 @@
   <script src="../src/utils/font-loader-config.js"></script>
   <script src="../src/utils/font-loader.js"></script>
   <script src="../src/core/GlyphIDString.js"></script>
+  <!-- FontProperties class for font configuration -->
+  <script src="../src/core/FontProperties.js"></script>
   <!-- Data store for glyph sheets, metrics, and kerning tables -->
   <script src="../src/core/BitmapGlyphStore.js"></script>
   <!-- Main bitmap text rendering engine -->
@@ -61,13 +63,9 @@
   <script>
     // Font properties for each size - Arial normal normal with pixel density 1
     const fontSizes = [18, 18.5, 19];
-    const fontPropertiesArray = fontSizes.map(size => ({
-      pixelDensity: 1,
-      fontFamily: "Arial",
-      fontStyle: "normal",
-      fontWeight: "normal",
-      fontSize: size
-    }));
+    const fontPropertiesArray = fontSizes.map(size => 
+      new FontProperties(1, "Arial", "normal", "normal", size) // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+    );
 
     // Initialize bitmap text system
     const bitmapGlyphStore = new BitmapGlyphStore();

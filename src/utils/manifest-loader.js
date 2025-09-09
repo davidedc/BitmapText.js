@@ -61,12 +61,13 @@ else {
 }
 
 function ingestLoadedBitmapFontData() {
+  // Reset glyph sheet metrics maps for fresh loading
   bitmapGlyphStore.glyphSheetsMetrics = {
-    tightWidth: {},
-    tightHeight: {},
-    dx: {},
-    dy: {},
-    xInGlyphSheet: {}
+    tightWidth: new Map(),
+    tightHeight: new Map(),
+    dx: new Map(),
+    dy: new Map(),
+    xInGlyphSheet: new Map()
   };
   
   for (const key in loadedBitmapFontData) {

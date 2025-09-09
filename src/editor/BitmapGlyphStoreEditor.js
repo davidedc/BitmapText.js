@@ -1,12 +1,11 @@
-// a class to store all the BitmapGlyph_Editor objects
+// Class to store all the BitmapGlyph_Editor objects
 // so that we can retrieve them by font family, font size and letter
 class BitmapGlyphStore_Editor extends BitmapGlyphStore {
   constructor() {
     super();
-    // these objects contain all kinds of other
-    // intermediate data useful for construction/inspection
-    // so don't use them in the measuring and drawing methods
-    this.glyphs = {};
+    // Editor-specific glyph storage using Map for O(1) lookups
+    // Key format: fontProperties.key + ":" + letter
+    this.glyphs = new Map();
   }
 
   extractBitmapGlyphStoreInstance() {
@@ -20,28 +19,31 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
   }
 
   clearKerningTables() {
-    this.kerningTables = {};
+    this.kerningTables.clear();
   }
 
   kerningTableExists(fontProperties) {
-    return checkNestedPropertiesExist(this.kerningTables,this.getFontPropertiesArray(fontProperties));
+    const key = fontProperties.key || this._getLegacyKey(fontProperties);
+    return this.kerningTables.has(key);
   }
 
   setKerningTable(fontProperties, kerningTable) {
-    setNestedProperty(this.kerningTables,this.getFontPropertiesArray(fontProperties), kerningTable);
+    // Use parent class method which uses Maps
+    super.setKerningTable(fontProperties, kerningTable);
   }
 
 
 
   addGlyph(glyph) {
-    setNestedProperty(this.glyphs, this.getFontPropertiesArray(glyph.fontProperties).concat(glyph.letter), glyph);
-    // glyphSheets is actually part of the narrower BitmapGlyphStore class
-    // however we also need it here in the Full class for construction of things.
-    ensureNestedPropertiesExist(this.glyphSheets, this.getFontPropertiesArray(glyph.fontProperties));
+    const baseKey = glyph.fontProperties.key || this._getLegacyKey(glyph.fontProperties);
+    const glyphKey = `${baseKey}:${glyph.letter}`;
+    this.glyphs.set(glyphKey, glyph);
   }
 
   getGlyph(fontProperties, letter) {
-    return getNestedProperty(this.glyphs, this.getFontPropertiesArray(fontProperties).concat(letter));
+    const baseKey = fontProperties.key || this._getLegacyKey(fontProperties);
+    const glyphKey = `${baseKey}:${letter}`;
+    return this.glyphs.get(glyphKey);
   }
 
   // Get a canvas with all the glyphs of a certain font family, font size and font style
@@ -50,15 +52,25 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
   // 3. draw each glyph in the canvas
   buildGlyphSheet(fontProperties) {
-    const glyphs = getNestedProperty(this.glyphs, this.getFontPropertiesArray(fontProperties));
-    if (!glyphs) return null;
+    const baseKey = fontProperties.key || this._getLegacyKey(fontProperties);
+    
+    // Find all glyphs for this font configuration
+    const glyphs = {};
+    for (const [glyphKey, glyph] of this.glyphs) {
+      if (glyphKey.startsWith(baseKey + ':')) {
+        const letter = glyphKey.substring(baseKey.length + 1);
+        glyphs[letter] = glyph;
+      }
+    }
+    
+    if (Object.keys(glyphs).length === 0) return null;
 
     let fittingWidth = 0;
     let maxHeight = 0;
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      let letterTextMetrics = getNestedProperty(this.glyphsTextMetrics, this.getFontPropertiesArray(fontProperties).concat(letter));
+      let letterTextMetrics = this.getGlyphsTextMetrics(fontProperties, letter);
 
       // the width is calculated from the glyph.tightCanvasBox
       // example: bottomRightCorner: {x: 40, y: 71}
@@ -83,13 +95,14 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
         glyph.tightCanvasBox.bottomRightCorner.y -
         glyph.tightCanvasBox.topLeftCorner.y +
         1;
-      setNestedProperty( this.glyphSheetsMetrics.tightWidth, this.getFontPropertiesArray(fontProperties).concat(letter), tightWidth);
-      setNestedProperty( this.glyphSheetsMetrics.tightHeight, this.getFontPropertiesArray(fontProperties).concat(letter), tightHeight);
+      const glyphKey = `${baseKey}:${letter}`;
+      this.glyphSheetsMetrics.tightWidth.set(glyphKey, tightWidth);
+      this.glyphSheetsMetrics.tightHeight.set(glyphKey, tightHeight);
 
       const dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
       const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
-      setNestedProperty( this.glyphSheetsMetrics.dx, this.getFontPropertiesArray(fontProperties).concat(letter), dx);
-      setNestedProperty( this.glyphSheetsMetrics.dy, this.getFontPropertiesArray(fontProperties).concat(letter), dy);
+      this.glyphSheetsMetrics.dx.set(glyphKey, dx);
+      this.glyphSheetsMetrics.dy.set(glyphKey, dy);
 
       if (!isNaN(tightWidth)) fittingWidth += tightWidth;
       if (tightHeight > maxHeight) maxHeight = tightHeight;
@@ -103,7 +116,8 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      const tightWidth = getNestedProperty( this.glyphSheetsMetrics.tightWidth, this.getFontPropertiesArray(fontProperties).concat(letter));
+      const glyphKey = `${baseKey}:${letter}`;
+      const tightWidth = this.glyphSheetsMetrics.tightWidth.get(glyphKey);
       // if there is no glyph.tightCanvas, then just continue
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
         if (!tightWidth)
@@ -114,7 +128,7 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
 
-      setNestedProperty( this.glyphSheetsMetrics.xInGlyphSheet, this.getFontPropertiesArray(fontProperties).concat(letter), x);
+      this.glyphSheetsMetrics.xInGlyphSheet.set(glyphKey, x);
 
       x += tightWidth;
     }
@@ -126,10 +140,16 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
     // amount of time to process the data and make it available for rendering.
     // This processing time is typically very brief, but if you try it here, you'll get frequent
     // failures to paint the letters from this image.
-    setNestedProperty(this.glyphSheets, this.getFontPropertiesArray(fontProperties), canvas);
+    this.setGlyphSheet(fontProperties, canvas);
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.
     return [glyphSheetsPNG, ctx];
+  }
+
+  // TEMPORARY: Legacy key generation for backward compatibility during migration
+  _getLegacyKey(fontProperties) {
+    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
+    return `${pixelDensity || 1}:${fontFamily}:${fontStyle || 'normal'}:${fontWeight || 'normal'}:${fontSize}`;
   }
 }

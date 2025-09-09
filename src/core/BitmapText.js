@@ -127,12 +127,13 @@ class BitmapText {
   }
 
   getKerningCorrection(fontProperties, letter, nextLetter) {
-    const properties = [letter, nextLetter];
-
     if (isKerningEnabled && nextLetter) {
-      let kerningCorrectionPlace = this.glyphStore.getKerningTable(fontProperties);
-      if (checkNestedPropertiesExist(kerningCorrectionPlace, properties))
-        return getNestedProperty(kerningCorrectionPlace, properties);
+      let kerningTable = this.glyphStore.getKerningTable(fontProperties);
+      // Kerning tables are flat objects returned by the Map-based store
+      // Check if kerning exists for this letter pair
+      if (kerningTable && kerningTable[letter] && kerningTable[letter][nextLetter] !== undefined) {
+        return kerningTable[letter][nextLetter];
+      }
     }
 
     return 0;

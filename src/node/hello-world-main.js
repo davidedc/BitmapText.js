@@ -9,13 +9,7 @@ global.loadedBitmapFontData = {};
 global.isKerningEnabled = true;
 
 // Font properties for Arial normal normal 19 with pixel density 1
-const fontProperties = {
-  pixelDensity: 1,
-  fontFamily: "Arial",
-  fontStyle: "normal",
-  fontWeight: "normal",
-  fontSize: 19
-};
+const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 
 function main() {
   try {

@@ -11,8 +11,8 @@
 
   ## Project Structure at a Glance
 
-  - **Core runtime**: src/core/BitmapText.js, src/core/BitmapGlyphStore.js
-  - **Generation tools**: src/editor/*Editor.js files
+  - **Core runtime**: src/core/BitmapText.js, src/core/BitmapGlyphStore.js, src/core/FontProperties.js
+  - **Generation tools**: src/editor/*Editor.js files (includes FontPropertiesEditor.js)
   - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js, src/utils/manifest-loader.js
   - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-glyph-sheets.sh, optimize-images.sh, png-to-js-converter.js)
@@ -57,6 +57,8 @@
 
   ## Where to Find Things
 
+  - **Font configuration**: src/core/FontProperties.js (immutable font config class)
+  - **Font editing utilities**: src/editor/FontPropertiesEditor.js (extends FontProperties)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1

@@ -151,10 +151,14 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
   // the advantage is that we can reuse a glyph sheet that was generated for pixelDensity 1
   let didPixelDensity1Forcing = false;
   if (drawAllPixelDensitiesWithLargerPixelDensity1Text && originalFontProperties.pixelDensity === 2) {
-    // make another deep copy of the fontProperties and call it fontPropertiesForcedPixelDensity1
-    fontPropertiesForcedPixelDensity1 = JSON.parse(JSON.stringify(originalFontProperties));
-    fontPropertiesForcedPixelDensity1.pixelDensity = 1;
-    fontPropertiesForcedPixelDensity1.fontSize *= 2;
+    // Create new FontProperties with pixelDensity=1 and doubled fontSize
+    fontPropertiesForcedPixelDensity1 = new FontProperties(
+      1, // pixelDensity
+      originalFontProperties.fontFamily,
+      originalFontProperties.fontStyle,
+      originalFontProperties.fontWeight,
+      originalFontProperties.fontSize * 2
+    );
 
     measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesForcedPixelDensity1);
     linesMeasures_CSS_PxForcedPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);
@@ -169,8 +173,14 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
   bitmapGlyphSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
 
   if (originalFontProperties.pixelDensity === 2) {
-    let fontPropertiesPixelDensity1 = JSON.parse(JSON.stringify(originalFontProperties));
-    fontPropertiesPixelDensity1.pixelDensity = 1;
+    // Create new FontProperties with pixelDensity=1 (same fontSize)
+    let fontPropertiesPixelDensity1 = new FontProperties(
+      1, // pixelDensity
+      originalFontProperties.fontFamily,
+      originalFontProperties.fontStyle,
+      originalFontProperties.fontWeight,
+      originalFontProperties.fontSize
+    );
 
     measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesPixelDensity1);
     const linesMeasures_CSS_PxPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);

@@ -2,100 +2,118 @@
 // and the minimal set of info necessary to draw text.
 class BitmapGlyphStore {
   constructor() {
-    // Only use these three "compact" data structures in the measuring and drawing methods
-    // "compact" means that they are the final data structures that are used to measure
-    // text and draw the glyphs/text. (As opposed to the other data structures that contain
-    // all kinds of other intermediate data useful for construction/inspection)
-
-    // These three are needed to measure text and place each glyph one after the other with the correct advancement
-    this.kerningTables = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
-    this.glyphsTextMetrics = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-    this.spaceAdvancementOverrideForSmallSizesInPx = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
-
-    // These two are needed to precisely paint a glyph from the sheet into the destination canvas
-    this.glyphSheets = {}; // [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
+    // Keys are FontProperties.key strings for O(1) lookup
+    
+    // These are needed to measure text and place each glyph one after the other with the correct advancement
+    this.kerningTables = new Map(); // fontProperties.key → kerningTable
+    this.glyphsTextMetrics = new Map(); // fontProperties.key + ":" + letter → metrics
+    this.spaceAdvancementOverrideForSmallSizesInPx = new Map(); // fontProperties.key → override
+    
+    // These are needed to precisely paint a glyph from the sheet into the destination canvas
+    this.glyphSheets = new Map(); // fontProperties.key → glyphSheet
     this.glyphSheetsMetrics = {
-      // All objects indexed on [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, letter]
-      tightWidth: {},
-      tightHeight: {},
-      dx: {},
-      dy: {},
-      xInGlyphSheet: {}
+      // All Maps indexed on fontProperties.key + ":" + letter for glyph-specific metrics
+      tightWidth: new Map(),
+      tightHeight: new Map(),
+      dx: new Map(),
+      dy: new Map(),
+      xInGlyphSheet: new Map()
     };
   }
 
-  // method that de-structure a fontProperties object
-  // into an array [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize]
-  getFontPropertiesArray(fontProperties) {
-    const {
-      pixelDensity,
-      fontFamily,
-      fontStyle,
-      fontWeight,
-      fontSize
-    } = fontProperties;
-    return [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize];
-  }
-
   getKerningTable(fontProperties) {
-    return getNestedProperty(this.kerningTables, this.getFontPropertiesArray(fontProperties)) || {};
+    // Direct Map lookup
+    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
+    return this.kerningTables.get(key) || {};
   }
 
   setKerningTable(fontProperties, kerningTable) {
-    setNestedProperty(this.kerningTables,this.getFontPropertiesArray(fontProperties), kerningTable);
+    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
+    this.kerningTables.set(key, kerningTable);
   }
   
   getGlyphSheet(fontProperties) {
-    return getNestedProperty(this.glyphSheets,this.getFontPropertiesArray(fontProperties));
+    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
+    return this.glyphSheets.get(key);
   }
 
   setGlyphSheet(fontProperties, glyphSheet) {
-    setNestedProperty(this.glyphSheets,this.getFontPropertiesArray(fontProperties), glyphSheet);
+    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
+    this.glyphSheets.set(key, glyphSheet);
   }
 
   // return an object with xInGlyphSheet, tightWidth, tightHeight, dx, dy
   getGlyphSheetMetrics(fontProperties, letter) {
-    const address = this.getFontPropertiesArray(fontProperties).concat(letter);
+    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
+    const glyphKey = `${baseKey}:${letter}`;
     const glyphSheetsMetrics = this.glyphSheetsMetrics;
+    
     return {
-      xInGlyphSheet: getNestedProperty(glyphSheetsMetrics.xInGlyphSheet, address),
-      tightWidth: getNestedProperty(glyphSheetsMetrics.tightWidth, address),
-      tightHeight: getNestedProperty(glyphSheetsMetrics.tightHeight, address),
-      dx: getNestedProperty(glyphSheetsMetrics.dx, address),
-      dy: getNestedProperty(glyphSheetsMetrics.dy, address)
+      xInGlyphSheet: glyphSheetsMetrics.xInGlyphSheet.get(glyphKey),
+      tightWidth: glyphSheetsMetrics.tightWidth.get(glyphKey),
+      tightHeight: glyphSheetsMetrics.tightHeight.get(glyphKey),
+      dx: glyphSheetsMetrics.dx.get(glyphKey),
+      dy: glyphSheetsMetrics.dy.get(glyphKey)
     };
   }
 
   setGlyphSheetMetrics(fontProperties, metrics) {
+    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
     const glyphSheetsMetrics = this.glyphSheetsMetrics;
+    
+    // Set metrics for each letter in the font
     for (const metricKey in metrics) {
-      setNestedProperty(glyphSheetsMetrics[metricKey],this.getFontPropertiesArray(fontProperties), metrics[metricKey]);
+      if (glyphSheetsMetrics[metricKey]) {
+        const letterMetrics = metrics[metricKey];
+        for (const letter in letterMetrics) {
+          const glyphKey = `${baseKey}:${letter}`;
+          glyphSheetsMetrics[metricKey].set(glyphKey, letterMetrics[letter]);
+        }
+      }
     }
   }
 
   getGlyphsTextMetrics(fontProperties, letter) {
-    return getNestedProperty(this.glyphsTextMetrics, this.getFontPropertiesArray(fontProperties).concat(letter));
+    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
+    const glyphKey = `${baseKey}:${letter}`;
+    return this.glyphsTextMetrics.get(glyphKey);
   }
 
   setGlyphsTextMetrics(fontProperties, metrics) {
-    setNestedProperty(this.glyphsTextMetrics,this.getFontPropertiesArray(fontProperties), metrics);
+    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
+    // Set metrics for each letter
+    for (const letter in metrics) {
+      const glyphKey = `${baseKey}:${letter}`;
+      this.glyphsTextMetrics.set(glyphKey, metrics[letter]);
+    }
   }
 
   setGlyphTextMetrics(fontProperties, letter, metrics) {
-    setNestedProperty(this.glyphsTextMetrics, this.getFontPropertiesArray(fontProperties).concat(letter), metrics);
+    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
+    const glyphKey = `${baseKey}:${letter}`;
+    this.glyphsTextMetrics.set(glyphKey, metrics);
   }
 
   getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties) {
-    return getNestedProperty(this.spaceAdvancementOverrideForSmallSizesInPx, this.getFontPropertiesArray(fontProperties));
+    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
+    return this.spaceAdvancementOverrideForSmallSizesInPx.get(key);
   }
 
   setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx) {
-    setNestedProperty(this.spaceAdvancementOverrideForSmallSizesInPx, this.getFontPropertiesArray(fontProperties), spaceAdvancementOverrideForSmallSizesInPx);
+    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
+    this.spaceAdvancementOverrideForSmallSizesInPx.set(key, spaceAdvancementOverrideForSmallSizesInPx);
   }
 
   // Helper method to check if a glyph sheet is valid for rendering
   isValidGlyphSheet(glyphSheet) {
     return glyphSheet && typeof glyphSheet === 'object' && glyphSheet.width > 0;
+  }
+
+  // TEMPORARY: Legacy key generation for backward compatibility during migration
+  // This will be removed once all code uses FontProperties instances
+  #getLegacyKey(fontProperties) {
+    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
+    return `${pixelDensity || 1}:${fontFamily}:${fontStyle || 'normal'}:${fontWeight || 'normal'}:${fontSize}`;
   }
 
 }

@@ -12,6 +12,7 @@ let drawCrisply = true;
 let truncateMetrics = true;
 
 // Consolidated function to extract font properties from UI elements
+// Returns FontProperties instance for core functionality
 function getFontPropertiesFromUI() {
   let fontSize, pixelDensity;
 
@@ -29,13 +30,14 @@ function getFontPropertiesFromUI() {
     pixelDensity = 1;
   }
 
-  return {
-    fontSize,
-    fontFamily: fontFamilySelect.value,
-    fontStyle: fontStyleSelect.value,
-    fontWeight: fontWeightSelect.value,
-    pixelDensity
-  };
+  // Create core FontProperties instance
+  return new FontProperties(
+    pixelDensity,
+    fontFamilySelect.value,
+    fontStyleSelect.value,
+    fontWeightSelect.value,
+    fontSize
+  );
 }
 
 // UI wrapper for kerning table building - ensures kerning table exists for current font
