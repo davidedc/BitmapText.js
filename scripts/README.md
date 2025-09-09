@@ -112,7 +112,6 @@ npm run build-multi-size-demo
 
 **Common source files used:**
 - `src/node/canvas-mock.js` - Minimal Canvas implementation
-- `src/utils/nested-properties.js` - Nested object utilities
 - `src/minification/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/core/BitmapGlyphStore.js`, `src/core/BitmapText.js` - Core classes
