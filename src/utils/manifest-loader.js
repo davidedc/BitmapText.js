@@ -6,7 +6,7 @@
 // which is then processed, put in the bitmapGlyphStore and then deleted
 let loadedBitmapFontData;
 
-// Legacy function for PNG loading (HTTP protocol)
+// PNG loading (HTTP protocol)
 function loadSheetsFromPNGs() {
   const fontLoader = new FontLoader(bitmapGlyphStore, (loaded, total) => {
     console.log(`loadedScripts: ${loaded} out of ${total}`);

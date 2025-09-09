@@ -1,11 +1,6 @@
 // Static utility class for expanding minified font metrics data (runtime only)
 // Converts compact format back to full object structures for use by the rendering engine
 
-// Standalone function for backwards compatibility and Node.js support
-function decompressFontMetrics(minified) {
-  return MetricsExpander.expand(minified);
-}
-
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
   constructor() {

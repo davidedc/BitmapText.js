@@ -4,7 +4,7 @@
 // Check if font metrics and kerning data are available (needed for text measurement and positioning)
 function isFontMetricsAvailable(fontProperties, bitmapGlyphStore) {
   try {
-    // Use BitmapGlyphStore's getter methods which work with both Maps and legacy objects
+    // Use BitmapGlyphStore's getter
     const kerningTable = bitmapGlyphStore.getKerningTable(fontProperties);
     const hasKerningTables = kerningTable !== undefined && kerningTable !== null;
     
@@ -33,11 +33,6 @@ function isGlyphSheetAvailable(fontProperties, bitmapGlyphStore) {
   }
 }
 
-// Check if a font configuration is available in the bitmap glyph store (legacy function for compatibility)
-function isFontDataAvailable(fontProperties, bitmapGlyphStore) {
-  return isFontMetricsAvailable(fontProperties, bitmapGlyphStore) && 
-         isGlyphSheetAvailable(fontProperties, bitmapGlyphStore);
-}
 
 // Clear error messages explicitly
 function clearErrors() {
