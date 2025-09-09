@@ -26,7 +26,6 @@ mkdir -p "$OUTPUT_DIR"
 # Verify all source files exist
 FILES_TO_CHECK=(
   "$SRC_DIR/node/canvas-mock.js"
-  "$SRC_DIR/utils/nested-properties.js"
   "$SRC_DIR/core/FontProperties.js"
   "$SRC_DIR/minification/MetricsExpander.js"
   "$LIB_DIR/QOIDecode.js"
@@ -90,13 +89,6 @@ echo "" >> "$OUTPUT_FILE"
 tail -n +2 "$SRC_DIR/node/canvas-mock.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate utility functions
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// UTILITY FUNCTIONS - nested-properties.js" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/utils/nested-properties.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontProperties class
 echo "// ============================================================================" >> "$OUTPUT_FILE"
