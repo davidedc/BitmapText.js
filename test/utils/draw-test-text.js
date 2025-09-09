@@ -391,5 +391,5 @@ function getHashMatchInfo(ctx, fontProperties, hashSuffix = '') {
 }
 
 function calculateFontPropertiesHashKey(fontProperties, hashSuffix = '') {
-  return GlyphIDString_Editor.getIDString(fontProperties) + (hashSuffix ? ' ' + hashSuffix : '');
+  return fontProperties.idString + (hashSuffix ? ' ' + hashSuffix : '');
 }

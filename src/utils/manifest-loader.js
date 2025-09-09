@@ -71,7 +71,7 @@ function ingestLoadedBitmapFontData() {
   };
   
   for (const key in loadedBitmapFontData) {
-    const fontProperties = GlyphIDString.parseIDString(key);
+    const fontProperties = FontProperties.fromIDString(key);
 
     // Put the loadedBitmapFontData "kerningTable" in the bitmapGlyphStore "kerningTables"
     bitmapGlyphStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);

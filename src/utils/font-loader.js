@@ -85,7 +85,7 @@ class FontLoader {
         img.src = `data:image/png;base64,${imageData}`;
         
         img.onload = () => {
-          const fontProperties = GlyphIDString.parseIDString(IDString);
+          const fontProperties = FontProperties.fromIDString(IDString);
           this.glyphStore.setGlyphSheet(fontProperties, img);
           
           imageScript.remove();
@@ -122,7 +122,7 @@ class FontLoader {
       img.src = FontLoaderConfig.getPngPath(IDString);
       
       img.onload = () => {
-        const fontProperties = GlyphIDString.parseIDString(IDString);
+        const fontProperties = FontProperties.fromIDString(IDString);
         this.glyphStore.setGlyphSheet(fontProperties, img);
         
         this.incrementProgress();

@@ -39,6 +39,30 @@ class FontProperties {
   }
   
   
+  // Factory method to create FontProperties from ID string
+  // Parses: density-1-0-Arial-style-normal-weight-normal-size-18-0
+  static fromIDString(idString) {
+    const parts = idString.split('-');     
+
+    // Extract and format numeric values (handling decimal parts)
+    const pixelDensity = parseFloat(FontProperties.#formatNumericPart(parts[1], parts[2]));
+    const fontSize = parseFloat(FontProperties.#formatNumericPart(parts[9], parts[10]));
+    const fontFamily = parts[3];
+    const fontStyle = parts[5];
+    const fontWeight = parts[7];
+    
+    // Return new FontProperties instance
+    return new FontProperties(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
+  }
+
+  // Helper method to format numeric parts (used by fromIDString)
+  static #formatNumericPart(integerPart, decimalPart) {
+    if (!decimalPart || decimalPart === '0') {
+      return integerPart;
+    }
+    return `${integerPart}.${decimalPart}`;
+  }
+  
   // Equality comparison based on key
   equals(other) {
     if (!(other instanceof FontProperties)) return false;
