@@ -52,7 +52,14 @@ class SpecsParser {
     //   Font style: normal
     //   Font weight: normal
     const [fontFamily, fontStyle, fontWeight] = this.parseFontInfo(lines.slice(0, 3));
-    ensureNestedPropertiesExist(this.parsedSpecs, [fontFamily, fontStyle]);
+    
+    // Ensure nested objects exist
+    if (!this.parsedSpecs[fontFamily]) {
+      this.parsedSpecs[fontFamily] = {};
+    }
+    if (!this.parsedSpecs[fontFamily][fontStyle]) {
+      this.parsedSpecs[fontFamily][fontStyle] = {};
+    }
 
     // subspecs are separated by '--'
     const specsForFont = {};

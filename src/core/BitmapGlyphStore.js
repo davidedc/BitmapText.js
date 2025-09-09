@@ -23,29 +23,24 @@ class BitmapGlyphStore {
 
   getKerningTable(fontProperties) {
     // Direct Map lookup
-    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
-    return this.kerningTables.get(key) || {};
+    return this.kerningTables.get(fontProperties.key) || {};
   }
 
   setKerningTable(fontProperties, kerningTable) {
-    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
-    this.kerningTables.set(key, kerningTable);
+    this.kerningTables.set(fontProperties.key, kerningTable);
   }
   
   getGlyphSheet(fontProperties) {
-    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
-    return this.glyphSheets.get(key);
+    return this.glyphSheets.get(fontProperties.key);
   }
 
   setGlyphSheet(fontProperties, glyphSheet) {
-    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
-    this.glyphSheets.set(key, glyphSheet);
+    this.glyphSheets.set(fontProperties.key, glyphSheet);
   }
 
   // return an object with xInGlyphSheet, tightWidth, tightHeight, dx, dy
   getGlyphSheetMetrics(fontProperties, letter) {
-    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
-    const glyphKey = `${baseKey}:${letter}`;
+    const glyphKey = `${fontProperties.key}:${letter}`;
     const glyphSheetsMetrics = this.glyphSheetsMetrics;
     
     return {
@@ -58,7 +53,6 @@ class BitmapGlyphStore {
   }
 
   setGlyphSheetMetrics(fontProperties, metrics) {
-    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
     const glyphSheetsMetrics = this.glyphSheetsMetrics;
     
     // Set metrics for each letter in the font
@@ -66,7 +60,7 @@ class BitmapGlyphStore {
       if (glyphSheetsMetrics[metricKey]) {
         const letterMetrics = metrics[metricKey];
         for (const letter in letterMetrics) {
-          const glyphKey = `${baseKey}:${letter}`;
+          const glyphKey = `${fontProperties.key}:${letter}`;
           glyphSheetsMetrics[metricKey].set(glyphKey, letterMetrics[letter]);
         }
       }
@@ -74,34 +68,29 @@ class BitmapGlyphStore {
   }
 
   getGlyphsTextMetrics(fontProperties, letter) {
-    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
-    const glyphKey = `${baseKey}:${letter}`;
+    const glyphKey = `${fontProperties.key}:${letter}`;
     return this.glyphsTextMetrics.get(glyphKey);
   }
 
   setGlyphsTextMetrics(fontProperties, metrics) {
-    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
     // Set metrics for each letter
     for (const letter in metrics) {
-      const glyphKey = `${baseKey}:${letter}`;
+      const glyphKey = `${fontProperties.key}:${letter}`;
       this.glyphsTextMetrics.set(glyphKey, metrics[letter]);
     }
   }
 
   setGlyphTextMetrics(fontProperties, letter, metrics) {
-    const baseKey = fontProperties.key || this.#getLegacyKey(fontProperties);
-    const glyphKey = `${baseKey}:${letter}`;
+    const glyphKey = `${fontProperties.key}:${letter}`;
     this.glyphsTextMetrics.set(glyphKey, metrics);
   }
 
   getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties) {
-    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
-    return this.spaceAdvancementOverrideForSmallSizesInPx.get(key);
+    return this.spaceAdvancementOverrideForSmallSizesInPx.get(fontProperties.key);
   }
 
   setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx) {
-    const key = fontProperties.key || this.#getLegacyKey(fontProperties);
-    this.spaceAdvancementOverrideForSmallSizesInPx.set(key, spaceAdvancementOverrideForSmallSizesInPx);
+    this.spaceAdvancementOverrideForSmallSizesInPx.set(fontProperties.key, spaceAdvancementOverrideForSmallSizesInPx);
   }
 
   // Helper method to check if a glyph sheet is valid for rendering
@@ -109,11 +98,5 @@ class BitmapGlyphStore {
     return glyphSheet && typeof glyphSheet === 'object' && glyphSheet.width > 0;
   }
 
-  // TEMPORARY: Legacy key generation for backward compatibility during migration
-  // This will be removed once all code uses FontProperties instances
-  #getLegacyKey(fontProperties) {
-    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
-    return `${pixelDensity || 1}:${fontFamily}:${fontStyle || 'normal'}:${fontWeight || 'normal'}:${fontSize}`;
-  }
 
 }

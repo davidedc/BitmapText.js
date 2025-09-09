@@ -23,8 +23,7 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
   }
 
   kerningTableExists(fontProperties) {
-    const key = fontProperties.key || this._getLegacyKey(fontProperties);
-    return this.kerningTables.has(key);
+    return this.kerningTables.has(fontProperties.key);
   }
 
   setKerningTable(fontProperties, kerningTable) {
@@ -35,14 +34,12 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
 
 
   addGlyph(glyph) {
-    const baseKey = glyph.fontProperties.key || this._getLegacyKey(glyph.fontProperties);
-    const glyphKey = `${baseKey}:${glyph.letter}`;
+    const glyphKey = `${glyph.fontProperties.key}:${glyph.letter}`;
     this.glyphs.set(glyphKey, glyph);
   }
 
   getGlyph(fontProperties, letter) {
-    const baseKey = fontProperties.key || this._getLegacyKey(fontProperties);
-    const glyphKey = `${baseKey}:${letter}`;
+    const glyphKey = `${fontProperties.key}:${letter}`;
     return this.glyphs.get(glyphKey);
   }
 
@@ -52,13 +49,11 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
   // 3. draw each glyph in the canvas
   buildGlyphSheet(fontProperties) {
-    const baseKey = fontProperties.key || this._getLegacyKey(fontProperties);
-    
     // Find all glyphs for this font configuration
     const glyphs = {};
     for (const [glyphKey, glyph] of this.glyphs) {
-      if (glyphKey.startsWith(baseKey + ':')) {
-        const letter = glyphKey.substring(baseKey.length + 1);
+      if (glyphKey.startsWith(fontProperties.key + ':')) {
+        const letter = glyphKey.substring(fontProperties.key.length + 1);
         glyphs[letter] = glyph;
       }
     }
@@ -95,7 +90,7 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
         glyph.tightCanvasBox.bottomRightCorner.y -
         glyph.tightCanvasBox.topLeftCorner.y +
         1;
-      const glyphKey = `${baseKey}:${letter}`;
+      const glyphKey = `${fontProperties.key}:${letter}`;
       this.glyphSheetsMetrics.tightWidth.set(glyphKey, tightWidth);
       this.glyphSheetsMetrics.tightHeight.set(glyphKey, tightHeight);
 
@@ -116,7 +111,7 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
 
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      const glyphKey = `${baseKey}:${letter}`;
+      const glyphKey = `${fontProperties.key}:${letter}`;
       const tightWidth = this.glyphSheetsMetrics.tightWidth.get(glyphKey);
       // if there is no glyph.tightCanvas, then just continue
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
@@ -147,9 +142,4 @@ class BitmapGlyphStore_Editor extends BitmapGlyphStore {
     return [glyphSheetsPNG, ctx];
   }
 
-  // TEMPORARY: Legacy key generation for backward compatibility during migration
-  _getLegacyKey(fontProperties) {
-    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
-    return `${pixelDensity || 1}:${fontFamily}:${fontStyle || 'normal'}:${fontWeight || 'normal'}:${fontSize}`;
-  }
 }

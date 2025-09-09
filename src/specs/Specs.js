@@ -16,7 +16,7 @@ class Specs {
 
   specCombinationExists(fontProperties, correctionKey) {
     const { fontFamily, fontStyle, fontWeight } = fontProperties;
-    return checkNestedPropertiesExist(this.specs, [fontFamily, fontStyle, fontWeight, correctionKey]);
+    return this.specs?.[fontFamily]?.[fontStyle]?.[fontWeight]?.[correctionKey] !== undefined;
   }
 
   getCorrectionEntries(fontProperties, correctionKey) {

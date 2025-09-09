@@ -33,21 +33,4 @@ class GlyphIDString {
     return `${integerPart}.${decimalPart}`;
   }
   
-  // DEPRECATED: Use FontProperties.fromIDString() instead
-  // Kept for backward compatibility during migration
-  static parseIDStringLegacy(IDString) {
-    const parts = IDString.split('-');     
-
-    // Extract and format numeric values (handling decimal parts)
-    const pixelDensity = this._formatNumericPart(parts[1], parts[2]);
-    const fontSize = this._formatNumericPart(parts[9], parts[10]);
-      
-    return {
-        pixelDensity,
-        fontFamily: parts[3],
-        fontStyle: parts[5],
-        fontWeight: parts[7],
-        fontSize
-    };
-  }
 }

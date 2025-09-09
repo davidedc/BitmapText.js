@@ -38,16 +38,6 @@ class FontProperties {
     return this._idString;
   }
   
-  // Convert to plain object for specs system compatibility
-  toObject() {
-    return {
-      pixelDensity: this.pixelDensity,
-      fontFamily: this.fontFamily,
-      fontStyle: this.fontStyle,
-      fontWeight: this.fontWeight,
-      fontSize: this.fontSize
-    };
-  }
   
   // Equality comparison based on key
   equals(other) {
