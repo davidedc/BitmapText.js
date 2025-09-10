@@ -1,6 +1,6 @@
 function downloadFontAssets(options) {
   const {
-      bitmapGlyphStore_FAB,
+      atlasStore_FAB,
       pixelDensity,
       fontFamily,
       fontStyle, 
@@ -12,14 +12,14 @@ function downloadFontAssets(options) {
 
   const zip = new JSZip();
   const folder = zip.folder("fontAssets");
-  const bitmapGlyphStore = bitmapGlyphStore_FAB.extractBitmapGlyphStoreInstance();
+  const atlasStore = atlasStore_FAB.extractAtlasStoreInstance();
   
   // Find all available sizes by examining Map keys
-  // as glyphSheets is a Map with FontProperties.key as keys
+  // as atlases is a Map with FontProperties.key as keys
   const sizes = new Set();
   const baseKeyPrefix = `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:`;
   
-  for (const [key, canvas] of bitmapGlyphStore.glyphSheets) {
+  for (const [key, canvas] of atlasStore.atlases) {
     if (key.startsWith(baseKeyPrefix)) {
       // Extract fontSize from key: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
       const fontSize = key.substring(baseKeyPrefix.length);
@@ -34,7 +34,7 @@ function downloadFontAssets(options) {
       const fontProperties = new FontPropertiesFAB(pixelDensity, fontFamily, fontStyle, fontWeight, size);
       
       // Get canvas from Map-based storage
-      const canvas = bitmapGlyphStore.glyphSheets.get(fontProperties.key);
+      const canvas = atlasStore.atlases.get(fontProperties.key);
       
       // Skip if no canvas exists for this configuration
       if (!canvas) {
@@ -69,55 +69,55 @@ function downloadFontAssets(options) {
 
       // REFACTORED: Extract metadata using new Map-based getters
       // Collect all glyph metrics for this font configuration
-      const glyphSheetsMetrics = {
+      const atlasMetrics = {
           tightWidth: {},
           tightHeight: {},
           dx: {},
           dy: {},
-          xInGlyphSheet: {}
+          xInAtlas: {}
       };
       
       const glyphsTextMetrics = {};
       const baseGlyphKey = fontProperties.key + ':';
       
       // Iterate through all Map entries to find glyphs for this font
-      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.tightWidth) {
+      for (const [key, value] of atlasStore.atlasMetrics.tightWidth) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
-              glyphSheetsMetrics.tightWidth[letter] = value;
+              atlasMetrics.tightWidth[letter] = value;
           }
       }
       
-      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.tightHeight) {
+      for (const [key, value] of atlasStore.atlasMetrics.tightHeight) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
-              glyphSheetsMetrics.tightHeight[letter] = value;
+              atlasMetrics.tightHeight[letter] = value;
           }
       }
       
-      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.dx) {
+      for (const [key, value] of atlasStore.atlasMetrics.dx) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
-              glyphSheetsMetrics.dx[letter] = value;
+              atlasMetrics.dx[letter] = value;
           }
       }
       
-      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.dy) {
+      for (const [key, value] of atlasStore.atlasMetrics.dy) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
-              glyphSheetsMetrics.dy[letter] = value;
+              atlasMetrics.dy[letter] = value;
           }
       }
       
-      for (const [key, value] of bitmapGlyphStore.glyphSheetsMetrics.xInGlyphSheet) {
+      for (const [key, value] of atlasStore.atlasMetrics.xInAtlas) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
-              glyphSheetsMetrics.xInGlyphSheet[letter] = value;
+              atlasMetrics.xInAtlas[letter] = value;
           }
       }
       
       // Collect glyph text metrics
-      for (const [key, value] of bitmapGlyphStore.glyphsTextMetrics) {
+      for (const [key, value] of atlasStore.glyphsTextMetrics) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
               glyphsTextMetrics[letter] = value;
@@ -125,10 +125,10 @@ function downloadFontAssets(options) {
       }
       
       const metadata = {
-          kerningTable: bitmapGlyphStore.getKerningTable(fontProperties),
+          kerningTable: atlasStore.getKerningTable(fontProperties),
           glyphsTextMetrics: glyphsTextMetrics,
-          spaceAdvancementOverrideForSmallSizesInPx: bitmapGlyphStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties),
-          glyphSheetsMetrics: glyphSheetsMetrics
+          spaceAdvancementOverrideForSmallSizesInPx: atlasStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties),
+          atlasMetrics: atlasMetrics
       };
 
       // Test minification and expansion 

@@ -2,32 +2,32 @@
 // This is used by text-render-tests.html to render pre-built font data
 
 // Check if font metrics and kerning data are available (needed for text measurement and positioning)
-function isFontMetricsAvailable(fontProperties, bitmapGlyphStore) {
+function isFontMetricsAvailable(fontProperties, atlasStore) {
   try {
-    // Use BitmapGlyphStore's getter
-    const kerningTable = bitmapGlyphStore.getKerningTable(fontProperties);
+    // Use AtlasStore's getter
+    const kerningTable = atlasStore.getKerningTable(fontProperties);
     const hasKerningTables = kerningTable !== undefined && kerningTable !== null;
     
     // Check if any glyphs exist for this font by looking for keys that start with the base key
     const baseKey = fontProperties.key;
-    const hasGlyphsTextMetrics = [...bitmapGlyphStore.glyphsTextMetrics.keys()]
+    const hasGlyphsTextMetrics = [...atlasStore.glyphsTextMetrics.keys()]
       .some(key => key.startsWith(baseKey + ':'));
     
-    // Check if any glyph sheet metrics exist for this font
-    const hasGlyphSheetMetrics = [...bitmapGlyphStore.glyphSheetsMetrics.tightWidth.keys()]
+    // Check if any atlas metrics exist for this font
+    const hasAtlasMetrics = [...atlasStore.atlasMetrics.tightWidth.keys()]
       .some(key => key.startsWith(baseKey + ':'));
     
-    return hasKerningTables && hasGlyphsTextMetrics && hasGlyphSheetMetrics;
+    return hasKerningTables && hasGlyphsTextMetrics && hasAtlasMetrics;
   } catch (error) {
     return false;
   }
 }
 
-// Check if glyph sheet images are available (needed for actual glyph rendering)
-function isGlyphSheetAvailable(fontProperties, bitmapGlyphStore) {
+// Check if atlas images are available (needed for actual glyph rendering)
+function isAtlasAvailable(fontProperties, atlasStore) {
   try {
-    const glyphSheet = bitmapGlyphStore.getGlyphSheet(fontProperties);
-    return bitmapGlyphStore.isValidGlyphSheet(glyphSheet);
+    const atlas = atlasStore.getAtlas(fontProperties);
+    return atlasStore.isValidAtlas(atlas);
   } catch (error) {
     return false;
   }
@@ -70,22 +70,22 @@ function showGlyphs() {
   clearErrors();  // Also explicitly clear any lingering error messages
   
   // Check availability levels
-  const hasMetrics = isFontMetricsAvailable(fontProperties, bitmapGlyphStore);
-  const hasGlyphSheets = isGlyphSheetAvailable(fontProperties, bitmapGlyphStore);
+  const hasMetrics = isFontMetricsAvailable(fontProperties, atlasStore);
+  const hasAtlases = isAtlasAvailable(fontProperties, atlasStore);
   
   if (!hasMetrics) {
     showFontError(`Font metrics not available for ${fontProperties.fontSize}px ${fontProperties.fontFamily} ${fontProperties.fontStyle} ${fontProperties.fontWeight}. Available sizes may be limited.`);
     return;
   }
   
-  // If metrics are available but glyph sheets are not, show warning about placeholder mode
-  if (hasMetrics && !hasGlyphSheets) {
-    showFontWarning(`Glyph sheets not loaded for ${fontProperties.fontSize}px ${fontProperties.fontFamily} ${fontProperties.fontStyle} ${fontProperties.fontWeight}. Rendering placeholder rectangles with correct dimensions and spacing.`);
+  // If metrics are available but atlases are not, show warning about placeholder mode
+  if (hasMetrics && !hasAtlases) {
+    showFontWarning(`Atlases not loaded for ${fontProperties.fontSize}px ${fontProperties.fontFamily} ${fontProperties.fontStyle} ${fontProperties.fontWeight}. Rendering placeholder rectangles with correct dimensions and spacing.`);
   }
   
   try {
-    // Render using standard classes - will automatically use placeholder mode if glyph sheets missing
-    drawTestText_withStandardClass(fontProperties, bitmapGlyphStore);
+    // Render using standard classes - will automatically use placeholder mode if atlases missing
+    drawTestText_withStandardClass(fontProperties, atlasStore);
   } catch (error) {
     showFontError(`Error rendering text: ${error.message}`);
     console.error('Error in showGlyphs:', error);

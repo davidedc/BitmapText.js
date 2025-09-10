@@ -16,7 +16,7 @@ class MetricsMinifier {
       k: this.#minifyKerningTable(metricsData.kerningTable),
       b: this.#extractBaseMetrics(metricsData.glyphsTextMetrics),
       g: this.#minifyGlyphMetrics(metricsData.glyphsTextMetrics),
-      t: this.#minifyTightMetrics(metricsData.glyphSheetsMetrics),
+      t: this.#minifyTightMetrics(metricsData.atlasMetrics),
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
   }
@@ -70,13 +70,13 @@ class MetricsMinifier {
    * Minifies tight metrics with shortened property names
    * @private
    */
-  static #minifyTightMetrics(glyphSheetsMetrics) {
+  static #minifyTightMetrics(atlasMetrics) {
     return {
-      w: glyphSheetsMetrics.tightWidth,          // tightWidth
-      h: glyphSheetsMetrics.tightHeight,         // tightHeight
-      dx: glyphSheetsMetrics.dx,                 // dx
-      dy: glyphSheetsMetrics.dy,                 // dy
-      x: glyphSheetsMetrics.xInGlyphSheet        // xInGlyphSheet
+      w: atlasMetrics.tightWidth,          // tightWidth
+      h: atlasMetrics.tightHeight,         // tightHeight
+      dx: atlasMetrics.dx,                 // dx
+      dy: atlasMetrics.dy,                 // dy
+      x: atlasMetrics.xInAtlas        // xInAtlas
     };
   }
 }

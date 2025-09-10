@@ -16,6 +16,6 @@ let characterSet = " █abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 function createGlyphsAndAddToFullStore(fontProperties) {
   for (const letter of characterSet) {
-    bitmapGlyphStore_FAB.addGlyph(new BitmapGlyph_FAB(letter, fontProperties));
+    atlasStore_FAB.addGlyph(new GlyphFAB(letter, fontProperties));
   }
 }

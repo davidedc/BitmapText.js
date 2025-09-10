@@ -18,7 +18,7 @@
   The system is architected with a **two-tier class hierarchy** where FAB classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
 
   **Distribution Strategy:**
-  - **Runtime Distribution** (~15-20KB): Only core classes (BitmapText, BitmapGlyphStore, FontProperties) for measuring and drawing pre-generated fonts
+  - **Runtime Distribution** (~15-20KB): Only core classes (BitmapText, AtlasStore, FontProperties) for measuring and drawing pre-generated fonts
   - **Full Distribution** (~50KB+): Core + FAB classes for complete font assets building and rendering capabilities
   - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
 
@@ -31,7 +31,7 @@
   **Implementation Pattern:**
   - **Core Classes**: Minimal, performance-optimized runtime functionality
   - **FAB Classes**: Extend core classes with font assets building capabilities (validation, font building, metrics calculation)
-  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractBitmapGlyphStoreInstance()`)
+  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractAtlasStoreInstance()`)
 
   This architecture allows developers to choose between a lightweight consumer library or a full font assets building toolkit based on their needs.
 
@@ -40,7 +40,7 @@
   ┌─────────────────────────────────────────┐
   │       Font Assets Builder (FAB)      │
   │  ┌────────────────┐  ┌─────────────┐    │
-  │  │ BitmapText     │  │ BitmapGlyph │    │
+  │  │ BitmapText     │  │ Atlas       │    │
   │  │ FAB            │  │ Store_FAB   │    │
   │  └────────────────┘  └─────────────┘    │
   │           │                 │           │
@@ -60,7 +60,7 @@
   ┌─────────────────────────────────────────┐
   │            Runtime Renderer             │
   │  ┌────────────────┐  ┌─────────────┐    │
-  │  │  BitmapText    │  │ BitmapGlyph │    │
+  │  │  BitmapText    │  │ Atlas       │    │
   │  │                │  │ Store       │    │
   │  └────────────────┘  └─────────────┘    │
   └─────────────────────────────────────────┘
@@ -72,7 +72,7 @@
 
   **Runtime-Only Applications** (consuming pre-built fonts):
   - `BitmapText` - Text rendering and measurement
-  - `BitmapGlyphStore` - Glyph data storage and retrieval
+  - `AtlasStore` - Atlas data storage and retrieval
   - `FontProperties` - Font configuration management
   - **Bundle Size**: ~15-20KB + font assets
   - **Use Case**: Production applications displaying bitmap text
@@ -80,7 +80,7 @@
   **Font Assets Building Applications**:
   - All Core Classes (above) +
   - `BitmapTextFAB` - Extended font assets building capabilities
-  - `BitmapGlyphStoreFAB` - Glyph sheet building and optimization
+  - `AtlasStoreFAB` - Atlas building and optimization
   - `FontPropertiesFAB` - Validation and font configuration tools
   - **Bundle Size**: ~50KB+ including font assets building tools
   - **Use Case**: Development tools, font builders, CI pipelines
@@ -96,18 +96,18 @@
     - Glyph positioning with kerning
     - Color application via composite operations
     - Canvas rendering
-    - Placeholder rectangle rendering for missing glyph sheets
+    - Placeholder rectangle rendering for missing atlases
 
-  **BitmapGlyphStore**
-  - Purpose: Glyph data repository
+  **AtlasStore**
+  - Purpose: Atlas data repository
   - Data structures:
-    - `glyphSheets`: Canvas/Image elements with rendered glyphs
-    - `glyphSheetsMetrics`: Position and dimension data
+    - `atlases`: Canvas/Image elements with rendered glyphs
+    - `atlasMetrics`: Position and dimension data
     - `glyphsTextMetrics`: Text measurement data
     - `kerningTables`: Pair-wise character adjustments
     - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
   - Methods:
-    - `isValidGlyphSheet()`: Validates glyph sheet integrity
+    - `isValidAtlas()`: Validates atlas integrity
 
   ### FAB Classes (Font Assets Building)
 
@@ -116,8 +116,8 @@
   - Creates individual glyph canvases
   - Calculates precise bounding boxes
 
-  **BitmapGlyphStoreFAB extends BitmapGlyphStore**
-  - Builds glyph sheets from individual glyphs
+  **AtlasStoreFAB extends AtlasStore**
+  - Builds atlases from individual glyphs
   - Optimizes glyph packing
   - Generates minified metadata
 
@@ -129,7 +129,7 @@
     - Promise-based font data loading
     - Error handling for missing files
     - Progress tracking and callbacks
-    - Support for both PNG and JS glyph sheets
+    - Support for both PNG and JS atlases
 
   **Specs**
   - Parses and manages font correction specifications
@@ -153,20 +153,20 @@
   1. **Glyph Creation**
      Font Spec → Canvas Rendering → Tight Bounding Box → Individual Glyph
 
-  2. **Sheet Assembly**
-     Individual Glyphs → Packed Layout → Glyph Sheet Image + Metrics
+  2. **Atlas Assembly**
+     Individual Glyphs → Packed Layout → Atlas Image + Metrics
 
   3. **Data Export**
-     Glyph Sheet + Metrics → QOI Files + Compressed JS
+     Atlas + Metrics → QOI Files + Compressed JS
 
   ### Runtime Phase
 
   1. **Data Loading**
-     Manifest.js → FontLoader → Load Sheet JS → Load Sheet PNG → Populate Store
+     Manifest.js → FontLoader → Load Atlas JS → Load Atlas PNG → Populate Store
 
   2. **Text Rendering**
      Text String → Measure → Apply Kerning → Copy Glyphs → Composite Color
-     (If glyph sheet missing: Render placeholder rectangles)
+     (If atlas missing: Render placeholder rectangles)
 
   ## Key Algorithms
 
@@ -214,8 +214,8 @@
 
   ### Placeholder Rendering
 
-  When glyph sheets are missing but metrics are available:
-  1. Validate glyph sheet using `isValidGlyphSheet()`
+  When atlases are missing but metrics are available:
+  1. Validate atlas using `isValidAtlas()`
   2. Fall back to placeholder rectangle mode
   3. Draw black rectangle with correct dimensions from metrics
   4. Apply proper positioning using dx/dy offsets
@@ -278,7 +278,7 @@
 
   ### Font Assets Building Workflow
   ```
-  User → public/font-assets-builder.html → BitmapTextFAB → BitmapGlyphStoreFAB
+  User → public/font-assets-builder.html → BitmapTextFAB → AtlasStoreFAB
     1. Load font specifications (src/specs/default-specs.js)
     2. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     3. Create individual glyph canvases
@@ -291,10 +291,10 @@
 
   ### Runtime Text Rendering Workflow
   ```
-  User → src/core/BitmapText.drawTextFromGlyphSheet → src/core/BitmapGlyphStore
+  User → src/core/BitmapText.drawTextFromAtlas → src/core/AtlasStore
     1. Measure text (src/core/BitmapText.measureText)
     2. For each character:
-       a. Get glyph metrics (src/core/BitmapGlyphStore.getGlyphSheetMetrics)
+       a. Get glyph metrics (src/core/AtlasStore.getAtlasMetrics)
        b. Create colored glyph (src/core/BitmapText.createColoredGlyph)
        c. Render to main canvas (src/core/BitmapText.renderGlyphToMainCanvas)
        d. Calculate advancement with kerning (src/core/BitmapText.calculateAdvancement_CSS_Px:78)
@@ -304,20 +304,20 @@
   ## Extension Points
 
   ### Custom Glyph Sources
-  Override `src/font-assets-builder-FAB/BitmapGlyphStoreFAB.createCanvasesAndLetterTextMetrics()`
+  Override `src/font-assets-builder-FAB/AtlasStoreFAB.createCanvasesAndLetterTextMetrics()`
 
   ### Custom Kerning Rules
   Extend `Specs` class or modify specs DSL
 
   ### Alternative Storage
-  Replace `BitmapGlyphStore` with custom implementation
+  Replace `AtlasStore` with custom implementation
 
   ## Object-Oriented Design Patterns
 
   - **Template Method**: FAB classes extend base with hooks
   - **Strategy**: Pluggable specs and kerning algorithms
   - **Facade**: BitmapText provides simple API over complex internals
-  - **Repository**: BitmapGlyphStore manages data access
+  - **Repository**: AtlasStore manages data access
 
   ## API Usage
 

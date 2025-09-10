@@ -53,7 +53,7 @@ function test_pipeline() {
     
     # Test the pipeline once
     log "INFO" "Testing processing pipeline..."
-    if process_glyph_sheets; then
+    if process_font_assets; then
         log "SUCCESS" "Pipeline test completed successfully!"
     else
         log "ERROR" "Pipeline test failed!"

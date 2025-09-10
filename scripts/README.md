@@ -63,7 +63,7 @@ brew install trash         # Safe file deletion
 ```
 
 **What it does:**
-- Monitors `~/Downloads/glyphSheets.zip`
+- Monitors `~/Downloads/fontAssets.zip`
 - Creates timestamped backups
 - Extracts and processes fonts automatically
 - Runs optimization and conversion
@@ -108,13 +108,13 @@ npm run build-multi-size-demo
 - Same build process as single-size demo
 - Creates `examples/node/dist/hello-world-multi-size.bundle.js`
 - Uses `src/node/hello-world-multi-size-main.js` - renders at sizes 18, 18.5, 19
-- Demonstrates placeholder rectangle fallback for missing glyph sheets
+- Demonstrates placeholder rectangle fallback for missing atlases
 
 **Common source files used:**
 - `src/node/canvas-mock.js` - Minimal Canvas implementation
 - `src/minification/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
-- `src/core/BitmapGlyphStore.js`, `src/core/BitmapText.js` - Core classes
+- `src/core/AtlasStore.js`, `src/core/BitmapText.js` - Core classes
 
 **Output:**
 - Self-contained executables: `examples/node/dist/hello-world.bundle.js`, `examples/node/dist/hello-world-multi-size.bundle.js`
@@ -172,8 +172,8 @@ scripts/
 └── README.md                 # This file
 
 font-assets/
-├── *.png                     # Optimized glyph sheet images
-├── *.orig.png                # Original glyph sheets (if --preserve-originals used)
+├── *.png                     # Optimized atlas images
+├── *.orig.png                # Original atlases (if --preserve-originals used)
 ├── *.js                      # Glyph data and metrics
 ├── image-*.js                # JS-wrapped images (for CORS-free loading)
 ├── manifest.js               # Font manifest
@@ -184,7 +184,7 @@ font-assets/
 
 ## 🔄 Pipeline Workflow
 
-When you drop `glyphSheets.zip` in `~/Downloads/`:
+When you drop `fontAssets.zip` in `~/Downloads/`:
 
 1. **🔍 Detection**: `fswatch` detects the new file
 2. **📦 Backup**: Current `font-assets/` → `data-backup-YYYY-MM-DD-HHMMSS.zip`

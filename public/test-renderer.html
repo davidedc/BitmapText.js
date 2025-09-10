@@ -56,7 +56,7 @@ and then open the page from the browser at:
 <script src="../src/utils/HashStore.js"></script>
 <script src="../test/data/reference-hashes.js"></script>
 <script src="../src/utils/canvas-extensions.js"></script>
-<script src="../src/core/BitmapGlyphStore.js"></script>
+<script src="../src/core/AtlasStore.js"></script>
 <script src="../src/core/BitmapText.js"></script>
 <script src="../test/utils/test-copy.js"></script>
 <script src="../test/utils/draw-test-text.js"></script>
@@ -73,7 +73,9 @@ and then open the page from the browser at:
 <script src="../src/minification/MetricsExpander.js"></script>
 
 <script >
-  const bitmapGlyphStore = new BitmapGlyphStore();
+  const atlasStore = new AtlasStore();
+  // Make atlasStore globally available for manifest-loader.js
+  window.atlasStore = atlasStore;
 </script>
 
 <!-- TODO pick a more specific name for the manifest, something that suggests that this is for this text rendering system-->

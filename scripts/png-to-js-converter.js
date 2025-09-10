@@ -1,4 +1,4 @@
-// If you use the renderer from filesystem, it will load the image sheets from the filesystem
+// If you use the renderer from filesystem, it will load the image atlases from the filesystem
 // the problem with that is that when loading images, the browser considers each of them
 // as a separate domain, so they are tainted as cross-origin. You CAN still paint them on a canvas
 // however you can't read the pixels from the canvas, and hence you can't check the hash of the image of

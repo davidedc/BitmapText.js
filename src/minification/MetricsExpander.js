@@ -17,7 +17,7 @@ class MetricsExpander {
       kerningTable: this.#expandKerningTable(minified.k),
       glyphsTextMetrics: this.#expandGlyphMetrics(minified.g, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s,
-      glyphSheetsMetrics: this.#expandTightMetrics(minified.t)
+      atlasMetrics: this.#expandTightMetrics(minified.t)
     };
   }
   
@@ -68,7 +68,7 @@ class MetricsExpander {
       tightHeight: minified.h,          // h -> tightHeight
       dx: minified.dx,                  // dx unchanged
       dy: minified.dy,                  // dy unchanged
-      xInGlyphSheet: minified.x         // x -> xInGlyphSheet
+      xInAtlas: minified.x         // x -> xInAtlas
     };
   }
 }

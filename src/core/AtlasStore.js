@@ -1,22 +1,22 @@
-// BitmapGlyphStore - Core Runtime Class
+// AtlasStore - Core Runtime Class
 //
 // This is a CORE RUNTIME class designed for minimal bundle size (~5-8KB).
 // It provides essential glyph data storage and retrieval for text rendering.
 //
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications  
-// - Extended by BitmapGlyphStoreFAB for font assets building and generation
+// - Extended by AtlasStoreFAB for font assets building and generation
 // - Contains only data structures and accessors needed at runtime
 // - No font generation, validation, or optimization code
 //
 // ARCHITECTURE:
-// - Stores pre-rendered glyph sheets, metrics, and kerning data
+// - Stores pre-rendered atlases, metrics, and kerning data
 // - Uses Map-based storage for O(1) glyph lookups by font properties
 // - Provides the minimal data interface needed by BitmapText for rendering
 // - Optimized for fast access patterns during text drawing
 //
-// For font assets building and generation capabilities, use BitmapGlyphStoreFAB.
-class BitmapGlyphStore {
+// For font assets building and generation capabilities, use AtlasStoreFAB.
+class AtlasStore {
   constructor() {
     // Keys are FontProperties.key strings for O(1) lookup
     
@@ -25,15 +25,15 @@ class BitmapGlyphStore {
     this.glyphsTextMetrics = new Map(); // fontProperties.key + ":" + letter → metrics
     this.spaceAdvancementOverrideForSmallSizesInPx = new Map(); // fontProperties.key → override
     
-    // These are needed to precisely paint a glyph from the sheet into the destination canvas
-    this.glyphSheets = new Map(); // fontProperties.key → glyphSheet
-    this.glyphSheetsMetrics = {
+    // These are needed to precisely paint a glyph from the atlas into the destination canvas
+    this.atlases = new Map(); // fontProperties.key → atlas
+    this.atlasMetrics = {
       // All Maps indexed on fontProperties.key + ":" + letter for glyph-specific metrics
       tightWidth: new Map(),
       tightHeight: new Map(),
       dx: new Map(),
       dy: new Map(),
-      xInGlyphSheet: new Map()
+      xInAtlas: new Map()
     };
   }
 
@@ -46,38 +46,38 @@ class BitmapGlyphStore {
     this.kerningTables.set(fontProperties.key, kerningTable);
   }
   
-  getGlyphSheet(fontProperties) {
-    return this.glyphSheets.get(fontProperties.key);
+  getAtlas(fontProperties) {
+    return this.atlases.get(fontProperties.key);
   }
 
-  setGlyphSheet(fontProperties, glyphSheet) {
-    this.glyphSheets.set(fontProperties.key, glyphSheet);
+  setAtlas(fontProperties, atlas) {
+    this.atlases.set(fontProperties.key, atlas);
   }
 
-  // return an object with xInGlyphSheet, tightWidth, tightHeight, dx, dy
-  getGlyphSheetMetrics(fontProperties, letter) {
+  // return an object with xInAtlas, tightWidth, tightHeight, dx, dy
+  getAtlasMetrics(fontProperties, letter) {
     const glyphKey = `${fontProperties.key}:${letter}`;
-    const glyphSheetsMetrics = this.glyphSheetsMetrics;
+    const atlasMetrics = this.atlasMetrics;
     
     return {
-      xInGlyphSheet: glyphSheetsMetrics.xInGlyphSheet.get(glyphKey),
-      tightWidth: glyphSheetsMetrics.tightWidth.get(glyphKey),
-      tightHeight: glyphSheetsMetrics.tightHeight.get(glyphKey),
-      dx: glyphSheetsMetrics.dx.get(glyphKey),
-      dy: glyphSheetsMetrics.dy.get(glyphKey)
+      xInAtlas: atlasMetrics.xInAtlas.get(glyphKey),
+      tightWidth: atlasMetrics.tightWidth.get(glyphKey),
+      tightHeight: atlasMetrics.tightHeight.get(glyphKey),
+      dx: atlasMetrics.dx.get(glyphKey),
+      dy: atlasMetrics.dy.get(glyphKey)
     };
   }
 
-  setGlyphSheetMetrics(fontProperties, metrics) {
-    const glyphSheetsMetrics = this.glyphSheetsMetrics;
+  setAtlasMetrics(fontProperties, metrics) {
+    const atlasMetrics = this.atlasMetrics;
     
     // Set metrics for each letter in the font
     for (const metricKey in metrics) {
-      if (glyphSheetsMetrics[metricKey]) {
+      if (atlasMetrics[metricKey]) {
         const letterMetrics = metrics[metricKey];
         for (const letter in letterMetrics) {
           const glyphKey = `${fontProperties.key}:${letter}`;
-          glyphSheetsMetrics[metricKey].set(glyphKey, letterMetrics[letter]);
+          atlasMetrics[metricKey].set(glyphKey, letterMetrics[letter]);
         }
       }
     }
@@ -109,9 +109,9 @@ class BitmapGlyphStore {
     this.spaceAdvancementOverrideForSmallSizesInPx.set(fontProperties.key, spaceAdvancementOverrideForSmallSizesInPx);
   }
 
-  // Helper method to check if a glyph sheet is valid for rendering
-  isValidGlyphSheet(glyphSheet) {
-    return glyphSheet && typeof glyphSheet === 'object' && glyphSheet.width > 0;
+  // Helper method to check if an atlas is valid for rendering
+  isValidAtlas(atlas) {
+    return atlas && typeof atlas === 'object' && atlas.width > 0;
   }
 
 

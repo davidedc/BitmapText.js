@@ -33,13 +33,13 @@ function main() {
     
     console.log('Font metrics loaded successfully');
     
-    // Load and decode QOI glyph sheet
+    // Load and decode QOI atlas
     const qoiPath = path.resolve(__dirname, 'font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
     if (!fs.existsSync(qoiPath)) {
       throw new Error(`QOI file not found: ${qoiPath}`);
     }
     
-    console.log('Loading QOI glyph sheet...');
+    console.log('Loading QOI atlas...');
     const qoiBuffer = fs.readFileSync(qoiPath);
     const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
     
@@ -50,22 +50,22 @@ function main() {
     console.log(`QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
     
     // Create Image from QOI data
-    const glyphSheetImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
+    const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
     
     // Setup BitmapText system
     console.log('Setting up BitmapText system...');
-    const bitmapGlyphStore = new BitmapGlyphStore();
-    const bitmapText = new BitmapText(bitmapGlyphStore, () => new Canvas());
+    const atlasStore = new AtlasStore();
+    const bitmapText = new BitmapText(atlasStore, () => new Canvas());
     
-    // Process font data and populate glyph store
-    bitmapGlyphStore.setKerningTable(fontProperties, fontData.kerningTable);
-    bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-    bitmapGlyphStore.setGlyphSheetMetrics(fontProperties, fontData.glyphSheetsMetrics);
-    bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+    // Process font data and populate atlas store
+    atlasStore.setKerningTable(fontProperties, fontData.kerningTable);
+    atlasStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+    atlasStore.setAtlasMetrics(fontProperties, fontData.atlasMetrics);
+    atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(
       fontProperties,
       fontData.spaceAdvancementOverrideForSmallSizesInPx
     );
-    bitmapGlyphStore.setGlyphSheet(fontProperties, glyphSheetImage);
+    atlasStore.setAtlas(fontProperties, atlasImage);
     
     // Create output canvas
     console.log('Creating canvas and rendering...');
@@ -79,7 +79,7 @@ function main() {
     ctx.fillRect(0, 0, 300, 100);
     
     // Render "Hello World" using bitmap text
-    bitmapText.drawTextFromGlyphSheet(
+    bitmapText.drawTextFromAtlas(
       ctx,
       "Hello World",
       10,  // x position

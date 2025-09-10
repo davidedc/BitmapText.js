@@ -19,7 +19,7 @@ class SpecsParser {
       console.dir(this.parsedSpecs);
       // clear the kerning tables because the specs probably have changed
       // (unless the user is just changing, say, a comment, but we can't know that)
-      bitmapGlyphStore_FAB.clearKerningTables();
+      atlasStore_FAB.clearKerningTables();
     }
     return new Specs(this.parsedSpecs);
   }

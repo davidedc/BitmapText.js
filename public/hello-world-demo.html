@@ -35,8 +35,8 @@
   <script src="../src/minification/MetricsExpander.js"></script>
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
-  <!-- Data store for glyph sheets, metrics, and kerning tables -->
-  <script src="../src/core/BitmapGlyphStore.js"></script>
+  <!-- Data store for atlases, metrics, and kerning tables -->
+  <script src="../src/core/AtlasStore.js"></script>
   <!-- Main bitmap text rendering engine -->
   <script src="../src/core/BitmapText.js"></script>
 
@@ -45,8 +45,8 @@
     const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 
     // Initialize bitmap text system
-    const bitmapGlyphStore = new BitmapGlyphStore();
-    const bitmapText = new BitmapText(bitmapGlyphStore);
+    const atlasStore = new AtlasStore();
+    const bitmapText = new BitmapText(atlasStore);
 
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
@@ -76,11 +76,11 @@
       const IDString = "density-1-0-Arial-style-normal-weight-normal-size-19-0";
       const fontData = window.loadedBitmapFontData[IDString];
       
-      // Set up glyph store with loaded data
-      bitmapGlyphStore.setKerningTable(fontProperties, fontData.kerningTable);
-      bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-      bitmapGlyphStore.setGlyphSheetMetrics(fontProperties, fontData.glyphSheetsMetrics);
-      bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+      // Set up atlas store with loaded data
+      atlasStore.setKerningTable(fontProperties, fontData.kerningTable);
+      atlasStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+      atlasStore.setAtlasMetrics(fontProperties, fontData.atlasMetrics);
+      atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(
         fontProperties, 
         fontData.spaceAdvancementOverrideForSmallSizesInPx
       );
@@ -89,8 +89,8 @@
     };
     document.head.appendChild(dataScript);
 
-    // Load glyph sheet image
-    function loadGlyphSheet() {
+    // Load atlas image
+    function loadAtlas() {
       if (window.location.href.includes("file://")) {
         // Load from JS-wrapped image for file:// protocol
         const imageScript = document.createElement('script');
@@ -99,7 +99,7 @@
           const img = new Image();
           img.src = `data:image/png;base64,${window.imagesFromJs["density-1-0-Arial-style-normal-weight-normal-size-19-0"]}`;
           img.onload = function() {
-            bitmapGlyphStore.setGlyphSheet(fontProperties, img);
+            atlasStore.setAtlas(fontProperties, img);
             onFileLoaded();
           };
         };
@@ -109,13 +109,13 @@
         const img = new Image();
         img.src = '../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.png';
         img.onload = function() {
-          bitmapGlyphStore.setGlyphSheet(fontProperties, img);
+          atlasStore.setAtlas(fontProperties, img);
           onFileLoaded();
         };
       }
     }
 
-    loadGlyphSheet();
+    loadAtlas();
 
     function renderHelloWorld() {
       // Clear canvas with white background
@@ -123,7 +123,7 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw "Hello World" using bitmap text
-      bitmapText.drawTextFromGlyphSheet(
+      bitmapText.drawTextFromAtlas(
         ctx, 
         "Hello World", 
         10,  // x position

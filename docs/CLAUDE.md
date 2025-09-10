@@ -11,7 +11,7 @@
 
   ## Project Structure at a Glance
 
-  - **Core runtime**: src/core/BitmapText.js, src/core/BitmapGlyphStore.js, src/core/FontProperties.js
+  - **Core runtime**: src/core/BitmapText.js, src/core/AtlasStore.js, src/core/FontProperties.js
   - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
   - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js, src/utils/manifest-loader.js
   - **Font data**: font-assets/
@@ -31,7 +31,7 @@
   - Check hash mismatches in src/utils/HashStore
   - Use src/utils/canvas-extensions.js debugging methods
   - Compare with browser's native rendering
-  - Black rectangles indicate placeholder mode (metrics loaded but missing glyph sheets)
+  - Black rectangles indicate placeholder mode (metrics loaded but missing atlases)
 
   ### Performance Testing
   Look for src/utils/timing.js calls throughout - they measure:
@@ -62,7 +62,7 @@
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
-  - **Glyph sheet validation**: src/core/BitmapGlyphStore.isValidGlyphSheet:1
+  - **Atlas validation**: src/core/AtlasStore.isValidAtlas:1
   - **Font loading utilities**: src/utils/FontLoader.js
   - **Loading configuration**: src/utils/font-loader-config.js
   - **Hash verification**: src/utils/canvas-extensions.getHash:1

@@ -31,7 +31,7 @@ FILES_TO_CHECK=(
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
-  "$SRC_DIR/core/BitmapGlyphStore.js"
+  "$SRC_DIR/core/AtlasStore.js"
   "$SRC_DIR/core/BitmapText.js"
   "$SRC_DIR/node/hello-world-multi-size-main.js"
 )
@@ -61,13 +61,13 @@ cat > "$OUTPUT_FILE" << 'EOF'
  * Source files:
  *   - src/node/hello-world-multi-size-main.js (main demo logic)
  *   - src/core/BitmapText.js (core rendering)
- *   - src/core/BitmapGlyphStore.js (glyph storage)
+ *   - src/core/AtlasStore.js (atlas storage)
  *   - src/node/canvas-mock.js (Canvas implementation)
  *   - lib/QOIDecode.js, lib/PngEncoder.js (image handling)
  * 
  * This demonstrates:
  * - Multi-size font loading and rendering (sizes 18, 18.5, 19)
- * - Graceful handling of missing glyph sheets (placeholder rectangles)
+ * - Graceful handling of missing atlases (placeholder rectangles)
  * - Loading from both main directory and removed-for-testing directory
  * 
  * To modify this demo:
@@ -135,12 +135,12 @@ echo "" >> "$OUTPUT_FILE"
 cat "$LIB_DIR/PngEncoder.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate BitmapGlyphStore
+# Concatenate AtlasStore
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// BITMAP GLYPH STORE" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/BitmapGlyphStore.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/AtlasStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate BitmapText
@@ -181,4 +181,4 @@ echo ""
 echo "Expected output:"
 echo "  - hello-world-multi-size-output.png (400x200 canvas)"
 echo "  - Three lines of text at sizes 18, 18.5, and 19"
-echo "  - Missing glyph sheets will show placeholder rectangles"
+echo "  - Missing atlases will show placeholder rectangles"

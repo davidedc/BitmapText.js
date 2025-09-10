@@ -1,6 +1,6 @@
-// Class to store all the BitmapGlyph_FAB objects
+// Class to store all the GlyphFAB objects
 // so that we can retrieve them by font family, font size and letter
-class BitmapGlyphStore_FAB extends BitmapGlyphStore {
+class AtlasStore_FAB extends AtlasStore {
   constructor() {
     super();
     // FAB-specific glyph storage using Map for O(1) lookups
@@ -8,13 +8,13 @@ class BitmapGlyphStore_FAB extends BitmapGlyphStore {
     this.glyphs = new Map();
   }
 
-  extractBitmapGlyphStoreInstance() {
-    const instance = new BitmapGlyphStore();
+  extractAtlasStoreInstance() {
+    const instance = new AtlasStore();
     instance.kerningTables = this.kerningTables;
     instance.glyphsTextMetrics = this.glyphsTextMetrics;
     instance.spaceAdvancementOverrideForSmallSizesInPx = this.spaceAdvancementOverrideForSmallSizesInPx;
-    instance.glyphSheets = this.glyphSheets;
-    instance.glyphSheetsMetrics = this.glyphSheetsMetrics;
+    instance.atlases = this.atlases;
+    instance.atlasMetrics = this.atlasMetrics;
     return instance;
   }
 
@@ -48,7 +48,7 @@ class BitmapGlyphStore_FAB extends BitmapGlyphStore {
   //    width and height of the rectangle needed to fit all the glyphs
   // 2. create a canvas with the width and height calculated such that a-zA-Z0-9 can fit in the canvas
   // 3. draw each glyph in the canvas
-  buildGlyphSheet(fontProperties) {
+  buildAtlas(fontProperties) {
     // Find all glyphs for this font configuration
     const glyphs = {};
     for (const [glyphKey, glyph] of this.glyphs) {
@@ -91,13 +91,13 @@ class BitmapGlyphStore_FAB extends BitmapGlyphStore {
         glyph.tightCanvasBox.topLeftCorner.y +
         1;
       const glyphKey = `${fontProperties.key}:${letter}`;
-      this.glyphSheetsMetrics.tightWidth.set(glyphKey, tightWidth);
-      this.glyphSheetsMetrics.tightHeight.set(glyphKey, tightHeight);
+      this.atlasMetrics.tightWidth.set(glyphKey, tightWidth);
+      this.atlasMetrics.tightHeight.set(glyphKey, tightHeight);
 
       const dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
       const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
-      this.glyphSheetsMetrics.dx.set(glyphKey, dx);
-      this.glyphSheetsMetrics.dy.set(glyphKey, dy);
+      this.atlasMetrics.dx.set(glyphKey, dx);
+      this.atlasMetrics.dy.set(glyphKey, dy);
 
       if (!isNaN(tightWidth)) fittingWidth += tightWidth;
       if (tightHeight > maxHeight) maxHeight = tightHeight;
@@ -112,7 +112,7 @@ class BitmapGlyphStore_FAB extends BitmapGlyphStore {
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
       const glyphKey = `${fontProperties.key}:${letter}`;
-      const tightWidth = this.glyphSheetsMetrics.tightWidth.get(glyphKey);
+      const tightWidth = this.atlasMetrics.tightWidth.get(glyphKey);
       // if there is no glyph.tightCanvas, then just continue
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
         if (!tightWidth)
@@ -123,23 +123,23 @@ class BitmapGlyphStore_FAB extends BitmapGlyphStore {
       }
       ctx.drawImage(glyph.tightCanvas, x, 0);
 
-      this.glyphSheetsMetrics.xInGlyphSheet.set(glyphKey, x);
+      this.atlasMetrics.xInAtlas.set(glyphKey, x);
 
       x += tightWidth;
     }
 
-    const glyphSheetsPNG = ctx.toPNGImage();
+    const atlasPNG = ctx.toPNGImage();
     // NOTE that you can't use the image in here... although the data URL is a base64-encoded
     // string representing the image data, and there is no network request involved... however,
     // even though the data is available immediately, the Image element still needs a short
     // amount of time to process the data and make it available for rendering.
     // This processing time is typically very brief, but if you try it here, you'll get frequent
     // failures to paint the letters from this image.
-    this.setGlyphSheet(fontProperties, canvas);
+    this.setAtlas(fontProperties, canvas);
 
     // ... but you CAN return it here as it will be added to the DOM and the browser seems to
     // have no problem in showing it 100% of the time.
-    return [glyphSheetsPNG, ctx];
+    return [atlasPNG, ctx];
   }
 
 }

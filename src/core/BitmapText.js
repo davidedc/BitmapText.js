@@ -9,10 +9,10 @@
 // - Contains no font generation code to keep bundle size minimal
 // 
 // ARCHITECTURE:
-// - Constructed with a BitmapGlyphStore containing pre-rendered glyph data
+// - Constructed with an AtlasStore containing pre-rendered glyph data
 // - Draws text by looking up glyphs and positioning them with kerning
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
-// - Supports placeholder rectangles when glyph sheets are missing
+// - Supports placeholder rectangles when atlases are missing
 //
 // For font assets building capabilities, use BitmapTextFAB which extends this class.
 class BitmapText {
@@ -150,13 +150,13 @@ class BitmapText {
     return 0;
   }
 
-  drawTextFromGlyphSheet(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textColor = 'black') {
+  drawTextFromAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textColor = 'black') {
     const position = {
       x: x_CSS_Px * fontProperties.pixelDensity,
       y: y_CSS_Px * fontProperties.pixelDensity
     };
     
-    const glyphSheet = this.glyphStore.getGlyphSheet(fontProperties);
+    const atlas = this.glyphStore.getAtlas(fontProperties);
 
     for (let i = 0; i < text.length; i++) {
       const currentLetter = text[i];
@@ -165,7 +165,7 @@ class BitmapText {
       this.drawLetter(ctx,
         currentLetter,
         position,
-        glyphSheet,
+        atlas,
         fontProperties,
         textColor
       );
@@ -174,31 +174,31 @@ class BitmapText {
     }
   }
 
-  drawLetter(ctx, letter, position, glyphSheet, fontProperties, textColor) {
+  drawLetter(ctx, letter, position, atlas, fontProperties, textColor) {
     // There are several optimisations possible here:
     // 1. We could make a special case when the color is black
-    // 2. We could cache the colored glyph sheets in a small LRU cache
+    // 2. We could cache the colored atlases in a small LRU cache
 
-    const metrics = this.glyphStore.getGlyphSheetMetrics(fontProperties, letter);
+    const metrics = this.glyphStore.getAtlasMetrics(fontProperties, letter);
     
-    // If glyph sheet is missing but metrics exist, draw placeholder rectangle
-    if (!this.glyphStore.isValidGlyphSheet(glyphSheet)) {
-      // For placeholder rectangles, we need tightWidth and tightHeight, but not xInGlyphSheet
+    // If atlas is missing but metrics exist, draw placeholder rectangle
+    if (!this.glyphStore.isValidAtlas(atlas)) {
+      // For placeholder rectangles, we need tightWidth and tightHeight, but not xInAtlas
       if (metrics.tightWidth && metrics.tightHeight) {
         this.drawPlaceholderRectangle(ctx, position, metrics, textColor);
       }
       return;
     }
     
-    // For normal glyph rendering, we need xInGlyphSheet
-    if (!metrics.xInGlyphSheet) return;
+    // For normal glyph rendering, we need xInAtlas
+    if (!metrics.xInAtlas) return;
 
-    const coloredGlyphCanvas = this.createColoredGlyph(glyphSheet, metrics, textColor);
+    const coloredGlyphCanvas = this.createColoredGlyph(atlas, metrics, textColor);
     this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, metrics);
   }
 
-  createColoredGlyph(glyphSheet, metrics, textColor) {
-    const { xInGlyphSheet, tightWidth, tightHeight } = metrics;
+  createColoredGlyph(atlas, metrics, textColor) {
+    const { xInAtlas, tightWidth, tightHeight } = metrics;
     
     // Setup temporary canvas, same size as the glyph
     this.coloredGlyphCanvas.width = tightWidth;
@@ -209,8 +209,8 @@ class BitmapText {
     this.coloredGlyphCtx.globalCompositeOperation = 'source-over'; // reset the composite operation
     // see https://stackoverflow.com/a/6061102
     this.coloredGlyphCtx.drawImage(
-      glyphSheet,
-      xInGlyphSheet, 0,
+      atlas,
+      xInAtlas, 0,
       tightWidth, tightHeight,
       0, 0,
       tightWidth, tightHeight

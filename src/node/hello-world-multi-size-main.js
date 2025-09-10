@@ -58,14 +58,14 @@ function main() {
       console.log(`✓ Metrics loaded for size ${fontSize}`);
     }
     
-    // Load QOI glyph sheets (check both main directory and removed-for-testing)
-    const glyphSheetMap = new Map();
+    // Load QOI atlases (check both main directory and removed-for-testing)
+    const atlasMap = new Map();
     
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
       const IDString = IDStrings[i];
       
-      console.log(`Loading QOI glyph sheet for size ${fontSize}...`);
+      console.log(`Loading QOI atlas for size ${fontSize}...`);
       
       // Only check main directory (like browser version)
       const qoiPath = path.resolve(__dirname, `font-assets/atlas-${IDString}.qoi`);
@@ -77,45 +77,45 @@ function main() {
         
         if (qoiData.error) {
           console.warn(`  ↳ Failed to decode QOI for size ${fontSize}, will use placeholder rectangles`);
-          glyphSheetMap.set(fontSize, null);
+          atlasMap.set(fontSize, null);
         } else {
           console.log(`  ↳ QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
-          const glyphSheetImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
-          glyphSheetMap.set(fontSize, glyphSheetImage);
+          const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
+          atlasMap.set(fontSize, atlasImage);
         }
       } else {
         console.warn(`  ↳ QOI file not found for size ${fontSize}, will use placeholder rectangles`);
-        glyphSheetMap.set(fontSize, null);
+        atlasMap.set(fontSize, null);
       }
     }
     
     // Setup BitmapText system
     console.log('Setting up BitmapText system...');
-    const bitmapGlyphStore = new BitmapGlyphStore();
-    const bitmapText = new BitmapText(bitmapGlyphStore, () => new Canvas());
+    const atlasStore = new AtlasStore();
+    const bitmapText = new BitmapText(atlasStore, () => new Canvas());
     
-    // Process font data and populate glyph store for all sizes
+    // Process font data and populate atlas store for all sizes
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
       const fontProperties = fontPropertiesArray[i];
       const fontData = fontDataMap.get(fontSize);
-      const glyphSheetImage = glyphSheetMap.get(fontSize);
+      const atlasImage = atlasMap.get(fontSize);
       
       console.log(`Setting up font data for size ${fontSize}...`);
       
-      bitmapGlyphStore.setKerningTable(fontProperties, fontData.kerningTable);
-      bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-      bitmapGlyphStore.setGlyphSheetMetrics(fontProperties, fontData.glyphSheetsMetrics);
-      bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+      atlasStore.setKerningTable(fontProperties, fontData.kerningTable);
+      atlasStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+      atlasStore.setAtlasMetrics(fontProperties, fontData.atlasMetrics);
+      atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(
         fontProperties,
         fontData.spaceAdvancementOverrideForSmallSizesInPx
       );
       
-      if (glyphSheetImage) {
-        bitmapGlyphStore.setGlyphSheet(fontProperties, glyphSheetImage);
-        console.log(`  ✓ Font size ${fontSize} ready with glyph sheet`);
+      if (atlasImage) {
+        atlasStore.setAtlas(fontProperties, atlasImage);
+        console.log(`  ✓ Font size ${fontSize} ready with atlas`);
       } else {
-        console.log(`  ✓ Font size ${fontSize} ready with placeholder mode (no glyph sheet)`);
+        console.log(`  ✓ Font size ${fontSize} ready with placeholder mode (no atlas)`);
       }
     }
     
@@ -137,7 +137,7 @@ function main() {
       
       console.log(`Rendering "${text}" at y=${yPosition}`);
       
-      bitmapText.drawTextFromGlyphSheet(
+      bitmapText.drawTextFromAtlas(
         ctx,
         text,
         20,  // x position

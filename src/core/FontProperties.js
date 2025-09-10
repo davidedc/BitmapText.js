@@ -26,7 +26,7 @@ class FontProperties {
     this.fontSize = fontSize;
     
     // Pre-compute storage key (critical for performance optimization)
-    // Used for Map lookups in BitmapGlyphStore
+    // Used for Map lookups in AtlasStore
     this._key = `${this.pixelDensity}:${this.fontFamily}:${this.fontStyle}:${this.fontWeight}:${this.fontSize}`;
     
     // Pre-compute ID string for file naming and manifest keys

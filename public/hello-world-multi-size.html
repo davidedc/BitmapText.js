@@ -41,7 +41,7 @@
 
   <div class="info">
     <strong>Key Learning:</strong> Each font size requires its own pre-generated bitmap font data.
-    This demo loads 6 files total (3 JS metrics files + 3 glyph sheet images).
+    This demo loads 6 files total (3 JS metrics files + 3 atlas images).
   </div>
 
   <!-- Essential dependencies -->
@@ -52,8 +52,8 @@
   <script src="../src/utils/font-loader.js"></script>
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
-  <!-- Data store for glyph sheets, metrics, and kerning tables -->
-  <script src="../src/core/BitmapGlyphStore.js"></script>
+  <!-- Data store for atlases, metrics, and kerning tables -->
+  <script src="../src/core/AtlasStore.js"></script>
   <!-- Main bitmap text rendering engine -->
   <script src="../src/core/BitmapText.js"></script>
 
@@ -65,8 +65,8 @@
     );
 
     // Initialize bitmap text system
-    const bitmapGlyphStore = new BitmapGlyphStore();
-    const bitmapText = new BitmapText(bitmapGlyphStore);
+    const atlasStore = new AtlasStore();
+    const bitmapText = new BitmapText(atlasStore);
 
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
@@ -91,7 +91,7 @@
     
     // Use FontLoader to load all font data
     const isFileProtocol = window.location.href.includes("file://");
-    const fontLoader = new FontLoader(bitmapGlyphStore, (loaded, total) => {
+    const fontLoader = new FontLoader(atlasStore, (loaded, total) => {
       console.log(`Loaded ${loaded} of ${total} files`);
     });
 
@@ -104,10 +104,10 @@
           const fontData = window.loadedBitmapFontData[IDString];
           
           if (fontData) {
-            bitmapGlyphStore.setKerningTable(fontProperties, fontData.kerningTable);
-            bitmapGlyphStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-            bitmapGlyphStore.setGlyphSheetMetrics(fontProperties, fontData.glyphSheetsMetrics);
-            bitmapGlyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+            atlasStore.setKerningTable(fontProperties, fontData.kerningTable);
+            atlasStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+            atlasStore.setAtlasMetrics(fontProperties, fontData.atlasMetrics);
+            atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(
               fontProperties,
               fontData.spaceAdvancementOverrideForSmallSizesInPx
             );
@@ -128,7 +128,7 @@
         const yPosition = 50 + (index * 50); // Space lines 50px apart
         const text = `Hello World (size ${fontProperties.fontSize})`;
         
-        bitmapText.drawTextFromGlyphSheet(
+        bitmapText.drawTextFromAtlas(
           ctx,
           text,
           20,  // x position

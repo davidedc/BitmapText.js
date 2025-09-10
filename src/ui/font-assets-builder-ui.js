@@ -6,14 +6,14 @@ function setupGlyphUI_FAB() {
 
 
     // button to download all the font assets
-    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download font assets', selectorsDiv);
-    downloadAllSheetsButton.addEventListener('click', function() {
+    const downloadAllAtlasesButton = createElement('button', 'download-all-atlases-button', 'Download font assets', selectorsDiv);
+    downloadAllAtlasesButton.addEventListener('click', function() {
         const pixelDensity = document.getElementById('pixel-density-2-radio-button').checked ? 2 : 1;
         
         // Pass individual properties to downloadFontAssets
         // (The function will create FontPropertiesFAB instances internally for each size)
         downloadFontAssets({
-            bitmapGlyphStore_FAB,
+            atlasStore_FAB,
             pixelDensity,
             fontFamily: fontFamilySelect.value,
             fontStyle: fontStyleSelect.value,

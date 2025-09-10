@@ -36,7 +36,7 @@ class HashStore {
   getFormattedHashString() {
       const sortedKeys = Object.keys(this.currentHashes).sort();
       const filteredKeys = sortedKeys.filter(key => 
-          key.includes('glyph sheet') || key.includes('ndividual glyphs')
+          key.includes('atlas') || key.includes('ndividual glyphs')
       );
 
       return `// Note that some are missing because we fail to render some very small sizes\n`

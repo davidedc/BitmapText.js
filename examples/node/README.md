@@ -20,7 +20,7 @@ examples/node/
 ### `dist/hello-world.bundle.js`
 - **Purpose**: Demonstrates basic bitmap text rendering at font size 19
 - **Output**: Creates `hello-world-output.png` in current directory
-- **Features**: Basic "Hello World" rendering with QOI glyph sheet loading
+- **Features**: Basic "Hello World" rendering with QOI atlas loading
 - **Source**: Built from `src/node/hello-world-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world.bundle.js`
 
@@ -29,7 +29,7 @@ examples/node/
 - **Output**: Creates `hello-world-multi-size-output.png` in current directory  
 - **Features**: 
   - Multi-size font loading
-  - Placeholder rectangle fallback for missing glyph sheets
+  - Placeholder rectangle fallback for missing atlases
   - Demonstrates graceful degradation
 - **Source**: Built from `src/node/hello-world-multi-size-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world-multi-size.bundle.js`
@@ -65,7 +65,7 @@ cp font-assets/*.qoi examples/node/dist/font-assets/
 
 ### For the single-size demo:
 1. **Main logic**: `src/node/hello-world-main.js`
-2. **Core rendering**: `src/core/BitmapText.js`, `src/core/BitmapGlyphStore.js`
+2. **Core rendering**: `src/core/BitmapText.js`, `src/core/AtlasStore.js`
 3. **Canvas implementation**: `src/node/canvas-mock.js`
 4. **Image libraries**: `lib/QOIDecode.js`, `lib/PngEncoder.js`
 
@@ -106,7 +106,7 @@ Each bundled file contains these sections in order:
 2. **Canvas Mock**: Minimal Canvas API implementation for Node.js
 3. **Utility Functions**: Nested property helpers, metrics expansion
 4. **Image Libraries**: QOI decoder, PNG encoder
-5. **Core Classes**: BitmapGlyphStore, BitmapText
+5. **Core Classes**: AtlasStore, BitmapText
 6. **Demo Logic**: The actual demo code from src/node/
 7. **Font Assets**: Inlined font data and metrics
 

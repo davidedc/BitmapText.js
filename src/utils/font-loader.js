@@ -12,7 +12,7 @@ class FontLoader {
     this.totalCount += 2; // Each font has 2 files (metrics + image)
     
     return this.loadMetrics(IDString)
-      .then(() => this.loadGlyphSheet(IDString, isFileProtocol))
+      .then(() => this.loadAtlas(IDString, isFileProtocol))
       .catch(error => {
         // Even if loading fails, we still count it as processed to prevent hanging
         console.warn(`Font loading failed for ${IDString}:`, error.message);
@@ -55,17 +55,17 @@ class FontLoader {
     });
   }
 
-  // Load glyph sheet based on protocol
-  loadGlyphSheet(IDString, isFileProtocol) {
+  // Load atlas based on protocol
+  loadAtlas(IDString, isFileProtocol) {
     if (isFileProtocol) {
-      return this.loadGlyphSheetFromJS(IDString);
+      return this.loadAtlasFromJS(IDString);
     } else {
-      return this.loadGlyphSheetFromPNG(IDString);
+      return this.loadAtlasFromPNG(IDString);
     }
   }
 
-  // Load glyph sheet from JS file (for file:// protocol)
-  loadGlyphSheetFromJS(IDString) {
+  // Load atlas from JS file (for file:// protocol)
+  loadAtlasFromJS(IDString) {
     return new Promise((resolve, reject) => {
       const imageScript = document.createElement('script');
       imageScript.src = FontLoaderConfig.getImageJsPath(IDString);
@@ -86,7 +86,7 @@ class FontLoader {
         
         img.onload = () => {
           const fontProperties = FontProperties.fromIDString(IDString);
-          this.glyphStore.setGlyphSheet(fontProperties, img);
+          this.glyphStore.setAtlas(fontProperties, img);
           
           imageScript.remove();
           delete window.imagesFromJs[IDString];
@@ -115,15 +115,15 @@ class FontLoader {
     });
   }
 
-  // Load glyph sheet from PNG file (for http:// protocol)
-  loadGlyphSheetFromPNG(IDString) {
+  // Load atlas from PNG file (for http:// protocol)
+  loadAtlasFromPNG(IDString) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.src = FontLoaderConfig.getPngPath(IDString);
       
       img.onload = () => {
         const fontProperties = FontProperties.fromIDString(IDString);
-        this.glyphStore.setGlyphSheet(fontProperties, img);
+        this.glyphStore.setAtlas(fontProperties, img);
         
         this.incrementProgress();
         resolve();

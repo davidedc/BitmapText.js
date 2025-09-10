@@ -14,7 +14,7 @@
   ## Features
 
   - ✅ Pixel-identical text rendering across all browsers
-  - ✅ Pre-rendered glyph sheets for consistent output
+  - ✅ Pre-rendered glyphs for consistent output
   - ✅ Advanced kerning with fine-grained control
   - ✅ Multiple pixel density support (retina displays)
   - ✅ Hash-based verification for consistency
@@ -33,7 +33,7 @@
   ```javascript
   // Import only the essential runtime classes (~15-20KB)
   import { BitmapText } from './src/core/BitmapText.js';
-  import { BitmapGlyphStore } from './src/core/BitmapGlyphStore.js';
+  import { AtlasStore } from './src/core/AtlasStore.js';
   import { FontProperties } from './src/core/FontProperties.js';
 
   // Your font data is loaded from pre-generated assets
@@ -49,10 +49,10 @@
   ```javascript
   // Import full toolkit including font assets building tools (~50KB+)
   import { BitmapText } from './src/core/BitmapText.js';
-  import { BitmapGlyphStore } from './src/core/BitmapGlyphStore.js';
+  import { AtlasStore } from './src/core/AtlasStore.js';
   import { FontProperties } from './src/core/FontProperties.js';
   import { BitmapTextFAB } from './src/font-assets-builder-FAB/BitmapTextFAB.js';
-  import { BitmapGlyphStoreFAB } from './src/font-assets-builder-FAB/BitmapGlyphStoreFAB.js';
+  import { AtlasStoreFAB } from './src/font-assets-builder-FAB/AtlasStoreFAB.js';
   import { FontPropertiesFAB } from './src/font-assets-builder-FAB/FontPropertiesFAB.js';
   ```
 
@@ -73,8 +73,8 @@
 
   ```javascript
   // Load the library and font data
-  const bitmapGlyphStore = new BitmapGlyphStore();
-  const bitmapText = new BitmapText(bitmapGlyphStore);
+  const atlasStore = new AtlasStore();
+  const bitmapText = new BitmapText(atlasStore);
 
   // Load font data (from pre-generated sheets)
   // This happens automatically when you include the manifest
@@ -96,7 +96,7 @@
   const metrics = bitmapText.measureText("Hello World", fontProperties);
 
   // Draw text at position (x, y) - equivalent to textBaseline='bottom' (y is bottom of bounding box)
-  bitmapText.drawTextFromGlyphSheet(ctx, "Hello World", 10, 50, fontProperties, '#000000');
+  bitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties, '#000000');
   ```
 
   ## Generating Your Own Bitmap Fonts
@@ -134,9 +134,9 @@
     - text: String to measure
     - fontProperties: FontProperties instance
 
-  drawTextFromGlyphSheet(ctx, text, x, y, fontProperties, textColor)
+  drawTextFromAtlas(ctx, text, x, y, fontProperties, textColor)
   - Draws text using pre-rendered glyphs
-  - When glyph sheets are missing but metrics are available, renders black placeholder rectangles
+  - When atlases are missing but metrics are available, renders black placeholder rectangles
   - Parameters:
     - ctx: Canvas 2D rendering context
     - text: String to render
@@ -167,20 +167,20 @@
   ### Methods
   - **toObject()**: Returns plain object representation for compatibility
 
-  ## BitmapGlyphStore Class
+  ## AtlasStore Class
 
-  Manages glyph sheets and metrics. Usually populated automatically from manifest.
+  Manages atlases and metrics. Usually populated automatically from manifest.
 
   Constructor
   
-  new BitmapGlyphStore()
+  new AtlasStore()
 
   Methods
 
-  isValidGlyphSheet(glyphSheet)
-  - Validates if a glyph sheet is properly loaded and usable
+  isValidAtlas(atlas)
+  - Validates if an atlas is properly loaded and usable
   - Returns true if sheet has valid dimensions, false otherwise
-  - Parameters: glyphSheet object or canvas element
+  - Parameters: atlas object or canvas element
 
   getKerningTable(fontProperties)
   - Returns kerning table for the specified font properties
@@ -192,25 +192,25 @@
     - fontProperties: FontProperties instance
     - kerningTable: Kerning data structure
 
-  getGlyphSheet(fontProperties)
-  - Returns glyph sheet canvas/image for the specified font properties
+  getAtlas(fontProperties)
+  - Returns atlas for the specified font properties
   - Parameters: fontProperties - FontProperties instance
 
-  setGlyphSheet(fontProperties, glyphSheet)
-  - Sets glyph sheet for the specified font properties
+  setAtlas(fontProperties, atlas)
+  - Sets atlas for the specified font properties
   - Parameters:
     - fontProperties: FontProperties instance
-    - glyphSheet: Canvas or Image element
+    - atlas: Canvas or Image element
 
-  getGlyphSheetMetrics(fontProperties, letter)
+  getAtlasMetrics(fontProperties, letter)
   - Returns metrics for a specific glyph including position in sheet and dimensions
-  - Returns object with: xInGlyphSheet, tightWidth, tightHeight, dx, dy
+  - Returns object with: xInAtlas, tightWidth, tightHeight, dx, dy
   - Parameters:
     - fontProperties: Font configuration object
     - letter: Character to get metrics for
 
-  setGlyphSheetMetrics(fontProperties, metrics)
-  - Sets glyph sheet metrics for the specified font properties
+  setAtlasMetrics(fontProperties, metrics)
+  - Sets atlas metrics for the specified font properties
   - Parameters:
     - fontProperties: Font configuration object
     - metrics: Metrics data structure
@@ -245,7 +245,7 @@
   Building Font Data
 
   1. Configure specs in src/specs/default-specs.js or via UI
-  2. Use Font Builder to generate glyph sheets
+  2. Use Font Builder to generate atlases
   3. Compressed data saved to font-assets/
 
   Testing and Examples
@@ -270,9 +270,9 @@
   ./run-node-demos.sh
   ```
   
-  **Single-size demo**: Renders "Hello World" at size 19 using QOI glyph sheets and exports as PNG.
+  **Single-size demo**: Renders "Hello World" at size 19 using QOI atlases and exports as PNG.
   
-  **Multi-size demo**: Renders "Hello World" at sizes 18, 18.5, and 19. Demonstrates multi-size font loading and placeholder rectangle fallback for missing glyph sheets. Self-contained scripts with no npm dependencies, built from modular source files.
+  **Multi-size demo**: Renders "Hello World" at sizes 18, 18.5, and 19. Demonstrates multi-size font loading and placeholder rectangle fallback for missing atlases. Self-contained scripts with no npm dependencies, built from modular source files.
 
   **Full Test Suite**  
   Open public/test-renderer.html to run visual tests and hash verification.
@@ -288,7 +288,7 @@
   **CORS Issues**
   - Always serve files via HTTP server, not file:// protocol
   - Use `python -m http.server` or `npx http-server` for local development
-  - Required for loading PNG glyph sheets and calculating hashes
+  - Required for loading PNG atlases and calculating hashes
   - For file:// protocol: Convert PNGs to JS files using `node scripts/png-to-js-converter.js [directory]`
 
   **QOI Format Issues**
@@ -300,10 +300,10 @@
   - Ensure canvases are attached to DOM before rendering for crisp text
   - Check pixel density scaling is applied correctly
   - Verify font data is loaded before attempting to render
-  - If you see black rectangles instead of text, glyph sheets are missing but metrics are loaded (placeholder mode)
+  - If you see black rectangles instead of text, atlases are missing but metrics are loaded (placeholder mode)
 
   **Performance Issues**
-  - Pre-load glyph sheets during initialization
+  - Pre-load atlases during initialization
   - Reuse BitmapText instances rather than creating new ones
   - Consider caching frequently used text measurements
 

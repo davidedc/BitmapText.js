@@ -66,7 +66,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 DOWNLOADS_DIR="$HOME/Downloads"
-GLYPH_SHEETS_FILE="$DOWNLOADS_DIR/fontAssets.zip"
+FONT_ASSETS_FILE="$DOWNLOADS_DIR/fontAssets.zip"
 DATA_DIR="font-assets"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKUP_DIR="$DATA_DIR"
@@ -208,10 +208,10 @@ function clear_data_directory() {
     fi
 }
 
-function extract_glyph_sheets() {
+function extract_font_assets() {
     log "INFO" "Extracting fontAssets.zip to $DATA_DIR"
     
-    if unzip -o "$GLYPH_SHEETS_FILE" -d "$DATA_DIR"; then
+    if unzip -o "$FONT_ASSETS_FILE" -d "$DATA_DIR"; then
         log "SUCCESS" "Successfully extracted fontAssets.zip"
         
         # Check if files were extracted to a fontAssets subdirectory and move them up
@@ -234,10 +234,10 @@ function move_zip_to_trash() {
     
     # Use macOS trash command if available, otherwise just remove
     if command -v trash &> /dev/null; then
-        trash "$GLYPH_SHEETS_FILE"
+        trash "$FONT_ASSETS_FILE"
         log "SUCCESS" "Moved fontAssets.zip to trash"
     else
-        rm "$GLYPH_SHEETS_FILE"
+        rm "$FONT_ASSETS_FILE"
         log "SUCCESS" "Removed fontAssets.zip"
     fi
 }
@@ -295,7 +295,7 @@ function run_js_conversion() {
     fi
 }
 
-function process_glyph_sheets() {
+function process_font_assets() {
     log "INFO" "Starting font assets processing pipeline..."
     
     # Step 1: Backup current data
@@ -311,7 +311,7 @@ function process_glyph_sheets() {
     fi
     
     # Step 3: Extract font assets
-    if ! extract_glyph_sheets; then
+    if ! extract_font_assets; then
         log "ERROR" "Failed to extract font assets, aborting processing"
         return 1
     fi
@@ -344,14 +344,14 @@ function start_monitoring() {
     
     # Use fswatch to monitor the downloads directory
     fswatch -o "$DOWNLOADS_DIR" | while read num_events; do
-        if [ -f "$GLYPH_SHEETS_FILE" ]; then
+        if [ -f "$FONT_ASSETS_FILE" ]; then
             log "SUCCESS" "Detected fontAssets.zip!"
             
             # Wait a moment to ensure file is fully written
             sleep 1
             
             # Process the file
-            process_glyph_sheets
+            process_font_assets
             
             log "INFO" "Resuming monitoring..."
         fi
@@ -363,7 +363,7 @@ function main() {
     log "INFO" "=== BitmapText.js Font Assets Watcher ==="
     log "INFO" "Working directory: $PROJECT_ROOT"
     log "INFO" "Data directory: $DATA_DIR"
-    log "INFO" "Monitoring: $GLYPH_SHEETS_FILE"
+    log "INFO" "Monitoring: $FONT_ASSETS_FILE"
     log "INFO" "Preserve originals: $PRESERVE_ORIGINALS"
     log "INFO" "Remove QOI files: $REMOVE_QOI"
     
@@ -380,9 +380,9 @@ function main() {
     mkdir -p "$DATA_DIR"
     
     # Check if there's already a fontAssets.zip file
-    if [ -f "$GLYPH_SHEETS_FILE" ]; then
+    if [ -f "$FONT_ASSETS_FILE" ]; then
         log "WARNING" "Found existing fontAssets.zip, processing it first..."
-        process_glyph_sheets
+        process_font_assets
     fi
     
     # Start monitoring

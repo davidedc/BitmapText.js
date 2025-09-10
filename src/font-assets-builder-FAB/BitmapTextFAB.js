@@ -1,6 +1,6 @@
-// a class constructed with a BitmapGlyphStore_FAB
+// a class constructed with a AtlasStore_FAB
 // has a method to draw text on a canvas
-// the text is drawn by looking up the glyphs in the BitmapGlyphStore_FAB
+// the text is drawn by looking up the glyphs in the AtlasStore_FAB
 // and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
 // the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
 class BitmapText_FAB extends BitmapText {

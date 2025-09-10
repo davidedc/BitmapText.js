@@ -82,7 +82,7 @@ function getTestCopyChoiceAndText() {
   return { testCopy: '', testCopyChoiceNumber: 0 };
 }
 
-function drawTestText(fontProperties, bitmapGlyphStore_FAB) {
+function drawTestText(fontProperties) {
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
   const fontString = getFontString(fontProperties);
@@ -116,17 +116,17 @@ function drawTestText(fontProperties, bitmapGlyphStore_FAB) {
   console.log(`crispTestCopyMeasures_CSS_Px.height: ${crispMeasures.height}`);
 
   // Measurements with BitmapText_FAB
-  // now do the measurements, font assets building of glyph sheet and rendering of text with the BitmapText_FAB class
+  // now do the measurements, font assets building of atlas and rendering of text with the BitmapText_FAB class
   // note how this one doesn't need a canvas
   const measureTextCrispBitmap_FAB = text => bitmapText_FAB.measureText(text, fontProperties);
   const linesMeasures_CSS_Px_FAB = measureMultilineText(testCopyLines, measureTextCrispBitmap_FAB);
-  // generating the glyph sheet with the full class is necessary to then being able to draw the text with the "normal" class
-  buildAndDisplayGlyphSheet(bitmapGlyphStore_FAB, fontProperties);
-  // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
-  drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_FAB, testCopyLines, bitmapText_FAB, fontProperties, testCopyChoiceNumber);
+  // generating the atlas with the full class is necessary to then being able to draw the text with the "normal" class
+  buildAndDisplayAtlas(atlasStore_FAB, fontProperties);
+  // note that this one doesn't use the atlas, it uses the canvas stored in each glyph
+  drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures_CSS_Px_FAB, testCopyLines, bitmapText_FAB, fontProperties, testCopyChoiceNumber);
 }
 
-function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore) {
+function drawTestText_withStandardClass(originalFontProperties, atlasStore) {
 
   let linesMeasures_CSS_PxForcedPixelDensity1 = null;
 
@@ -135,7 +135,7 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
 
   // this is going to be the class that is going to be used to render the text
   // outside of the editor.
-  const bitmapText = new BitmapText(bitmapGlyphStore);
+  const bitmapText = new BitmapText(atlasStore);
 
   let fontProperties = originalFontProperties;
 
@@ -148,7 +148,7 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
   let fontPropertiesForcedPixelDensity1 = null;
 
   // pixel-density-1-forcing is a trick where we draw at pixelDensity 1 size 2n
-  // the advantage is that we can reuse a glyph sheet that was generated for pixelDensity 1
+  // the advantage is that we can reuse an atlas that was generated for pixelDensity 1
   let didPixelDensity1Forcing = false;
   if (drawAllPixelDensitiesWithLargerPixelDensity1Text && originalFontProperties.pixelDensity === 2) {
     // Create new FontProperties with pixelDensity=1 and doubled fontSize
@@ -170,7 +170,7 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
   }
 
 
-  bitmapGlyphSheetDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
+  bitmapAtlasDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber);
 
   if (originalFontProperties.pixelDensity === 2) {
     // Create new FontProperties with pixelDensity=1 (same fontSize)
@@ -185,15 +185,15 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
     measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesPixelDensity1);
     const linesMeasures_CSS_PxPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);
 
-    const canvas = bitmapGlyphSheetDrawCrispText(linesMeasures_CSS_PxPixelDensity1, testCopyLines, bitmapText, fontPropertiesPixelDensity1, testCopyChoiceNumber, null, 2, false, null, "Comparison pixel density 2 (red) and pixel density 1 scaled (black, should be blurred)");
-    bitmapGlyphSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
+    const canvas = bitmapAtlasDrawCrispText(linesMeasures_CSS_PxPixelDensity1, testCopyLines, bitmapText, fontPropertiesPixelDensity1, testCopyChoiceNumber, null, 2, false, null, "Comparison pixel density 2 (red) and pixel density 1 scaled (black, should be blurred)");
+    bitmapAtlasDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
   }
   
   // If we did the pixel-density-1-forcing, let's
   // compare the text rendering done normally with the text rendering done with the pixel-density-1-forcing
   if (didPixelDensity1Forcing) {
-    const canvas = bitmapGlyphSheetDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, null, null, "Comparison crisp bitmap text drawing from glyph sheet original pixel density (red) and forced pixel density 1 (black)");
-    bitmapGlyphSheetDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
+    const canvas = bitmapAtlasDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, null, null, "Comparison crisp bitmap text drawing from atlas original pixel density (red) and forced pixel density 1 (black)");
+    bitmapAtlasDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red');
   }
 
   stdDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
@@ -201,8 +201,8 @@ function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore
   stdDrawSmoothText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
 }
 
-function drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
-  addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing with individual glyphs (not using glyph sheet):'));
+function drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber) {
+  addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing with individual glyphs (not using atlas):'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
@@ -251,7 +251,7 @@ function createCheckerboardBackground(ctx) {
   }
 }
 
-function bitmapGlyphSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from glyph sheet:', textColor = null) {
+function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from atlas:', textColor = null) {
   
   let drawOverExistingCanvas = false;
 
@@ -261,17 +261,17 @@ function bitmapGlyphSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText,
   // if scale is null then set it to 1
   if (!scale) scale = 1;
 
-  // Check if we're in placeholder mode (metrics available but glyph sheet missing)
+  // Check if we're in placeholder mode (metrics available but atlas missing)
   let isPlaceholderMode = false;
   if (bitmapText && bitmapText.glyphStore) {
-    const glyphSheet = bitmapText.glyphStore.getGlyphSheet(fontProperties);
-    isPlaceholderMode = !bitmapText.glyphStore.isValidGlyphSheet(glyphSheet);
+    const atlas = bitmapText.glyphStore.getAtlas(fontProperties);
+    isPlaceholderMode = !bitmapText.glyphStore.isValidAtlas(atlas);
   }
 
   // Update section label if in placeholder mode
   let actualSectionLabel = sectionLabel;
-  if (isPlaceholderMode && sectionLabel === 'Crisp Bitmap Text Drawing from glyph sheet:') {
-    actualSectionLabel = 'Crisp Bitmap Text Drawing with placeholder rectangles (glyph sheet missing):';
+  if (isPlaceholderMode && sectionLabel === 'Crisp Bitmap Text Drawing from atlas:') {
+    actualSectionLabel = 'Crisp Bitmap Text Drawing with placeholder rectangles (atlas missing):';
   }
 
   if (!drawOverExistingCanvas) {
@@ -302,12 +302,12 @@ function bitmapGlyphSheetDrawCrispText(linesMeasures, testCopyLines, bitmapText,
   }
 
 
-  startTiming('drawTestText via glyph sheet');
+  startTiming('drawTestText via atlas');
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    bitmapText.drawTextFromGlyphSheet(ctx, line, 0, yPosition, fontProperties, textColor);
+    bitmapText.drawTextFromAtlas(ctx, line, 0, yPosition, fontProperties, textColor);
   });
-  console.log(`⏱️ drawTestText via glyph sheet ${stopTiming('drawTestText via glyph sheet')} milliseconds`);
+  console.log(`⏱️ drawTestText via atlas ${stopTiming('drawTestText via atlas')} milliseconds`);
 
   if (!drawOverExistingCanvas) {
     let hashMatchInfo = '';
@@ -359,12 +359,12 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   addElementToDOM(document.createElement('br'));
 }
 
-function buildAndDisplayGlyphSheet(bitmapGlyphStore, fontProperties) {
-  addElementToDOM(createDivWithText("Glyphs' Sheet:"));
-  const [glyphSheetImage, glyphSheetCtx] = bitmapGlyphStore.buildGlyphSheet(fontProperties);
-  addElementToDOM(glyphSheetImage);
+function buildAndDisplayAtlas(atlasStore, fontProperties) {
+  addElementToDOM(createDivWithText("Atlas:"));
+  const [atlasImage, atlasCtx] = atlasStore.buildAtlas(fontProperties);
+  addElementToDOM(atlasImage);
   
-  addCanvasInfoToDOM(glyphSheetCtx.canvas, getHashMatchInfo(glyphSheetCtx, fontProperties, 'glyph sheet'));
+  addCanvasInfoToDOM(atlasCtx.canvas, getHashMatchInfo(atlasCtx, fontProperties, 'atlas'));
   addElementToDOM(document.createElement('br'));
 }
 
