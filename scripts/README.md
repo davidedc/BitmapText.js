@@ -9,8 +9,8 @@
    ./scripts/watch-glyph-sheets.sh
    ```
 
-2. **Generate fonts** using the font-builder:
-   - Open `public/font-builder.html` in your browser
+2. **Build font assets** using the font assets builder:
+   - Open `public/font-assets-builder.html` in your browser
    - Configure your font settings
    - Click "Download Glyph Sheets"
    - The zip file will be automatically processed!

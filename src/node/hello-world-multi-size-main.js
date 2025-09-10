@@ -180,7 +180,7 @@ function main() {
     console.error('1. Make sure you run this from the project root directory');
     console.error('2. Ensure font metrics exist for all sizes:', fontSizes.map(s => `metrics-density-1-0-Arial-style-normal-weight-normal-size-${s.toString().replace('.', '-')}${s.toString().includes('.') ? '' : '-0'}.js`).join(', '));
     console.error('3. QOI files are optional - missing ones will show placeholder rectangles');
-    console.error('4. Generate fonts using public/font-builder.html if needed');
+    console.error('4. Build font assets using public/font-assets-builder.html if needed');
     process.exit(1);
   }
 }

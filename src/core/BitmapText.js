@@ -5,7 +5,7 @@
 // 
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications
-// - Extended by BitmapTextEditor for font generation capabilities
+// - Extended by BitmapTextFAB for font assets building capabilities
 // - Contains no font generation code to keep bundle size minimal
 // 
 // ARCHITECTURE:
@@ -14,7 +14,7 @@
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
 // - Supports placeholder rectangles when glyph sheets are missing
 //
-// For font generation capabilities, use BitmapTextEditor which extends this class.
+// For font assets building capabilities, use BitmapTextFAB which extends this class.
 class BitmapText {
   constructor(glyphStore, canvasFactory) {
     this.glyphStore = glyphStore;

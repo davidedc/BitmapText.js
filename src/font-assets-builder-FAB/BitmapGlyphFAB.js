@@ -1,4 +1,4 @@
-class BitmapGlyph_Editor {
+class BitmapGlyph_FAB {
   constructor(letter, fontProperties) {
     this.letter = letter;
     this.fontProperties = fontProperties;
@@ -14,8 +14,8 @@ class BitmapGlyph_Editor {
     this.tightCanvasBox = tightCanvasBox;
 
     // glyphsTextMetrics actually belongs to the base class bitmapGlyphStore
-    // which underlies the BitmapGlyphStore_Editor clas
-    bitmapGlyphStore_Editor.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
+    // which underlies the BitmapGlyphStore_FAB class
+    bitmapGlyphStore_FAB.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
 
     this.displayCanvasesAndData();
   }

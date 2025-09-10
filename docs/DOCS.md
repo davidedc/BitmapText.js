@@ -6,7 +6,7 @@ Each document has a **single responsibility** to avoid duplication:
 
 ### Primary Responsibilities
 
-- **README.md**: Quick start, API examples, build instructions, font generation workflow, brief testing overview
+- **README.md**: Quick start, API examples, build instructions, font assets building workflow, brief testing overview
 - **docs/ARCHITECTURE.md**: System design, component organization, architectural patterns, OO design, data flow diagrams
 - **docs/CLAUDE.md**: Claude-specific development context and workflow tips ONLY
 - **scripts/README.md**: Complete automation pipeline documentation, script usage, dependency requirements
@@ -54,7 +54,7 @@ Each document has a **single responsibility** to avoid duplication:
 - **Understanding the design** → docs/ARCHITECTURE.md  
 - **Script automation** → scripts/README.md
 - **Development with Claude** → docs/CLAUDE.md
-- **Font generation** → public/font-builder.html
+- **Font assets building** → public/font-assets-builder.html
 - **Testing** → public/test-renderer.html
 
 ## Documentation Maintenance

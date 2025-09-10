@@ -8,40 +8,40 @@
 
   ### Design Principles
 
-  1. **Pre-rendering**: All glyphs rendered once at generation time
+  1. **Pre-rendering**: All glyphs rendered once at font assets building time
   2. **Immutability**: Runtime uses read-only bitmap data
-  3. **Separation of Concerns**: Clear boundary between generation (Editor classes) and rendering (runtime classes)
+  3. **Separation of Concerns**: Clear boundary between font assets building (FAB classes) and rendering (runtime classes)
   4. **Hash Verification**: verification of rendering consistency
 
-  ### Architectural Rationale: Core/Editor Layering
+  ### Architectural Rationale: Core/FAB Layering
 
-  The system is architected with a **two-tier class hierarchy** where Editor classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
+  The system is architected with a **two-tier class hierarchy** where FAB classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
 
   **Distribution Strategy:**
   - **Runtime Distribution** (~15-20KB): Only core classes (BitmapText, BitmapGlyphStore, FontProperties) for measuring and drawing pre-generated fonts
-  - **Full Distribution** (~50KB+): Core + Editor classes for complete font generation and rendering capabilities
+  - **Full Distribution** (~50KB+): Core + FAB classes for complete font assets building and rendering capabilities
   - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
 
   **Benefits:**
   1. **Bundle Size Optimization**: End users importing only runtime classes get significantly smaller bundles
-  2. **Clear Separation of Concerns**: Build-time font generation vs runtime text rendering
-  3. **Deployment Flexibility**: Runtime-only distribution can be used in production without generation dependencies
-  4. **Development Efficiency**: Font generation can happen in development/build pipeline, not in user browsers
+  2. **Clear Separation of Concerns**: Build-time font assets building vs runtime text rendering
+  3. **Deployment Flexibility**: Runtime-only distribution can be used in production without font assets building dependencies
+  4. **Development Efficiency**: Font assets building can happen in development/build pipeline, not in user browsers
 
   **Implementation Pattern:**
   - **Core Classes**: Minimal, performance-optimized runtime functionality
-  - **Editor Classes**: Extend core classes with generation capabilities (validation, font building, metrics calculation)
-  - **Extraction Methods**: Editor instances can extract clean runtime instances (e.g., `extractBitmapGlyphStoreInstance()`)
+  - **FAB Classes**: Extend core classes with font assets building capabilities (validation, font building, metrics calculation)
+  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractBitmapGlyphStoreInstance()`)
 
-  This architecture allows developers to choose between a lightweight consumer library or a full font generation toolkit based on their needs.
+  This architecture allows developers to choose between a lightweight consumer library or a full font assets building toolkit based on their needs.
 
   ### Component Organization
 ```
   ┌─────────────────────────────────────────┐
-  │          Font Builder (Editor)          │
+  │       Font Assets Builder (FAB)      │
   │  ┌────────────────┐  ┌─────────────┐    │
   │  │ BitmapText     │  │ BitmapGlyph │    │
-  │  │ Editor         │  │ Store_Editor│    │
+  │  │ FAB            │  │ Store_FAB   │    │
   │  └────────────────┘  └─────────────┘    │
   │           │                 │           │
   │           ▼                 ▼           │
@@ -77,15 +77,15 @@
   - **Bundle Size**: ~15-20KB + font assets
   - **Use Case**: Production applications displaying bitmap text
 
-  **Font Generation Applications** (building font assets):
+  **Font Assets Building Applications**:
   - All Core Classes (above) +
-  - `BitmapTextEditor` - Extended glyph generation capabilities
-  - `BitmapGlyphStoreEditor` - Glyph sheet building and optimization
-  - `FontPropertiesEditor` - Validation and font configuration tools
-  - **Bundle Size**: ~50KB+ including generation tools
+  - `BitmapTextFAB` - Extended font assets building capabilities
+  - `BitmapGlyphStoreFAB` - Glyph sheet building and optimization
+  - `FontPropertiesFAB` - Validation and font configuration tools
+  - **Bundle Size**: ~50KB+ including font assets building tools
   - **Use Case**: Development tools, font builders, CI pipelines
 
-  **Key Pattern**: Editor classes extend Core classes and provide `extract*Instance()` methods to create clean runtime objects for distribution.
+  **Key Pattern**: FAB classes extend Core classes and provide `extract*Instance()` methods to create clean runtime objects for distribution.
 
   ### Core Classes (Runtime)
 
@@ -109,14 +109,14 @@
   - Methods:
     - `isValidGlyphSheet()`: Validates glyph sheet integrity
 
-  ### Editor Classes (Generation)
+  ### FAB Classes (Font Assets Building)
 
-  **BitmapTextEditor extends BitmapText**
-  - Additional capabilities for glyph generation
+  **BitmapTextFAB extends BitmapText**
+  - Additional capabilities for font assets building
   - Creates individual glyph canvases
   - Calculates precise bounding boxes
 
-  **BitmapGlyphStoreEditor extends BitmapGlyphStore**
+  **BitmapGlyphStoreFAB extends BitmapGlyphStore**
   - Builds glyph sheets from individual glyphs
   - Optimizes glyph packing
   - Generates minified metadata
@@ -141,14 +141,14 @@
   - Converts human-readable specs to data structures
 
   **HashStore**
-  - Hash generation for rendered output using djb2-style algorithm
+  - Hash computation for rendered output using djb2-style algorithm
   - Verification of pixel-identical consistency across browsers
   - Test infrastructure support with reference hash storage
   - Includes canvas dimensions in hash calculation for robustness
 
   ## Data Flow
 
-  ### Generation Phase
+  ### Font Assets Building Phase
 
   1. **Glyph Creation**
      Font Spec → Canvas Rendering → Tight Bounding Box → Individual Glyph
@@ -262,23 +262,23 @@
 
   - **Shared Resources**: Single temporary canvas reused for all color operations
   - **Lazy Loading**: Glyph sheets loaded on-demand when first accessed
-  - **Automatic Cleanup**: Generation-time data structures cleared after font building
+  - **Automatic Cleanup**: Font assets building-time data structures cleared after font building
   - **Canvas Reuse**: BitmapText instances reuse coloredGlyphCanvas for all glyphs
   - **Integer Coordinates**: All positions rounded to prevent floating-point accumulation
   - **Minimal DOM**: Only necessary canvases attached to document during rendering
 
   ## Performance Optimizations
 
-  1. **Pre-computed Metrics**: All measurements calculated at generation time
+  1. **Pre-computed Metrics**: All measurements calculated at font assets building time
   2. **Batch Rendering**: Multiple glyphs drawn from single sheet
   3. **Integer Coordinates**: Rounding for pixel alignment
   4. **Minimal DOM Operations**: Reuses canvases
 
   ## Sequence Diagrams
 
-  ### Glyph Generation Workflow
+  ### Font Assets Building Workflow
   ```
-  User → public/font-builder.html → BitmapTextEditor → BitmapGlyphStoreEditor
+  User → public/font-assets-builder.html → BitmapTextFAB → BitmapGlyphStoreFAB
     1. Load font specifications (src/specs/default-specs.js)
     2. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     3. Create individual glyph canvases
@@ -304,7 +304,7 @@
   ## Extension Points
 
   ### Custom Glyph Sources
-  Override `src/editor/BitmapGlyphStoreEditor.createCanvasesAndLetterTextMetrics()`
+  Override `src/font-assets-builder-FAB/BitmapGlyphStoreFAB.createCanvasesAndLetterTextMetrics()`
 
   ### Custom Kerning Rules
   Extend `Specs` class or modify specs DSL
@@ -314,7 +314,7 @@
 
   ## Object-Oriented Design Patterns
 
-  - **Template Method**: Editor classes extend base with hooks
+  - **Template Method**: FAB classes extend base with hooks
   - **Strategy**: Pluggable specs and kerning algorithms
   - **Facade**: BitmapText provides simple API over complex internals
   - **Repository**: BitmapGlyphStore manages data access

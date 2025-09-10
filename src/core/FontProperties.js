@@ -5,7 +5,7 @@
 //
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications
-// - Extended by FontPropertiesEditor for validation and generation utilities  
+// - Extended by FontPropertiesFAB for validation and font assets building utilities  
 // - Contains no validation code to minimize runtime overhead
 // - Optimized for performance with pre-computed keys and immutability
 //
@@ -15,7 +15,7 @@
 // - Provides factory methods for creating instances from various inputs
 // - Properties in fixed order: pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 //
-// For validation and font generation utilities, use FontPropertiesEditor.
+// For validation and font assets building utilities, use FontPropertiesFAB.
 class FontProperties {
   constructor(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize) {
     // Direct assignment, no validation in core for performance

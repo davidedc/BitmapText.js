@@ -42,14 +42,14 @@ function getFontPropertiesFromUI() {
 
 // UI wrapper for kerning table building - ensures kerning table exists for current font
 function ensureKerningTable() {
-    // Guard against missing Editor class in text-render-tests.html
-    if (typeof bitmapText_Editor === 'undefined') {
+    // Guard against missing FAB class in text-render-tests.html
+    if (typeof bitmapText_FAB === 'undefined') {
         return;
     }
     
     // Get current font properties and build kerning table if needed
     const properties = getFontPropertiesFromUI();
-    bitmapText_Editor.buildKerningTableIfDoesntExist(properties);
+    bitmapText_FAB.buildKerningTableIfDoesntExist(properties);
 }
 
 // Helper function to create and append elements

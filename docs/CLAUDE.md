@@ -12,18 +12,18 @@
   ## Project Structure at a Glance
 
   - **Core runtime**: src/core/BitmapText.js, src/core/BitmapGlyphStore.js, src/core/FontProperties.js
-  - **Generation tools**: src/editor/*Editor.js files (includes FontPropertiesEditor.js)
+  - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
   - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js, src/utils/manifest-loader.js
   - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-glyph-sheets.sh, optimize-images.sh, png-to-js-converter.js)
-  - **Entry points**: public/font-builder.html (generation), public/test-renderer.html (testing)
+  - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
   - **Examples**: examples/node/dist/ (Built Node.js demo bundles), src/node/ (demo source code)
 
   ## Key Development Workflows
 
   ### Adding New Font Support
   1. Modify specs in src/specs/default-specs.js for kerning rules
-  2. Use public/font-builder.html to generate sheets
+  2. Use public/font-assets-builder.html to generate sheets
   3. Use automated pipeline: `./scripts/watch-glyph-sheets.sh` for processing
   4. Test with public/test-renderer.html
 
@@ -35,7 +35,7 @@
 
   ### Performance Testing
   Look for src/utils/timing.js calls throughout - they measure:
-  - Glyph generation time
+  - Font assets building time
   - Sheet building time
   - Runtime rendering speed
 
@@ -58,7 +58,7 @@
   ## Where to Find Things
 
   - **Font configuration**: src/core/FontProperties.js (immutable font config class)
-  - **Font editing utilities**: src/editor/FontPropertiesEditor.js (extends FontProperties)
+  - **Font assets building utilities**: src/font-assets-builder-FAB/FontPropertiesFAB.js (extends FontProperties)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1

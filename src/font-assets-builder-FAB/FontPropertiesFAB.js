@@ -1,7 +1,7 @@
-// FontPropertiesEditor class for editor/generation use
+// FontPropertiesFAB class for font assets building
 // Extends FontProperties with validation and utility methods
 // Properties always in order: pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
-class FontPropertiesEditor extends FontProperties {
+class FontPropertiesFAB extends FontProperties {
   // Valid values for validation
   static VALID_STYLES = ['normal', 'italic', 'oblique'];
   static VALID_WEIGHTS = ['normal', 'bold', 'bolder', 'lighter', 
@@ -9,7 +9,7 @@ class FontPropertiesEditor extends FontProperties {
   
   constructor(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize) {
     // Validate all parameters before calling super
-    FontPropertiesEditor.#validate(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
+    FontPropertiesFAB.#validate(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
     super(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
   }
   
@@ -21,11 +21,11 @@ class FontPropertiesEditor extends FontProperties {
     if (!fontFamily || typeof fontFamily !== 'string') {
       throw new Error(`Invalid fontFamily: ${fontFamily} - must be non-empty string`);
     }
-    if (!FontPropertiesEditor.VALID_STYLES.includes(fontStyle)) {
-      throw new Error(`Invalid fontStyle: ${fontStyle} - must be one of: ${FontPropertiesEditor.VALID_STYLES.join(', ')}`);
+    if (!FontPropertiesFAB.VALID_STYLES.includes(fontStyle)) {
+      throw new Error(`Invalid fontStyle: ${fontStyle} - must be one of: ${FontPropertiesFAB.VALID_STYLES.join(', ')}`);
     }
-    if (!FontPropertiesEditor.VALID_WEIGHTS.includes(fontWeight)) {
-      throw new Error(`Invalid fontWeight: ${fontWeight} - must be one of: ${FontPropertiesEditor.VALID_WEIGHTS.join(', ')}`);
+    if (!FontPropertiesFAB.VALID_WEIGHTS.includes(fontWeight)) {
+      throw new Error(`Invalid fontWeight: ${fontWeight} - must be one of: ${FontPropertiesFAB.VALID_WEIGHTS.join(', ')}`);
     }
     if (!fontSize || fontSize <= 0) {
       throw new Error(`Invalid fontSize: ${fontSize} - must be positive number`);
@@ -34,7 +34,7 @@ class FontPropertiesEditor extends FontProperties {
   
   // Factory method from plain object (common in UI and loading)
   static fromObject(obj) {
-    return new FontPropertiesEditor(
+    return new FontPropertiesFAB(
       obj.pixelDensity || 1,
       obj.fontFamily,
       obj.fontStyle || 'normal',
@@ -52,7 +52,7 @@ class FontPropertiesEditor extends FontProperties {
     }
     
     // Parse pixelDensity from parts[1] and parts[2] (e.g., "1-0" → 1, "1-5" → 1.5)
-    const pixelDensity = FontPropertiesEditor.#parseNumber(parts[1], parts[2]);
+    const pixelDensity = FontPropertiesFAB.#parseNumber(parts[1], parts[2]);
     let fontFamilyIndex = 3; // Always at index 3 since pixelDensity is always formatted as n-n
     
     // Find style, weight, size positions
@@ -72,12 +72,12 @@ class FontPropertiesEditor extends FontProperties {
     const fontSizeParts = parts.slice(sizeIndex);
     let fontSize;
     if (fontSizeParts.length >= 2 && !isNaN(fontSizeParts[1])) {
-      fontSize = FontPropertiesEditor.#parseNumber(fontSizeParts[0], fontSizeParts[1]);
+      fontSize = FontPropertiesFAB.#parseNumber(fontSizeParts[0], fontSizeParts[1]);
     } else {
       fontSize = parseFloat(fontSizeParts[0]);
     }
     
-    return new FontPropertiesEditor(
+    return new FontPropertiesFAB(
       pixelDensity,
       fontFamily,
       fontStyle,
@@ -96,7 +96,7 @@ class FontPropertiesEditor extends FontProperties {
   
   // Create new instance with different size
   withSize(newSize) {
-    return new FontPropertiesEditor(
+    return new FontPropertiesFAB(
       this.pixelDensity,
       this.fontFamily,
       this.fontStyle,
@@ -107,7 +107,7 @@ class FontPropertiesEditor extends FontProperties {
   
   // Create new instance with different pixel density
   withPixelDensity(newDensity) {
-    return new FontPropertiesEditor(
+    return new FontPropertiesFAB(
       newDensity,
       this.fontFamily,
       this.fontStyle,

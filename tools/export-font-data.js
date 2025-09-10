@@ -1,18 +1,18 @@
 function downloadGlyphSheetsAndKerningMaps(options) {
   const {
-      bitmapGlyphStore_Editor,
+      bitmapGlyphStore_FAB,
       pixelDensity,
       fontFamily,
       fontStyle, 
       fontWeight
   } = options;
   
-  // Create FontPropertiesEditor for this font configuration (without fontSize yet)
+  // Create FontPropertiesFAB for this font configuration (without fontSize yet)
   // We'll create specific instances for each size below
 
   const zip = new JSZip();
   const folder = zip.folder("glyphSheets");
-  const bitmapGlyphStore = bitmapGlyphStore_Editor.extractBitmapGlyphStoreInstance();
+  const bitmapGlyphStore = bitmapGlyphStore_FAB.extractBitmapGlyphStoreInstance();
   
   // Find all available sizes by examining Map keys
   // as glyphSheets is a Map with FontProperties.key as keys
@@ -30,8 +30,8 @@ function downloadGlyphSheetsAndKerningMaps(options) {
   const IDs = [];
 
   sizes.forEach(size => {
-      // Create FontPropertiesEditor for this specific size
-      const fontProperties = new FontPropertiesEditor(pixelDensity, fontFamily, fontStyle, fontWeight, size);
+      // Create FontPropertiesFAB for this specific size
+      const fontProperties = new FontPropertiesFAB(pixelDensity, fontFamily, fontStyle, fontWeight, size);
       
       // Get canvas from Map-based storage
       const canvas = bitmapGlyphStore.glyphSheets.get(fontProperties.key);
@@ -55,7 +55,7 @@ function downloadGlyphSheetsAndKerningMaps(options) {
       const qoiUint8Array = new Uint8Array(qoiBuffer);
       const qoiBase64 = btoa(String.fromCharCode(...qoiUint8Array));
 
-      // Use pre-computed ID string from FontPropertiesEditor
+      // Use pre-computed ID string from FontPropertiesFAB
       const IDString = fontProperties.idString;
       IDs.push(IDString);
 

@@ -1,9 +1,9 @@
-// Class to store all the BitmapGlyph_Editor objects
+// Class to store all the BitmapGlyph_FAB objects
 // so that we can retrieve them by font family, font size and letter
-class BitmapGlyphStore_Editor extends BitmapGlyphStore {
+class BitmapGlyphStore_FAB extends BitmapGlyphStore {
   constructor() {
     super();
-    // Editor-specific glyph storage using Map for O(1) lookups
+    // FAB-specific glyph storage using Map for O(1) lookups
     // Key format: fontProperties.key + ":" + letter
     this.glyphs = new Map();
   }

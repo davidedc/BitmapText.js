@@ -5,7 +5,7 @@
 //
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications  
-// - Extended by BitmapGlyphStoreEditor for font generation and building
+// - Extended by BitmapGlyphStoreFAB for font assets building and generation
 // - Contains only data structures and accessors needed at runtime
 // - No font generation, validation, or optimization code
 //
@@ -15,7 +15,7 @@
 // - Provides the minimal data interface needed by BitmapText for rendering
 // - Optimized for fast access patterns during text drawing
 //
-// For font generation and building capabilities, use BitmapGlyphStoreEditor.
+// For font assets building and generation capabilities, use BitmapGlyphStoreFAB.
 class BitmapGlyphStore {
   constructor() {
     // Keys are FontProperties.key strings for O(1) lookup

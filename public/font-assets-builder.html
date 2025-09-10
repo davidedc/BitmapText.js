@@ -45,15 +45,15 @@
 </script>
 
 <script src="../src/core/FontProperties.js"></script>
-<script src="../src/editor/FontPropertiesEditor.js"></script>
+<script src="../src/font-assets-builder-FAB/FontPropertiesFAB.js"></script>
 <script src="../src/utils/HashStore.js"></script>
 <script src="../test/data/reference-hashes.js"></script>
 <script src="../src/utils/canvas-extensions.js"></script>
-<script src="../src/editor/BitmapGlyphEditor.js"></script>
+<script src="../src/font-assets-builder-FAB/BitmapGlyphFAB.js"></script>
 <script src="../src/core/BitmapGlyphStore.js"></script>
-<script src="../src/editor/BitmapGlyphStoreEditor.js"></script>
+<script src="../src/font-assets-builder-FAB/BitmapGlyphStoreFAB.js"></script>
 <script src="../src/core/BitmapText.js"></script>
-<script src="../src/editor/BitmapTextEditor.js"></script>
+<script src="../src/font-assets-builder-FAB/BitmapTextFAB.js"></script>
 <script src="../src/specs/SpecsParser.js"></script>
 <script src="../src/specs/Specs.js"></script>
 <script src="../src/specs/default-specs.js"></script>
@@ -70,7 +70,7 @@
 <script src="../src/ui/components/font-weight-dropdown.js"></script>
 <script src="../src/ui/components/size-buttons.js"></script>
 <script src="../src/ui/base-ui.js"></script>
-<script src="../src/ui/editor-ui.js"></script>
+<script src="../src/ui/font-assets-builder-ui.js"></script>
 <script src="../tools/export-font-data.js"></script>
 <script src="../src/minification/MetricsMinifier.js"></script>
 <!-- needed to test the roundtrip minification + expansion works -->
@@ -78,8 +78,8 @@
 <script src="../src/utils/deep-equal.js"></script>
 
 <script >
-  const bitmapGlyphStore_Editor = new BitmapGlyphStore_Editor();
-  const bitmapText_Editor = new BitmapText_Editor(bitmapGlyphStore_Editor);
+  const bitmapGlyphStore_FAB = new BitmapGlyphStore_FAB();
+  const bitmapText_FAB = new BitmapText_FAB(bitmapGlyphStore_FAB);
     
   updatePageContent();
 </script>

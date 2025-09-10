@@ -6,7 +6,7 @@
   "exports": {
     ".": "./src/core/BitmapText.js",
     "./core/*": "./src/core/*",
-    "./editor/*": "./src/editor/*",
+    "./font-assets-builder-FAB/*": "./src/font-assets-builder-FAB/*",
     "./utils/*": "./src/utils/*",
     "./runtime": {
       "import": "./src/core/BitmapText.js",
@@ -15,9 +15,9 @@
     "./core/BitmapText": "./src/core/BitmapText.js",
     "./core/BitmapGlyphStore": "./src/core/BitmapGlyphStore.js",
     "./core/FontProperties": "./src/core/FontProperties.js",
-    "./editor/BitmapTextEditor": "./src/editor/BitmapTextEditor.js",
-    "./editor/BitmapGlyphStoreEditor": "./src/editor/BitmapGlyphStoreEditor.js",
-    "./editor/FontPropertiesEditor": "./src/editor/FontPropertiesEditor.js"
+    "./font-assets-builder-FAB/BitmapTextFAB": "./src/font-assets-builder-FAB/BitmapTextFAB.js",
+    "./font-assets-builder-FAB/BitmapGlyphStoreFAB": "./src/font-assets-builder-FAB/BitmapGlyphStoreFAB.js",
+    "./font-assets-builder-FAB/FontPropertiesFAB": "./src/font-assets-builder-FAB/FontPropertiesFAB.js"
   },
   "directories": {
     "lib": "lib",
@@ -26,7 +26,7 @@
   },
   "scripts": {
     "serve": "python -m http.server 8000",
-    "font-builder": "open http://localhost:8000/public/font-builder.html",
+    "font-assets-builder": "open http://localhost:8000/public/font-assets-builder.html",
     "test-renderer": "open http://localhost:8000/public/test-renderer.html",
     "watch-fonts": "./scripts/watch-glyph-sheets.sh",
     "optimize-images": "./scripts/optimize-images.sh",

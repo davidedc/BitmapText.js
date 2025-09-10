@@ -42,18 +42,18 @@
 
   **Best for:** Production web apps, mobile apps, games where bundle size matters
 
-  ### Full Distribution (For Font Generation)
+  ### Full Distribution (For Font Assets Building)
   
   For applications that need to generate bitmap fonts at runtime:
 
   ```javascript
-  // Import full toolkit including generation tools (~50KB+)
+  // Import full toolkit including font assets building tools (~50KB+)
   import { BitmapText } from './src/core/BitmapText.js';
   import { BitmapGlyphStore } from './src/core/BitmapGlyphStore.js';
   import { FontProperties } from './src/core/FontProperties.js';
-  import { BitmapTextEditor } from './src/editor/BitmapTextEditor.js';
-  import { BitmapGlyphStoreEditor } from './src/editor/BitmapGlyphStoreEditor.js';
-  import { FontPropertiesEditor } from './src/editor/FontPropertiesEditor.js';
+  import { BitmapTextFAB } from './src/font-assets-builder-FAB/BitmapTextFAB.js';
+  import { BitmapGlyphStoreFAB } from './src/font-assets-builder-FAB/BitmapGlyphStoreFAB.js';
+  import { FontPropertiesFAB } from './src/font-assets-builder-FAB/FontPropertiesFAB.js';
   ```
 
   **Best for:** Font building tools, development environments, CI/CD pipelines
@@ -65,7 +65,7 @@
   | **Runtime-Only** | ~15-20KB | Production apps consuming pre-built fonts |
   | **Full Toolkit** | ~50KB+ | Development tools generating fonts |
   
-  **Recommendation:** Use runtime-only distribution in production and generate fonts during your build process using the full toolkit.
+  **Recommendation:** Use runtime-only distribution in production and build font assets during your build process using the full toolkit.
 
   ## Quick Start
 
@@ -107,10 +107,10 @@
   # or
   ./scripts/watch-glyph-sheets.sh
   ```
-  Then use the font-builder.html - files will be processed automatically!
+  Then use the font-assets-builder.html - files will be processed automatically!
 
   ### Manual Process
-  1. Open public/font-builder.html in a web browser
+  1. Open public/font-assets-builder.html in a web browser
   2. Select font family, style, weight, and size range
   3. Click "Download Glyph Sheets" to generate QOI bitmap font data
   4. Manually process files (see scripts/README.md for details)
@@ -240,7 +240,7 @@
   npx http-server
 
   # Open in browser
-  http://localhost:8000/public/font-builder.html
+  http://localhost:8000/public/font-assets-builder.html
 
   Building Font Data
 
@@ -321,7 +321,7 @@
   /
   ├── src/               # Source code
   │   ├── core/          # Runtime library classes
-  │   ├── editor/        # Font generation classes
+  │   ├── font-assets-builder-FAB/        # Font assets building classes
   │   ├── utils/         # Utility functions
   │   ├── ui/            # UI components
   │   ├── specs/         # Font specifications

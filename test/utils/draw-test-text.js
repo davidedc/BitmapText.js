@@ -82,7 +82,7 @@ function getTestCopyChoiceAndText() {
   return { testCopy: '', testCopyChoiceNumber: 0 };
 }
 
-function drawTestText(fontProperties, bitmapGlyphStore_Editor) {
+function drawTestText(fontProperties, bitmapGlyphStore_FAB) {
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
   const fontString = getFontString(fontProperties);
@@ -115,15 +115,15 @@ function drawTestText(fontProperties, bitmapGlyphStore_Editor) {
   console.log(`crispTestCopyMeasures_CSS_Px.width: ${crispMeasures.width}`);
   console.log(`crispTestCopyMeasures_CSS_Px.height: ${crispMeasures.height}`);
 
-  // Measurements with BitmapText_Editor
-  // now do the measurements, generation of glyph sheet and rendering of text with the BitmapText_Editor class
+  // Measurements with BitmapText_FAB
+  // now do the measurements, font assets building of glyph sheet and rendering of text with the BitmapText_FAB class
   // note how this one doesn't need a canvas
-  const measureTextCrispBitmap_Editor = text => bitmapText_Editor.measureText(text, fontProperties);
-  const linesMeasures_CSS_Px_Editor = measureMultilineText(testCopyLines, measureTextCrispBitmap_Editor);
+  const measureTextCrispBitmap_FAB = text => bitmapText_FAB.measureText(text, fontProperties);
+  const linesMeasures_CSS_Px_FAB = measureMultilineText(testCopyLines, measureTextCrispBitmap_FAB);
   // generating the glyph sheet with the full class is necessary to then being able to draw the text with the "normal" class
-  buildAndDisplayGlyphSheet(bitmapGlyphStore_Editor, fontProperties);
+  buildAndDisplayGlyphSheet(bitmapGlyphStore_FAB, fontProperties);
   // note that this one doesn't use the glyph sheet, it uses the canvas stored in each glyph
-  drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_Editor, testCopyLines, bitmapText_Editor, fontProperties, testCopyChoiceNumber);
+  drawTestText_withIndividualGlyphsNotFromGlyphSheet(linesMeasures_CSS_Px_FAB, testCopyLines, bitmapText_FAB, fontProperties, testCopyChoiceNumber);
 }
 
 function drawTestText_withStandardClass(originalFontProperties, bitmapGlyphStore) {
