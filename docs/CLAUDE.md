@@ -15,7 +15,7 @@
   - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
   - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js, src/utils/manifest-loader.js
   - **Font data**: font-assets/
-  - **Automation scripts**: scripts/ (watch-glyph-sheets.sh, optimize-images.sh, png-to-js-converter.js)
+  - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
   - **Examples**: examples/node/dist/ (Built Node.js demo bundles), src/node/ (demo source code)
 
@@ -24,7 +24,7 @@
   ### Adding New Font Support
   1. Modify specs in src/specs/default-specs.js for kerning rules
   2. Use public/font-assets-builder.html to generate sheets
-  3. Use automated pipeline: `./scripts/watch-glyph-sheets.sh` for processing
+  3. Use automated pipeline: `./scripts/watch-font-assets.sh` for processing
   4. Test with public/test-renderer.html
 
   ### Debugging Rendering Issues

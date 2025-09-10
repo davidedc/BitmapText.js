@@ -5,14 +5,14 @@ function setupGlyphUI_FAB() {
     copyToClipboardButton.addEventListener('click', () => hashStore.copyHashesToClipboard());
 
 
-    // button to download all the png glyph sheets
-    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download glyph sheets & kerning maps', selectorsDiv);
+    // button to download all the font assets
+    const downloadAllSheetsButton = createElement('button', 'download-all-sheets-button', 'Download font assets', selectorsDiv);
     downloadAllSheetsButton.addEventListener('click', function() {
         const pixelDensity = document.getElementById('pixel-density-2-radio-button').checked ? 2 : 1;
         
-        // Pass individual properties to downloadGlyphSheetsAndKerningMaps
+        // Pass individual properties to downloadFontAssets
         // (The function will create FontPropertiesFAB instances internally for each size)
-        downloadGlyphSheetsAndKerningMaps({
+        downloadFontAssets({
             bitmapGlyphStore_FAB,
             pixelDensity,
             fontFamily: fontFamilySelect.value,

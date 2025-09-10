@@ -6,13 +6,13 @@
 
 1. **Start the monitoring script** (from project root):
    ```bash
-   ./scripts/watch-glyph-sheets.sh
+   ./scripts/watch-font-assets.sh
    ```
 
 2. **Build font assets** using the font assets builder:
    - Open `public/font-assets-builder.html` in your browser
    - Configure your font settings
-   - Click "Download Glyph Sheets"
+   - Click "Download Font Assets"
    - The zip file will be automatically processed!
 
 3. **Stop monitoring**: Press `Ctrl+C`
@@ -47,7 +47,7 @@ brew install trash         # Safe file deletion
 
 ### 1. Main Monitoring Script
 ```bash
-./scripts/watch-glyph-sheets.sh [options]
+./scripts/watch-font-assets.sh [options]
 ```
 
 **Options:**
@@ -57,9 +57,9 @@ brew install trash         # Safe file deletion
 
 **Examples:**
 ```bash
-./scripts/watch-glyph-sheets.sh                    # Default: remove backups
-./scripts/watch-glyph-sheets.sh --preserve-originals    # Keep .orig.png files
-./scripts/watch-glyph-sheets.sh --no-preserve-originals # Explicitly remove backups
+./scripts/watch-font-assets.sh                    # Default: remove backups
+./scripts/watch-font-assets.sh --preserve-originals    # Keep .orig.png files
+./scripts/watch-font-assets.sh --no-preserve-originals # Explicitly remove backups
 ```
 
 **What it does:**
@@ -164,7 +164,7 @@ npm run qoi-memory                                       # Using npm script
 
 ```
 scripts/
-├── watch-glyph-sheets.sh     # Main monitoring script
+├── watch-font-assets.sh     # Main monitoring script
 ├── optimize-images.sh        # PNG compression
 ├── png-to-js-converter.js    # PNG → JS wrapper conversion
 ├── qoi-memory-calculator.js  # QOI memory usage analyzer
@@ -219,13 +219,13 @@ brew install node
 
 **Files not in expected location**
 - Check that extraction worked correctly
-- Look for `glyphSheets/` subdirectory in `font-assets/`
+- Look for `fontAssets/` subdirectory in `font-assets/`
 - Script should automatically move files to root
 
 **Script keeps running/won't stop**
 ```bash
 # Kill all related processes
-pkill -f "watch-glyph-sheets"
+pkill -f "watch-font-assets"
 pkill -f "fswatch"
 ```
 
@@ -253,7 +253,7 @@ Test the pipeline without monitoring:
 
 ## 🎯 Tips & Best Practices
 
-1. **Always run from project root**: `./scripts/watch-glyph-sheets.sh`
+1. **Always run from project root**: `./scripts/watch-font-assets.sh`
 2. **Check logs**: Scripts provide detailed feedback
 3. **Backup safety**: Automatic backups are created before processing
 4. **Browser compatibility**: JS wrappers solve CORS issues for file:// protocol

@@ -105,14 +105,14 @@
   ```bash
   npm run watch-fonts
   # or
-  ./scripts/watch-glyph-sheets.sh
+  ./scripts/watch-font-assets.sh
   ```
   Then use the font-assets-builder.html - files will be processed automatically!
 
   ### Manual Process
   1. Open public/font-assets-builder.html in a web browser
   2. Select font family, style, weight, and size range
-  3. Click "Download Glyph Sheets" to generate QOI bitmap font data
+  3. Click "Download Font Assets" to generate QOI bitmap font data
   4. Manually process files (see scripts/README.md for details)
   5. Include generated files in your project
 

@@ -31,7 +31,7 @@ function log() {
 
 function test_pipeline() {
     local downloads_dir="$HOME/Downloads"
-    local glyph_sheets_file="$downloads_dir/glyphSheets.zip"
+    local font_assets_file="$downloads_dir/fontAssets.zip"
     
     log "INFO" "=== Testing Font Data Pipeline ==="
     log "INFO" "Project root: $PROJECT_ROOT"
@@ -42,14 +42,14 @@ function test_pipeline() {
         exit 1
     }
     
-    # Check if glyphSheets.zip exists
-    if [ ! -f "$glyph_sheets_file" ]; then
-        log "ERROR" "glyphSheets.zip not found in Downloads. Please generate one first."
+    # Check if fontAssets.zip exists
+    if [ ! -f "$font_assets_file" ]; then
+        log "ERROR" "fontAssets.zip not found in Downloads. Please generate one first."
         exit 1
     fi
     
     # Source the main script functions (but don't run main)
-    source "$SCRIPT_DIR/watch-glyph-sheets.sh"
+    source "$SCRIPT_DIR/watch-font-assets.sh"
     
     # Test the pipeline once
     log "INFO" "Testing processing pipeline..."

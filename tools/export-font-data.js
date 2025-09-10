@@ -1,4 +1,4 @@
-function downloadGlyphSheetsAndKerningMaps(options) {
+function downloadFontAssets(options) {
   const {
       bitmapGlyphStore_FAB,
       pixelDensity,
@@ -11,7 +11,7 @@ function downloadGlyphSheetsAndKerningMaps(options) {
   // We'll create specific instances for each size below
 
   const zip = new JSZip();
-  const folder = zip.folder("glyphSheets");
+  const folder = zip.folder("fontAssets");
   const bitmapGlyphStore = bitmapGlyphStore_FAB.extractBitmapGlyphStoreInstance();
   
   // Find all available sizes by examining Map keys
@@ -173,5 +173,5 @@ function downloadGlyphSheetsAndKerningMaps(options) {
 
   // Generate and download zip file
   return zip.generateAsync({ type: "blob" })
-      .then(content => saveAs(content, "glyphSheets.zip"));
+      .then(content => saveAs(content, "fontAssets.zip"));
 }

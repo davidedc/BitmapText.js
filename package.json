@@ -28,7 +28,7 @@
     "serve": "python -m http.server 8000",
     "font-assets-builder": "open http://localhost:8000/public/font-assets-builder.html",
     "test-renderer": "open http://localhost:8000/public/test-renderer.html",
-    "watch-fonts": "./scripts/watch-glyph-sheets.sh",
+    "watch-fonts": "./scripts/watch-font-assets.sh",
     "optimize-images": "./scripts/optimize-images.sh",
     "qoi-to-png": "node scripts/qoi-to-png-converter.js",
     "png-to-js": "node scripts/png-to-js-converter.js",
