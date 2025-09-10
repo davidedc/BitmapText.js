@@ -1,5 +1,21 @@
-// A class to store all the glyph sheets and kerning tables
-// and the minimal set of info necessary to draw text.
+// BitmapGlyphStore - Core Runtime Class
+//
+// This is a CORE RUNTIME class designed for minimal bundle size (~5-8KB).
+// It provides essential glyph data storage and retrieval for text rendering.
+//
+// DISTRIBUTION ROLE:
+// - Part of "runtime-only" distribution for production applications  
+// - Extended by BitmapGlyphStoreEditor for font generation and building
+// - Contains only data structures and accessors needed at runtime
+// - No font generation, validation, or optimization code
+//
+// ARCHITECTURE:
+// - Stores pre-rendered glyph sheets, metrics, and kerning data
+// - Uses Map-based storage for O(1) glyph lookups by font properties
+// - Provides the minimal data interface needed by BitmapText for rendering
+// - Optimized for fast access patterns during text drawing
+//
+// For font generation and building capabilities, use BitmapGlyphStoreEditor.
 class BitmapGlyphStore {
   constructor() {
     // Keys are FontProperties.key strings for O(1) lookup

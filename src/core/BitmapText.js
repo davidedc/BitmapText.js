@@ -1,9 +1,20 @@
-// a class constructed with a BitmapGlyphStore
-// has a method to draw text on a canvas
-// the text is drawn by looking up the glyphs in the BitmapGlyphStore
-// and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
-// the text is drawn with x, y positioning equivalent to textBaseline='bottom'
-// where x is the left edge of the first glyph and y is the bottom of the text bounding box (lowest point any character reaches)
+// BitmapText - Core Runtime Class
+// 
+// This is a CORE RUNTIME class designed for minimal bundle size (~5-7KB).
+// It provides essential text rendering capabilities for consuming pre-built bitmap fonts.
+// 
+// DISTRIBUTION ROLE:
+// - Part of "runtime-only" distribution for production applications
+// - Extended by BitmapTextEditor for font generation capabilities
+// - Contains no font generation code to keep bundle size minimal
+// 
+// ARCHITECTURE:
+// - Constructed with a BitmapGlyphStore containing pre-rendered glyph data
+// - Draws text by looking up glyphs and positioning them with kerning
+// - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
+// - Supports placeholder rectangles when glyph sheets are missing
+//
+// For font generation capabilities, use BitmapTextEditor which extends this class.
 class BitmapText {
   constructor(glyphStore, canvasFactory) {
     this.glyphStore = glyphStore;

@@ -1,6 +1,21 @@
-// Core FontProperties class for runtime use
-// Optimized for performance - no validation, pre-computed keys
-// Properties always in order: pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+// FontProperties - Core Runtime Class  
+//
+// This is a CORE RUNTIME class designed for minimal bundle size (~2-3KB).
+// It provides essential font configuration management with maximum performance.
+//
+// DISTRIBUTION ROLE:
+// - Part of "runtime-only" distribution for production applications
+// - Extended by FontPropertiesEditor for validation and generation utilities  
+// - Contains no validation code to minimize runtime overhead
+// - Optimized for performance with pre-computed keys and immutability
+//
+// ARCHITECTURE:
+// - Immutable font configuration object safe to use as Map keys
+// - Pre-computes storage keys and ID strings for optimal lookup performance
+// - Provides factory methods for creating instances from various inputs
+// - Properties in fixed order: pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+//
+// For validation and font generation utilities, use FontPropertiesEditor.
 class FontProperties {
   constructor(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize) {
     // Direct assignment, no validation in core for performance

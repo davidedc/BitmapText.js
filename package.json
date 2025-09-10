@@ -3,6 +3,22 @@
   "version": "1.0.0",
   "description": "A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.",
   "main": "src/core/BitmapText.js",
+  "exports": {
+    ".": "./src/core/BitmapText.js",
+    "./core/*": "./src/core/*",
+    "./editor/*": "./src/editor/*",
+    "./utils/*": "./src/utils/*",
+    "./runtime": {
+      "import": "./src/core/BitmapText.js",
+      "require": "./src/core/BitmapText.js"
+    },
+    "./core/BitmapText": "./src/core/BitmapText.js",
+    "./core/BitmapGlyphStore": "./src/core/BitmapGlyphStore.js",
+    "./core/FontProperties": "./src/core/FontProperties.js",
+    "./editor/BitmapTextEditor": "./src/editor/BitmapTextEditor.js",
+    "./editor/BitmapGlyphStoreEditor": "./src/editor/BitmapGlyphStoreEditor.js",
+    "./editor/FontPropertiesEditor": "./src/editor/FontPropertiesEditor.js"
+  },
   "directories": {
     "lib": "lib",
     "test": "test",

@@ -13,6 +13,28 @@
   3. **Separation of Concerns**: Clear boundary between generation (Editor classes) and rendering (runtime classes)
   4. **Hash Verification**: verification of rendering consistency
 
+  ### Architectural Rationale: Core/Editor Layering
+
+  The system is architected with a **two-tier class hierarchy** where Editor classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
+
+  **Distribution Strategy:**
+  - **Runtime Distribution** (~15-20KB): Only core classes (BitmapText, BitmapGlyphStore, FontProperties) for measuring and drawing pre-generated fonts
+  - **Full Distribution** (~50KB+): Core + Editor classes for complete font generation and rendering capabilities
+  - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
+
+  **Benefits:**
+  1. **Bundle Size Optimization**: End users importing only runtime classes get significantly smaller bundles
+  2. **Clear Separation of Concerns**: Build-time font generation vs runtime text rendering
+  3. **Deployment Flexibility**: Runtime-only distribution can be used in production without generation dependencies
+  4. **Development Efficiency**: Font generation can happen in development/build pipeline, not in user browsers
+
+  **Implementation Pattern:**
+  - **Core Classes**: Minimal, performance-optimized runtime functionality
+  - **Editor Classes**: Extend core classes with generation capabilities (validation, font building, metrics calculation)
+  - **Extraction Methods**: Editor instances can extract clean runtime instances (e.g., `extractBitmapGlyphStoreInstance()`)
+
+  This architecture allows developers to choose between a lightweight consumer library or a full font generation toolkit based on their needs.
+
   ### Component Organization
 ```
   ┌─────────────────────────────────────────┐
@@ -45,6 +67,25 @@
 ```
 
   ## Class Hierarchy
+
+  **Distribution Requirements by Use Case:**
+
+  **Runtime-Only Applications** (consuming pre-built fonts):
+  - `BitmapText` - Text rendering and measurement
+  - `BitmapGlyphStore` - Glyph data storage and retrieval
+  - `FontProperties` - Font configuration management
+  - **Bundle Size**: ~15-20KB + font assets
+  - **Use Case**: Production applications displaying bitmap text
+
+  **Font Generation Applications** (building font assets):
+  - All Core Classes (above) +
+  - `BitmapTextEditor` - Extended glyph generation capabilities
+  - `BitmapGlyphStoreEditor` - Glyph sheet building and optimization
+  - `FontPropertiesEditor` - Validation and font configuration tools
+  - **Bundle Size**: ~50KB+ including generation tools
+  - **Use Case**: Development tools, font builders, CI pipelines
+
+  **Key Pattern**: Editor classes extend Core classes and provide `extract*Instance()` methods to create clean runtime objects for distribution.
 
   ### Core Classes (Runtime)
 
