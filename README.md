@@ -124,7 +124,7 @@
 
   Constructor
 
-  new BitmapText(glyphStore)
+  new BitmapText(atlasStore)
 
   Methods
 
