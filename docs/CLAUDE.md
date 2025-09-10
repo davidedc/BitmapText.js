@@ -23,7 +23,7 @@
 
   ### Adding New Font Support
   1. Modify specs in src/specs/default-specs.js for kerning rules
-  2. Use public/font-assets-builder.html to generate sheets
+  2. Use public/font-assets-builder.html to generate atlases
   3. Use automated pipeline: `./scripts/watch-font-assets.sh` for processing
   4. Test with public/test-renderer.html
 
@@ -36,7 +36,7 @@
   ### Performance Testing
   Look for src/utils/timing.js calls throughout - they measure:
   - Font assets building time
-  - Sheet building time
+  - Atlas building time
   - Runtime rendering speed
 
   ## Common Pitfalls to Avoid

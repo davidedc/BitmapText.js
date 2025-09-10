@@ -76,7 +76,7 @@
   const atlasStore = new AtlasStore();
   const bitmapText = new BitmapText(atlasStore);
 
-  // Load font data (from pre-generated sheets)
+  // Load font data (from pre-generated atlases)
   // This happens automatically when you include the manifest
 
   // Render text
@@ -179,7 +179,7 @@
 
   isValidAtlas(atlas)
   - Validates if an atlas is properly loaded and usable
-  - Returns true if sheet has valid dimensions, false otherwise
+  - Returns true if atlas has valid dimensions, false otherwise
   - Parameters: atlas object or canvas element
 
   getKerningTable(fontProperties)
@@ -203,7 +203,7 @@
     - atlas: Canvas or Image element
 
   getAtlasMetrics(fontProperties, letter)
-  - Returns metrics for a specific glyph including position in sheet and dimensions
+  - Returns metrics for a specific glyph including position in atlas and dimensions
   - Returns object with: xInAtlas, tightWidth, tightHeight, dx, dy
   - Parameters:
     - fontProperties: Font configuration object

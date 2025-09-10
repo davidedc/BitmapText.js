@@ -312,7 +312,7 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
   if (!drawOverExistingCanvas) {
     let hashMatchInfo = '';
     if (checkTheHashes && !drawCheckeredBackgrounds)
-      hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "glyph sheet testCopyChoiceNumber " + testCopyChoiceNumber);
+      hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "atlas testCopyChoiceNumber " + testCopyChoiceNumber);
     
     addCanvasInfoToDOM(canvas, hashMatchInfo);
     addElementToDOM(document.createElement('br'));

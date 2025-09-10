@@ -46,7 +46,7 @@
   │           │                 │           │
   │           ▼                 ▼           │
   │      Generate          Generate         │
-  │      Glyphs           Glyph Sheets      │
+  │      Glyphs           Glyph Atlases     │
   └─────────────────────────────────────────┘
                       │
                       ▼
@@ -222,7 +222,7 @@
 
   ## QOI Image Format
 
-  The system uses QOI (Quite OK Image format) for glyph sheet export and storage:
+  The system uses QOI (Quite OK Image format) for atlas export and storage:
 
   **Browser Export (tools/export-font-data.js:25)**:
   1. Extract RGBA image data from canvas via `getImageData()`
@@ -261,7 +261,7 @@
   Optimized for minimal memory footprint and efficient access:
 
   - **Shared Resources**: Single temporary canvas reused for all color operations
-  - **Lazy Loading**: Glyph sheets loaded on-demand when first accessed
+  - **Lazy Loading**: Glyph atlases loaded on-demand when first accessed
   - **Automatic Cleanup**: Font assets building-time data structures cleared after font building
   - **Canvas Reuse**: BitmapText instances reuse coloredGlyphCanvas for all glyphs
   - **Integer Coordinates**: All positions rounded to prevent floating-point accumulation
@@ -270,7 +270,7 @@
   ## Performance Optimizations
 
   1. **Pre-computed Metrics**: All measurements calculated at font assets building time
-  2. **Batch Rendering**: Multiple glyphs drawn from single sheet
+  2. **Batch Rendering**: Multiple glyphs drawn from single atlas
   3. **Integer Coordinates**: Rounding for pixel alignment
   4. **Minimal DOM Operations**: Reuses canvases
 
@@ -284,7 +284,7 @@
     3. Create individual glyph canvases
     4. Apply tight bounding box detection
     5. Calculate kerning tables
-    6. Build optimized glyph sheets
+    6. Build optimized atlases
     7. Generate minified metadata
     8. Export .js + .qoi files
   ```
