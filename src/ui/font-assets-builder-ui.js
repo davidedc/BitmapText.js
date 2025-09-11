@@ -14,6 +14,7 @@ function setupGlyphUI_FAB() {
         // (The function will create FontPropertiesFAB instances internally for each size)
         downloadFontAssets({
             atlasStore_FAB,
+            fontMetricsStore_FAB,
             pixelDensity,
             fontFamily: fontFamilySelect.value,
             fontStyle: fontStyleSelect.value,

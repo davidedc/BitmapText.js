@@ -18,8 +18,8 @@
   The system is architected with a **two-tier class hierarchy** where FAB classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
 
   **Distribution Strategy:**
-  - **Runtime Distribution** (~15-20KB): Only core classes (BitmapText, AtlasStore, FontProperties) for measuring and drawing pre-generated fonts
-  - **Full Distribution** (~50KB+): Core + FAB classes for complete font assets building and rendering capabilities
+  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasStore, FontMetricsStore, FontProperties) for measuring and drawing pre-generated fonts
+  - **Full Distribution** (~55KB+): Core + FAB classes for complete font assets building and rendering capabilities
   - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
 
   **Benefits:**
@@ -31,7 +31,7 @@
   **Implementation Pattern:**
   - **Core Classes**: Minimal, performance-optimized runtime functionality
   - **FAB Classes**: Extend core classes with font assets building capabilities (validation, font building, metrics calculation)
-  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractAtlasStoreInstance()`)
+  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractAtlasStoreInstance()`, `extractFontMetricsStoreInstance()`)
 
   This architecture allows developers to choose between a lightweight consumer library or a full font assets building toolkit based on their needs.
 
@@ -72,17 +72,19 @@
 
   **Runtime-Only Applications** (consuming pre-built fonts):
   - `BitmapText` - Text rendering and measurement
-  - `AtlasStore` - Atlas data storage and retrieval
+  - `AtlasStore` - Atlas image storage and retrieval
+  - `FontMetricsStore` - Font metrics, kerning, and glyph positioning data
   - `FontProperties` - Font configuration management
-  - **Bundle Size**: ~15-20KB + font assets
+  - **Bundle Size**: ~18-22KB + font assets
   - **Use Case**: Production applications displaying bitmap text
 
   **Font Assets Building Applications**:
   - All Core Classes (above) +
   - `BitmapTextFAB` - Extended font assets building capabilities
   - `AtlasStoreFAB` - Atlas building and optimization
+  - `FontMetricsStoreFAB` - Font metrics calculation and kerning generation
   - `FontPropertiesFAB` - Validation and font configuration tools
-  - **Bundle Size**: ~50KB+ including font assets building tools
+  - **Bundle Size**: ~55KB+ including font assets building tools
   - **Use Case**: Development tools, font builders, CI pipelines
 
   **Key Pattern**: FAB classes extend Core classes and provide `extract*Instance()` methods to create clean runtime objects for distribution.
@@ -99,15 +101,25 @@
     - Placeholder rectangle rendering for missing atlases
 
   **AtlasStore**
-  - Purpose: Atlas data repository
+  - Purpose: Atlas image repository
   - Data structures:
     - `atlases`: Canvas/Image elements with rendered glyphs
-    - `atlasMetrics`: Position and dimension data
+  - Methods:
+    - `getAtlas()`, `setAtlas()`: Atlas storage and retrieval
+    - `isValidAtlas()`: Validates atlas integrity
+
+  **FontMetricsStore**
+  - Purpose: Font metrics and positioning data repository
+  - Data structures:
+    - `fontMetrics`: Position and dimension data (tightWidth, tightHeight, dx, dy, xInAtlas)
     - `glyphsTextMetrics`: Text measurement data
     - `kerningTables`: Pair-wise character adjustments
     - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
   - Methods:
-    - `isValidAtlas()`: Validates atlas integrity
+    - `getFontMetrics()`, `setFontMetrics()`: Glyph positioning data
+    - `getKerningTable()`, `setKerningTable()`: Kerning management
+    - `getGlyphsTextMetrics()`, `setGlyphsTextMetrics()`: Text metrics
+    - `getSpaceAdvancementOverrideForSmallSizesInPx()`, `setSpaceAdvancementOverrideForSmallSizesInPx()`: Spacing overrides
 
   ### FAB Classes (Font Assets Building)
 
@@ -291,10 +303,10 @@
 
   ### Runtime Text Rendering Workflow
   ```
-  User → src/core/BitmapText.drawTextFromAtlas → src/core/AtlasStore
+  User → src/core/BitmapText.drawTextFromAtlas → src/core/AtlasStore + src/core/FontMetricsStore
     1. Measure text (src/core/BitmapText.measureText)
     2. For each character:
-       a. Get glyph metrics (src/core/AtlasStore.getAtlasMetrics)
+       a. Get glyph metrics (src/core/FontMetricsStore.getFontMetrics)
        b. Create colored glyph (src/core/BitmapText.createColoredGlyph)
        c. Render to main canvas (src/core/BitmapText.renderGlyphToMainCanvas)
        d. Calculate advancement with kerning (src/core/BitmapText.calculateAdvancement_CSS_Px:78)

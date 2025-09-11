@@ -65,7 +65,7 @@ cp font-assets/*.qoi examples/node/dist/font-assets/
 
 ### For the single-size demo:
 1. **Main logic**: `src/node/hello-world-main.js`
-2. **Core rendering**: `src/core/BitmapText.js`, `src/core/AtlasStore.js`
+2. **Core rendering**: `src/core/BitmapText.js`, `src/core/AtlasStore.js`, `src/core/FontMetricsStore.js`
 3. **Canvas implementation**: `src/node/canvas-mock.js`
 4. **Image libraries**: `lib/QOIDecode.js`, `lib/PngEncoder.js`
 
@@ -106,7 +106,7 @@ Each bundled file contains these sections in order:
 2. **Canvas Mock**: Minimal Canvas API implementation for Node.js
 3. **Utility Functions**: Nested property helpers, metrics expansion
 4. **Image Libraries**: QOI decoder, PNG encoder
-5. **Core Classes**: AtlasStore, BitmapText
+5. **Core Classes**: AtlasStore, FontMetricsStore, BitmapText
 6. **Demo Logic**: The actual demo code from src/node/
 7. **Font Assets**: Inlined font data and metrics
 

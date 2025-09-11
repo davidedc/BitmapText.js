@@ -51,7 +51,9 @@
 <script src="../src/utils/canvas-extensions.js"></script>
 <script src="../src/font-assets-builder-FAB/GlyphFAB.js"></script>
 <script src="../src/core/AtlasStore.js"></script>
+<script src="../src/core/FontMetricsStore.js"></script>
 <script src="../src/font-assets-builder-FAB/AtlasStoreFAB.js"></script>
+<script src="../src/font-assets-builder-FAB/FontMetricsStoreFAB.js"></script>
 <script src="../src/core/BitmapText.js"></script>
 <script src="../src/font-assets-builder-FAB/BitmapTextFAB.js"></script>
 <script src="../src/specs/SpecsParser.js"></script>
@@ -79,7 +81,8 @@
 
 <script >
   const atlasStore_FAB = new AtlasStore_FAB();
-  const bitmapText_FAB = new BitmapText_FAB(atlasStore_FAB);
+  const fontMetricsStore_FAB = new FontMetricsStoreFAB();
+  const bitmapText_FAB = new BitmapText_FAB(atlasStore_FAB, fontMetricsStore_FAB);
     
   updatePageContent();
 </script>

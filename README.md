@@ -31,9 +31,10 @@
   For applications that consume pre-built bitmap fonts, include only the core runtime classes:
 
   ```javascript
-  // Import only the essential runtime classes (~15-20KB)
+  // Import only the essential runtime classes (~18-22KB)
   import { BitmapText } from './src/core/BitmapText.js';
   import { AtlasStore } from './src/core/AtlasStore.js';
+  import { FontMetricsStore } from './src/core/FontMetricsStore.js';
   import { FontProperties } from './src/core/FontProperties.js';
 
   // Your font data is loaded from pre-generated assets
@@ -47,12 +48,14 @@
   For applications that need to generate bitmap fonts at runtime:
 
   ```javascript
-  // Import full toolkit including font assets building tools (~50KB+)
+  // Import full toolkit including font assets building tools (~55KB+)
   import { BitmapText } from './src/core/BitmapText.js';
   import { AtlasStore } from './src/core/AtlasStore.js';
+  import { FontMetricsStore } from './src/core/FontMetricsStore.js';
   import { FontProperties } from './src/core/FontProperties.js';
   import { BitmapTextFAB } from './src/font-assets-builder-FAB/BitmapTextFAB.js';
   import { AtlasStoreFAB } from './src/font-assets-builder-FAB/AtlasStoreFAB.js';
+  import { FontMetricsStoreFAB } from './src/font-assets-builder-FAB/FontMetricsStoreFAB.js';
   import { FontPropertiesFAB } from './src/font-assets-builder-FAB/FontPropertiesFAB.js';
   ```
 
@@ -74,7 +77,8 @@
   ```javascript
   // Load the library and font data
   const atlasStore = new AtlasStore();
-  const bitmapText = new BitmapText(atlasStore);
+  const fontMetricsStore = new FontMetricsStore();
+  const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
 
   // Load font data (from pre-generated atlases)
   // This happens automatically when you include the manifest
@@ -124,7 +128,7 @@
 
   Constructor
 
-  new BitmapText(atlasStore)
+  new BitmapText(atlasStore, fontMetricsStore)
 
   Methods
 
@@ -169,28 +173,13 @@
 
   ## AtlasStore Class
 
-  Manages atlases and metrics. Usually populated automatically from manifest.
+  Manages atlas images for font rendering. Usually populated automatically from manifest.
 
   Constructor
   
   new AtlasStore()
 
   Methods
-
-  isValidAtlas(atlas)
-  - Validates if an atlas is properly loaded and usable
-  - Returns true if atlas has valid dimensions, false otherwise
-  - Parameters: atlas object or canvas element
-
-  getKerningTable(fontProperties)
-  - Returns kerning table for the specified font properties
-  - Parameters: fontProperties - FontProperties instance
-
-  setKerningTable(fontProperties, kerningTable)
-  - Sets kerning table for the specified font properties
-  - Parameters:
-    - fontProperties: FontProperties instance
-    - kerningTable: Kerning data structure
 
   getAtlas(fontProperties)
   - Returns atlas for the specified font properties
@@ -202,30 +191,65 @@
     - fontProperties: FontProperties instance
     - atlas: Canvas or Image element
 
-  getAtlasMetrics(fontProperties, letter)
-  - Returns metrics for a specific glyph including position in atlas and dimensions
-  - Returns object with: xInAtlas, tightWidth, tightHeight, dx, dy
-  - Parameters:
-    - fontProperties: Font configuration object
-    - letter: Character to get metrics for
+  isValidAtlas(atlas)
+  - Validates if an atlas is properly loaded and usable
+  - Returns true if atlas has valid dimensions, false otherwise
+  - Parameters: atlas object or canvas element
 
-  setAtlasMetrics(fontProperties, metrics)
-  - Sets atlas metrics for the specified font properties
-  - Parameters:
-    - fontProperties: Font configuration object
-    - metrics: Metrics data structure
+## FontMetricsStore Class
 
-  getGlyphsTextMetrics(fontProperties, letter)
-  - Returns TextMetrics-compatible object for a specific glyph
-  - Parameters:
-    - fontProperties: Font configuration object
-    - letter: Character to get metrics for
+Manages font metrics data including glyph measurements, kerning tables, and positioning data. Usually populated automatically from manifest.
 
-  setGlyphsTextMetrics(fontProperties, metrics)
-  - Sets text metrics for glyphs
-  - Parameters:
-    - fontProperties: Font configuration object
-    - metrics: Text metrics data structure
+Constructor
+
+new FontMetricsStore()
+
+Methods
+
+getKerningTable(fontProperties)
+- Returns kerning table for the specified font properties
+- Parameters: fontProperties - FontProperties instance
+
+setKerningTable(fontProperties, kerningTable)
+- Sets kerning table for the specified font properties
+- Parameters:
+  - fontProperties: FontProperties instance
+  - kerningTable: Kerning data structure
+
+getFontMetrics(fontProperties, letter)
+- Returns metrics for a specific glyph including position in atlas and dimensions
+- Returns object with: xInAtlas, tightWidth, tightHeight, dx, dy
+- Parameters:
+  - fontProperties: Font configuration object
+  - letter: Character to get metrics for
+
+setFontMetrics(fontProperties, metrics)
+- Sets font metrics for the specified font properties
+- Parameters:
+  - fontProperties: Font configuration object
+  - metrics: Metrics data structure
+
+getGlyphsTextMetrics(fontProperties, letter)
+- Returns TextMetrics-compatible object for a specific glyph
+- Parameters:
+  - fontProperties: Font configuration object
+  - letter: Character to get metrics for
+
+setGlyphsTextMetrics(fontProperties, metrics)
+- Sets text metrics for glyphs
+- Parameters:
+  - fontProperties: Font configuration object
+  - metrics: Text metrics data structure
+
+getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties)
+- Returns space advancement override for small font sizes
+- Parameters: fontProperties - Font configuration object
+
+setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, override)
+- Sets space advancement override for small font sizes
+- Parameters:
+  - fontProperties: Font configuration object
+  - override: Override value in pixels
 
   Build Instructions
 

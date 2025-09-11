@@ -1,6 +1,7 @@
 function downloadFontAssets(options) {
   const {
       atlasStore_FAB,
+      fontMetricsStore_FAB,
       pixelDensity,
       fontFamily,
       fontStyle, 
@@ -13,6 +14,7 @@ function downloadFontAssets(options) {
   const zip = new JSZip();
   const folder = zip.folder("fontAssets");
   const atlasStore = atlasStore_FAB.extractAtlasStoreInstance();
+  const fontMetricsStore = fontMetricsStore_FAB.extractFontMetricsStoreInstance();
   
   // Find all available sizes by examining Map keys
   // as atlases is a Map with FontProperties.key as keys
@@ -81,35 +83,35 @@ function downloadFontAssets(options) {
       const baseGlyphKey = fontProperties.key + ':';
       
       // Iterate through all Map entries to find glyphs for this font
-      for (const [key, value] of atlasStore.atlasMetrics.tightWidth) {
+      for (const [key, value] of fontMetricsStore.fontMetrics.tightWidth) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
               atlasMetrics.tightWidth[letter] = value;
           }
       }
       
-      for (const [key, value] of atlasStore.atlasMetrics.tightHeight) {
+      for (const [key, value] of fontMetricsStore.fontMetrics.tightHeight) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
               atlasMetrics.tightHeight[letter] = value;
           }
       }
       
-      for (const [key, value] of atlasStore.atlasMetrics.dx) {
+      for (const [key, value] of fontMetricsStore.fontMetrics.dx) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
               atlasMetrics.dx[letter] = value;
           }
       }
       
-      for (const [key, value] of atlasStore.atlasMetrics.dy) {
+      for (const [key, value] of fontMetricsStore.fontMetrics.dy) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
               atlasMetrics.dy[letter] = value;
           }
       }
       
-      for (const [key, value] of atlasStore.atlasMetrics.xInAtlas) {
+      for (const [key, value] of fontMetricsStore.fontMetrics.xInAtlas) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
               atlasMetrics.xInAtlas[letter] = value;
@@ -117,7 +119,7 @@ function downloadFontAssets(options) {
       }
       
       // Collect glyph text metrics
-      for (const [key, value] of atlasStore.glyphsTextMetrics) {
+      for (const [key, value] of fontMetricsStore.glyphsTextMetrics) {
           if (key.startsWith(baseGlyphKey)) {
               const letter = key.substring(baseGlyphKey.length);
               glyphsTextMetrics[letter] = value;
@@ -125,9 +127,9 @@ function downloadFontAssets(options) {
       }
       
       const metadata = {
-          kerningTable: atlasStore.getKerningTable(fontProperties),
+          kerningTable: fontMetricsStore.getKerningTable(fontProperties),
           glyphsTextMetrics: glyphsTextMetrics,
-          spaceAdvancementOverrideForSmallSizesInPx: atlasStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties),
+          spaceAdvancementOverrideForSmallSizesInPx: fontMetricsStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties),
           atlasMetrics: atlasMetrics
       };
 

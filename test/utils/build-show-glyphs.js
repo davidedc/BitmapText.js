@@ -23,5 +23,6 @@ function buildAndShowGlyphs() {
   // SHOW operations - display the built glyphs
   drawTestText(fontProperties, atlasStore_FAB);
   const atlasStore = atlasStore_FAB.extractAtlasStoreInstance();
-  drawTestText_withStandardClass(fontProperties, atlasStore);
+  const fontMetricsStore = fontMetricsStore_FAB.extractFontMetricsStoreInstance();
+  drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
 }

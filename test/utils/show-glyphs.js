@@ -2,22 +2,22 @@
 // This is used by text-render-tests.html to render pre-built font data
 
 // Check if font metrics and kerning data are available (needed for text measurement and positioning)
-function isFontMetricsAvailable(fontProperties, atlasStore) {
+function isFontMetricsAvailable(fontProperties, fontMetricsStore) {
   try {
-    // Use AtlasStore's getter
-    const kerningTable = atlasStore.getKerningTable(fontProperties);
+    // Use FontMetricsStore's getter
+    const kerningTable = fontMetricsStore.getKerningTable(fontProperties);
     const hasKerningTables = kerningTable !== undefined && kerningTable !== null;
     
     // Check if any glyphs exist for this font by looking for keys that start with the base key
     const baseKey = fontProperties.key;
-    const hasGlyphsTextMetrics = [...atlasStore.glyphsTextMetrics.keys()]
+    const hasGlyphsTextMetrics = [...fontMetricsStore.glyphsTextMetrics.keys()]
       .some(key => key.startsWith(baseKey + ':'));
     
-    // Check if any atlas metrics exist for this font
-    const hasAtlasMetrics = [...atlasStore.atlasMetrics.tightWidth.keys()]
+    // Check if any font metrics exist for this font
+    const hasFontMetrics = [...fontMetricsStore.fontMetrics.tightWidth.keys()]
       .some(key => key.startsWith(baseKey + ':'));
     
-    return hasKerningTables && hasGlyphsTextMetrics && hasAtlasMetrics;
+    return hasKerningTables && hasGlyphsTextMetrics && hasFontMetrics;
   } catch (error) {
     return false;
   }
@@ -70,7 +70,7 @@ function showGlyphs() {
   clearErrors();  // Also explicitly clear any lingering error messages
   
   // Check availability levels
-  const hasMetrics = isFontMetricsAvailable(fontProperties, atlasStore);
+  const hasMetrics = isFontMetricsAvailable(fontProperties, fontMetricsStore);
   const hasAtlases = isAtlasAvailable(fontProperties, atlasStore);
   
   if (!hasMetrics) {
@@ -85,7 +85,7 @@ function showGlyphs() {
   
   try {
     // Render using standard classes - will automatically use placeholder mode if atlases missing
-    drawTestText_withStandardClass(fontProperties, atlasStore);
+    drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
   } catch (error) {
     showFontError(`Error rendering text: ${error.message}`);
     console.error('Error in showGlyphs:', error);

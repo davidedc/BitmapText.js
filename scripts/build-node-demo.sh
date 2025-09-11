@@ -32,6 +32,7 @@ FILES_TO_CHECK=(
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
   "$SRC_DIR/core/AtlasStore.js"
+  "$SRC_DIR/core/FontMetricsStore.js"
   "$SRC_DIR/core/BitmapText.js"
   "$SRC_DIR/node/hello-world-main.js"
 )
@@ -136,6 +137,14 @@ echo "// ATLAS STORE" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/core/AtlasStore.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate FontMetricsStore
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// FONT METRICS STORE" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/FontMetricsStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate BitmapText

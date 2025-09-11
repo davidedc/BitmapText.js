@@ -8,7 +8,7 @@ let loadedBitmapFontData;
 
 // PNG loading (HTTP protocol)
 function loadAtlasesFromPNGs() {
-  const fontLoader = new FontLoader(atlasStore, (loaded, total) => {
+  const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
     console.log(`loadedScripts: ${loaded} out of ${total}`);
   });
 
@@ -30,7 +30,7 @@ function loadAtlasesFromPNGs() {
 
 // Function for JS loading (file:// protocol) 
 function loadAtlasesFromJSs() {
-  const fontLoader = new FontLoader(atlasStore, (loaded, total) => {
+  const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
     console.log(`loadedScripts: ${loaded} out of ${total}`);
   });
 
@@ -61,8 +61,8 @@ else {
 }
 
 function ingestLoadedBitmapFontData() {
-  // Reset atlas metrics maps for fresh loading
-  atlasStore.atlasMetrics = {
+  // Reset font metrics maps for fresh loading
+  fontMetricsStore.fontMetrics = {
     tightWidth: new Map(),
     tightHeight: new Map(),
     dx: new Map(),
@@ -73,18 +73,18 @@ function ingestLoadedBitmapFontData() {
   for (const key in loadedBitmapFontData) {
     const fontProperties = FontProperties.fromIDString(key);
 
-    // Put the loadedBitmapFontData "kerningTable" in the atlasStore "kerningTables"
-    atlasStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
+    // Put the loadedBitmapFontData "kerningTable" in the fontMetricsStore "kerningTables"
+    fontMetricsStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
 
-    // Put the loadedBitmapFontData "atlasMetrics" in the atlasStore "atlasMetrics"
-    atlasStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
+    // Put the loadedBitmapFontData "glyphsTextMetrics" in the fontMetricsStore "glyphsTextMetrics"
+    fontMetricsStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
 
-    // Same for atlasMetrics
+    // Same for fontMetrics (formerly atlasMetrics)
     const metrics = loadedBitmapFontData[key].atlasMetrics;
-    atlasStore.setAtlasMetrics(fontProperties, metrics);
+    fontMetricsStore.setFontMetrics(fontProperties, metrics);
 
     // Same for spaceAdvancementOverrideForSmallSizesInPx
-    atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
+    fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
 
     // Remove the script element from the document
     let script = document.querySelector(`script[src="../font-assets/metrics-${key.replace(/_/g, '-')}.js"]`);
@@ -114,6 +114,6 @@ function ingestLoadedBitmapFontData() {
   startTiming('drawTestText');
   // Use UI's selected font properties for initial render instead of hardcoded values
   const fontProperties = getFontPropertiesFromUI();
-  drawTestText_withStandardClass(fontProperties, atlasStore);
+  drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
   console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
 }

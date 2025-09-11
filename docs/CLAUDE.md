@@ -11,7 +11,7 @@
 
   ## Project Structure at a Glance
 
-  - **Core runtime**: src/core/BitmapText.js, src/core/AtlasStore.js, src/core/FontProperties.js
+  - **Core runtime**: src/core/BitmapText.js, src/core/AtlasStore.js, src/core/FontMetricsStore.js, src/core/FontProperties.js
   - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
   - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js, src/utils/manifest-loader.js
   - **Font data**: font-assets/

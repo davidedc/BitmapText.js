@@ -55,13 +55,14 @@ function main() {
     // Setup BitmapText system
     console.log('Setting up BitmapText system...');
     const atlasStore = new AtlasStore();
-    const bitmapText = new BitmapText(atlasStore, () => new Canvas());
+    const fontMetricsStore = new FontMetricsStore();
+    const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
     
-    // Process font data and populate atlas store
-    atlasStore.setKerningTable(fontProperties, fontData.kerningTable);
-    atlasStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-    atlasStore.setAtlasMetrics(fontProperties, fontData.atlasMetrics);
-    atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+    // Process font data and populate stores
+    fontMetricsStore.setKerningTable(fontProperties, fontData.kerningTable);
+    fontMetricsStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+    fontMetricsStore.setFontMetrics(fontProperties, fontData.atlasMetrics);
+    fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(
       fontProperties,
       fontData.spaceAdvancementOverrideForSmallSizesInPx
     );

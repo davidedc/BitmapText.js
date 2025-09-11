@@ -126,7 +126,7 @@ function drawTestText(fontProperties) {
   drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures_CSS_Px_FAB, testCopyLines, bitmapText_FAB, fontProperties, testCopyChoiceNumber);
 }
 
-function drawTestText_withStandardClass(originalFontProperties, atlasStore) {
+function drawTestText_withStandardClass(originalFontProperties, atlasStore, fontMetricsStore) {
 
   let linesMeasures_CSS_PxForcedPixelDensity1 = null;
 
@@ -135,7 +135,7 @@ function drawTestText_withStandardClass(originalFontProperties, atlasStore) {
 
   // this is going to be the class that is going to be used to render the text
   // outside of the editor.
-  const bitmapText = new BitmapText(atlasStore);
+  const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
 
   let fontProperties = originalFontProperties;
 
@@ -361,7 +361,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
 
 function buildAndDisplayAtlas(atlasStore, fontProperties) {
   addElementToDOM(createDivWithText("Atlas:"));
-  const [atlasImage, atlasCtx] = atlasStore.buildAtlas(fontProperties);
+  const [atlasImage, atlasCtx] = atlasStore.buildAtlas(fontProperties, fontMetricsStore_FAB);
   addElementToDOM(atlasImage);
   
   addCanvasInfoToDOM(atlasCtx.canvas, getHashMatchInfo(atlasCtx, fontProperties, 'atlas'));

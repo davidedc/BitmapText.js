@@ -1,9 +1,35 @@
-// a class constructed with a AtlasStore_FAB
-// has a method to draw text on a canvas
-// the text is drawn by looking up the glyphs in the AtlasStore_FAB
-// and drawing them on the canvas one after the other, advancing the x position by the width of the glyph
-// the text is drawn with the top bottom left corner of the first glyph at the x, y position specified
+// BitmapTextFAB - Font Assets Building Class
+// 
+// This class extends BitmapText to provide font assets building capabilities
+// for bitmap text rendering with atlas and metrics generation.
+//
+// DISTRIBUTION ROLE:
+// - Part of "full toolkit" distribution for font assets building applications
+// - Extends BitmapText with building, validation, and generation features
+// - Works with AtlasStoreFAB and FontMetricsStoreFAB for complete font assets building
+//
+// ARCHITECTURE:
+// - Constructed with AtlasStoreFAB (glyph and atlas building) and FontMetricsStoreFAB (metrics)
+// - Inherits all runtime text rendering from BitmapText
+// - Adds glyph creation, kerning calculation, and font assets building methods
+// - Integrates with font assets building pipeline and specifications
+//
+// SEPARATION OF CONCERNS:
+// - Uses AtlasStoreFAB for glyph storage and atlas building
+// - Uses FontMetricsStoreFAB for metrics calculation and kerning management
+// - Both stores work together during the font assets building process
 class BitmapText_FAB extends BitmapText {
+
+  constructor(atlasStoreFAB, fontMetricsStoreFAB, canvasFactory) {
+    // Pass both stores to parent BitmapText constructor
+    // Parent expects (atlasStore, fontMetricsStore, canvasFactory)
+    super(atlasStoreFAB, fontMetricsStoreFAB, canvasFactory);
+    
+    // Store references to FAB-specific stores for building operations
+    // Note: this.atlasStore and this.fontMetricsStore are already set by parent
+    this.atlasStoreFAB = atlasStoreFAB;
+    this.fontMetricsStoreFAB = fontMetricsStoreFAB;
+  }
 
   hasLotsOfSpaceAtBottomRight(letter) {
     return ['V', '7', '/', 'T', 'Y'].indexOf(letter) !== -1;
@@ -79,7 +105,7 @@ class BitmapText_FAB extends BitmapText {
   }
 
   buildKerningTableIfDoesntExist(fontProperties) {
-    if (this.atlasStore.kerningTableExists(fontProperties))
+    if (this.fontMetricsStore.kerningTableExists(fontProperties))
       return;
 
     // go through all the letters and for each letter, go through all the other letters
@@ -107,11 +133,11 @@ class BitmapText_FAB extends BitmapText {
       }
     }
 
-    this.atlasStore.setKerningTable(fontProperties, kerningTable);
+    this.fontMetricsStore.setKerningTable(fontProperties, kerningTable);
 
     const spaceAdvancementOverrideForSmallSizesInPx =
       specs.getSingleFloatCorrection(fontProperties, "Space advancement override for small sizes in px");
-    this.atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
+    this.fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
   }
 
   // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string
@@ -131,7 +157,7 @@ class BitmapText_FAB extends BitmapText {
         fontProperties,
         letter
       );
-      const letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, letter);
+      const letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, letter);
 
       if (glyph && glyph.tightCanvas) {
         // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their

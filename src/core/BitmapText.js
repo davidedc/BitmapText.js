@@ -9,15 +9,17 @@
 // - Contains no font generation code to keep bundle size minimal
 // 
 // ARCHITECTURE:
-// - Constructed with an AtlasStore containing pre-rendered glyph data
-// - Draws text by looking up glyphs and positioning them with kerning
+// - Constructed with an AtlasStore (atlas images) and FontMetricsStore (metrics data)
+// - Draws text by looking up glyphs from atlases and positioning them with metrics/kerning
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
-// - Supports placeholder rectangles when atlases are missing
+// - Supports placeholder rectangles when atlases are missing but metrics are available
+// - Separates image assets (AtlasStore) from positioning data (FontMetricsStore) for flexible loading
 //
 // For font assets building capabilities, use BitmapTextFAB which extends this class.
 class BitmapText {
-  constructor(atlasStore, canvasFactory) {
+  constructor(atlasStore, fontMetricsStore, canvasFactory) {
     this.atlasStore = atlasStore;
+    this.fontMetricsStore = fontMetricsStore;
     // we keep one canvas and a context for coloring all the glyphs
     if (canvasFactory) {
       this.coloredGlyphCanvas = canvasFactory();
@@ -50,7 +52,7 @@ class BitmapText {
       };
 
     let width_CSS_Px = 0;
-    let letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, text[0]);
+    let letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, text[0]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -61,7 +63,7 @@ class BitmapText {
       const letter = text[i];
       const nextLetter = text[i + 1];
 
-      letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, letter);
+      letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, letter);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
@@ -94,7 +96,7 @@ class BitmapText {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement_CSS_Px(fontProperties, letter, nextLetter) {
-    const letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, letter);
+    const letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, letter);
     let x_CSS_Px = 0;
 
     // TODO this "space" section should handle all characters without a glyph
@@ -109,7 +111,7 @@ class BitmapText {
     // console.log(letterTextMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = this.atlasStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties);
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = this.fontMetricsStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties);
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
@@ -139,7 +141,7 @@ class BitmapText {
 
   getKerningCorrection(fontProperties, letter, nextLetter) {
     if (isKerningEnabled && nextLetter) {
-      let kerningTable = this.atlasStore.getKerningTable(fontProperties);
+      let kerningTable = this.fontMetricsStore.getKerningTable(fontProperties);
       // Kerning tables are flat objects returned by the Map-based store
       // Check if kerning exists for this letter pair
       if (kerningTable && kerningTable[letter] && kerningTable[letter][nextLetter] !== undefined) {
@@ -179,7 +181,7 @@ class BitmapText {
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
 
-    const metrics = this.atlasStore.getAtlasMetrics(fontProperties, letter);
+    const metrics = this.fontMetricsStore.getFontMetrics(fontProperties, letter);
     
     // If atlas is missing but metrics exist, draw placeholder rectangle
     if (!this.atlasStore.isValidAtlas(atlas)) {

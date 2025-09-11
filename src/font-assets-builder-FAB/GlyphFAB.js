@@ -13,9 +13,9 @@ class GlyphFAB {
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
 
-    // glyphsTextMetrics actually belongs to the base class atlasStore
-    // which underlies the AtlasStore_FAB class
-    atlasStore_FAB.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
+    // glyphsTextMetrics actually belongs to the fontMetricsStore
+    // which is separate from the AtlasStore_FAB class
+    fontMetricsStore_FAB.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
 
     this.displayCanvasesAndData();
   }

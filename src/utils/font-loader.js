@@ -1,7 +1,8 @@
 // Shared utility for loading bitmap font data with error handling
 class FontLoader {
-  constructor(atlasStore, onProgress = null) {
+  constructor(atlasStore, fontMetricsStore, onProgress = null) {
     this.atlasStore = atlasStore;
+    this.fontMetricsStore = fontMetricsStore;
     this.onProgress = onProgress;
     this.loadedCount = 0;
     this.totalCount = 0;

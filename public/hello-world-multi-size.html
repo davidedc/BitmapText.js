@@ -48,8 +48,10 @@
   <script src="../src/utils/font-loader.js"></script>
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
-  <!-- Data store for atlases, metrics, and kerning tables -->
+  <!-- Data store for atlas images -->
   <script src="../src/core/AtlasStore.js"></script>
+  <!-- Data store for font metrics, kerning, and positioning -->
+  <script src="../src/core/FontMetricsStore.js"></script>
   <!-- Main bitmap text rendering engine -->
   <script src="../src/core/BitmapText.js"></script>
 
@@ -62,7 +64,8 @@
 
     // Initialize bitmap text system
     const atlasStore = new AtlasStore();
-    const bitmapText = new BitmapText(atlasStore);
+    const fontMetricsStore = new FontMetricsStore();
+    const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
 
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
@@ -100,10 +103,10 @@
           const fontData = window.loadedBitmapFontData[IDString];
           
           if (fontData) {
-            atlasStore.setKerningTable(fontProperties, fontData.kerningTable);
-            atlasStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-            atlasStore.setAtlasMetrics(fontProperties, fontData.atlasMetrics);
-            atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(
+            fontMetricsStore.setKerningTable(fontProperties, fontData.kerningTable);
+            fontMetricsStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
+            fontMetricsStore.setFontMetrics(fontProperties, fontData.atlasMetrics);
+            fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(
               fontProperties,
               fontData.spaceAdvancementOverrideForSmallSizesInPx
             );
