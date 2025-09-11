@@ -36,13 +36,9 @@
 
 <body>
   <h1>BitmapText.js - Hello World Multi-Size Demo</h1>
-  <p>This demo shows "Hello World" rendered at three different font sizes (18, 18.5, 19) to demonstrate what's required for multi-size bitmap text rendering.</p>
+  <p>This demo shows "Hello World" rendered at three different font sizes (18, 18.5, 19) to demonstrate what's required for multi-size bitmap text rendering. Each font size requires its own pre-generated bitmap font data.
+    This demo loads 6 files total (3 JS metrics files + 3 atlas images).</p>
   <canvas id="demo-canvas" width="400" height="200"></canvas>
-
-  <div class="info">
-    <strong>Key Learning:</strong> Each font size requires its own pre-generated bitmap font data.
-    This demo loads 6 files total (3 JS metrics files + 3 atlas images).
-  </div>
 
   <!-- Essential dependencies -->
   <!-- Expander utility to unpack minified font metrics data -->
