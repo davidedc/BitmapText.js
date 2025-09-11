@@ -79,7 +79,7 @@ class BitmapText_FAB extends BitmapText {
   }
 
   buildKerningTableIfDoesntExist(fontProperties) {
-    if (this.glyphStore.kerningTableExists(fontProperties))
+    if (this.atlasStore.kerningTableExists(fontProperties))
       return;
 
     // go through all the letters and for each letter, go through all the other letters
@@ -107,11 +107,11 @@ class BitmapText_FAB extends BitmapText {
       }
     }
 
-    this.glyphStore.setKerningTable(fontProperties, kerningTable);
+    this.atlasStore.setKerningTable(fontProperties, kerningTable);
 
     const spaceAdvancementOverrideForSmallSizesInPx =
       specs.getSingleFloatCorrection(fontProperties, "Space advancement override for small sizes in px");
-    this.glyphStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
+    this.atlasStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
   }
 
   // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string
@@ -127,11 +127,11 @@ class BitmapText_FAB extends BitmapText {
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
       const nextLetter = text[i + 1];
-      const glyph = this.glyphStore.getGlyph(
+      const glyph = this.atlasStore.getGlyph(
         fontProperties,
         letter
       );
-      const letterTextMetrics = this.glyphStore.getGlyphsTextMetrics(fontProperties, letter);
+      const letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, letter);
 
       if (glyph && glyph.tightCanvas) {
         // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their

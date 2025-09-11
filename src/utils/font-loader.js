@@ -1,7 +1,7 @@
 // Shared utility for loading bitmap font data with error handling
 class FontLoader {
-  constructor(glyphStore, onProgress = null) {
-    this.glyphStore = glyphStore;
+  constructor(atlasStore, onProgress = null) {
+    this.atlasStore = atlasStore;
     this.onProgress = onProgress;
     this.loadedCount = 0;
     this.totalCount = 0;
@@ -86,7 +86,7 @@ class FontLoader {
         
         img.onload = () => {
           const fontProperties = FontProperties.fromIDString(IDString);
-          this.glyphStore.setAtlas(fontProperties, img);
+          this.atlasStore.setAtlas(fontProperties, img);
           
           imageScript.remove();
           delete window.imagesFromJs[IDString];
@@ -123,7 +123,7 @@ class FontLoader {
       
       img.onload = () => {
         const fontProperties = FontProperties.fromIDString(IDString);
-        this.glyphStore.setAtlas(fontProperties, img);
+        this.atlasStore.setAtlas(fontProperties, img);
         
         this.incrementProgress();
         resolve();

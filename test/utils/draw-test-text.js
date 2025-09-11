@@ -263,9 +263,9 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
 
   // Check if we're in placeholder mode (metrics available but atlas missing)
   let isPlaceholderMode = false;
-  if (bitmapText && bitmapText.glyphStore) {
-    const atlas = bitmapText.glyphStore.getAtlas(fontProperties);
-    isPlaceholderMode = !bitmapText.glyphStore.isValidAtlas(atlas);
+  if (bitmapText && bitmapText.atlasStore) {
+    const atlas = bitmapText.atlasStore.getAtlas(fontProperties);
+    isPlaceholderMode = !bitmapText.atlasStore.isValidAtlas(atlas);
   }
 
   // Update section label if in placeholder mode

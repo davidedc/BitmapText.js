@@ -16,8 +16,8 @@
 //
 // For font assets building capabilities, use BitmapTextFAB which extends this class.
 class BitmapText {
-  constructor(glyphStore, canvasFactory) {
-    this.glyphStore = glyphStore;
+  constructor(atlasStore, canvasFactory) {
+    this.atlasStore = atlasStore;
     // we keep one canvas and a context for coloring all the glyphs
     if (canvasFactory) {
       this.coloredGlyphCanvas = canvasFactory();
@@ -50,7 +50,7 @@ class BitmapText {
       };
 
     let width_CSS_Px = 0;
-    let letterTextMetrics = this.glyphStore.getGlyphsTextMetrics(fontProperties, text[0]);
+    let letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, text[0]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -61,7 +61,7 @@ class BitmapText {
       const letter = text[i];
       const nextLetter = text[i + 1];
 
-      letterTextMetrics = this.glyphStore.getGlyphsTextMetrics(fontProperties, letter);
+      letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, letter);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
@@ -94,7 +94,7 @@ class BitmapText {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement_CSS_Px(fontProperties, letter, nextLetter) {
-    const letterTextMetrics = this.glyphStore.getGlyphsTextMetrics(fontProperties, letter);
+    const letterTextMetrics = this.atlasStore.getGlyphsTextMetrics(fontProperties, letter);
     let x_CSS_Px = 0;
 
     // TODO this "space" section should handle all characters without a glyph
@@ -109,7 +109,7 @@ class BitmapText {
     // console.log(letterTextMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = this.glyphStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties);
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = this.atlasStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties);
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
@@ -139,7 +139,7 @@ class BitmapText {
 
   getKerningCorrection(fontProperties, letter, nextLetter) {
     if (isKerningEnabled && nextLetter) {
-      let kerningTable = this.glyphStore.getKerningTable(fontProperties);
+      let kerningTable = this.atlasStore.getKerningTable(fontProperties);
       // Kerning tables are flat objects returned by the Map-based store
       // Check if kerning exists for this letter pair
       if (kerningTable && kerningTable[letter] && kerningTable[letter][nextLetter] !== undefined) {
@@ -156,7 +156,7 @@ class BitmapText {
       y: y_CSS_Px * fontProperties.pixelDensity
     };
     
-    const atlas = this.glyphStore.getAtlas(fontProperties);
+    const atlas = this.atlasStore.getAtlas(fontProperties);
 
     for (let i = 0; i < text.length; i++) {
       const currentLetter = text[i];
@@ -179,10 +179,10 @@ class BitmapText {
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
 
-    const metrics = this.glyphStore.getAtlasMetrics(fontProperties, letter);
+    const metrics = this.atlasStore.getAtlasMetrics(fontProperties, letter);
     
     // If atlas is missing but metrics exist, draw placeholder rectangle
-    if (!this.glyphStore.isValidAtlas(atlas)) {
+    if (!this.atlasStore.isValidAtlas(atlas)) {
       // For placeholder rectangles, we need tightWidth and tightHeight, but not xInAtlas
       if (metrics.tightWidth && metrics.tightHeight) {
         this.drawPlaceholderRectangle(ctx, position, metrics, textColor);
