@@ -96,11 +96,6 @@ class FontMetricsStore {
     }
   }
 
-  setGlyphTextMetrics(fontProperties, letter, metrics) {
-    const glyphKey = `${fontProperties.key}:${letter}`;
-    this.glyphsTextMetrics.set(glyphKey, metrics);
-  }
-
   getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties) {
     return this.spaceAdvancementOverrideForSmallSizesInPx.get(fontProperties.key);
   }

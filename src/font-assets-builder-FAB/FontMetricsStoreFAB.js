@@ -91,6 +91,11 @@ class FontMetricsStoreFAB extends FontMetricsStore {
     this.fontMetrics.xInAtlas.set(glyphKey, xPosition);
   }
 
+  setGlyphTextMetrics(fontProperties, letter, metrics) {
+    const glyphKey = `${fontProperties.key}:${letter}`;
+    this.glyphsTextMetrics.set(glyphKey, metrics);
+  }
+
   // FAB-specific method to validate that all required metrics are present
   validateFontMetrics(fontProperties, expectedLetters) {
     const missingMetrics = [];
