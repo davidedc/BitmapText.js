@@ -18,7 +18,7 @@
 // - Uses AtlasStoreFAB for glyph storage and atlas building
 // - Uses FontMetricsStoreFAB for metrics calculation and kerning management
 // - Both stores work together during the font assets building process
-class BitmapText_FAB extends BitmapText {
+class BitmapTextFAB extends BitmapText {
 
   constructor(atlasStoreFAB, fontMetricsStoreFAB, canvasFactory) {
     // Pass both stores to parent BitmapText constructor

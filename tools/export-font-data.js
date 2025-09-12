@@ -1,7 +1,7 @@
 function downloadFontAssets(options) {
   const {
-      atlasStore_FAB,
-      fontMetricsStore_FAB,
+      atlasStoreFAB,
+      fontMetricsStoreFAB,
       pixelDensity,
       fontFamily,
       fontStyle, 
@@ -13,8 +13,8 @@ function downloadFontAssets(options) {
 
   const zip = new JSZip();
   const folder = zip.folder("fontAssets");
-  const atlasStore = atlasStore_FAB.extractAtlasStoreInstance();
-  const fontMetricsStore = fontMetricsStore_FAB.extractFontMetricsStoreInstance();
+  const atlasStore = atlasStoreFAB.extractAtlasStoreInstance();
+  const fontMetricsStore = fontMetricsStoreFAB.extractFontMetricsStoreInstance();
   
   // Find all available sizes by examining Map keys
   // as atlases is a Map with FontProperties.key as keys

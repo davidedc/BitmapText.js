@@ -41,7 +41,7 @@
   │       Font Assets Builder (FAB)      │
   │  ┌────────────────┐  ┌─────────────┐    │
   │  │ BitmapText     │  │ Atlas       │    │
-  │  │ FAB            │  │ Store_FAB   │    │
+  │  │ FAB            │  │ StoreFAB   │    │
   │  └────────────────┘  └─────────────┘    │
   │           │                 │           │
   │           ▼                 ▼           │

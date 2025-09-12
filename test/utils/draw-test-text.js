@@ -115,15 +115,15 @@ function drawTestText(fontProperties) {
   console.log(`crispTestCopyMeasures_CSS_Px.width: ${crispMeasures.width}`);
   console.log(`crispTestCopyMeasures_CSS_Px.height: ${crispMeasures.height}`);
 
-  // Measurements with BitmapText_FAB
-  // now do the measurements, font assets building of atlas and rendering of text with the BitmapText_FAB class
+  // Measurements with BitmapTextFAB
+  // now do the measurements, font assets building of atlas and rendering of text with the BitmapTextFAB class
   // note how this one doesn't need a canvas
-  const measureTextCrispBitmap_FAB = text => bitmapText_FAB.measureText(text, fontProperties);
-  const linesMeasures_CSS_Px_FAB = measureMultilineText(testCopyLines, measureTextCrispBitmap_FAB);
+  const measureTextCrispBitmapFAB = text => bitmapTextFAB.measureText(text, fontProperties);
+  const linesMeasures_CSS_PxFAB = measureMultilineText(testCopyLines, measureTextCrispBitmapFAB);
   // generating the atlas with the full class is necessary to then being able to draw the text with the "normal" class
-  buildAndDisplayAtlas(atlasStore_FAB, fontProperties);
+  buildAndDisplayAtlas(atlasStoreFAB, fontProperties);
   // note that this one doesn't use the atlas, it uses the canvas stored in each glyph
-  drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures_CSS_Px_FAB, testCopyLines, bitmapText_FAB, fontProperties, testCopyChoiceNumber);
+  drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures_CSS_PxFAB, testCopyLines, bitmapTextFAB, fontProperties, testCopyChoiceNumber);
 }
 
 function drawTestText_withStandardClass(originalFontProperties, atlasStore, fontMetricsStore) {
@@ -361,7 +361,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
 
 function buildAndDisplayAtlas(atlasStore, fontProperties) {
   addElementToDOM(createDivWithText("Atlas:"));
-  const [atlasImage, atlasCtx] = atlasStore.buildAtlas(fontProperties, fontMetricsStore_FAB);
+  const [atlasImage, atlasCtx] = atlasStore.buildAtlas(fontProperties, fontMetricsStoreFAB);
   addElementToDOM(atlasImage);
   
   addCanvasInfoToDOM(atlasCtx.canvas, getHashMatchInfo(atlasCtx, fontProperties, 'atlas'));

@@ -19,7 +19,7 @@
 // - AtlasStoreFAB: Handles atlas image building from individual glyphs
 // - FontMetricsStoreFAB: Handles metrics calculation and positioning data
 // - Both work together during font assets building but can be used independently
-class AtlasStore_FAB extends AtlasStore {
+class AtlasStoreFAB extends AtlasStore {
   constructor() {
     super();
     // FAB-specific glyph storage using Map for O(1) lookups

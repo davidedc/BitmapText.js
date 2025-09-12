@@ -1,4 +1,4 @@
-function setupGlyphUI_FAB() {
+function setupGlyphUIFAB() {
     const selectorsDiv = document.getElementById("selectors");
 
     const copyToClipboardButton = createElement('button', 'copy-to-clipboard-button', 'Copy collected hashes to clipboard', selectorsDiv);
@@ -13,8 +13,8 @@ function setupGlyphUI_FAB() {
         // Pass individual properties to downloadFontAssets
         // (The function will create FontPropertiesFAB instances internally for each size)
         downloadFontAssets({
-            atlasStore_FAB,
-            fontMetricsStore_FAB,
+            atlasStoreFAB,
+            fontMetricsStoreFAB,
             pixelDensity,
             fontFamily: fontFamilySelect.value,
             fontStyle: fontStyleSelect.value,
@@ -23,4 +23,4 @@ function setupGlyphUI_FAB() {
     });
 }
 
-setupGlyphUI_FAB();
+setupGlyphUIFAB();

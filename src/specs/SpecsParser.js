@@ -19,7 +19,7 @@ class SpecsParser {
       console.dir(this.parsedSpecs);
       // clear the kerning tables because the specs probably have changed
       // (unless the user is just changing, say, a comment, but we can't know that)
-      fontMetricsStore_FAB.clearKerningTables();
+      fontMetricsStoreFAB.clearKerningTables();
     }
     return new Specs(this.parsedSpecs);
   }
