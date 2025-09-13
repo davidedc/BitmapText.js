@@ -74,7 +74,7 @@
     const ctx = canvas.getContext('2d');
 
     // Initialize global variables (required by the font JS files)
-    window.loadedBitmapFontData = {};
+    window.loadedFontMetrics = {};
     window.imagesFromJs = {};
     window.isKerningEnabled = true;  // Enable kerning for better text rendering
 
@@ -102,7 +102,7 @@
         // Ingest the loaded bitmap font data (same as in manifest-loader.js)
         for (const IDString of IDStrings) {
           const fontProperties = fontPropertiesArray[IDStrings.indexOf(IDString)];
-          const fontMetrics = window.loadedBitmapFontData[IDString];
+          const fontMetrics = window.loadedFontMetrics[IDString];
           
           if (fontMetrics) {
             fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);

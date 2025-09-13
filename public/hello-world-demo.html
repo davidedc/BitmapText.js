@@ -58,7 +58,7 @@
     const ctx = canvas.getContext('2d');
 
     // Initialize global variables (required by the font JS files)
-    window.loadedBitmapFontData = {};
+    window.loadedFontMetrics = {};
     window.imagesFromJs = {};
     window.isKerningEnabled = true;  // Enable kerning for better text rendering
 
@@ -79,7 +79,7 @@
     metricsScript.onload = function() {
       // Process loaded font metrics
       const IDString = "density-1-0-Arial-style-normal-weight-normal-size-19-0";
-      const fontMetrics = window.loadedBitmapFontData[IDString];
+      const fontMetrics = window.loadedFontMetrics[IDString];
       
       // Set up stores with loaded data
       // from MetricsExpander.expand

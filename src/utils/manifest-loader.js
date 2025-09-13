@@ -2,9 +2,9 @@
 // which looks like:
 // bitmapFontsManifest.IDs = ["density-1-arial-style-normal-weight-normal-size-18","density-1-arial-style-normal-weight-normal-size-19"];
 
-// TODO loadedBitmapFontData should be called something different, as this is really the data loaded from the JS files
+// TODO loadedFontMetrics should be called something different, as this is really the data loaded from the JS files
 // which is then processed, put in the atlasStore and then deleted
-let loadedBitmapFontData;
+let loadedFontMetrics;
 
 // PNG loading (HTTP protocol)
 function loadAtlasesFromPNGs() {
@@ -16,7 +16,7 @@ function loadAtlasesFromPNGs() {
     .then(() => {
       console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
       startTiming('ingestingFontData');
-      ingestLoadedBitmapFontData();
+      ingestLoadedFontMetrics();
     });
 }
 
@@ -38,7 +38,7 @@ function loadAtlasesFromJSs() {
     .then(() => {
       console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
       startTiming('ingestingFontData');
-      ingestLoadedBitmapFontData();
+      ingestLoadedFontMetrics();
     });
 }
 
@@ -60,15 +60,15 @@ else {
   loadAtlasesFromPNGs();
 }
 
-function ingestLoadedBitmapFontData() {
+function ingestLoadedFontMetrics() {
   // Clear existing font metrics for fresh loading
   fontMetricsStore.clear();
   
-  for (const key in loadedBitmapFontData) {
+  for (const key in loadedFontMetrics) {
     const fontProperties = FontProperties.fromIDString(key);
     
-    // loadedBitmapFontData[key] is a FontMetrics instance (from MetricsExpander.expand)
-    const fontMetrics = loadedBitmapFontData[key];
+    // loadedFontMetrics[key] is a FontMetrics instance (from MetricsExpander.expand)
+    const fontMetrics = loadedFontMetrics[key];
     
     // Store the FontMetrics instance directly
     fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
@@ -79,12 +79,12 @@ function ingestLoadedBitmapFontData() {
       script.remove();
     }
 
-    // Remove the loadedBitmapFontData entry
-    delete loadedBitmapFontData[key];
+    // Remove the loadedFontMetrics entry
+    delete loadedFontMetrics[key];
   }
 
   // Clean up global variables
-  delete window.loadedBitmapFontData;
+  delete window.loadedFontMetrics;
 
   // remove the script tag with the manifest
   let manifestScript = document.querySelector('script[src="../font-assets/manifest.js"]');

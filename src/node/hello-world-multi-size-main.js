@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Set global variables (required by BitmapText)
-global.loadedBitmapFontData = {};
+global.loadedFontMetrics = {};
 global.isKerningEnabled = true;
 
 // Font sizes to demonstrate
@@ -45,11 +45,11 @@ function main() {
         throw new Error(`Font metrics file not found: ${fontMetricsPath}`);
       }
       
-      // Execute the font metrics JS file to populate global.loadedBitmapFontData
+      // Execute the font metrics JS file to populate global.loadedFontMetrics
       const fontMetricsCode = fs.readFileSync(fontMetricsPath, 'utf8');
       eval(fontMetricsCode);
       
-      const fontMetricsData = global.loadedBitmapFontData[IDString];
+      const fontMetricsData = global.loadedFontMetrics[IDString];
       if (!fontMetricsData) {
         throw new Error(`Font metrics not found for ID: ${IDString}`);
       }

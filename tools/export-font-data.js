@@ -146,7 +146,7 @@ function downloadFontAssets(options) {
       // Add metadata JS file to zip with explicit current date
       folder.file(
           `metrics-${IDString}.js`,
-          `(loadedBitmapFontData ??= {})['${IDString}'] = MetricsExpander.expand(${JSON.stringify(MetricsMinifier.minify(metadata))});`,
+          `(loadedFontMetrics ??= {})['${IDString}'] = MetricsExpander.expand(${JSON.stringify(MetricsMinifier.minify(metadata))});`,
           { date: currentDate }
       );
   });
