@@ -81,7 +81,7 @@
   const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
 
   // Load font data (from pre-generated atlases)
-  // This happens automatically when you include the manifest
+  // Metrics files automatically populate font metrics stores when loaded
 
   // Render text
   const canvas = document.getElementById('myCanvas');

@@ -174,7 +174,7 @@
   ### Runtime Phase
 
   1. **Data Loading**
-     Manifest.js → FontLoader → Load Atlas JS → Load Atlas PNG → Populate Store
+     Manifest.js → FontLoader → Load Atlas JS → Load Atlas PNG → Direct FontMetricsStore Population
 
   2. **Text Rendering**
      Text String → Measure → Apply Kerning → Copy Glyphs → Composite Color
@@ -298,7 +298,7 @@
     5. Calculate kerning tables
     6. Build optimized atlases
     7. Generate minified metadata
-    8. Export .js + .qoi files
+    8. Export metrics-*.js files + .qoi atlases
   ```
 
   ### Runtime Text Rendering Workflow
