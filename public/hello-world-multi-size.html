@@ -36,18 +36,20 @@
 
 <body>
   <h1>BitmapText.js - Hello World Multi-Size Demo</h1>
-  <p>This demo shows "Hello World" rendered at three different font sizes (18, 18.5, 19) to demonstrate what's required for multi-size bitmap text rendering. Each font size requires its own pre-generated bitmap font data.
+  <p>This demo shows "Hello World" rendered at three different font sizes (18, 18.5, 19) to demonstrate what's required for multi-size bitmap text rendering. Each font size requires its own pre-generated bitmap font atlas.
     This demo loads 6 files total (3 JS metrics files + 3 atlas images).</p>
   <canvas id="demo-canvas" width="400" height="200"></canvas>
 
   <!-- Essential dependencies -->
-  <!-- Expander utility to unpack minified font metrics data -->
+  <!-- FontProperties class for font configuration -->
+  <script src="../src/core/FontProperties.js"></script>
+  <!-- FontMetrics domain object for encapsulating font metrics data -->
+  <script src="../src/core/FontMetrics.js"></script>
+  <!-- Expander utility to unpack minified font metrics data (depends on FontMetrics) -->
   <script src="../src/minification/MetricsExpander.js"></script>
   <!-- Font loading utilities -->
   <script src="../src/utils/font-loader-config.js"></script>
   <script src="../src/utils/font-loader.js"></script>
-  <!-- FontProperties class for font configuration -->
-  <script src="../src/core/FontProperties.js"></script>
   <!-- Data store for atlas images -->
   <script src="../src/core/AtlasStore.js"></script>
   <!-- Data store for font metrics, kerning, and positioning -->
@@ -100,16 +102,10 @@
         // Ingest the loaded bitmap font data (same as in manifest-loader.js)
         for (const IDString of IDStrings) {
           const fontProperties = fontPropertiesArray[IDStrings.indexOf(IDString)];
-          const fontData = window.loadedBitmapFontData[IDString];
+          const fontMetrics = window.loadedBitmapFontData[IDString];
           
-          if (fontData) {
-            fontMetricsStore.setKerningTable(fontProperties, fontData.kerningTable);
-            fontMetricsStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-            fontMetricsStore.setFontMetrics(fontProperties, fontData.atlasMetrics);
-            fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(
-              fontProperties,
-              fontData.spaceAdvancementOverrideForSmallSizesInPx
-            );
+          if (fontMetrics) {
+            fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
           }
         }
         

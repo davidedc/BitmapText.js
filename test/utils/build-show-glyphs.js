@@ -10,12 +10,17 @@ function buildAndShowGlyphs() {
   // the one for the current size.
   // If the contents have not changed, check if the kerning table for the current size exists and if not, build it.
   specs = specsParser.parseSpecsIfChanged(settingsTextarea.value);
-  ensureKerningTable();
 
   if (isNaN(fontProperties.fontSize)) return;
 
   // Clear the DOM
   removeAllCanvasesAndDivs();
+  
+  // Reset FontMetricsFAB for fresh building
+  fontMetricsStoreFAB.resetFontMetricsFAB(fontProperties);
+  
+  // Build kerning table AFTER reset, not before
+  ensureKerningTable();
   
   // BUILD operations - generate glyphs
   createGlyphsAndAddToFullStore(fontProperties);

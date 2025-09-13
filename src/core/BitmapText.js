@@ -51,8 +51,14 @@ class BitmapText {
         fontBoundingBoxDescent: 0
       };
 
+    // Get FontMetrics instance once for this font
+    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
+    if (!fontMetrics) {
+      throw new Error(`No metrics found for font: ${fontProperties.key}`);
+    }
+
     let width_CSS_Px = 0;
-    let letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, text[0]);
+    let letterTextMetrics = fontMetrics.getTextMetrics(text[0]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -63,12 +69,12 @@ class BitmapText {
       const letter = text[i];
       const nextLetter = text[i + 1];
 
-      letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, letter);
+      letterTextMetrics = fontMetrics.getTextMetrics(letter);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
 
-      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontProperties, letter, nextLetter);
+      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter);
       width_CSS_Px += advancement_CSS_Px;
     }
 
@@ -95,8 +101,8 @@ class BitmapText {
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement_CSS_Px(fontProperties, letter, nextLetter) {
-    const letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, letter);
+  calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter) {
+    const letterTextMetrics = fontMetrics.getTextMetrics(letter);
     let x_CSS_Px = 0;
 
     // TODO this "space" section should handle all characters without a glyph
@@ -111,7 +117,7 @@ class BitmapText {
     // console.log(letterTextMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = this.fontMetricsStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties);
+      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = fontMetrics.getSpaceAdvancementOverride();
       if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
@@ -125,7 +131,7 @@ class BitmapText {
     }
 
     // Next, apply the kerning correction ----------------------------
-    let kerningCorrection = this.getKerningCorrection(fontProperties, letter, nextLetter);
+    let kerningCorrection = this.getKerningCorrection(fontMetrics, letter, nextLetter);
 
     // We multiply the advancement of the letter by the kerning
     // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
@@ -139,14 +145,9 @@ class BitmapText {
     return Math.round(x_CSS_Px);
   }
 
-  getKerningCorrection(fontProperties, letter, nextLetter) {
+  getKerningCorrection(fontMetrics, letter, nextLetter) {
     if (isKerningEnabled && nextLetter) {
-      let kerningTable = this.fontMetricsStore.getKerningTable(fontProperties);
-      // Kerning tables are flat objects returned by the Map-based store
-      // Check if kerning exists for this letter pair
-      if (kerningTable && kerningTable[letter] && kerningTable[letter][nextLetter] !== undefined) {
-        return kerningTable[letter][nextLetter];
-      }
+      return fontMetrics.getKerningAdjustment(letter, nextLetter);
     }
 
     return 0;
@@ -159,6 +160,12 @@ class BitmapText {
     };
     
     const atlas = this.atlasStore.getAtlas(fontProperties);
+    
+    // Get FontMetrics instance once for this font
+    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
+    if (!fontMetrics) {
+      throw new Error(`No metrics found for font: ${fontProperties.key}`);
+    }
 
     for (let i = 0; i < text.length; i++) {
       const currentLetter = text[i];
@@ -168,20 +175,20 @@ class BitmapText {
         currentLetter,
         position,
         atlas,
-        fontProperties,
+        fontMetrics,
         textColor
       );
 
-      position.x += this.calculateLetterAdvancement(fontProperties, currentLetter, nextLetter);
+      position.x += this.calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter);
     }
   }
 
-  drawLetter(ctx, letter, position, atlas, fontProperties, textColor) {
+  drawLetter(ctx, letter, position, atlas, fontMetrics, textColor) {
     // There are several optimisations possible here:
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
 
-    const metrics = this.fontMetricsStore.getFontMetrics(fontProperties, letter);
+    const metrics = fontMetrics.getGlyphMetrics(letter);
     
     // If atlas is missing but metrics exist, draw placeholder rectangle
     if (!this.atlasStore.isValidAtlas(atlas)) {
@@ -254,8 +261,8 @@ class BitmapText {
     ctx.fillRect(rectX, rectY, tightWidth, tightHeight);
   }
 
-  calculateLetterAdvancement(fontProperties, currentLetter, nextLetter) {
-    return this.calculateAdvancement_CSS_Px(fontProperties, currentLetter, nextLetter) 
+  calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter) {
+    return this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, currentLetter, nextLetter) 
       * fontProperties.pixelDensity;
   }
 }

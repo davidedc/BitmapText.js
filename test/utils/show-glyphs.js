@@ -4,20 +4,9 @@
 // Check if font metrics and kerning data are available (needed for text measurement and positioning)
 function isFontMetricsAvailable(fontProperties, fontMetricsStore) {
   try {
-    // Use FontMetricsStore's getter
-    const kerningTable = fontMetricsStore.getKerningTable(fontProperties);
-    const hasKerningTables = kerningTable !== undefined && kerningTable !== null;
-    
-    // Check if any glyphs exist for this font by looking for keys that start with the base key
-    const baseKey = fontProperties.key;
-    const hasGlyphsTextMetrics = [...fontMetricsStore.glyphsTextMetrics.keys()]
-      .some(key => key.startsWith(baseKey + ':'));
-    
-    // Check if any font metrics exist for this font
-    const hasFontMetrics = [...fontMetricsStore.fontMetrics.tightWidth.keys()]
-      .some(key => key.startsWith(baseKey + ':'));
-    
-    return hasKerningTables && hasGlyphsTextMetrics && hasFontMetrics;
+    // Check if FontMetrics instance exists for this font
+    const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
+    return fontMetrics !== undefined && fontMetrics !== null;
   } catch (error) {
     return false;
   }

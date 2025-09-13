@@ -116,7 +116,7 @@
   ### Manual Process
   1. Open public/font-assets-builder.html in a web browser
   2. Select font family, style, weight, and size range
-  3. Click "Download Font Assets" to generate QOI bitmap font data
+  3. Click "Download Font Assets" to generate QOI bitmap font atlas
   4. Manually process files (see scripts/README.md for details)
   5. Include generated files in your project
 
@@ -351,7 +351,7 @@ setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, override)
   │   ├── specs/         # Font specifications
   │   └── minification/  # Data minification utilities
   ├── public/            # HTML entry points
-  ├── font-assets/       # Generated font data
+  ├── font-assets/       # Generated font assets
   ├── test/              # Test utilities and data
   ├── tools/             # Development tools
   ├── lib/               # Third-party libraries

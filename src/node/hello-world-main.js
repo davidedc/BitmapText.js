@@ -16,20 +16,25 @@ function main() {
     console.log('BitmapText.js Node.js Demo - Loading font data...');
     
     // Load font metrics (JS file)
-    const fontDataPath = path.resolve(__dirname, 'font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
-    if (!fs.existsSync(fontDataPath)) {
-      throw new Error(`Font data file not found: ${fontDataPath}`);
+    const fontMetricsPath = path.resolve(__dirname, 'font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
+    if (!fs.existsSync(fontMetricsPath)) {
+      throw new Error(`Font metrics file not found: ${fontMetricsPath}`);
     }
     
-    // Execute the font data JS file to populate global.loadedBitmapFontData
-    const fontDataCode = fs.readFileSync(fontDataPath, 'utf8');
-    eval(fontDataCode);
+    // Execute the font metrics JS file to populate global.loadedBitmapFontData
+    const fontMetricsCode = fs.readFileSync(fontMetricsPath, 'utf8');
+    eval(fontMetricsCode);
     
     const IDString = "density-1-0-Arial-style-normal-weight-normal-size-19-0";
-    const fontData = global.loadedBitmapFontData[IDString];
-    if (!fontData) {
-      throw new Error(`Font data not found for ID: ${IDString}`);
+    const fontMetricsData = global.loadedBitmapFontData[IDString];
+    if (!fontMetricsData) {
+      throw new Error(`Font metrics not found for ID: ${IDString}`);
     }
+    
+    // Check if it's already a FontMetrics instance (metrics files call MetricsExpander.expand)
+    const fontMetrics = fontMetricsData instanceof FontMetrics 
+      ? fontMetricsData 
+      : new FontMetrics(fontMetricsData);
     
     console.log('Font metrics loaded successfully');
     
@@ -59,13 +64,7 @@ function main() {
     const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
     
     // Process font data and populate stores
-    fontMetricsStore.setKerningTable(fontProperties, fontData.kerningTable);
-    fontMetricsStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-    fontMetricsStore.setFontMetrics(fontProperties, fontData.atlasMetrics);
-    fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(
-      fontProperties,
-      fontData.spaceAdvancementOverrideForSmallSizesInPx
-    );
+    fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
     atlasStore.setAtlas(fontProperties, atlasImage);
     
     // Create output canvas

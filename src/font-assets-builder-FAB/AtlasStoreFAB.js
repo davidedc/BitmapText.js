@@ -71,12 +71,18 @@ class AtlasStoreFAB extends AtlasStore {
     // This populates tightWidth, tightHeight, dx, dy in the fontMetricsStore
     fontMetricsStore.calculateAndSetFontMetrics(fontProperties, glyphs);
 
-    // Calculate atlas dimensions using the metrics from fontMetricsStore
+    // Get FontMetrics instance once for this font
+    const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
+    if (!fontMetrics) {
+      throw new Error(`No font metrics found for: ${fontProperties.key}`);
+    }
+
+    // Calculate atlas dimensions using the metrics from FontMetrics instance
     let fittingWidth = 0;
     let maxHeight = 0;
 
     for (let letter in glyphs) {
-      const metrics = fontMetricsStore.getFontMetrics(fontProperties, letter);
+      const metrics = fontMetrics.getGlyphMetrics(letter);
       const tightWidth = metrics.tightWidth;
       const tightHeight = metrics.tightHeight;
       
@@ -98,7 +104,7 @@ class AtlasStoreFAB extends AtlasStore {
     // Draw each glyph into the atlas and record xInAtlas position
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      const metrics = fontMetricsStore.getFontMetrics(fontProperties, letter);
+      const metrics = fontMetrics.getGlyphMetrics(letter);
       const tightWidth = metrics.tightWidth;
       
       // Skip glyphs without valid tight canvas or width

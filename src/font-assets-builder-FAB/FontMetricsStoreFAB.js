@@ -1,7 +1,7 @@
 // FontMetricsStoreFAB - Font Assets Building Class
 // 
 // This class extends FontMetricsStore to provide font assets building capabilities
-// for font metrics data including glyph measurements, kerning tables, and positioning.
+// using FontMetricsFAB instances for building and generating font metrics data.
 //
 // DISTRIBUTION ROLE:
 // - Part of "full toolkit" distribution for font assets building applications
@@ -9,10 +9,10 @@
 // - Provides extraction methods to create clean runtime FontMetricsStore instances
 //
 // ARCHITECTURE:
-// - Inherits all runtime functionality from FontMetricsStore
-// - Adds font assets building-specific methods and data structures  
+// - Inherits FontMetricsStore repository functionality 
+// - Works with FontMetricsFAB instances for building operations
 // - Validates and optimizes font metrics during the building process
-// - Generates minified metrics data for distribution
+// - Extracts clean FontMetrics instances for runtime distribution
 //
 // KEY METHODS:
 // - extractFontMetricsStoreInstance(): Creates clean runtime instance
@@ -22,99 +22,151 @@ class FontMetricsStoreFAB extends FontMetricsStore {
   constructor() {
     super();
   }
-
-  // Extract a clean FontMetricsStore instance for runtime distribution
-  // This removes FAB-specific functionality and provides only runtime data
+  
+  /**
+   * Extract a clean FontMetricsStore instance for runtime distribution
+   * This removes FAB-specific functionality and provides only runtime data
+   * @returns {FontMetricsStore} Clean runtime FontMetricsStore instance
+   */
   extractFontMetricsStoreInstance() {
     const instance = new FontMetricsStore();
-    instance.kerningTables = this.kerningTables;
-    instance.glyphsTextMetrics = this.glyphsTextMetrics;
-    instance.spaceAdvancementOverrideForSmallSizesInPx = this.spaceAdvancementOverrideForSmallSizesInPx;
-    instance.fontMetrics = this.fontMetrics;
+    
+    // Extract clean FontMetrics instances from FontMetricsFAB instances
+    for (const [fontKey, fontMetricsFAB] of this._fontMetrics.entries()) {
+      if (fontMetricsFAB && fontMetricsFAB.extractFontMetricsInstance) {
+        // Convert FontMetricsFAB to clean FontMetrics
+        const cleanFontMetrics = fontMetricsFAB.extractFontMetricsInstance();
+        instance._fontMetrics.set(fontKey, cleanFontMetrics);
+      } else if (fontMetricsFAB) {
+        // Already a clean FontMetrics instance
+        instance._fontMetrics.set(fontKey, fontMetricsFAB);
+      }
+    }
+    
     return instance;
   }
-
-  // FAB-specific method to clear all kerning tables (used during regeneration)
+  
+  /**
+   * Get or create FontMetricsFAB instance for a font configuration
+   * @param {FontProperties} fontProperties - Font configuration
+   * @returns {FontMetricsFAB} FontMetricsFAB instance (creates empty one if not exists)
+   */
+  getFontMetricsFAB(fontProperties) {
+    let fontMetrics = this.getFontMetrics(fontProperties);
+    
+    if (!fontMetrics || !(fontMetrics instanceof FontMetricsFAB)) {
+      // Create new empty FontMetricsFAB instance
+      fontMetrics = new FontMetricsFAB();
+      this.setFontMetrics(fontProperties, fontMetrics);
+    }
+    
+    return fontMetrics;
+  }
+  
+  /**
+   * Reset FontMetricsFAB instance for a font configuration to start fresh
+   * @param {FontProperties} fontProperties - Font configuration
+   */
+  resetFontMetricsFAB(fontProperties) {
+    const fontMetrics = new FontMetricsFAB();
+    this.setFontMetrics(fontProperties, fontMetrics);
+    return fontMetrics;
+  }
+  
+  /**
+   * Clear all kerning tables for regeneration
+   */
   clearKerningTables() {
-    this.kerningTables.clear();
+    for (const fontMetrics of this._fontMetrics.values()) {
+      if (fontMetrics instanceof FontMetricsFAB) {
+        fontMetrics.clearKerningTable();
+      }
+    }
   }
-
-  // FAB-specific method to check if kerning table exists for a font
+  
+  /**
+   * Check if kerning table exists for a font
+   * @param {FontProperties} fontProperties - Font configuration
+   * @returns {boolean} True if kerning table exists and has data
+   */
   kerningTableExists(fontProperties) {
-    return this.kerningTables.has(fontProperties.key);
+    const fontMetrics = this.getFontMetrics(fontProperties);
+    return fontMetrics && fontMetrics.hasKerningTable && fontMetrics.hasKerningTable();
   }
-
-  // Override parent method to add FAB-specific functionality if needed
+  
+  /**
+   * Set kerning table for a font (creates FontMetricsFAB if needed)
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {Object} kerningTable - Kerning data structure
+   */
   setKerningTable(fontProperties, kerningTable) {
-    // Use parent class method which uses Maps
-    super.setKerningTable(fontProperties, kerningTable);
+    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
+    fontMetricsFAB.setKerningTable(kerningTable);
   }
-
-  // FAB-specific method to calculate and set font metrics from glyph data
-  // This method is called during atlas building to extract positioning data
+  
+  /**
+   * Calculate and set font metrics from glyph data
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {Object} glyphs - Object mapping characters to glyph data
+   */
   calculateAndSetFontMetrics(fontProperties, glyphs) {
-    for (let letter in glyphs) {
-      let glyph = glyphs[letter];
-      let letterTextMetrics = this.getGlyphsTextMetrics(fontProperties, letter);
-
-      // Skip glyphs without valid tight canvas box
-      if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
-        continue;
-      }
-
-      // Calculate tight dimensions from glyph bounds
-      const tightWidth =
-        glyph.tightCanvasBox.bottomRightCorner.x -
-        glyph.tightCanvasBox.topLeftCorner.x +
-        1;
-      const tightHeight =
-        glyph.tightCanvasBox.bottomRightCorner.y -
-        glyph.tightCanvasBox.topLeftCorner.y +
-        1;
-
-      // Calculate positioning offsets for atlas rendering
-      const dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
-      const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
-
-      // Set the calculated metrics
-      const glyphKey = `${fontProperties.key}:${letter}`;
-      this.fontMetrics.tightWidth.set(glyphKey, tightWidth);
-      this.fontMetrics.tightHeight.set(glyphKey, tightHeight);
-      this.fontMetrics.dx.set(glyphKey, dx);
-      this.fontMetrics.dy.set(glyphKey, dy);
-    }
+    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
+    fontMetricsFAB.calculateAndSetFontMetrics(glyphs, fontProperties);
   }
-
-  // FAB-specific method to set xInAtlas positioning after atlas is built
+  
+  /**
+   * Set glyph position in atlas after atlas is built
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {string} letter - Character to set position for
+   * @param {number} xPosition - X position in atlas
+   */
   setGlyphPositionInAtlas(fontProperties, letter, xPosition) {
-    const glyphKey = `${fontProperties.key}:${letter}`;
-    this.fontMetrics.xInAtlas.set(glyphKey, xPosition);
+    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
+    fontMetricsFAB.setGlyphPositionInAtlas(letter, xPosition);
   }
-
+  
+  /**
+   * Set text metrics for a single glyph
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {string} letter - Character to set metrics for
+   * @param {Object} metrics - TextMetrics-compatible object
+   */
   setGlyphTextMetrics(fontProperties, letter, metrics) {
-    const glyphKey = `${fontProperties.key}:${letter}`;
-    this.glyphsTextMetrics.set(glyphKey, metrics);
+    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
+    fontMetricsFAB.setGlyphTextMetrics(letter, metrics);
   }
-
-  // FAB-specific method to validate that all required metrics are present
+  
+  /**
+   * Set text metrics for all glyphs from metrics object
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {Object} metrics - Object mapping characters to TextMetrics
+   */
+  setGlyphsTextMetrics(fontProperties, metrics) {
+    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
+    fontMetricsFAB.setGlyphsTextMetrics(metrics);
+  }
+  
+  /**
+   * Set space advancement override for small font sizes
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {number} override - Override value in pixels
+   */
+  setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, override) {
+    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
+    fontMetricsFAB.setSpaceAdvancementOverride(override);
+  }
+  
+  /**
+   * Validate that all required metrics are present for expected characters
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {string[]} expectedLetters - Array of characters that should have metrics
+   * @returns {string[]} Array of missing metrics (empty if all present)
+   */
   validateFontMetrics(fontProperties, expectedLetters) {
-    const missingMetrics = [];
-    
-    for (const letter of expectedLetters) {
-      const glyphKey = `${fontProperties.key}:${letter}`;
-      const requiredMetrics = ['tightWidth', 'tightHeight', 'dx', 'dy', 'xInAtlas'];
-      
-      for (const metricType of requiredMetrics) {
-        if (!this.fontMetrics[metricType].has(glyphKey)) {
-          missingMetrics.push(`${letter}:${metricType}`);
-        }
-      }
-      
-      if (!this.glyphsTextMetrics.has(glyphKey)) {
-        missingMetrics.push(`${letter}:textMetrics`);
-      }
+    const fontMetrics = this.getFontMetrics(fontProperties);
+    if (fontMetrics && fontMetrics.validateFontMetrics) {
+      return fontMetrics.validateFontMetrics(expectedLetters);
     }
-    
-    return missingMetrics;
+    return [];
   }
 }

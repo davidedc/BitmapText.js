@@ -31,7 +31,7 @@ function main() {
     console.log('IDStrings:', IDStrings);
     
     // Load metrics for all font sizes
-    const fontDataMap = new Map();
+    const fontMetricsMap = new Map();
     
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
@@ -40,21 +40,25 @@ function main() {
       console.log(`Loading metrics for size ${fontSize}...`);
       
       // Load font metrics (JS file)
-      const fontDataPath = path.resolve(__dirname, `font-assets/metrics-${IDString}.js`);
-      if (!fs.existsSync(fontDataPath)) {
-        throw new Error(`Font data file not found: ${fontDataPath}`);
+      const fontMetricsPath = path.resolve(__dirname, `font-assets/metrics-${IDString}.js`);
+      if (!fs.existsSync(fontMetricsPath)) {
+        throw new Error(`Font metrics file not found: ${fontMetricsPath}`);
       }
       
-      // Execute the font data JS file to populate global.loadedBitmapFontData
-      const fontDataCode = fs.readFileSync(fontDataPath, 'utf8');
-      eval(fontDataCode);
+      // Execute the font metrics JS file to populate global.loadedBitmapFontData
+      const fontMetricsCode = fs.readFileSync(fontMetricsPath, 'utf8');
+      eval(fontMetricsCode);
       
-      const fontData = global.loadedBitmapFontData[IDString];
-      if (!fontData) {
-        throw new Error(`Font data not found for ID: ${IDString}`);
+      const fontMetricsData = global.loadedBitmapFontData[IDString];
+      if (!fontMetricsData) {
+        throw new Error(`Font metrics not found for ID: ${IDString}`);
       }
       
-      fontDataMap.set(fontSize, fontData);
+      // Check if it's already a FontMetrics instance (metrics files call MetricsExpander.expand)
+      const fontMetrics = fontMetricsData instanceof FontMetrics
+        ? fontMetricsData
+        : new FontMetrics(fontMetricsData);
+      fontMetricsMap.set(fontSize, fontMetrics);
       console.log(`✓ Metrics loaded for size ${fontSize}`);
     }
     
@@ -95,22 +99,16 @@ function main() {
     const fontMetricsStore = new FontMetricsStore();
     const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
     
-    // Process font data and populate atlas store for all sizes
+    // Process font atlases and populate atlas store for all sizes
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
       const fontProperties = fontPropertiesArray[i];
-      const fontData = fontDataMap.get(fontSize);
       const atlasImage = atlasMap.get(fontSize);
       
       console.log(`Setting up font data for size ${fontSize}...`);
       
-      fontMetricsStore.setKerningTable(fontProperties, fontData.kerningTable);
-      fontMetricsStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-      fontMetricsStore.setFontMetrics(fontProperties, fontData.atlasMetrics);
-      fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(
-        fontProperties,
-        fontData.spaceAdvancementOverrideForSmallSizesInPx
-      );
+      const fontMetrics = fontMetricsMap.get(fontSize);
+      fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
       
       if (atlasImage) {
         atlasStore.setAtlas(fontProperties, atlasImage);

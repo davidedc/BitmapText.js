@@ -1,4 +1,4 @@
-// the bitmapFontsManifest variable now contains the manifest data
+// the bitmapFontsManifest variable contains the manifest data
 // which looks like:
 // bitmapFontsManifest.IDs = ["density-1-arial-style-normal-weight-normal-size-18","density-1-arial-style-normal-weight-normal-size-19"];
 
@@ -61,34 +61,23 @@ else {
 }
 
 function ingestLoadedBitmapFontData() {
-  // Reset font metrics maps for fresh loading
-  fontMetricsStore.fontMetrics = {
-    tightWidth: new Map(),
-    tightHeight: new Map(),
-    dx: new Map(),
-    dy: new Map(),
-    xInAtlas: new Map()
-  };
+  // Clear existing font metrics for fresh loading
+  fontMetricsStore.clear();
   
   for (const key in loadedBitmapFontData) {
     const fontProperties = FontProperties.fromIDString(key);
-
-    // Put the loadedBitmapFontData "kerningTable" in the fontMetricsStore "kerningTables"
-    fontMetricsStore.setKerningTable(fontProperties, loadedBitmapFontData[key].kerningTable);
-
-    // Put the loadedBitmapFontData "glyphsTextMetrics" in the fontMetricsStore "glyphsTextMetrics"
-    fontMetricsStore.setGlyphsTextMetrics(fontProperties, loadedBitmapFontData[key].glyphsTextMetrics);
-
-    // Same for fontMetrics (formerly atlasMetrics)
-    const metrics = loadedBitmapFontData[key].atlasMetrics;
-    fontMetricsStore.setFontMetrics(fontProperties, metrics);
-
-    // Same for spaceAdvancementOverrideForSmallSizesInPx
-    fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, loadedBitmapFontData[key].spaceAdvancementOverrideForSmallSizesInPx);
+    
+    // loadedBitmapFontData[key] is a FontMetrics instance (from MetricsExpander.expand)
+    const fontMetrics = loadedBitmapFontData[key];
+    
+    // Store the FontMetrics instance directly
+    fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
 
     // Remove the script element from the document
     let script = document.querySelector(`script[src="../font-assets/metrics-${key.replace(/_/g, '-')}.js"]`);
-    script.remove();
+    if (script) {
+      script.remove();
+    }
 
     // Remove the loadedBitmapFontData entry
     delete loadedBitmapFontData[key];

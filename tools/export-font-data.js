@@ -69,78 +69,62 @@ function downloadFontAssets(options) {
       const currentDate = new Date(now.getTime() - (timezoneOffset * 60 * 1000));
       folder.file(`atlas-${IDString}.qoi`, qoiBase64, { base64: true, date: currentDate });
 
-      // REFACTORED: Extract metadata using new Map-based getters
-      // Collect all glyph metrics for this font configuration
+      // Extract metadata using FontMetrics instance
+      // Get FontMetrics instance for this font configuration
+      const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
+      
+      if (!fontMetrics) {
+          console.warn(`No FontMetrics found for ${fontProperties.key}, skipping export`);
+          return;
+      }
+      
+      // Extract atlas metrics directly from FontMetrics instance
       const atlasMetrics = {
-          tightWidth: {},
-          tightHeight: {},
-          dx: {},
-          dy: {},
-          xInAtlas: {}
+          tightWidth: { ...fontMetrics._fontMetrics.tightWidth },
+          tightHeight: { ...fontMetrics._fontMetrics.tightHeight },
+          dx: { ...fontMetrics._fontMetrics.dx },
+          dy: { ...fontMetrics._fontMetrics.dy },
+          xInAtlas: { ...fontMetrics._fontMetrics.xInAtlas }
       };
       
-      const glyphsTextMetrics = {};
-      const baseGlyphKey = fontProperties.key + ':';
-      
-      // Iterate through all Map entries to find glyphs for this font
-      for (const [key, value] of fontMetricsStore.fontMetrics.tightWidth) {
-          if (key.startsWith(baseGlyphKey)) {
-              const letter = key.substring(baseGlyphKey.length);
-              atlasMetrics.tightWidth[letter] = value;
-          }
-      }
-      
-      for (const [key, value] of fontMetricsStore.fontMetrics.tightHeight) {
-          if (key.startsWith(baseGlyphKey)) {
-              const letter = key.substring(baseGlyphKey.length);
-              atlasMetrics.tightHeight[letter] = value;
-          }
-      }
-      
-      for (const [key, value] of fontMetricsStore.fontMetrics.dx) {
-          if (key.startsWith(baseGlyphKey)) {
-              const letter = key.substring(baseGlyphKey.length);
-              atlasMetrics.dx[letter] = value;
-          }
-      }
-      
-      for (const [key, value] of fontMetricsStore.fontMetrics.dy) {
-          if (key.startsWith(baseGlyphKey)) {
-              const letter = key.substring(baseGlyphKey.length);
-              atlasMetrics.dy[letter] = value;
-          }
-      }
-      
-      for (const [key, value] of fontMetricsStore.fontMetrics.xInAtlas) {
-          if (key.startsWith(baseGlyphKey)) {
-              const letter = key.substring(baseGlyphKey.length);
-              atlasMetrics.xInAtlas[letter] = value;
-          }
-      }
-      
-      // Collect glyph text metrics
-      for (const [key, value] of fontMetricsStore.glyphsTextMetrics) {
-          if (key.startsWith(baseGlyphKey)) {
-              const letter = key.substring(baseGlyphKey.length);
-              glyphsTextMetrics[letter] = value;
-          }
-      }
+      // Extract glyph text metrics directly from FontMetrics instance
+      const glyphsTextMetrics = { ...fontMetrics._glyphsTextMetrics };
       
       const metadata = {
-          kerningTable: fontMetricsStore.getKerningTable(fontProperties),
+          kerningTable: fontMetrics._kerningTable,
           glyphsTextMetrics: glyphsTextMetrics,
-          spaceAdvancementOverrideForSmallSizesInPx: fontMetricsStore.getSpaceAdvancementOverrideForSmallSizesInPx(fontProperties),
+          spaceAdvancementOverrideForSmallSizesInPx: fontMetrics._spaceAdvancementOverride,
           atlasMetrics: atlasMetrics
       };
 
+      // Check if we have any glyphs to export
+      if (Object.keys(glyphsTextMetrics).length === 0) {
+          console.warn(`No glyphs found for ${fontProperties.key}, skipping export`);
+          return;
+      }
+      
       // Test minification and expansion 
       const minified = MetricsMinifier.minify(metadata);
       const expanded = MetricsExpander.expand(minified);
       
       // Instead of deep equality check, let's verify the essential properties are preserved
+      // Note: expanded is a FontMetrics instance, not a plain object
       const firstChar = Object.keys(metadata.glyphsTextMetrics)[0];
       const originalGlyph = metadata.glyphsTextMetrics[firstChar];
-      const expandedGlyph = expanded.glyphsTextMetrics[firstChar];
+      
+      // Use FontMetrics API to get the expanded glyph data
+      const expandedGlyph = expanded.getTextMetrics(firstChar);
+      
+      if (!expandedGlyph) {
+          console.error('Expanded glyph is undefined:', {
+              firstChar,
+              originalGlyph,
+              expandedType: typeof expanded,
+              expandedConstructor: expanded.constructor.name,
+              hasGlyph: expanded.hasGlyph(firstChar)
+          });
+          throw new Error(`Expanded glyph data is missing for character '${firstChar}'`);
+      }
       
       // Check that the essential named properties match
       const essentialProps = ['width', 'actualBoundingBoxLeft', 'actualBoundingBoxRight', 'actualBoundingBoxAscent', 'actualBoundingBoxDescent'];

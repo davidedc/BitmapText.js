@@ -31,10 +31,12 @@
   <canvas id="demo-canvas" width="300" height="100"></canvas>
 
   <!-- Essential dependencies -->
-  <!-- Expander utility to unpack minified font metrics data -->
-  <script src="../src/minification/MetricsExpander.js"></script>
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
+  <!-- FontMetrics domain object for encapsulating font metrics data -->
+  <script src="../src/core/FontMetrics.js"></script>
+  <!-- Expander utility to unpack minified font metrics data (depends on FontMetrics) -->
+  <script src="../src/minification/MetricsExpander.js"></script>
   <!-- Data store for atlas images -->
   <script src="../src/core/AtlasStore.js"></script>
   <!-- Data store for font metrics, kerning, and positioning -->
@@ -71,26 +73,21 @@
       }
     }
 
-    // Load font data (JS file with metrics)
-    const dataScript = document.createElement('script');
-    dataScript.src = '../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
-    dataScript.onload = function() {
-      // Process loaded font data
+    // Load font metrics (JS file with metrics)
+    const metricsScript = document.createElement('script');
+    metricsScript.src = '../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
+    metricsScript.onload = function() {
+      // Process loaded font metrics
       const IDString = "density-1-0-Arial-style-normal-weight-normal-size-19-0";
-      const fontData = window.loadedBitmapFontData[IDString];
+      const fontMetrics = window.loadedBitmapFontData[IDString];
       
       // Set up stores with loaded data
-      fontMetricsStore.setKerningTable(fontProperties, fontData.kerningTable);
-      fontMetricsStore.setGlyphsTextMetrics(fontProperties, fontData.glyphsTextMetrics);
-      fontMetricsStore.setFontMetrics(fontProperties, fontData.atlasMetrics);
-      fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(
-        fontProperties, 
-        fontData.spaceAdvancementOverrideForSmallSizesInPx
-      );
+      // from MetricsExpander.expand
+      fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
 
       onFileLoaded();
     };
-    document.head.appendChild(dataScript);
+    document.head.appendChild(metricsScript);
 
     // Load atlas image
     function loadAtlas() {

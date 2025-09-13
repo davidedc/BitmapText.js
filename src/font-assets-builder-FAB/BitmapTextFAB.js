@@ -105,7 +105,7 @@ class BitmapTextFAB extends BitmapText {
   }
 
   buildKerningTableIfDoesntExist(fontProperties) {
-    if (this.fontMetricsStore.kerningTableExists(fontProperties))
+    if (this.fontMetricsStoreFAB.kerningTableExists(fontProperties))
       return;
 
     // go through all the letters and for each letter, go through all the other letters
@@ -133,11 +133,11 @@ class BitmapTextFAB extends BitmapText {
       }
     }
 
-    this.fontMetricsStore.setKerningTable(fontProperties, kerningTable);
+    this.fontMetricsStoreFAB.setKerningTable(fontProperties, kerningTable);
 
     const spaceAdvancementOverrideForSmallSizesInPx =
       specs.getSingleFloatCorrection(fontProperties, "Space advancement override for small sizes in px");
-    this.fontMetricsStore.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
+    this.fontMetricsStoreFAB.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
   }
 
   // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string
@@ -150,14 +150,20 @@ class BitmapTextFAB extends BitmapText {
     let x_Phys_Px = x_CSS_Px * fontProperties.pixelDensity;
     const y_Phys_Px = y_CSS_Px * fontProperties.pixelDensity;
 
+    // Get FontMetrics instance once for this font
+    const fontMetrics = this.fontMetricsStoreFAB.getFontMetrics(fontProperties);
+    if (!fontMetrics) {
+      throw new Error(`No metrics found for font: ${fontProperties.key}`);
+    }
+
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
       const nextLetter = text[i + 1];
-      const glyph = this.atlasStore.getGlyph(
+      const glyph = this.atlasStoreFAB.getGlyph(
         fontProperties,
         letter
       );
-      const letterTextMetrics = this.fontMetricsStore.getGlyphsTextMetrics(fontProperties, letter);
+      const letterTextMetrics = fontMetrics.getTextMetrics(letter);
 
       if (glyph && glyph.tightCanvas) {
         // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
@@ -217,7 +223,7 @@ class BitmapTextFAB extends BitmapText {
       }
 
       x_Phys_Px +=
-        this.calculateAdvancement_CSS_Px(fontProperties, letter, nextLetter) *
+        this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter) *
         fontProperties.pixelDensity;
     }
   }

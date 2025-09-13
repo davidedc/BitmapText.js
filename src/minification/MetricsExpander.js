@@ -1,5 +1,5 @@
 // Static utility class for expanding minified font metrics data (runtime only)
-// Converts compact format back to full object structures for use by the rendering engine
+// Converts compact format back to FontMetrics instances for use by the rendering engine
 
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -8,17 +8,24 @@ class MetricsExpander {
   }
   
   /**
-   * Expands minified metrics back to full format for runtime use
+   * Expands minified metrics back to FontMetrics instance for runtime use
    * @param {Object} minified - Minified metrics object with shortened keys
-   * @returns {Object} Full metrics object with complete property names
+   * @returns {FontMetrics} FontMetrics instance with expanded data
    */
   static expand(minified) {
-    return {
+    // Check if FontMetrics class is available (for cases where loaded as standalone)
+    if (typeof FontMetrics === 'undefined') {
+      throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
+    }
+    
+    const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k),
       glyphsTextMetrics: this.#expandGlyphMetrics(minified.g, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s,
       atlasMetrics: this.#expandTightMetrics(minified.t)
     };
+    
+    return new FontMetrics(expandedData);
   }
   
   /**
