@@ -7,7 +7,7 @@
 let loadedFontMetrics;
 
 // PNG loading (HTTP protocol)
-function loadAtlasesFromPNGs() {
+function loadAtlasesFromPNGsAndLoadAndIngestMetrics() {
   const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
     console.log(`loadedScripts: ${loaded} out of ${total}`);
   });
@@ -29,7 +29,7 @@ function loadAtlasesFromPNGs() {
 // which will contain the base64 encoded image data
 
 // Function for JS loading (file:// protocol) 
-function loadAtlasesFromJSs() {
+function loadAtlasesFromJSsAndLoadAndIngestMetrics() {
   const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
     console.log(`loadedScripts: ${loaded} out of ${total}`);
   });
@@ -54,10 +54,10 @@ if (window.location.href.includes("file://")) {
   // Loading images from .js files instead, the browser considers all of them as the same domain (strange but true),
   // so the images are not tainted as cross-origin.
   // This way you can read the pixels from the canvas and check the hash of the image of generated text.
-  loadAtlasesFromJSs();
+  loadAtlasesFromJSsAndLoadAndIngestMetrics();
 }
 else {
-  loadAtlasesFromPNGs();
+  loadAtlasesFromPNGsAndLoadAndIngestMetrics();
 }
 
 function ingestLoadedFontMetrics() {
