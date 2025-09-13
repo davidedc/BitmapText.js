@@ -69,12 +69,17 @@
     const fontMetricsStore = new FontMetricsStore();
     const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
 
+    // Make stores and classes globally available for metrics files
+    window.fontMetricsStore = fontMetricsStore;
+    window.FontProperties = FontProperties;
+    window.FontMetrics = FontMetrics;
+    window.MetricsExpander = MetricsExpander;
+
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
 
     // Initialize global variables (required by the font JS files)
-    window.loadedFontMetrics = {};
     window.imagesFromJs = {};
     window.isKerningEnabled = true;  // Enable kerning for better text rendering
 
@@ -99,17 +104,7 @@
     // Load fonts and handle completion
     fontLoader.loadFonts(IDStrings, isFileProtocol)
       .then(() => {
-        // Ingest the loaded bitmap font data (same as in manifest-loader.js)
-        for (const IDString of IDStrings) {
-          const fontProperties = fontPropertiesArray[IDStrings.indexOf(IDString)];
-          const fontMetrics = window.loadedFontMetrics[IDString];
-          
-          if (fontMetrics) {
-            fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
-          }
-        }
-        
-        // Render the multi-size text
+        // Metrics are auto-installed via direct store access
         renderMultiSizeHelloWorld();
       });
 

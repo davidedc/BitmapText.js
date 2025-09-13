@@ -5,7 +5,6 @@ const fs = require('fs');
 const path = require('path');
 
 // Set global variables (required by BitmapText)
-global.loadedFontMetrics = {};
 global.isKerningEnabled = true;
 
 // Font properties for Arial normal normal 19 with pixel density 1
@@ -14,28 +13,27 @@ const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); /
 function main() {
   try {
     console.log('BitmapText.js Node.js Demo - Loading font data...');
-    
-    // Load font metrics (JS file)
+
+    // Setup BitmapText system FIRST (so stores are available)
+    console.log('Setting up BitmapText system...');
+    const atlasStore = new AtlasStore();
+    const fontMetricsStore = new FontMetricsStore();
+    const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
+
+    // Make stores and classes globally available for metrics files
+    global.fontMetricsStore = fontMetricsStore;
+    global.FontProperties = FontProperties;
+    global.FontMetrics = FontMetrics;
+    global.MetricsExpander = MetricsExpander;
+
+    // Load and execute font metrics (will auto-install to store)
     const fontMetricsPath = path.resolve(__dirname, 'font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
     if (!fs.existsSync(fontMetricsPath)) {
       throw new Error(`Font metrics file not found: ${fontMetricsPath}`);
     }
-    
-    // Execute the font metrics JS file to populate global.loadedFontMetrics
     const fontMetricsCode = fs.readFileSync(fontMetricsPath, 'utf8');
     eval(fontMetricsCode);
-    
-    const IDString = "density-1-0-Arial-style-normal-weight-normal-size-19-0";
-    const fontMetricsData = global.loadedFontMetrics[IDString];
-    if (!fontMetricsData) {
-      throw new Error(`Font metrics not found for ID: ${IDString}`);
-    }
-    
-    // Check if it's already a FontMetrics instance (metrics files call MetricsExpander.expand)
-    const fontMetrics = fontMetricsData instanceof FontMetrics 
-      ? fontMetricsData 
-      : new FontMetrics(fontMetricsData);
-    
+
     console.log('Font metrics loaded successfully');
     
     // Load and decode QOI atlas
@@ -57,14 +55,7 @@ function main() {
     // Create Image from QOI data
     const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
     
-    // Setup BitmapText system
-    console.log('Setting up BitmapText system...');
-    const atlasStore = new AtlasStore();
-    const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
-    
-    // Process font data and populate stores
-    fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
+    // Set atlas in store
     atlasStore.setAtlas(fontProperties, atlasImage);
     
     // Create output canvas

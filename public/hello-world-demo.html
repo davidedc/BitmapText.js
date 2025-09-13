@@ -53,12 +53,17 @@
     const fontMetricsStore = new FontMetricsStore();
     const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
 
+    // Make stores and classes globally available for metrics files
+    window.fontMetricsStore = fontMetricsStore;
+    window.FontProperties = FontProperties;
+    window.FontMetrics = FontMetrics;
+    window.MetricsExpander = MetricsExpander;
+
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
 
     // Initialize global variables (required by the font JS files)
-    window.loadedFontMetrics = {};
     window.imagesFromJs = {};
     window.isKerningEnabled = true;  // Enable kerning for better text rendering
 
@@ -77,14 +82,7 @@
     const metricsScript = document.createElement('script');
     metricsScript.src = '../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
     metricsScript.onload = function() {
-      // Process loaded font metrics
-      const IDString = "density-1-0-Arial-style-normal-weight-normal-size-19-0";
-      const fontMetrics = window.loadedFontMetrics[IDString];
-      
-      // Set up stores with loaded data
-      // from MetricsExpander.expand
-      fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
-
+      // Metrics are auto-installed via direct store access
       onFileLoaded();
     };
     document.head.appendChild(metricsScript);

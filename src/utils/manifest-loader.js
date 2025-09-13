@@ -2,9 +2,6 @@
 // which looks like:
 // bitmapFontsManifest.IDs = ["density-1-arial-style-normal-weight-normal-size-18","density-1-arial-style-normal-weight-normal-size-19"];
 
-// TODO loadedFontMetrics should be called something different, as this is really the data loaded from the JS files
-// which is then processed, put in the atlasStore and then deleted
-let loadedFontMetrics;
 
 // PNG loading (HTTP protocol)
 function loadAtlasesFromPNGsAndLoadAndIngestMetrics() {
@@ -15,8 +12,13 @@ function loadAtlasesFromPNGsAndLoadAndIngestMetrics() {
   fontLoader.loadFonts(bitmapFontsManifest.IDs, false)
     .then(() => {
       console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
-      startTiming('ingestingFontData');
-      ingestLoadedFontMetrics();
+      console.log("All metrics loaded directly to store");
+
+      startTiming('drawTestText');
+      // Use UI's selected font properties for initial render instead of hardcoded values
+      const fontProperties = getFontPropertiesFromUI();
+      drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
+      console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
     });
 }
 
@@ -37,8 +39,13 @@ function loadAtlasesFromJSsAndLoadAndIngestMetrics() {
   fontLoader.loadFonts(bitmapFontsManifest.IDs, true)
     .then(() => {
       console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
-      startTiming('ingestingFontData');
-      ingestLoadedFontMetrics();
+      console.log("All metrics loaded directly to store");
+
+      startTiming('drawTestText');
+      // Use UI's selected font properties for initial render instead of hardcoded values
+      const fontProperties = getFontPropertiesFromUI();
+      drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
+      console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
     });
 }
 
@@ -60,49 +67,3 @@ else {
   loadAtlasesFromPNGsAndLoadAndIngestMetrics();
 }
 
-function ingestLoadedFontMetrics() {
-  // Clear existing font metrics for fresh loading
-  fontMetricsStore.clear();
-  
-  for (const key in loadedFontMetrics) {
-    const fontProperties = FontProperties.fromIDString(key);
-    
-    // loadedFontMetrics[key] is a FontMetrics instance (from MetricsExpander.expand)
-    const fontMetrics = loadedFontMetrics[key];
-    
-    // Store the FontMetrics instance directly
-    fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
-
-    // Remove the script element from the document
-    let script = document.querySelector(`script[src="../font-assets/metrics-${key.replace(/_/g, '-')}.js"]`);
-    if (script) {
-      script.remove();
-    }
-
-    // Remove the loadedFontMetrics entry
-    delete loadedFontMetrics[key];
-  }
-
-  // Clean up global variables
-  delete window.loadedFontMetrics;
-
-  // remove the script tag with the manifest
-  let manifestScript = document.querySelector('script[src="../font-assets/manifest.js"]');
-  manifestScript.remove();
-
-  // remove the bitmapFontsManifest object from the window
-  delete window.bitmapFontsManifest;
-
-  // remove the imagesFromJs object from the window if it exists
-  if (window.imagesFromJs) {
-    delete window.imagesFromJs;
-  }
-
-  console.log("⏱️ ingestingFontData took " + stopTiming('ingestingFontData') + " milliseconds");
-
-  startTiming('drawTestText');
-  // Use UI's selected font properties for initial render instead of hardcoded values
-  const fontProperties = getFontPropertiesFromUI();
-  drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
-  console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
-}

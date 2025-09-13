@@ -146,7 +146,12 @@ function downloadFontAssets(options) {
       // Add metadata JS file to zip with explicit current date
       folder.file(
           `metrics-${IDString}.js`,
-          `(loadedFontMetrics ??= {})['${IDString}'] = MetricsExpander.expand(${JSON.stringify(MetricsMinifier.minify(metadata))});`,
+          `// Direct store population - no intermediate storage
+if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefined' && typeof MetricsExpander !== 'undefined') {
+  const fontProperties = FontProperties.fromIDString('${IDString}');
+  const fontMetrics = MetricsExpander.expand(${JSON.stringify(MetricsMinifier.minify(metadata))});
+  fontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
+}`,
           { date: currentDate }
       );
   });
