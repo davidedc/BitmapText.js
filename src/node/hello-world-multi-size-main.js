@@ -30,9 +30,6 @@ function main() {
     const fontMetricsStore = new FontMetricsStore();
     const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
 
-    // Make store globally available for metrics files
-    global.fontMetricsStore = fontMetricsStore;
-
     // Create IDStrings for all font configurations
     const IDStrings = fontPropertiesArray.map(createIDString);
     console.log('Font sizes:', fontSizes);

@@ -69,9 +69,6 @@
     const fontMetricsStore = new FontMetricsStore();
     const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
 
-    // Make store globally available for metrics files
-    window.fontMetricsStore = fontMetricsStore;
-
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
