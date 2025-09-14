@@ -20,11 +20,8 @@ function main() {
     const fontMetricsStore = new FontMetricsStore();
     const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
 
-    // Make stores and classes globally available for metrics files
+    // Make store globally available for metrics files
     global.fontMetricsStore = fontMetricsStore;
-    global.FontProperties = FontProperties;
-    global.FontMetrics = FontMetrics;
-    global.MetricsExpander = MetricsExpander;
 
     // Load and execute font metrics (will auto-install to store)
     const fontMetricsPath = path.resolve(__dirname, 'font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
