@@ -160,7 +160,7 @@ if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefi
   const manifestNow = new Date();
   const manifestTimezoneOffset = manifestNow.getTimezoneOffset();
   const manifestDate = new Date(manifestNow.getTime() - (manifestTimezoneOffset * 60 * 1000));
-  folder.file('manifest.js', `(bitmapFontsManifest ??= {}).IDs = ${JSON.stringify(IDs)};`, { date: manifestDate });
+  folder.file('manifest.js', `(bitmapTextManifest ??= {}).IDs = ${JSON.stringify(IDs)};`, { date: manifestDate });
 
   // Generate and download zip file
   return zip.generateAsync({ type: "blob" })

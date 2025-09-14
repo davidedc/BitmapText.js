@@ -45,7 +45,7 @@ and then open the page from the browser at:
 <script >
   const maxFontSize_px = 80;
   const fontSizeIncrement_px = 0.5;
-  let bitmapFontsManifest;
+  let bitmapTextManifest;
   let specsDefault;
   function updatePageContent() {
     showGlyphs();
@@ -89,7 +89,45 @@ and then open the page from the browser at:
 <script src="../font-assets/manifest.js"></script>
 <script src="../src/utils/font-loader-config.js"></script>
 <script src="../src/utils/font-loader.js"></script>
-<script src="../src/utils/manifest-loader.js"></script>
+
+<script>
+  // Ensure everything is loaded before starting
+  console.log("FontLoader available:", typeof FontLoader !== 'undefined');
+  console.log("Manifest available:", typeof bitmapTextManifest !== 'undefined');
+
+  if (typeof FontLoader === 'undefined') {
+    console.error("FontLoader is not defined. Check that font-loader.js loaded properly.");
+  } else if (typeof bitmapTextManifest === 'undefined') {
+    console.error("bitmapTextManifest is not defined. Check that manifest.js loaded properly.");
+  } else {
+    // Load all fonts from manifest and trigger test rendering
+    startTiming('loadingFontData');
+
+    // Determine protocol for image loading
+    const isFileProtocol = window.location.href.includes("file://");
+
+    // Load all fonts using FontLoader
+    console.log("Using manifest IDs:", bitmapTextManifest.IDs);
+
+    const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
+      console.log(`loadedScripts: ${loaded} out of ${total}`);
+    });
+
+    fontLoader.loadFonts(bitmapTextManifest.IDs, isFileProtocol)
+      .then(() => {
+        console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
+        console.log("All metrics loaded directly to store");
+
+        startTiming('drawTestText');
+        const fontProperties = getFontPropertiesFromUI();
+        drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
+        console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
+      })
+      .catch(error => {
+        console.error("Font loading failed:", error);
+      });
+  }
+</script>
 
 
 </html>

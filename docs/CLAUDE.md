@@ -13,7 +13,7 @@
 
   - **Core runtime**: src/core/BitmapText.js, src/core/AtlasStore.js, src/core/FontMetricsStore.js, src/core/FontProperties.js
   - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
-  - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js, src/utils/manifest-loader.js
+  - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js
   - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
