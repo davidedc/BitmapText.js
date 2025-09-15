@@ -193,7 +193,7 @@ new TextProperties(options = {})
 
 ### Parameters (all optional with defaults)
 - **isKerningEnabled**: Boolean (default: true) - Enable kerning for better text rendering
-- **textBaseline**: String (default: "alphabetic") - HTML5 Canvas textBaseline (BitmapText typically uses "bottom")
+- **textBaseline**: String (default: "bottom") - TextProperties uses 'bottom' as default (differs from HTML5 Canvas default of 'alphabetic')
 - **textAlign**: String (default: "left") - Text alignment
 - **textColor**: String (default: "#000000") - CSS color string
 

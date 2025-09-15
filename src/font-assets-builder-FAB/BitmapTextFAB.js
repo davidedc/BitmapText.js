@@ -156,6 +156,9 @@ class BitmapTextFAB extends BitmapText {
       throw new Error(`No metrics found for font: ${fontProperties.key}`);
     }
 
+    // Create TextProperties instance once for this drawing operation
+    const textProperties = new TextProperties();
+
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];
       const nextLetter = text[i + 1];
@@ -223,7 +226,7 @@ class BitmapTextFAB extends BitmapText {
       }
 
       x_Phys_Px +=
-        this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter) *
+        this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter, textProperties) *
         fontProperties.pixelDensity;
     }
   }

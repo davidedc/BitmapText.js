@@ -40,7 +40,6 @@ class BitmapText {
   //  * actualBoundingBoxRight =
   //      the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
   measureText(text, fontProperties, textProperties) {
-    // Create default TextProperties if not provided (backward compatibility)
     if (!textProperties) {
       textProperties = new TextProperties();
     }
@@ -106,7 +105,6 @@ class BitmapText {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
   calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter, textProperties) {
-    // Create default TextProperties if not provided (backward compatibility)
     if (!textProperties) {
       textProperties = new TextProperties();
     }
@@ -154,7 +152,6 @@ class BitmapText {
   }
 
   getKerningCorrection(fontMetrics, letter, nextLetter, textProperties) {
-    // Create default TextProperties if not provided (backward compatibility)
     if (!textProperties) {
       textProperties = new TextProperties();
     }
@@ -166,18 +163,9 @@ class BitmapText {
     return 0;
   }
 
-  drawTextFromAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textPropertiesOrTextColor = null) {
-    // Handle backward compatibility: if second parameter is a string, it's the old textColor parameter
-    let textProperties, textColor;
-    if (typeof textPropertiesOrTextColor === 'string' || textPropertiesOrTextColor === null) {
-      // Legacy mode: textColor parameter
-      textColor = textPropertiesOrTextColor || 'black';
-      textProperties = new TextProperties({ textColor });
-    } else {
-      // New mode: TextProperties parameter
-      textProperties = textPropertiesOrTextColor || new TextProperties();
-      textColor = textProperties.textColor;
-    }
+  drawTextFromAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textProperties = null) {
+    textProperties = textProperties || new TextProperties();
+    const textColor = textProperties.textColor;
     const position = {
       x: x_CSS_Px * fontProperties.pixelDensity,
       y: y_CSS_Px * fontProperties.pixelDensity

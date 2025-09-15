@@ -222,7 +222,7 @@ function drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures, testCopyLi
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    bitmapText.drawTextFromAtlas(ctx, line, 0, yPosition, fontProperties, textProperties);
+    bitmapText.drawText(ctx, line, 0, yPosition, fontProperties, textProperties);
   });
 
   let hashMatchInfo = '';
@@ -259,19 +259,8 @@ function createCheckerboardBackground(ctx) {
   }
 }
 
-function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from atlas:', textColorOrTextProperties = null) {
-  // Handle backward compatibility: if textColorOrTextProperties is a string, it's the old textColor parameter
-  let textProperties;
-  if (typeof textColorOrTextProperties === 'string' || textColorOrTextProperties === null) {
-    // Legacy mode: get from UI state but override color if string provided
-    textProperties = getTextPropertiesFromUI();
-    if (typeof textColorOrTextProperties === 'string') {
-      textProperties = textProperties.withTextColor(textColorOrTextProperties);
-    }
-  } else {
-    // New mode: TextProperties parameter
-    textProperties = textColorOrTextProperties;
-  }
+function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from atlas:', textProperties = null) {
+  textProperties = textProperties || getTextPropertiesFromUI();
   const textColor = textProperties.textColor;
   
   let drawOverExistingCanvas = false;
