@@ -27,6 +27,7 @@ mkdir -p "$OUTPUT_DIR"
 FILES_TO_CHECK=(
   "$SRC_DIR/node/canvas-mock.js"
   "$SRC_DIR/core/FontProperties.js"
+  "$SRC_DIR/core/TextProperties.js"
   "$SRC_DIR/core/FontMetrics.js"
   "$SRC_DIR/minification/MetricsExpander.js"
   "$LIB_DIR/QOIDecode.js"
@@ -103,6 +104,14 @@ echo "// FONT PROPERTIES CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/core/FontProperties.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate TextProperties class
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// TEXT PROPERTIES CLASS" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/TextProperties.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontMetrics class

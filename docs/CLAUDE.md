@@ -58,6 +58,7 @@
   ## Where to Find Things
 
   - **Font configuration**: src/core/FontProperties.js (immutable font config class)
+  - **Text rendering configuration**: src/core/TextProperties.js (immutable text config class - kerning, color, alignment)
   - **Font assets building utilities**: src/font-assets-builder-FAB/FontPropertiesFAB.js (extends FontProperties)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158

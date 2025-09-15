@@ -33,6 +33,8 @@
   <!-- Essential dependencies -->
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
+  <!-- TextProperties class for text rendering configuration -->
+  <script src="../src/core/TextProperties.js"></script>
   <!-- FontMetrics domain object for encapsulating font metrics data -->
   <script src="../src/core/FontMetrics.js"></script>
   <!-- Expander utility to unpack minified font metrics data (depends on FontMetrics) -->
@@ -48,6 +50,14 @@
     // Font properties for Arial normal normal 19 with pixel density 1
     const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 
+    // Text properties for rendering configuration
+    const textProperties = new TextProperties({
+      isKerningEnabled: true,      // Enable kerning for better text rendering
+      textBaseline: 'bottom',      // BitmapText uses bottom baseline positioning
+      textAlign: 'left',           // Standard left alignment
+      textColor: '#000000'         // Black color
+    });
+
     // Initialize bitmap text system
     const atlasStore = new AtlasStore();
     const fontMetricsStore = new FontMetricsStore();
@@ -59,7 +69,6 @@
 
     // Initialize global variables (required by the font JS files)
     window.imagesFromJs = {};
-    window.isKerningEnabled = true;  // Enable kerning for better text rendering
 
     // Font data loading tracking
     let loadedFiles = 0;
@@ -116,12 +125,12 @@
 
       // Draw "Hello World" using bitmap text
       bitmapText.drawTextFromAtlas(
-        ctx, 
-        "Hello World", 
+        ctx,
+        "Hello World",
         10,  // x position
         50,  // y position
-        fontProperties, 
-        '#000000'  // black color
+        fontProperties,
+        textProperties  // text rendering properties including color and kerning
       );
 
       console.log('Hello World rendered successfully!');

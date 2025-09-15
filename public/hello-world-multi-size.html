@@ -43,6 +43,8 @@
   <!-- Essential dependencies -->
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
+  <!-- TextProperties class for text rendering configuration -->
+  <script src="../src/core/TextProperties.js"></script>
   <!-- FontMetrics domain object for encapsulating font metrics data -->
   <script src="../src/core/FontMetrics.js"></script>
   <!-- Expander utility to unpack minified font metrics data (depends on FontMetrics) -->
@@ -60,9 +62,17 @@
   <script>
     // Font properties for each size - Arial normal normal with pixel density 1
     const fontSizes = [18, 18.5, 19];
-    const fontPropertiesArray = fontSizes.map(size => 
+    const fontPropertiesArray = fontSizes.map(size =>
       new FontProperties(1, "Arial", "normal", "normal", size) // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
     );
+
+    // Text properties for rendering configuration
+    const textProperties = new TextProperties({
+      isKerningEnabled: true,      // Enable kerning for better text rendering
+      textBaseline: 'bottom',      // BitmapText uses bottom baseline positioning
+      textAlign: 'left',           // Standard left alignment
+      textColor: '#000000'         // Black color
+    });
 
     // Initialize bitmap text system
     const atlasStore = new AtlasStore();
@@ -75,7 +85,6 @@
 
     // Initialize global variables (required by the font JS files)
     window.imagesFromJs = {};
-    window.isKerningEnabled = true;  // Enable kerning for better text rendering
 
     // Function to create IDString from font size
     function createIDString(fontSize) {
@@ -118,7 +127,7 @@
           20,  // x position
           yPosition,
           fontProperties,
-          '#000000'  // black color
+          textProperties  // text rendering properties including color and kerning
         );
         
         console.log(`Rendered "${text}" at y=${yPosition}`);

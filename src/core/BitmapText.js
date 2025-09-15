@@ -39,7 +39,11 @@ class BitmapText {
   //      the actualBoundingBoxLeft of the first character
   //  * actualBoundingBoxRight =
   //      the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
-  measureText(text, fontProperties) {
+  measureText(text, fontProperties, textProperties) {
+    // Create default TextProperties if not provided (backward compatibility)
+    if (!textProperties) {
+      textProperties = new TextProperties();
+    }
     if (text.length === 0)
       return {
         width: 0,
@@ -74,7 +78,7 @@ class BitmapText {
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
 
-      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter);
+      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter, textProperties);
       width_CSS_Px += advancement_CSS_Px;
     }
 
@@ -101,7 +105,11 @@ class BitmapText {
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter) {
+  calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter, textProperties) {
+    // Create default TextProperties if not provided (backward compatibility)
+    if (!textProperties) {
+      textProperties = new TextProperties();
+    }
     const letterTextMetrics = fontMetrics.getTextMetrics(letter);
     let x_CSS_Px = 0;
 
@@ -131,7 +139,7 @@ class BitmapText {
     }
 
     // Next, apply the kerning correction ----------------------------
-    let kerningCorrection = this.getKerningCorrection(fontMetrics, letter, nextLetter);
+    let kerningCorrection = this.getKerningCorrection(fontMetrics, letter, nextLetter, textProperties);
 
     // We multiply the advancement of the letter by the kerning
     // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
@@ -145,15 +153,31 @@ class BitmapText {
     return Math.round(x_CSS_Px);
   }
 
-  getKerningCorrection(fontMetrics, letter, nextLetter) {
-    if (isKerningEnabled && nextLetter) {
+  getKerningCorrection(fontMetrics, letter, nextLetter, textProperties) {
+    // Create default TextProperties if not provided (backward compatibility)
+    if (!textProperties) {
+      textProperties = new TextProperties();
+    }
+
+    if (textProperties.isKerningEnabled && nextLetter) {
       return fontMetrics.getKerningAdjustment(letter, nextLetter);
     }
 
     return 0;
   }
 
-  drawTextFromAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textColor = 'black') {
+  drawTextFromAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textPropertiesOrTextColor = null) {
+    // Handle backward compatibility: if second parameter is a string, it's the old textColor parameter
+    let textProperties, textColor;
+    if (typeof textPropertiesOrTextColor === 'string' || textPropertiesOrTextColor === null) {
+      // Legacy mode: textColor parameter
+      textColor = textPropertiesOrTextColor || 'black';
+      textProperties = new TextProperties({ textColor });
+    } else {
+      // New mode: TextProperties parameter
+      textProperties = textPropertiesOrTextColor || new TextProperties();
+      textColor = textProperties.textColor;
+    }
     const position = {
       x: x_CSS_Px * fontProperties.pixelDensity,
       y: y_CSS_Px * fontProperties.pixelDensity
@@ -179,7 +203,7 @@ class BitmapText {
         textColor
       );
 
-      position.x += this.calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter);
+      position.x += this.calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter, textProperties);
     }
   }
 
@@ -261,8 +285,8 @@ class BitmapText {
     ctx.fillRect(rectX, rectY, tightWidth, tightHeight);
   }
 
-  calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter) {
-    return this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, currentLetter, nextLetter) 
+  calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter, textProperties) {
+    return this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, currentLetter, nextLetter, textProperties)
       * fontProperties.pixelDensity;
   }
 }

@@ -4,11 +4,16 @@
 const fs = require('fs');
 const path = require('path');
 
-// Set global variables (required by BitmapText)
-global.isKerningEnabled = true;
-
 // Font properties for Arial normal normal 19 with pixel density 1
 const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+
+// Text properties for rendering configuration
+const textProperties = new TextProperties({
+  isKerningEnabled: true,      // Enable kerning for better text rendering
+  textBaseline: 'bottom',      // BitmapText uses bottom baseline positioning
+  textAlign: 'left',           // Standard left alignment
+  textColor: '#000000'         // Black color
+});
 
 function main() {
   try {
@@ -70,7 +75,7 @@ function main() {
       10,  // x position
       50,  // y position
       fontProperties,
-      '#000000'  // black color
+      textProperties  // text rendering properties including color and kerning
     );
     
     console.log('Text rendered successfully');

@@ -4,16 +4,21 @@
 const fs = require('fs');
 const path = require('path');
 
-// Set global variables (required by BitmapText)
-global.isKerningEnabled = true;
-
 // Font sizes to demonstrate
 const fontSizes = [18, 18.5, 19];
 
 // Create font properties for each size using FontProperties class
-const fontPropertiesArray = fontSizes.map(size => 
+const fontPropertiesArray = fontSizes.map(size =>
   new FontProperties(1, "Arial", "normal", "normal", size) // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 );
+
+// Text properties for rendering configuration
+const textProperties = new TextProperties({
+  isKerningEnabled: true,      // Enable kerning for better text rendering
+  textBaseline: 'bottom',      // BitmapText uses bottom baseline positioning
+  textAlign: 'left',           // Standard left alignment
+  textColor: '#000000'         // Black color
+});
 
 // Function to create IDString from FontProperties (uses pre-computed idString)
 function createIDString(fontProperties) {
@@ -125,7 +130,7 @@ function main() {
         20,  // x position
         yPosition,
         fontProperties,
-        '#000000'  // black color
+        textProperties  // text rendering properties including color and kerning
       );
     });
     

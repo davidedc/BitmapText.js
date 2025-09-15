@@ -1,5 +1,11 @@
 // Globals
-let isKerningEnabled = true;
+// TextProperties state
+let textPropertiesState = {
+  isKerningEnabled: true,
+  textBaseline: 'bottom',      // BitmapText uses bottom baseline positioning
+  textAlign: 'left',           // Standard left alignment
+  textColor: '#000000'         // Black color
+};
 let drawAllPixelDensitiesWithLargerPixelDensity1Text = false;
 let drawCheckeredBackgrounds = false;
 let hoverFontSize = 19;
@@ -10,6 +16,12 @@ let fontStyleSelect = null;
 let fontWeightSelect = null;
 let drawCrisply = true;
 let truncateMetrics = true;
+
+// Function to get TextProperties from current UI state
+// Returns TextProperties instance for text rendering configuration
+function getTextPropertiesFromUI() {
+  return new TextProperties(textPropertiesState);
+}
 
 // Consolidated function to extract font properties from UI elements
 // Returns FontProperties instance for core functionality
@@ -108,9 +120,9 @@ function setupGlyphUI() {
     // Add kerning checkbox
     const enableKerningCheckbox = createElement('input', 'enable-kerning-checkbox', null, selectorsDiv);
     enableKerningCheckbox.type = 'checkbox';
-    enableKerningCheckbox.checked = isKerningEnabled;
+    enableKerningCheckbox.checked = textPropertiesState.isKerningEnabled;
     enableKerningCheckbox.addEventListener('change', function() {
-        isKerningEnabled = this.checked;
+        textPropertiesState.isKerningEnabled = this.checked;
         updatePageContent();
     });
     createElement('label', null, 'Enable kerning', selectorsDiv).htmlFor = 'enable-kerning-checkbox';

@@ -75,6 +75,7 @@
   - `AtlasStore` - Atlas image storage and retrieval
   - `FontMetricsStore` - Font metrics, kerning, and glyph positioning data
   - `FontProperties` - Font configuration management
+  - `TextProperties` - Text rendering configuration (kerning, alignment, color)
   - **Bundle Size**: ~18-22KB + font assets
   - **Use Case**: Production applications displaying bitmap text
 
@@ -120,6 +121,18 @@
     - `getKerningTable()`, `setKerningTable()`: Kerning management
     - `getGlyphsTextMetrics()`, `setGlyphsTextMetrics()`: Text metrics
     - `getSpaceAdvancementOverrideForSmallSizesInPx()`, `setSpaceAdvancementOverrideForSmallSizesInPx()`: Spacing overrides
+
+  **TextProperties**
+  - Purpose: Text rendering configuration management
+  - Responsibilities:
+    - Kerning enable/disable control
+    - Text baseline and alignment settings
+    - Color specification
+    - Immutable configuration object with pre-computed keys
+  - Properties:
+    - `isKerningEnabled`: Boolean kerning control
+    - `textBaseline`, `textAlign`: Canvas text positioning
+    - `textColor`: CSS color specification
 
   ### FAB Classes (Font Assets Building)
 
