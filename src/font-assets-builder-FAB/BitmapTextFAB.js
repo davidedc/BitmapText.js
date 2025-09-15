@@ -146,7 +146,7 @@ class BitmapTextFAB extends BitmapText {
   // and see if it's bold or not. This is not a good idea because it's slow.
   // So, the best way is to keep track of the font-family, font-size and
   // font-style that you use in your own code and pass as params.
-  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textProperties = null) {
+  drawTextViaIndividualCanvasesNotViaAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textProperties = null) {
     let x_Phys_Px = x_CSS_Px * fontProperties.pixelDensity;
     const y_Phys_Px = y_CSS_Px * fontProperties.pixelDensity;
 

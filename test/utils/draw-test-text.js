@@ -126,7 +126,7 @@ function drawTestText(fontProperties) {
   // generating the atlas with the full class is necessary to then being able to draw the text with the "normal" class
   buildAndDisplayAtlas(atlasStoreFAB, fontProperties);
   // note that this one doesn't use the atlas, it uses the canvas stored in each glyph
-  drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures_CSS_PxFAB, testCopyLines, bitmapTextFAB, fontProperties, testCopyChoiceNumber, textProperties);
+  drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures_CSS_PxFAB, testCopyLines, bitmapTextFAB, fontProperties, testCopyChoiceNumber, textProperties);
 }
 
 function drawTestText_withStandardClass(originalFontProperties, atlasStore, fontMetricsStore) {
@@ -209,7 +209,7 @@ function drawTestText_withStandardClass(originalFontProperties, atlasStore, font
   stdDrawSmoothText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
 }
 
-function drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, textProperties) {
+function drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, textProperties) {
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing with individual glyphs (not using atlas):'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
@@ -222,7 +222,7 @@ function drawTestText_withIndividualGlyphsNotFromAtlas(linesMeasures, testCopyLi
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    bitmapText.drawText(ctx, line, 0, yPosition, fontProperties, textProperties);
+    bitmapText.drawTextViaIndividualCanvasesNotViaAtlas(ctx, line, 0, yPosition, fontProperties, textProperties);
   });
 
   let hashMatchInfo = '';
