@@ -146,7 +146,7 @@ class BitmapTextFAB extends BitmapText {
   // and see if it's bold or not. This is not a good idea because it's slow.
   // So, the best way is to keep track of the font-family, font-size and
   // font-style that you use in your own code and pass as params.
-  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties) {
+  drawText(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textProperties = null) {
     let x_Phys_Px = x_CSS_Px * fontProperties.pixelDensity;
     const y_Phys_Px = y_CSS_Px * fontProperties.pixelDensity;
 
@@ -156,8 +156,10 @@ class BitmapTextFAB extends BitmapText {
       throw new Error(`No metrics found for font: ${fontProperties.key}`);
     }
 
-    // Create TextProperties instance once for this drawing operation
-    const textProperties = new TextProperties();
+    // Use provided TextProperties or create default
+    if (!textProperties) {
+      textProperties = new TextProperties();
+    }
 
     for (let i = 0; i < text.length; i++) {
       const letter = text[i];

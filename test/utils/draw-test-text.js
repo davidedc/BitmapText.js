@@ -259,7 +259,12 @@ function createCheckerboardBackground(ctx) {
   }
 }
 
-function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing from atlas:', textProperties = null) {
+function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing (using atlas):', textProperties = null) {
+  // Handle null/falsy sectionLabel by using default
+  if (!sectionLabel) {
+    sectionLabel = 'Crisp Bitmap Text Drawing (using atlas):';
+  }
+
   textProperties = textProperties || getTextPropertiesFromUI();
   const textColor = textProperties.textColor;
   
@@ -280,7 +285,7 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
 
   // Update section label if in placeholder mode
   let actualSectionLabel = sectionLabel;
-  if (isPlaceholderMode && sectionLabel === 'Crisp Bitmap Text Drawing from atlas:') {
+  if (isPlaceholderMode && sectionLabel === 'Crisp Bitmap Text Drawing (using atlas):') {
     actualSectionLabel = 'Crisp Bitmap Text Drawing with placeholder rectangles (atlas missing):';
   }
 
