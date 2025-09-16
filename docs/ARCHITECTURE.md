@@ -142,7 +142,7 @@
   - Calculates precise bounding boxes
 
   **AtlasStoreFAB extends AtlasStore**
-  - Builds atlases from individual glyphs
+  - Builds atlases from individual canvases
   - Optimizes glyph packing
   - Generates minified metadata
 

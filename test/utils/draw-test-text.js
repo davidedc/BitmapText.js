@@ -210,7 +210,7 @@ function drawTestText_withStandardClass(originalFontProperties, atlasStore, font
 }
 
 function drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, textProperties) {
-  addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing with individual glyphs (not using atlas):'));
+  addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing with individual canvases (not using atlas):'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
@@ -227,7 +227,7 @@ function drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures, testCopyLin
 
   let hashMatchInfo = '';
   if (!drawCheckeredBackgrounds)
-    hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "individual glyphs testCopyChoiceNumber " + testCopyChoiceNumber);
+    hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "individual canvases testCopyChoiceNumber " + testCopyChoiceNumber);
 
   addCanvasInfoToDOM(canvas, hashMatchInfo);
   addElementToDOM(document.createElement('br'));

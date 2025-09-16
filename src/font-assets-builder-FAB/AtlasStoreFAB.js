@@ -16,7 +16,7 @@
 // - Integrates with FontMetricsStoreFAB during the building process
 //
 // SEPARATION OF CONCERNS:
-// - AtlasStoreFAB: Handles atlas image building from individual glyphs
+// - AtlasStoreFAB: Handles atlas image building from individual canvases
 // - FontMetricsStoreFAB: Handles metrics calculation and positioning data
 // - Both work together during font assets building but can be used independently
 class AtlasStoreFAB extends AtlasStore {
@@ -47,7 +47,7 @@ class AtlasStoreFAB extends AtlasStore {
     return this.glyphs.get(glyphKey);
   }
 
-  // Build an atlas image from individual glyphs for a specific font configuration
+  // Build an atlas image from individual canvases for a specific font configuration
   // 1. Find all glyphs for the font configuration
   // 2. Calculate atlas dimensions from glyph tight bounds
   // 3. Create canvas and draw all glyphs horizontally
