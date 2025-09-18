@@ -41,6 +41,8 @@
   <canvas id="demo-canvas" width="400" height="200"></canvas>
 
   <!-- Essential dependencies -->
+  <!-- Status reporting constants and helpers (must load first) -->
+  <script src="../src/core/StatusCode.js"></script>
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
   <!-- TextProperties class for text rendering configuration -->
@@ -116,12 +118,17 @@
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw "Hello World" at each font size
+      // Track overall rendering status
+      let allSuccessful = true;
+      let hasPartialFailures = false;
+      let hasCompleteFailures = false;
+
+      // Draw "Hello World" at each font size - API returns status info
       fontPropertiesArray.forEach((fontProperties, index) => {
         const yPosition = 50 + (index * 50); // Space lines 50px apart
         const text = `Hello World (size ${fontProperties.fontSize})`;
-        
-        bitmapText.drawTextFromAtlas(
+
+        const result = bitmapText.drawTextFromAtlas(
           ctx,
           text,
           20,  // x position
@@ -129,11 +136,52 @@
           fontProperties,
           textProperties  // text rendering properties including color and kerning
         );
-        
-        console.log(`Rendered "${text}" at y=${yPosition}`);
+
+        // Detailed status reporting per font size
+        console.log(`\n--- Font Size ${fontProperties.fontSize} Status ---`);
+
+        if (result.rendered) {
+          if (result.status.code === StatusCode.SUCCESS) {
+            console.log(`✅ "${text}" rendered perfectly`);
+          } else {
+            allSuccessful = false;
+            hasPartialFailures = true;
+            console.warn(`⚠️ "${text}" rendered with issues:`);
+            console.warn('  Status:', getStatusDescription(result.status));
+
+            if (result.status.placeholdersUsed) {
+              console.warn('  📦 Some glyphs rendered as placeholder rectangles');
+
+              if (result.status.missingAtlasChars) {
+                console.warn('  Missing atlas chars:', [...result.status.missingAtlasChars].join(''));
+              }
+            }
+          }
+        } else {
+          allSuccessful = false;
+          hasCompleteFailures = true;
+          console.error(`❌ Failed to render "${text}"`);
+          console.error('  Status:', getStatusDescription(result.status));
+
+          if (result.status.missingChars) {
+            console.error('  Missing metrics chars:', [...result.status.missingChars].join(''));
+          }
+        }
       });
 
-      console.log('Multi-size Hello World rendered successfully!');
+      // Overall summary
+      console.log('\n=== Multi-Size Rendering Summary ===');
+      if (allSuccessful) {
+        console.log('✅ All font sizes rendered perfectly!');
+      } else {
+        if (hasCompleteFailures) {
+          console.error('❌ Some font sizes failed completely (missing metrics)');
+        }
+        if (hasPartialFailures) {
+          console.warn('⚠️ Some font sizes used placeholder rectangles (missing atlas data)');
+        }
+        console.log('💡 This demonstrates the different failure modes in multi-font scenarios');
+      }
     }
   </script>
 </body>

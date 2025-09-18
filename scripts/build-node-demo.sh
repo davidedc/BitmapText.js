@@ -26,6 +26,7 @@ mkdir -p "$OUTPUT_DIR"
 # Verify all source files exist
 FILES_TO_CHECK=(
   "$SRC_DIR/node/canvas-mock.js"
+  "$SRC_DIR/core/StatusCode.js"
   "$SRC_DIR/core/FontProperties.js"
   "$SRC_DIR/core/TextProperties.js"
   "$SRC_DIR/core/FontMetrics.js"
@@ -92,6 +93,13 @@ echo "" >> "$OUTPUT_FILE"
 tail -n +2 "$SRC_DIR/node/canvas-mock.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
+# Concatenate StatusCode class (MUST BE FIRST before BitmapText)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// STATUS CODE CONSTANTS AND HELPERS" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/StatusCode.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontProperties class
 echo "// ============================================================================" >> "$OUTPUT_FILE"

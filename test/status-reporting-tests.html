@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js - Status Reporting Tests</title>
+  <style>
+    body {
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .test-section {
+      margin-bottom: 30px;
+      padding: 15px;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .test-section h2 {
+      margin-top: 0;
+      color: #444;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      background: white;
+      margin: 10px 0;
+      display: block;
+    }
+
+    .test-result {
+      margin: 10px 0;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+    .test-controls {
+      margin: 10px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    button {
+      margin-right: 10px;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #f8f9fa;
+    }
+
+    .status-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+
+    .status-table th, .status-table td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    .status-table th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>BitmapText.js - Status Reporting System Tests</h1>
+  <p>This page tests all status reporting scenarios for measureText and drawTextFromAtlas methods.</p>
+
+  <!-- StatusCode Constants Test -->
+  <div class="test-section">
+    <h2>1. StatusCode Constants Test</h2>
+    <div id="constants-test-result"></div>
+    <div class="test-controls">
+      <button onclick="testStatusCodeConstants()">Test Constants</button>
+    </div>
+  </div>
+
+  <!-- measureText Status Tests -->
+  <div class="test-section">
+    <h2>2. measureText Status Tests</h2>
+    <canvas id="measure-canvas" width="300" height="200"></canvas>
+    <div id="measure-test-results"></div>
+    <div class="test-controls">
+      <button onclick="testMeasureTextSuccess()">Test SUCCESS</button>
+      <button onclick="testMeasureTextNoMetrics()">Test NO_METRICS</button>
+      <button onclick="testMeasureTextPartialMetrics()">Test PARTIAL_METRICS</button>
+      <button onclick="testMeasureTextEmptyString()">Test Empty String</button>
+    </div>
+  </div>
+
+  <!-- drawTextFromAtlas Status Tests -->
+  <div class="test-section">
+    <h2>3. drawTextFromAtlas Status Tests</h2>
+    <canvas id="draw-canvas" width="400" height="300"></canvas>
+    <div id="draw-test-results"></div>
+    <div class="test-controls">
+      <button onclick="testDrawTextSuccess()">Test SUCCESS</button>
+      <button onclick="testDrawTextNoMetrics()">Test NO_METRICS</button>
+      <button onclick="testDrawTextPartialMetrics()">Test PARTIAL_METRICS</button>
+      <button onclick="testDrawTextNoAtlas()">Test NO_ATLAS</button>
+      <button onclick="testDrawTextPartialAtlas()">Test PARTIAL_ATLAS</button>
+    </div>
+  </div>
+
+  <!-- Performance Tests -->
+  <div class="test-section">
+    <h2>4. Performance Tests</h2>
+    <div id="performance-test-results"></div>
+    <div class="test-controls">
+      <button onclick="testPerformance()">Test Performance</button>
+    </div>
+  </div>
+
+  <!-- Helper Functions Test -->
+  <div class="test-section">
+    <h2>5. Helper Functions Test</h2>
+    <div id="helpers-test-results"></div>
+    <div class="test-controls">
+      <button onclick="testHelperFunctions()">Test Helpers</button>
+    </div>
+  </div>
+
+  <!-- Load Dependencies -->
+  <!-- Status reporting constants and helpers (must load first) -->
+  <script src="../src/core/StatusCode.js"></script>
+  <!-- FontProperties class for font configuration -->
+  <script src="../src/core/FontProperties.js"></script>
+  <!-- TextProperties class for text rendering configuration -->
+  <script src="../src/core/TextProperties.js"></script>
+  <!-- FontMetrics domain object for encapsulating font metrics data -->
+  <script src="../src/core/FontMetrics.js"></script>
+  <!-- Expander utility to unpack minified font metrics data (depends on FontMetrics) -->
+  <script src="../src/minification/MetricsExpander.js"></script>
+  <!-- Data store for atlas images -->
+  <script src="../src/core/AtlasStore.js"></script>
+  <!-- Data store for font metrics, kerning, and positioning -->
+  <script src="../src/core/FontMetricsStore.js"></script>
+  <!-- Main bitmap text rendering engine -->
+  <script src="../src/core/BitmapText.js"></script>
+
+  <script>
+    // Test setup
+    let atlasStore, fontMetricsStore, bitmapText;
+    let testFontProperties, testTextProperties;
+
+    // Initialize test environment
+    function initializeTestEnvironment() {
+      atlasStore = new AtlasStore();
+      fontMetricsStore = new FontMetricsStore();
+      bitmapText = new BitmapText(atlasStore, fontMetricsStore);
+
+      testFontProperties = new FontProperties(1, "Arial", "normal", "normal", 18);
+      testTextProperties = new TextProperties({
+        isKerningEnabled: true,
+        textBaseline: 'bottom',
+        textAlign: 'left',
+        textColor: '#000000'
+      });
+    }
+
+    // Utility functions
+    function addTestResult(containerId, message, type = 'info') {
+      const container = document.getElementById(containerId);
+      const div = document.createElement('div');
+      div.className = `test-result ${type}`;
+      div.textContent = message;
+      container.appendChild(div);
+    }
+
+    function clearTestResults(containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+    }
+
+    // Test 1: StatusCode Constants
+    function testStatusCodeConstants() {
+      clearTestResults('constants-test-result');
+
+      try {
+        // Test that all constants exist and have correct values
+        const expectedConstants = [
+          { name: 'SUCCESS', value: 0 },
+          { name: 'NO_METRICS', value: 1 },
+          { name: 'PARTIAL_METRICS', value: 2 },
+          { name: 'NO_ATLAS', value: 3 },
+          { name: 'PARTIAL_ATLAS', value: 4 }
+        ];
+
+        expectedConstants.forEach(({ name, value }) => {
+          if (StatusCode[name] === value) {
+            addTestResult('constants-test-result', `✅ StatusCode.${name} = ${value}`, 'success');
+          } else {
+            addTestResult('constants-test-result', `❌ StatusCode.${name} expected ${value}, got ${StatusCode[name]}`, 'error');
+          }
+        });
+
+        // Test SUCCESS_STATUS object
+        if (SUCCESS_STATUS && SUCCESS_STATUS.code === StatusCode.SUCCESS) {
+          addTestResult('constants-test-result', '✅ SUCCESS_STATUS object is correctly defined', 'success');
+        } else {
+          addTestResult('constants-test-result', '❌ SUCCESS_STATUS object is invalid', 'error');
+        }
+
+        // Test helper functions exist
+        const helperFunctions = ['createErrorStatus', 'isSuccess', 'isCompleteFailure', 'isPartialSuccess', 'getStatusDescription'];
+        helperFunctions.forEach(funcName => {
+          if (typeof window[funcName] === 'function') {
+            addTestResult('constants-test-result', `✅ Helper function ${funcName} exists`, 'success');
+          } else {
+            addTestResult('constants-test-result', `❌ Helper function ${funcName} missing`, 'error');
+          }
+        });
+
+      } catch (error) {
+        addTestResult('constants-test-result', `❌ Constants test failed: ${error.message}`, 'error');
+      }
+    }
+
+    // Test 2a: measureText SUCCESS
+    function testMeasureTextSuccess() {
+      clearTestResults('measure-test-results');
+      initializeTestEnvironment();
+
+      // Create mock font metrics for success case
+      const mockFontMetrics = new FontMetrics({
+        glyphsTextMetrics: {
+          'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'e': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'l': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'o': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
+        },
+        kerningTable: {},
+        spaceAdvancementOverrideForSmallSizesInPx: null
+      });
+
+      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+
+      const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+
+      if (result.status.code === StatusCode.SUCCESS) {
+        addTestResult('measure-test-results', '✅ measureText SUCCESS: Returned success status', 'success');
+        addTestResult('measure-test-results', `✅ measureText SUCCESS: Metrics width = ${result.metrics.width}`, 'success');
+      } else {
+        addTestResult('measure-test-results', '❌ measureText SUCCESS: Expected success status', 'error');
+      }
+    }
+
+    // Test 2b: measureText NO_METRICS
+    function testMeasureTextNoMetrics() {
+      clearTestResults('measure-test-results');
+      initializeTestEnvironment();
+
+      // Don't set any font metrics
+      const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+
+      if (result.status.code === StatusCode.NO_METRICS) {
+        addTestResult('measure-test-results', '✅ measureText NO_METRICS: Returned correct status', 'success');
+        if (result.metrics === null) {
+          addTestResult('measure-test-results', '✅ measureText NO_METRICS: Metrics is null', 'success');
+        } else {
+          addTestResult('measure-test-results', '❌ measureText NO_METRICS: Expected null metrics', 'error');
+        }
+      } else {
+        addTestResult('measure-test-results', '❌ measureText NO_METRICS: Expected NO_METRICS status', 'error');
+      }
+    }
+
+    // Test 2c: measureText PARTIAL_METRICS
+    function testMeasureTextPartialMetrics() {
+      clearTestResults('measure-test-results');
+      initializeTestEnvironment();
+
+      // Create mock font metrics missing some characters
+      const mockFontMetrics = new FontMetrics({
+        glyphsTextMetrics: {
+          'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'e': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'l': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          // Missing 'o' to create partial metrics scenario
+          ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
+        },
+        kerningTable: {},
+        spaceAdvancementOverrideForSmallSizesInPx: null
+      });
+
+      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+
+      const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+
+      if (result.status.code === StatusCode.PARTIAL_METRICS) {
+        addTestResult('measure-test-results', '✅ measureText PARTIAL_METRICS: Returned correct status', 'success');
+        if (result.status.missingChars && result.status.missingChars.has('o')) {
+          addTestResult('measure-test-results', '✅ measureText PARTIAL_METRICS: Correctly identified missing chars', 'success');
+        } else {
+          addTestResult('measure-test-results', '❌ measureText PARTIAL_METRICS: Failed to identify missing chars', 'error');
+        }
+        if (result.metrics === null) {
+          addTestResult('measure-test-results', '✅ measureText PARTIAL_METRICS: Metrics is null (as expected)', 'success');
+        } else {
+          addTestResult('measure-test-results', '❌ measureText PARTIAL_METRICS: Expected null metrics', 'error');
+        }
+      } else {
+        addTestResult('measure-test-results', '❌ measureText PARTIAL_METRICS: Expected PARTIAL_METRICS status', 'error');
+      }
+    }
+
+    // Test 2d: measureText Empty String
+    function testMeasureTextEmptyString() {
+      clearTestResults('measure-test-results');
+      initializeTestEnvironment();
+
+      const result = bitmapText.measureText("", testFontProperties, testTextProperties);
+
+      if (result.status.code === StatusCode.SUCCESS) {
+        addTestResult('measure-test-results', '✅ measureText Empty: Returned success status', 'success');
+        if (result.metrics && result.metrics.width === 0) {
+          addTestResult('measure-test-results', '✅ measureText Empty: Width is 0', 'success');
+        } else {
+          addTestResult('measure-test-results', '❌ measureText Empty: Expected width 0', 'error');
+        }
+      } else {
+        addTestResult('measure-test-results', '❌ measureText Empty: Expected success status', 'error');
+      }
+    }
+
+    // Test 3a: drawTextFromAtlas SUCCESS
+    function testDrawTextSuccess() {
+      clearTestResults('draw-test-results');
+      initializeTestEnvironment();
+
+      // Create complete mock data (metrics + atlas)
+      const mockFontMetrics = new FontMetrics({
+        glyphsTextMetrics: {
+          'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'i': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
+        },
+        atlasMetrics: {
+          tightWidth: { 'H': 10, 'i': 2 },
+          tightHeight: { 'H': 13, 'i': 13 },
+          dx: { 'H': 1, 'i': 1 },
+          dy: { 'H': 2, 'i': 2 },
+          xInAtlas: { 'H': 0, 'i': 10 }
+        },
+        kerningTable: {},
+        spaceAdvancementOverrideForSmallSizesInPx: null
+      });
+
+      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+
+      // Create mock atlas
+      const mockCanvas = document.createElement('canvas');
+      mockCanvas.width = 20;
+      mockCanvas.height = 15;
+      atlasStore.setAtlas(testFontProperties, mockCanvas);
+
+      const canvas = document.getElementById('draw-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
+
+      if (result.rendered && result.status.code === StatusCode.SUCCESS) {
+        addTestResult('draw-test-results', '✅ drawText SUCCESS: Rendered with success status', 'success');
+      } else {
+        addTestResult('draw-test-results', '❌ drawText SUCCESS: Expected rendered=true and SUCCESS status', 'error');
+      }
+    }
+
+    // Test 3b: drawTextFromAtlas NO_METRICS
+    function testDrawTextNoMetrics() {
+      clearTestResults('draw-test-results');
+      initializeTestEnvironment();
+
+      const canvas = document.getElementById('draw-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
+
+      if (!result.rendered && result.status.code === StatusCode.NO_METRICS) {
+        addTestResult('draw-test-results', '✅ drawText NO_METRICS: Correctly returned rendered=false and NO_METRICS status', 'success');
+      } else {
+        addTestResult('draw-test-results', '❌ drawText NO_METRICS: Expected rendered=false and NO_METRICS status', 'error');
+      }
+    }
+
+    // Test 3c: drawTextFromAtlas PARTIAL_METRICS
+    function testDrawTextPartialMetrics() {
+      clearTestResults('draw-test-results');
+      initializeTestEnvironment();
+
+      // Create metrics missing some characters
+      const mockFontMetrics = new FontMetrics({
+        glyphsTextMetrics: {
+          'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          // Missing 'i' to create partial metrics
+          ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
+        },
+        atlasMetrics: { tightWidth: {}, tightHeight: {}, dx: {}, dy: {}, xInAtlas: {} },
+        kerningTable: {},
+        spaceAdvancementOverrideForSmallSizesInPx: null
+      });
+
+      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+
+      const canvas = document.getElementById('draw-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
+
+      if (!result.rendered && result.status.code === StatusCode.PARTIAL_METRICS) {
+        addTestResult('draw-test-results', '✅ drawText PARTIAL_METRICS: Correctly returned rendered=false and PARTIAL_METRICS status', 'success');
+        if (result.status.missingChars && result.status.missingChars.has('i')) {
+          addTestResult('draw-test-results', '✅ drawText PARTIAL_METRICS: Correctly identified missing char', 'success');
+        } else {
+          addTestResult('draw-test-results', '❌ drawText PARTIAL_METRICS: Failed to identify missing char', 'error');
+        }
+      } else {
+        addTestResult('draw-test-results', '❌ drawText PARTIAL_METRICS: Expected rendered=false and PARTIAL_METRICS status', 'error');
+      }
+    }
+
+    // Test 3d: drawTextFromAtlas NO_ATLAS
+    function testDrawTextNoAtlas() {
+      clearTestResults('draw-test-results');
+      initializeTestEnvironment();
+
+      // Create complete metrics but no atlas
+      const mockFontMetrics = new FontMetrics({
+        glyphsTextMetrics: {
+          'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'i': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
+        },
+        atlasMetrics: {
+          tightWidth: { 'H': 10, 'i': 2 },
+          tightHeight: { 'H': 13, 'i': 13 },
+          dx: { 'H': 1, 'i': 1 },
+          dy: { 'H': 2, 'i': 2 },
+          xInAtlas: { 'H': 0, 'i': 10 }
+        },
+        kerningTable: {},
+        spaceAdvancementOverrideForSmallSizesInPx: null
+      });
+
+      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      // Don't set atlas - this will trigger NO_ATLAS scenario
+
+      const canvas = document.getElementById('draw-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 100, testFontProperties, testTextProperties);
+
+      if (result.rendered && result.status.code === StatusCode.NO_ATLAS) {
+        addTestResult('draw-test-results', '✅ drawText NO_ATLAS: Correctly returned rendered=true (placeholders) and NO_ATLAS status', 'success');
+        if (result.status.placeholdersUsed) {
+          addTestResult('draw-test-results', '✅ drawText NO_ATLAS: Correctly reported placeholders used', 'success');
+        } else {
+          addTestResult('draw-test-results', '❌ drawText NO_ATLAS: Should report placeholders used', 'error');
+        }
+      } else {
+        addTestResult('draw-test-results', '❌ drawText NO_ATLAS: Expected rendered=true and NO_ATLAS status', 'error');
+      }
+    }
+
+    // Test 3e: drawTextFromAtlas PARTIAL_ATLAS
+    function testDrawTextPartialAtlas() {
+      clearTestResults('draw-test-results');
+      initializeTestEnvironment();
+
+      // Create complete metrics with partial atlas data
+      const mockFontMetrics = new FontMetrics({
+        glyphsTextMetrics: {
+          'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'i': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
+        },
+        atlasMetrics: {
+          tightWidth: { 'H': 10, 'i': 2 },
+          tightHeight: { 'H': 13, 'i': 13 },
+          dx: { 'H': 1, 'i': 1 },
+          dy: { 'H': 2, 'i': 2 },
+          xInAtlas: { 'H': 0 } // Missing 'i' atlas data to create partial atlas scenario
+        },
+        kerningTable: {},
+        spaceAdvancementOverrideForSmallSizesInPx: null
+      });
+
+      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+
+      // Create mock atlas
+      const mockCanvas = document.createElement('canvas');
+      mockCanvas.width = 20;
+      mockCanvas.height = 15;
+      atlasStore.setAtlas(testFontProperties, mockCanvas);
+
+      const canvas = document.getElementById('draw-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 150, testFontProperties, testTextProperties);
+
+      if (result.rendered && result.status.code === StatusCode.PARTIAL_ATLAS) {
+        addTestResult('draw-test-results', '✅ drawText PARTIAL_ATLAS: Correctly returned rendered=true and PARTIAL_ATLAS status', 'success');
+        if (result.status.missingAtlasChars && result.status.missingAtlasChars.has('i')) {
+          addTestResult('draw-test-results', '✅ drawText PARTIAL_ATLAS: Correctly identified missing atlas char', 'success');
+        } else {
+          addTestResult('draw-test-results', '❌ drawText PARTIAL_ATLAS: Failed to identify missing atlas char', 'error');
+        }
+        if (result.status.placeholdersUsed) {
+          addTestResult('draw-test-results', '✅ drawText PARTIAL_ATLAS: Correctly reported placeholders used', 'success');
+        } else {
+          addTestResult('draw-test-results', '❌ drawText PARTIAL_ATLAS: Should report placeholders used', 'error');
+        }
+      } else {
+        addTestResult('draw-test-results', '❌ drawText PARTIAL_ATLAS: Expected rendered=true and PARTIAL_ATLAS status', 'error');
+      }
+    }
+
+    // Test 4: Performance Tests
+    function testPerformance() {
+      clearTestResults('performance-test-results');
+      initializeTestEnvironment();
+
+      // Create mock font metrics for performance test
+      const mockFontMetrics = new FontMetrics({
+        glyphsTextMetrics: {
+          'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'e': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'l': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          'o': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
+          ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
+        },
+        kerningTable: {},
+        spaceAdvancementOverrideForSmallSizesInPx: null
+      });
+
+      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+
+      // Performance test for success path
+      const iterations = 10000;
+      const startTime = performance.now();
+
+      for (let i = 0; i < iterations; i++) {
+        const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+        // Check that we're reusing SUCCESS_STATUS object for performance
+        if (result.status !== SUCCESS_STATUS) {
+          addTestResult('performance-test-results', '❌ Performance: Not reusing SUCCESS_STATUS object', 'error');
+          return;
+        }
+      }
+
+      const endTime = performance.now();
+      const totalTime = endTime - startTime;
+      const avgTime = totalTime / iterations;
+
+      addTestResult('performance-test-results', `✅ Performance: ${iterations} measureText calls in ${totalTime.toFixed(2)}ms`, 'success');
+      addTestResult('performance-test-results', `✅ Performance: Average ${avgTime.toFixed(4)}ms per call`, 'success');
+      addTestResult('performance-test-results', '✅ Performance: SUCCESS_STATUS object reuse confirmed', 'success');
+
+      if (avgTime < 0.01) {
+        addTestResult('performance-test-results', '✅ Performance: Excellent performance (<0.01ms per call)', 'success');
+      } else if (avgTime < 0.1) {
+        addTestResult('performance-test-results', '⚠️ Performance: Good performance (<0.1ms per call)', 'warning');
+      } else {
+        addTestResult('performance-test-results', '❌ Performance: Poor performance (>0.1ms per call)', 'error');
+      }
+    }
+
+    // Test 5: Helper Functions
+    function testHelperFunctions() {
+      clearTestResults('helpers-test-results');
+
+      // Test isSuccess
+      if (isSuccess(SUCCESS_STATUS)) {
+        addTestResult('helpers-test-results', '✅ isSuccess: Correctly identifies success', 'success');
+      } else {
+        addTestResult('helpers-test-results', '❌ isSuccess: Failed to identify success', 'error');
+      }
+
+      const noMetricsStatus = createErrorStatus(StatusCode.NO_METRICS);
+      if (!isSuccess(noMetricsStatus)) {
+        addTestResult('helpers-test-results', '✅ isSuccess: Correctly rejects error status', 'success');
+      } else {
+        addTestResult('helpers-test-results', '❌ isSuccess: Incorrectly identified error as success', 'error');
+      }
+
+      // Test isCompleteFailure
+      if (isCompleteFailure(noMetricsStatus)) {
+        addTestResult('helpers-test-results', '✅ isCompleteFailure: Correctly identifies NO_METRICS as complete failure', 'success');
+      } else {
+        addTestResult('helpers-test-results', '❌ isCompleteFailure: Failed to identify complete failure', 'error');
+      }
+
+      const partialMetricsStatus = createErrorStatus(StatusCode.PARTIAL_METRICS, { missingChars: new Set(['x']) });
+      if (isCompleteFailure(partialMetricsStatus)) {
+        addTestResult('helpers-test-results', '✅ isCompleteFailure: Correctly identifies PARTIAL_METRICS as complete failure', 'success');
+      } else {
+        addTestResult('helpers-test-results', '❌ isCompleteFailure: Failed to identify PARTIAL_METRICS as complete failure', 'error');
+      }
+
+      // Test isPartialSuccess
+      const noAtlasStatus = createErrorStatus(StatusCode.NO_ATLAS, { placeholdersUsed: true });
+      if (isPartialSuccess(noAtlasStatus)) {
+        addTestResult('helpers-test-results', '✅ isPartialSuccess: Correctly identifies NO_ATLAS as partial success', 'success');
+      } else {
+        addTestResult('helpers-test-results', '❌ isPartialSuccess: Failed to identify partial success', 'error');
+      }
+
+      if (!isPartialSuccess(noMetricsStatus)) {
+        addTestResult('helpers-test-results', '✅ isPartialSuccess: Correctly rejects complete failure', 'success');
+      } else {
+        addTestResult('helpers-test-results', '❌ isPartialSuccess: Incorrectly identified complete failure as partial', 'error');
+      }
+
+      // Test getStatusDescription
+      const descriptions = [
+        { status: SUCCESS_STATUS, expected: 'Success' },
+        { status: noMetricsStatus, expected: 'No font metrics available' },
+        { status: partialMetricsStatus, expected: 'Missing metrics for characters: x' },
+        { status: noAtlasStatus, expected: 'No atlas available (using placeholders)' }
+      ];
+
+      descriptions.forEach(({ status, expected }) => {
+        const description = getStatusDescription(status);
+        if (description.includes(expected.split(' ')[0])) { // Check if it starts correctly
+          addTestResult('helpers-test-results', `✅ getStatusDescription: Correct description for status ${status.code}`, 'success');
+        } else {
+          addTestResult('helpers-test-results', `❌ getStatusDescription: Wrong description for status ${status.code}`, 'error');
+        }
+      });
+    }
+
+    // Run all tests button
+    function runAllTests() {
+      setTimeout(testStatusCodeConstants, 100);
+      setTimeout(testMeasureTextSuccess, 200);
+      setTimeout(testMeasureTextNoMetrics, 300);
+      setTimeout(testMeasureTextPartialMetrics, 400);
+      setTimeout(testMeasureTextEmptyString, 500);
+      setTimeout(testDrawTextSuccess, 600);
+      setTimeout(testDrawTextNoMetrics, 700);
+      setTimeout(testDrawTextPartialMetrics, 800);
+      setTimeout(testDrawTextNoAtlas, 900);
+      setTimeout(testDrawTextPartialAtlas, 1000);
+      setTimeout(testPerformance, 1100);
+      setTimeout(testHelperFunctions, 1200);
+    }
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+      addTestResult('constants-test-result', 'Page loaded. Click "Test Constants" to begin.', 'info');
+      addTestResult('measure-test-results', 'measureText tests ready. Click buttons to run individual tests.', 'info');
+      addTestResult('draw-test-results', 'drawTextFromAtlas tests ready. Click buttons to run individual tests.', 'info');
+      addTestResult('performance-test-results', 'Performance tests ready. Click "Test Performance" to begin.', 'info');
+      addTestResult('helpers-test-results', 'Helper function tests ready. Click "Test Helpers" to begin.', 'info');
+    });
+  </script>
+
+  <!-- Add Run All Tests button -->
+  <div class="test-section">
+    <h2>Run All Tests</h2>
+    <div class="test-controls">
+      <button onclick="runAllTests()" style="background-color: #007bff; color: white; font-weight: bold;">Run All Tests</button>
+    </div>
+  </div>
+
+</body>
+
+</html>

@@ -1,4 +1,10 @@
 // BitmapText - Core Runtime Class
+
+// Status constants are loaded as global variables by StatusCode.js (loaded before this file)
+// In Node.js bundles, StatusCode.js is concatenated before this file
+if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' || typeof createErrorStatus === 'undefined') {
+  throw new Error('StatusCode.js must be loaded before BitmapText.js');
+}
 // 
 // This is a CORE RUNTIME class designed for minimal bundle size (~5-7KB).
 // It provides essential text rendering capabilities for consuming pre-built bitmap fonts.
@@ -31,35 +37,66 @@ class BitmapText {
     this.coloredGlyphCtx = this.coloredGlyphCanvas.getContext('2d');
   }
 
-  // This returns an object of the same shape
-  // and meaning as the TextMetrics object (see
+  // This returns an object with metrics and status information:
+  // {
+  //   metrics: TextMetrics-compatible object (or null if measurement failed),
+  //   status: { code: StatusCode, missingChars?: Set }
+  // }
+  //
+  // The metrics object has the same shape and meaning as the TextMetrics object (see
   // https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ) i.e.:
   //  * the width should be the sum of the advancements (detracting kerning)
-  //  * actualBoundingBoxLeft =
-  //      the actualBoundingBoxLeft of the first character
-  //  * actualBoundingBoxRight =
-  //      the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
+  //  * actualBoundingBoxLeft = the actualBoundingBoxLeft of the first character
+  //  * actualBoundingBoxRight = the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
   measureText(text, fontProperties, textProperties) {
     if (!textProperties) {
       textProperties = new TextProperties();
     }
-    if (text.length === 0)
-      return {
-        width: 0,
-        actualBoundingBoxLeft: 0,
-        actualBoundingBoxRight: 0,
-        actualBoundingBoxAscent: 0,
-        actualBoundingBoxDescent: 0,
-        fontBoundingBoxAscent: 0,
-        fontBoundingBoxDescent: 0
-      };
 
-    // Get FontMetrics instance once for this font
-    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
-    if (!fontMetrics) {
-      throw new Error(`No metrics found for font: ${fontProperties.key}`);
+    // FAST PATH: Handle empty text (100% success)
+    if (text.length === 0) {
+      return {
+        metrics: {
+          width: 0,
+          actualBoundingBoxLeft: 0,
+          actualBoundingBoxRight: 0,
+          actualBoundingBoxAscent: 0,
+          actualBoundingBoxDescent: 0,
+          fontBoundingBoxAscent: 0,
+          fontBoundingBoxDescent: 0
+        },
+        status: SUCCESS_STATUS  // Reuse immutable object for performance
+      };
     }
 
+    // Check if FontMetrics exists at all
+    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
+    if (!fontMetrics) {
+      return {
+        metrics: null,
+        status: createErrorStatus(StatusCode.NO_METRICS)
+      };
+    }
+
+    // Scan text for missing glyphs (excluding spaces which are handled specially)
+    const missingChars = new Set();
+    for (const char of text) {
+      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
+        missingChars.add(char);
+      }
+    }
+
+    // If any glyphs missing, can't calculate accurate metrics
+    if (missingChars.size > 0) {
+      return {
+        metrics: null,  // Can't provide partial metrics reliably
+        status: createErrorStatus(StatusCode.PARTIAL_METRICS, {
+          missingChars: missingChars
+        })
+      };
+    }
+
+    // SUCCESS PATH: Calculate metrics normally
     let width_CSS_Px = 0;
     let letterTextMetrics = fontMetrics.getTextMetrics(text[0]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
@@ -88,15 +125,18 @@ class BitmapText {
     actualBoundingBoxRight_CSS_Px += letterTextMetrics.actualBoundingBoxRight;
 
     return {
-      width: width_CSS_Px,
-      // note that standard measureText returns a TextMetrics object
-      // which has no height, so let's make things uniform and resist the temptation to provide it.
-      actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
-      actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
-      actualBoundingBoxAscent,
-      actualBoundingBoxDescent,
-      fontBoundingBoxAscent: letterTextMetrics.fontBoundingBoxAscent,
-      fontBoundingBoxDescent: letterTextMetrics.fontBoundingBoxDescent
+      metrics: {
+        width: width_CSS_Px,
+        // note that standard measureText returns a TextMetrics object
+        // which has no height, so let's make things uniform and resist the temptation to provide it.
+        actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
+        actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
+        actualBoundingBoxAscent,
+        actualBoundingBoxDescent,
+        fontBoundingBoxAscent: letterTextMetrics.fontBoundingBoxAscent,
+        fontBoundingBoxDescent: letterTextMetrics.fontBoundingBoxDescent
+      },
+      status: SUCCESS_STATUS  // Reuse immutable object for performance
     };
   }
 
@@ -163,26 +203,68 @@ class BitmapText {
     return 0;
   }
 
+  // This draws text from atlas and returns status information:
+  // {
+  //   rendered: boolean (whether any rendering occurred),
+  //   status: { code: StatusCode, missingChars?: Set, missingAtlasChars?: Set, placeholdersUsed?: boolean }
+  // }
   drawTextFromAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textProperties = null) {
     textProperties = textProperties || new TextProperties();
+
+    // Check FontMetrics availability first
+    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
+    if (!fontMetrics) {
+      return {
+        rendered: false,
+        status: createErrorStatus(StatusCode.NO_METRICS)
+      };
+    }
+
+    // Scan for missing metrics (can't render without metrics)
+    const missingMetricsChars = new Set();
+    for (const char of text) {
+      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
+        missingMetricsChars.add(char);
+      }
+    }
+
+    if (missingMetricsChars.size > 0) {
+      return {
+        rendered: false,
+        status: createErrorStatus(StatusCode.PARTIAL_METRICS, {
+          missingChars: missingMetricsChars
+        })
+      };
+    }
+
+    // Check atlas availability
+    const atlas = this.atlasStore.getAtlas(fontProperties);
+    const atlasValid = this.atlasStore.isValidAtlas(atlas);
+
+    // Track which glyphs are missing from atlas (for partial atlas status)
+    const missingAtlasChars = new Set();
+    let placeholdersUsed = false;
+
+    // Render text
     const textColor = textProperties.textColor;
     const position = {
       x: x_CSS_Px * fontProperties.pixelDensity,
       y: y_CSS_Px * fontProperties.pixelDensity
     };
-    
-    const atlas = this.atlasStore.getAtlas(fontProperties);
-    
-    // Get FontMetrics instance once for this font
-    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
-    if (!fontMetrics) {
-      throw new Error(`No metrics found for font: ${fontProperties.key}`);
-    }
 
     for (let i = 0; i < text.length; i++) {
       const currentLetter = text[i];
       const nextLetter = text[i + 1];
-      
+
+      // Check if this specific glyph has atlas data (excluding spaces)
+      if (currentLetter !== ' ') {
+        if (!atlasValid || !fontMetrics.hasAtlasData(currentLetter)) {
+          missingAtlasChars.add(currentLetter);
+          placeholdersUsed = true;
+        }
+      }
+
+      // Draw (either real glyph or placeholder)
       this.drawLetter(ctx,
         currentLetter,
         position,
@@ -193,6 +275,29 @@ class BitmapText {
 
       position.x += this.calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter, textProperties);
     }
+
+    // Determine status code
+    let statusCode;
+    if (!atlasValid) {
+      statusCode = StatusCode.NO_ATLAS;
+    } else if (missingAtlasChars.size > 0) {
+      statusCode = StatusCode.PARTIAL_ATLAS;
+    } else {
+      // Complete success
+      return {
+        rendered: true,
+        status: SUCCESS_STATUS  // Reuse immutable object for performance
+      };
+    }
+
+    // Return detailed status for non-success cases
+    return {
+      rendered: true,  // We did render something (placeholders or partial)
+      status: createErrorStatus(statusCode, {
+        missingAtlasChars: missingAtlasChars.size > 0 ? missingAtlasChars : undefined,
+        placeholdersUsed: placeholdersUsed
+      })
+    };
   }
 
   drawLetter(ctx, letter, position, atlas, fontMetrics, textColor) {

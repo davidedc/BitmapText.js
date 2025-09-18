@@ -32,15 +32,20 @@ function createDivWithText(text) {
 function measureMultilineText(lines, measureTextFn) {
   const linesMeasures_CSS_Px = { width: 0, height: 0 };
   for (const line of lines) {
-    const { width, fontBoundingBoxAscent, fontBoundingBoxDescent } = measureTextFn(line);
-    linesMeasures_CSS_Px.width = Math.max(linesMeasures_CSS_Px.width, width);
+    const measureResult = measureTextFn(line);
+
+    // Handle both new BitmapText return {metrics, status} and standard HTML5Canvas return (direct metrics)
+    const metrics = measureResult.metrics || measureResult;
+
+    const { width, fontBoundingBoxAscent, fontBoundingBoxDescent } = metrics;
+    linesMeasures_CSS_Px.width = Math.max(linesMeasures_CSS_Px.width, width || 0);
     // take as the height of all the lines to be the same as the maximum possible height given the font
     // i.e. don't actually measure the height of the line using actualBoundingBoxAscent and actualBoundingBoxDescent
     // (which would measure the actual text) but instead, just take the fontBoundingBoxAscent and fontBoundingBoxDescent
     // This is all the lines are equally spaced vertically and have all the space needed for particularly ascending and descending
     // characters such as "À", "Ç", "ç".
     console.log(`linesMeasures_CSS_Px.fontBoundingBoxAscent: ${fontBoundingBoxAscent} linesMeasures_CSS_Px.fontBoundingBoxDescent: ${fontBoundingBoxDescent}`);
-    linesMeasures_CSS_Px.height += fontBoundingBoxAscent + fontBoundingBoxDescent;
+    linesMeasures_CSS_Px.height += (fontBoundingBoxAscent || 0) + Math.abs(fontBoundingBoxDescent || 0);
   }
   return linesMeasures_CSS_Px;
 }

@@ -106,11 +106,24 @@
     textColor: '#000000'         // Black color
   });
 
-  // Measure text
-  const metrics = bitmapText.measureText("Hello World", fontProperties, textProperties);
+  // Measure text - API returns object with metrics and status
+  const { metrics, status } = bitmapText.measureText("Hello World", fontProperties, textProperties);
 
-  // Draw text at position (x, y) - equivalent to textBaseline='bottom' (y is bottom of bounding box)
-  bitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties, textProperties);
+  // Optional: Check measurement status
+  if (status.code !== StatusCode.SUCCESS) {
+    console.warn('Measurement issues:', getStatusDescription(status));
+  }
+
+  // Draw text at position (x, y) - API returns rendering status
+  const result = bitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties, textProperties);
+
+  // Optional: Check rendering status
+  if (result.status.code !== StatusCode.SUCCESS) {
+    console.warn('Rendering issues:', getStatusDescription(result.status));
+    if (result.status.placeholdersUsed) {
+      console.info('Some glyphs rendered as placeholder rectangles');
+    }
+  }
   ```
 
   ## Generating Your Own Bitmap Fonts
@@ -132,32 +145,103 @@
 
   For complete automation documentation, see `scripts/README.md`.
 
-  API Reference
+  ## API Reference
 
-  BitmapText Class
+  ### BitmapText Class
 
-  Constructor
+  #### Constructor
 
+  ```javascript
   new BitmapText(atlasStore, fontMetricsStore)
+  ```
 
-  Methods
+  #### Methods
 
-  measureText(text, fontProperties, textProperties)
-  - Returns TextMetrics-compatible object with width, bounding box info
-  - Parameters:
-    - text: String to measure
-    - fontProperties: FontProperties instance
-    - textProperties: TextProperties instance (optional, defaults created if not provided)
+  **measureText(text, fontProperties, textProperties)**
 
-  drawTextFromAtlas(ctx, text, x, y, fontProperties, textProperties)
-  - Draws text using pre-rendered glyphs
-  - When atlases are missing but metrics are available, renders black placeholder rectangles
-  - Parameters:
-    - ctx: Canvas 2D rendering context
-    - text: String to render
-    - x, y: Position in CSS pixels
-    - fontProperties: FontProperties instance
-    - textProperties: TextProperties instance (optional, supports legacy textColor string)
+  Returns an object with measurement results and status information:
+
+  ```javascript
+  {
+    metrics: TextMetrics | null,  // TextMetrics-compatible object or null if measurement failed
+    status: {
+      code: StatusCode,           // Status code (0=SUCCESS, 1=NO_METRICS, 2=PARTIAL_METRICS)
+      missingChars?: Set          // Set of missing characters (only present for PARTIAL_METRICS)
+    }
+  }
+  ```
+
+  Parameters:
+  - **text**: String to measure
+  - **fontProperties**: FontProperties instance
+  - **textProperties**: TextProperties instance (optional, defaults created if not provided)
+
+  **drawTextFromAtlas(ctx, text, x, y, fontProperties, textProperties)**
+
+  Draws text using pre-rendered glyphs and returns rendering status:
+
+  ```javascript
+  {
+    rendered: boolean,            // Whether any rendering occurred
+    status: {
+      code: StatusCode,           // Status code (0=SUCCESS, 1=NO_METRICS, 2=PARTIAL_METRICS, 3=NO_ATLAS, 4=PARTIAL_ATLAS)
+      missingChars?: Set,         // Missing metric characters (PARTIAL_METRICS only)
+      missingAtlasChars?: Set,    // Missing atlas characters (PARTIAL_ATLAS only)
+      placeholdersUsed?: boolean  // Whether placeholder rectangles were used
+    }
+  }
+  ```
+
+  Parameters:
+  - **ctx**: Canvas 2D rendering context
+  - **text**: String to render
+  - **x, y**: Position in CSS pixels (y is bottom of text bounding box)
+  - **fontProperties**: FontProperties instance
+  - **textProperties**: TextProperties instance (optional)
+
+  When atlases are missing but metrics are available, renders black placeholder rectangles and returns appropriate status.
+
+  ### StatusCode Constants
+
+  ```javascript
+  StatusCode.SUCCESS = 0        // Everything worked perfectly
+  StatusCode.NO_METRICS = 1     // No font metrics available
+  StatusCode.PARTIAL_METRICS = 2 // Some characters missing metrics
+  StatusCode.NO_ATLAS = 3       // No atlas available (using placeholders)
+  StatusCode.PARTIAL_ATLAS = 4  // Some characters missing from atlas
+  ```
+
+  ### Helper Functions
+
+  ```javascript
+  isSuccess(status)             // Returns true if status indicates success
+  isCompleteFailure(status)     // Returns true if rendering completely failed
+  isPartialSuccess(status)      // Returns true if partial rendering occurred
+  getStatusDescription(status)  // Returns human-readable status description
+  ```
+
+  ### Usage Examples
+
+  **Basic Usage (ignoring status):**
+  ```javascript
+  const { metrics } = bitmapText.measureText(text, fontProps);
+  const { rendered } = bitmapText.drawTextFromAtlas(ctx, text, x, y, fontProps);
+  ```
+
+  **With Status Checking:**
+  ```javascript
+  const result = bitmapText.measureText(text, fontProps);
+  if (result.status.code === StatusCode.SUCCESS) {
+    console.log('Width:', result.metrics.width);
+  } else if (result.status.code === StatusCode.PARTIAL_METRICS) {
+    console.warn('Missing characters:', [...result.status.missingChars]);
+  }
+
+  const drawResult = bitmapText.drawTextFromAtlas(ctx, text, x, y, fontProps);
+  if (drawResult.status.code === StatusCode.PARTIAL_ATLAS) {
+    console.warn('Using placeholders for:', [...drawResult.status.missingAtlasChars]);
+  }
+  ```
 
   ## FontProperties Class
 

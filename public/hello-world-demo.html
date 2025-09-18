@@ -31,6 +31,8 @@
   <canvas id="demo-canvas" width="300" height="100"></canvas>
 
   <!-- Essential dependencies -->
+  <!-- Status reporting constants and helpers (must load first) -->
+  <script src="../src/core/StatusCode.js"></script>
   <!-- FontProperties class for font configuration -->
   <script src="../src/core/FontProperties.js"></script>
   <!-- TextProperties class for text rendering configuration -->
@@ -123,8 +125,8 @@
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw "Hello World" using bitmap text
-      bitmapText.drawTextFromAtlas(
+      // Draw "Hello World" using bitmap text - API returns status info
+      const result = bitmapText.drawTextFromAtlas(
         ctx,
         "Hello World",
         10,  // x position
@@ -133,7 +135,30 @@
         textProperties  // text rendering properties including color and kerning
       );
 
-      console.log('Hello World rendered successfully!');
+      // Check rendering result and status
+      if (result.rendered) {
+        if (result.status.code === StatusCode.SUCCESS) {
+          console.log('✅ Hello World rendered successfully!');
+        } else {
+          console.warn('⚠️ Hello World rendered with issues:');
+          console.warn('Status:', getStatusDescription(result.status));
+
+          if (result.status.placeholdersUsed) {
+            console.warn('Some glyphs were rendered as placeholder rectangles');
+          }
+
+          if (result.status.missingAtlasChars) {
+            console.warn('Missing atlas data for characters:', [...result.status.missingAtlasChars].join(''));
+          }
+        }
+      } else {
+        console.error('❌ Failed to render Hello World:');
+        console.error('Status:', getStatusDescription(result.status));
+
+        if (result.status.missingChars) {
+          console.error('Missing metrics for characters:', [...result.status.missingChars].join(''));
+        }
+      }
     }
   </script>
 </body>
