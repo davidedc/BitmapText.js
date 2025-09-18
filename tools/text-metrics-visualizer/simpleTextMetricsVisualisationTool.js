@@ -12,7 +12,8 @@ fontTextbox.id = "font-textbox";
 fontTextbox.style.float = "left";
 // picking a font that has significant actualBoundingBoxLeft and actualBoundingBoxRight
 // and a size such that my version of Safari shows nice round numbers for all the metrics
-fontTextbox.value = "italic 54px serif";
+// `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+fontTextbox.value = "normal normal 18px Arial";
 document.body.appendChild(fontTextbox);
 
 
