@@ -47,6 +47,9 @@
   <script src="../src/core/FontMetricsStore.js"></script>
   <!-- Main bitmap text rendering engine -->
   <script src="../src/core/BitmapText.js"></script>
+  <!-- Font loading utilities -->
+  <script src="../src/utils/font-loader-config.js"></script>
+  <script src="../src/utils/font-loader.js"></script>
 
   <script>
     // Font properties for Arial normal normal 19 with pixel density 1
@@ -68,9 +71,6 @@
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
-
-    // Initialize global variables (required by the font JS files)
-    window.imagesFromJs = {};
 
     // Font data loading tracking
     let loadedFiles = 0;
@@ -100,9 +100,16 @@
         imageScript.src = '../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
         imageScript.onload = function() {
           const img = new Image();
-          img.src = `data:image/png;base64,${window.imagesFromJs["density-1-0-Arial-style-normal-weight-normal-size-19-0"]}`;
+          const imageData = FontLoader._tempAtlasData["density-1-0-Arial-style-normal-weight-normal-size-19-0"];
+          if (!imageData) {
+            console.error("Atlas data not found for density-1-0-Arial-style-normal-weight-normal-size-19-0");
+            return;
+          }
+          img.src = `data:image/png;base64,${imageData}`;
           img.onload = function() {
             atlasStore.setAtlas(fontProperties, img);
+            // Clean up temporary data after use
+            delete FontLoader._tempAtlasData["density-1-0-Arial-style-normal-weight-normal-size-19-0"];
             onFileLoaded();
           };
         };

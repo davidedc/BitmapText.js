@@ -56,10 +56,11 @@ pngFiles.forEach(pngFile => {
     const jsFileName = pngFile.replace('.png', '.js');
     const jsFilePath = path.join(targetDir, jsFileName);
     const jsContent = `
-if (typeof imagesFromJs === 'undefined') {
-    var imagesFromJs = {};
+if (typeof FontLoader !== 'undefined' && FontLoader.registerTempAtlasData) {
+    FontLoader.registerTempAtlasData('${pngFile.replace('.png', '').replace('atlas-','')}', '${base64Data}');
+} else {
+    console.warn('FontLoader not available - atlas data for ${pngFile.replace('.png', '').replace('atlas-','')} not registered');
 }
-imagesFromJs['${pngFile.replace('.png', '').replace('atlas-','')}'] = '${base64Data}';
 `;
 
     fs.writeFileSync(jsFilePath, jsContent);

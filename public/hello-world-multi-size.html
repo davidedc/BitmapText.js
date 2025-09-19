@@ -85,9 +85,6 @@
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
 
-    // Initialize global variables (required by the font JS files)
-    window.imagesFromJs = {};
-
     // Function to create IDString from font size
     function createIDString(fontSize) {
       // Handle fractional sizes: 18.5 becomes "18-5", whole numbers get "-0" suffix
@@ -100,7 +97,7 @@
     // Create IDStrings for all font sizes
     const IDStrings = fontSizes.map(createIDString);
     
-    // Use FontLoader to load all font data
+    // Create FontLoader to (later) load all the font data
     const isFileProtocol = window.location.href.includes("file://");
     const fontLoader = new FontLoader(atlasStore, (loaded, total) => {
       console.log(`Loaded ${loaded} of ${total} files`);

@@ -106,15 +106,3 @@ function getStatusDescription(status) {
       return `Unknown status code: ${status.code}`;
   }
 }
-
-// Make constants and helpers available globally for script tag usage
-// This follows the same pattern as other core classes in this project
-if (typeof window !== 'undefined') {
-  window.StatusCode = StatusCode;
-  window.SUCCESS_STATUS = SUCCESS_STATUS;
-  window.createErrorStatus = createErrorStatus;
-  window.isSuccess = isSuccess;
-  window.isCompleteFailure = isCompleteFailure;
-  window.isPartialSuccess = isPartialSuccess;
-  window.getStatusDescription = getStatusDescription;
-}

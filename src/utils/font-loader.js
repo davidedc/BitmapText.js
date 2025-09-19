@@ -1,11 +1,25 @@
 // Shared utility for loading bitmap font data with error handling
 class FontLoader {
+  // Static storage for temporary atlas data from JS files
+  static _tempAtlasData = {};
+
   constructor(atlasStore, fontMetricsStore, onProgress = null) {
     this.atlasStore = atlasStore;
     this.fontMetricsStore = fontMetricsStore;
     this.onProgress = onProgress;
     this.loadedCount = 0;
     this.totalCount = 0;
+  }
+
+  // Static method for atlas JS files to register their temporary base64 data
+  // This method name conveys that these are temporary data:image/png;base64 strings
+  // that will be deleted once an image is created from them
+  static registerTempAtlasData(IDString, base64Data) {
+    if (typeof IDString !== 'string' || typeof base64Data !== 'string') {
+      console.warn('FontLoader.registerTempAtlasData: Invalid arguments - both IDString and base64Data must be strings');
+      return;
+    }
+    FontLoader._tempAtlasData[IDString] = base64Data;
   }
 
   // Load font data for a single ID string
@@ -72,8 +86,8 @@ class FontLoader {
       imageScript.src = FontLoaderConfig.getImageJsPath(IDString);
       
       imageScript.onload = () => {
-        const imageData = window.imagesFromJs && window.imagesFromJs[IDString];
-        
+        const imageData = FontLoader._tempAtlasData[IDString];
+
         if (!imageData) {
           console.warn(FontLoaderConfig.messages.imageDataMissing(IDString));
           imageScript.remove();
@@ -84,22 +98,22 @@ class FontLoader {
 
         const img = new Image();
         img.src = `data:image/png;base64,${imageData}`;
-        
+
         img.onload = () => {
           const fontProperties = FontProperties.fromIDString(IDString);
           this.atlasStore.setAtlas(fontProperties, img);
-          
+
           imageScript.remove();
-          delete window.imagesFromJs[IDString];
-          
+          delete FontLoader._tempAtlasData[IDString]; // Clean up temporary data
+
           this.incrementProgress();
           resolve();
         };
-        
+
         img.onerror = () => {
           console.warn(FontLoaderConfig.messages.base64DecodeFailed(IDString));
           imageScript.remove();
-          delete window.imagesFromJs[IDString];
+          delete FontLoader._tempAtlasData[IDString]; // Clean up temporary data
           this.incrementProgress();
           resolve(); // Not a failure - will use placeholder rectangles
         };
