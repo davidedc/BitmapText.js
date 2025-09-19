@@ -72,60 +72,17 @@
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
 
-    // Font data loading tracking
-    let loadedFiles = 0;
-    const totalFiles = 2; // JS data + image
+    // Load font using FontLoader (elegant single-font approach)
+    const isFileProtocol = window.location.href.includes("file://");
+    const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
+      console.log(`Loaded ${loaded} of ${total} files`);
+    });
 
-    function onFileLoaded() {
-      loadedFiles++;
-      if (loadedFiles === totalFiles) {
+    // Load font and render when ready
+    fontLoader.loadFont(fontProperties.idString, isFileProtocol)
+      .then(() => {
         renderHelloWorld();
-      }
-    }
-
-    // Load font metrics (JS file with metrics)
-    const metricsScript = document.createElement('script');
-    metricsScript.src = '../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
-    metricsScript.onload = function() {
-      // Metrics are auto-installed via direct store access
-      onFileLoaded();
-    };
-    document.head.appendChild(metricsScript);
-
-    // Load atlas image
-    function loadAtlas() {
-      if (window.location.href.includes("file://")) {
-        // Load from JS-wrapped image for file:// protocol
-        const imageScript = document.createElement('script');
-        imageScript.src = '../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.js';
-        imageScript.onload = function() {
-          const img = new Image();
-          const imageData = FontLoader._tempAtlasData["density-1-0-Arial-style-normal-weight-normal-size-19-0"];
-          if (!imageData) {
-            console.error("Atlas data not found for density-1-0-Arial-style-normal-weight-normal-size-19-0");
-            return;
-          }
-          img.src = `data:image/png;base64,${imageData}`;
-          img.onload = function() {
-            atlasStore.setAtlas(fontProperties, img);
-            // Clean up temporary data after use
-            delete FontLoader._tempAtlasData["density-1-0-Arial-style-normal-weight-normal-size-19-0"];
-            onFileLoaded();
-          };
-        };
-        document.head.appendChild(imageScript);
-      } else {
-        // Load PNG directly for http:// protocol
-        const img = new Image();
-        img.src = '../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.png';
-        img.onload = function() {
-          atlasStore.setAtlas(fontProperties, img);
-          onFileLoaded();
-        };
-      }
-    }
-
-    loadAtlas();
+      });
 
     function renderHelloWorld() {
       // Clear canvas with white background
