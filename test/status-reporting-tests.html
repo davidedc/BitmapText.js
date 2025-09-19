@@ -96,6 +96,14 @@
   <h1>BitmapText.js - Status Reporting System Tests</h1>
   <p>This page tests all status reporting scenarios for measureText and drawTextFromAtlas methods.</p>
 
+  <!-- Run All Tests -->
+  <div class="test-section">
+    <h2>Run All Tests</h2>
+    <div class="test-controls">
+      <button onclick="runAllTests()" style="background-color: #007bff; color: white; font-weight: bold;">Run All Tests</button>
+    </div>
+  </div>
+
   <!-- StatusCode Constants Test -->
   <div class="test-section">
     <h2>1. StatusCode Constants Test</h2>
@@ -108,7 +116,7 @@
   <!-- measureText Status Tests -->
   <div class="test-section">
     <h2>2. measureText Status Tests</h2>
-    <canvas id="measure-canvas" width="300" height="200"></canvas>
+    <p><em>measureText only returns measurements - no visual output expected</em></p>
     <div id="measure-test-results"></div>
     <div class="test-controls">
       <button onclick="testMeasureTextSuccess()">Test SUCCESS</button>
@@ -121,7 +129,15 @@
   <!-- drawTextFromAtlas Status Tests -->
   <div class="test-section">
     <h2>3. drawTextFromAtlas Status Tests</h2>
-    <canvas id="draw-canvas" width="400" height="300"></canvas>
+    <p><em>Canvas shows visual output for each test scenario:</em></p>
+    <ul style="font-size: 12px; margin: 5px 0 10px 20px;">
+      <li><strong>SUCCESS:</strong> Colored glyphs from mock atlas</li>
+      <li><strong>NO_METRICS:</strong> No drawing (complete failure)</li>
+      <li><strong>PARTIAL_METRICS:</strong> No drawing (complete failure)</li>
+      <li><strong>NO_ATLAS:</strong> Black placeholder rectangles</li>
+      <li><strong>PARTIAL_ATLAS:</strong> Mix of real glyphs + black placeholders</li>
+    </ul>
+    <canvas id="draw-canvas" width="400" height="300" style="border: 2px solid #ccc;"></canvas>
     <div id="draw-test-results"></div>
     <div class="test-controls">
       <button onclick="testDrawTextSuccess()">Test SUCCESS</button>
@@ -379,20 +395,29 @@
 
       fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
-      // Create mock atlas
+      // Create mock atlas with visible test glyphs
       const mockCanvas = document.createElement('canvas');
       mockCanvas.width = 20;
       mockCanvas.height = 15;
+      const mockCtx = mockCanvas.getContext('2d');
+      // Draw simple test glyphs
+      mockCtx.fillStyle = 'black';
+      mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
+      mockCtx.fillStyle = 'blue';
+      mockCtx.fillRect(10, 0, 2, 13); // 'i' glyph
       atlasStore.setAtlas(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Add white background for visibility
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
 
       if (result.rendered && result.status.code === StatusCode.SUCCESS) {
         addTestResult('draw-test-results', '✅ drawText SUCCESS: Rendered with success status', 'success');
+        addTestResult('draw-test-results', '✅ drawText SUCCESS: Check canvas - should show "Hi" text', 'info');
       } else {
         addTestResult('draw-test-results', '❌ drawText SUCCESS: Expected rendered=true and SUCCESS status', 'error');
       }
@@ -405,12 +430,15 @@
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Show pink background to indicate test ran (no drawing expected)
+      ctx.fillStyle = '#ffe6e6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
 
       if (!result.rendered && result.status.code === StatusCode.NO_METRICS) {
         addTestResult('draw-test-results', '✅ drawText NO_METRICS: Correctly returned rendered=false and NO_METRICS status', 'success');
+        addTestResult('draw-test-results', '✅ drawText NO_METRICS: Pink background shows test ran (no drawing expected)', 'info');
       } else {
         addTestResult('draw-test-results', '❌ drawText NO_METRICS: Expected rendered=false and NO_METRICS status', 'error');
       }
@@ -437,12 +465,15 @@
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Show orange background to indicate test ran (no drawing expected)
+      ctx.fillStyle = '#fff3e0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
 
       if (!result.rendered && result.status.code === StatusCode.PARTIAL_METRICS) {
         addTestResult('draw-test-results', '✅ drawText PARTIAL_METRICS: Correctly returned rendered=false and PARTIAL_METRICS status', 'success');
+        addTestResult('draw-test-results', '✅ drawText PARTIAL_METRICS: Orange background shows test ran (no drawing expected)', 'info');
         if (result.status.missingChars && result.status.missingChars.has('i')) {
           addTestResult('draw-test-results', '✅ drawText PARTIAL_METRICS: Correctly identified missing char', 'success');
         } else {
@@ -481,12 +512,15 @@
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Add light gray background for contrast with black placeholders
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 100, testFontProperties, testTextProperties);
 
       if (result.rendered && result.status.code === StatusCode.NO_ATLAS) {
         addTestResult('draw-test-results', '✅ drawText NO_ATLAS: Correctly returned rendered=true (placeholders) and NO_ATLAS status', 'success');
+        addTestResult('draw-test-results', '✅ drawText NO_ATLAS: Check canvas - should show black placeholder rectangles', 'info');
         if (result.status.placeholdersUsed) {
           addTestResult('draw-test-results', '✅ drawText NO_ATLAS: Correctly reported placeholders used', 'success');
         } else {
@@ -522,20 +556,27 @@
 
       fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
-      // Create mock atlas
+      // Create mock atlas with 'H' but not 'i'
       const mockCanvas = document.createElement('canvas');
       mockCanvas.width = 20;
       mockCanvas.height = 15;
+      const mockCtx = mockCanvas.getContext('2d');
+      // Draw only 'H' glyph (green for visibility)
+      mockCtx.fillStyle = 'green';
+      mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
       atlasStore.setAtlas(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Add light blue background for contrast
+      ctx.fillStyle = '#e6f3ff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 150, testFontProperties, testTextProperties);
 
       if (result.rendered && result.status.code === StatusCode.PARTIAL_ATLAS) {
         addTestResult('draw-test-results', '✅ drawText PARTIAL_ATLAS: Correctly returned rendered=true and PARTIAL_ATLAS status', 'success');
+        addTestResult('draw-test-results', '✅ drawText PARTIAL_ATLAS: Check canvas - should show green "H" + black placeholder for "i"', 'info');
         if (result.status.missingAtlasChars && result.status.missingAtlasChars.has('i')) {
           addTestResult('draw-test-results', '✅ drawText PARTIAL_ATLAS: Correctly identified missing atlas char', 'success');
         } else {
@@ -691,13 +732,6 @@
     });
   </script>
 
-  <!-- Add Run All Tests button -->
-  <div class="test-section">
-    <h2>Run All Tests</h2>
-    <div class="test-controls">
-      <button onclick="runAllTests()" style="background-color: #007bff; color: white; font-weight: bold;">Run All Tests</button>
-    </div>
-  </div>
 
 </body>
 
