@@ -1,3 +1,26 @@
+// FontLoader - Core Runtime Class
+//
+// This is a CORE RUNTIME class designed for minimal bundle size (~4-5KB).
+// It provides essential font loading capabilities for consuming pre-built bitmap fonts.
+//
+// DISTRIBUTION ROLE:
+// - Part of "runtime-only" distribution for production applications
+// - Manages loading of font metrics (JS files) and atlases (PNG or JS files)
+// - Handles both HTTP and file:// protocol loading scenarios
+// - Provides error handling and progress reporting for font loading
+//
+// ARCHITECTURE:
+// - Promise-based font loading with error recovery
+// - Static storage for temporary atlas data from JS files
+// - Protocol detection (file:// vs http://) for appropriate loading strategy
+// - Graceful degradation: missing atlases result in placeholder rectangles
+//
+// DEPENDENCIES:
+// - FontLoaderConfig: For path building and error messages
+// - FontProperties: For ID string parsing and font identification
+// - AtlasStore: For storing loaded atlas images
+// - FontMetricsStore: For receiving metrics data from loaded JS files
+
 // Shared utility for loading bitmap font data with error handling
 class FontLoader {
   // Static storage for temporary atlas data from JS files
@@ -25,7 +48,7 @@ class FontLoader {
   // Load font data for a single ID string
   loadFont(IDString, isFileProtocol = false) {
     this.totalCount += 2; // Each font has 2 files (metrics + image)
-    
+
     return this.loadMetrics(IDString)
       .then(() => this.loadAtlas(IDString, isFileProtocol))
       .catch(error => {
@@ -38,9 +61,9 @@ class FontLoader {
   loadFonts(IDStrings, isFileProtocol = false) {
     this.totalCount = IDStrings.length * 2;
     this.loadedCount = 0;
-    
+
     const promises = IDStrings.map(IDString => this.loadFont(IDString, isFileProtocol));
-    
+
     return Promise.all(promises);
   }
 
@@ -49,23 +72,23 @@ class FontLoader {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = FontLoaderConfig.getMetricsPath(IDString);
-      
+
       script.onload = () => {
         this.incrementProgress();
         resolve();
       };
-      
+
       script.onerror = () => {
         script.remove();
         console.warn(FontLoaderConfig.messages.metricsNotFound(IDString));
-        
+
         // Count both missing files to maintain expected count
         this.incrementProgress(); // Missing metrics
         this.incrementProgress(); // Missing image (won't be loaded)
-        
+
         reject(new Error(`Metrics not found for ${IDString}`));
       };
-      
+
       document.head.appendChild(script);
     });
   }
@@ -84,7 +107,7 @@ class FontLoader {
     return new Promise((resolve, reject) => {
       const imageScript = document.createElement('script');
       imageScript.src = FontLoaderConfig.getImageJsPath(IDString);
-      
+
       imageScript.onload = () => {
         const imageData = FontLoader._tempAtlasData[IDString];
 
@@ -118,14 +141,14 @@ class FontLoader {
           resolve(); // Not a failure - will use placeholder rectangles
         };
       };
-      
+
       imageScript.onerror = () => {
         console.warn(FontLoaderConfig.messages.jsImageNotFound(IDString));
         imageScript.remove();
         this.incrementProgress();
         resolve(); // Not a failure - will use placeholder rectangles
       };
-      
+
       document.head.appendChild(imageScript);
     });
   }
@@ -135,15 +158,15 @@ class FontLoader {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.src = FontLoaderConfig.getPngPath(IDString);
-      
+
       img.onload = () => {
         const fontProperties = FontProperties.fromIDString(IDString);
         this.atlasStore.setAtlas(fontProperties, img);
-        
+
         this.incrementProgress();
         resolve();
       };
-      
+
       img.onerror = () => {
         console.warn(FontLoaderConfig.messages.pngImageNotFound(IDString));
         this.incrementProgress();

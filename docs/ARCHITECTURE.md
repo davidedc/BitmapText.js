@@ -18,7 +18,7 @@
   The system is architected with a **two-tier class hierarchy** where FAB classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
 
   **Distribution Strategy:**
-  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasStore, FontMetricsStore, FontProperties) for measuring and drawing pre-generated fonts
+  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasStore, FontMetricsStore, FontProperties, TextProperties, FontLoader, FontLoaderConfig) for measuring and drawing pre-generated fonts
   - **Full Distribution** (~55KB+): Core + FAB classes for complete font assets building and rendering capabilities
   - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
 
@@ -134,6 +134,24 @@
     - `textBaseline`, `textAlign`: Canvas text positioning
     - `textColor`: CSS color specification
 
+  **FontLoader**
+  - Purpose: Consolidated font loading utility
+  - Responsibilities:
+    - Promise-based font data loading
+    - Error handling for missing files
+    - Progress tracking and callbacks
+    - Support for both PNG and JS atlases
+    - Protocol detection (file:// vs http://) for appropriate loading strategy
+    - Graceful degradation: missing atlases result in placeholder rectangles
+
+  **FontLoaderConfig**
+  - Purpose: Font loading configuration management
+  - Responsibilities:
+    - Centralized path configuration for font assets
+    - Error message templates for consistent user feedback
+    - Path building methods for metrics and atlas files
+    - Support for multiple file formats (PNG, QOI, JS)
+
   ### FAB Classes (Font Assets Building)
 
   **BitmapTextFAB extends BitmapText**
@@ -147,14 +165,6 @@
   - Generates minified metadata
 
   ### Supporting Classes
-
-  **FontLoader**
-  - Purpose: Consolidated font loading utility
-  - Responsibilities:
-    - Promise-based font data loading
-    - Error handling for missing files
-    - Progress tracking and callbacks
-    - Support for both PNG and JS atlases
 
   **Specs**
   - Parses and manages font correction specifications

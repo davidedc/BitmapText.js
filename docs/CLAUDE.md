@@ -13,7 +13,7 @@
 
   - **Core runtime**: src/core/BitmapText.js, src/core/AtlasStore.js, src/core/FontMetricsStore.js, src/core/FontProperties.js
   - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
-  - **Font utilities**: src/utils/FontLoader.js, src/utils/font-loader-config.js
+  - **Font utilities**: src/core/FontLoader.js, src/core/FontLoaderConfig.js
   - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
@@ -64,8 +64,8 @@
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
   - **Atlas validation**: src/core/AtlasStore.isValidAtlas:1
-  - **Font loading utilities**: src/utils/FontLoader.js
-  - **Loading configuration**: src/utils/font-loader-config.js
+  - **Font loading utilities**: src/core/FontLoader.js
+  - **Loading configuration**: src/core/FontLoaderConfig.js
   - **Hash verification**: src/utils/canvas-extensions.getHash:1
   - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
 
