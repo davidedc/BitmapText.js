@@ -76,6 +76,9 @@
   - `FontMetricsStore` - Font metrics, kerning, and glyph positioning data
   - `FontProperties` - Font configuration management
   - `TextProperties` - Text rendering configuration (kerning, alignment, color)
+  - `FontLoader` - Font loading utilities
+  - `FontLoaderConfig` - Font loading configuration
+  - `FontManifest` - Font registry for testing (optional)
   - **Bundle Size**: ~18-22KB + font assets
   - **Use Case**: Production applications displaying bitmap text
 
@@ -152,6 +155,17 @@
     - Path building methods for metrics and atlas files
     - Support for multiple file formats (PNG, QOI, JS)
 
+  **FontManifest**
+  - Purpose: Font registry management for testing and development
+  - Responsibilities:
+    - Centralized storage of available font IDs
+    - Clean API for font registration without global namespace pollution
+    - Used primarily by test-renderer for loading all available fonts
+  - Methods:
+    - `addFontIDs()`: Register font IDs from generated font-registry files
+    - `allFontIDs()`: Get copy of all registered font IDs
+    - `hasFontID()`, `count()`, `clear()`: Registry management utilities
+
   ### FAB Classes (Font Assets Building)
 
   **BitmapTextFAB extends BitmapText**
@@ -197,7 +211,7 @@
   ### Runtime Phase
 
   1. **Data Loading**
-     Manifest.js → FontLoader → Load Atlas JS → Load Atlas PNG → Direct FontMetricsStore Population
+     font-registry.js → FontManifest → FontLoader → Load Atlas JS → Load Atlas PNG → Direct FontMetricsStore Population
 
   2. **Text Rendering**
      Text String → Measure → Apply Kerning → Copy Glyphs → Composite Color
@@ -321,7 +335,7 @@
     5. Calculate kerning tables
     6. Build optimized atlases
     7. Generate minified metadata
-    8. Export metrics-*.js files + .qoi atlases
+    8. Export metrics-*.js files + .qoi atlases + font-registry.js
   ```
 
   ### Runtime Text Rendering Workflow

@@ -66,6 +66,7 @@
   - **Atlas validation**: src/core/AtlasStore.isValidAtlas:1
   - **Font loading utilities**: src/core/FontLoader.js
   - **Loading configuration**: src/core/FontLoaderConfig.js
+  - **Font registry management**: src/core/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.getHash:1
   - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
 
