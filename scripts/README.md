@@ -176,7 +176,7 @@ font-assets/
 ├── *.orig.png                # Original atlases (if --preserve-originals used)
 ├── *.js                      # Glyph data and metrics
 ├── image-*.js                # JS-wrapped images (for CORS-free loading)
-├── manifest.js               # Font manifest
+├── font-registry.js          # Auto-generated font registry
 └── data-backup-*.zip         # Automatic backups
 ```
 

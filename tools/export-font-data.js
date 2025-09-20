@@ -160,7 +160,10 @@ if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefi
   const manifestNow = new Date();
   const manifestTimezoneOffset = manifestNow.getTimezoneOffset();
   const manifestDate = new Date(manifestNow.getTime() - (manifestTimezoneOffset * 60 * 1000));
-  folder.file('manifest.js', `(bitmapTextManifest ??= {}).IDs = ${JSON.stringify(IDs)};`, { date: manifestDate });
+  folder.file('font-registry.js', `// Auto-generated font registry
+if (typeof FontManifest !== 'undefined') {
+  FontManifest.addFontIDs(${JSON.stringify(IDs)});
+}`, { date: manifestDate });
 
   // Generate and download zip file
   return zip.generateAsync({ type: "blob" })

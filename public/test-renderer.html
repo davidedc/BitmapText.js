@@ -45,7 +45,6 @@ and then open the page from the browser at:
 <script >
   const maxFontSize_px = 80;
   const fontSizeIncrement_px = 0.5;
-  let bitmapTextManifest;
   let specsDefault;
   function updatePageContent() {
     showGlyphs();
@@ -81,20 +80,20 @@ and then open the page from the browser at:
   const fontMetricsStore = new FontMetricsStore();
 </script>
 
-<!-- TODO pick a more specific name for the manifest, something that suggests that this is for this text rendering system-->
-<script src="../font-assets/manifest.js"></script>
+<script src="../src/core/FontManifest.js"></script>
+<script src="../font-assets/font-registry.js"></script>
 <script src="../src/core/FontLoaderConfig.js"></script>
 <script src="../src/core/FontLoader.js"></script>
 
 <script>
   // Ensure everything is loaded before starting
   console.log("FontLoader available:", typeof FontLoader !== 'undefined');
-  console.log("Manifest available:", typeof bitmapTextManifest !== 'undefined');
+  console.log("FontManifest available:", typeof FontManifest !== 'undefined' && FontManifest.count() > 0);
 
   if (typeof FontLoader === 'undefined') {
     console.error("FontLoader is not defined. Check that font-loader.js loaded properly.");
-  } else if (typeof bitmapTextManifest === 'undefined') {
-    console.error("bitmapTextManifest is not defined. Check that manifest.js loaded properly.");
+  } else if (typeof FontManifest === 'undefined' || FontManifest.count() === 0) {
+    console.error("FontManifest is not available or contains no fonts. Check that FontManifest.js and font-registry.js loaded properly.");
   } else {
     // Load all fonts from manifest and trigger test rendering
     startTiming('loadingFontData');
@@ -103,13 +102,13 @@ and then open the page from the browser at:
     const isFileProtocol = window.location.href.includes("file://");
 
     // Load all fonts using FontLoader
-    console.log("Using manifest IDs:", bitmapTextManifest.IDs);
+    console.log("Using font registry IDs:", FontManifest.allFontIDs());
 
     const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
       console.log(`loadedScripts: ${loaded} out of ${total}`);
     });
 
-    fontLoader.loadFonts(bitmapTextManifest.IDs, isFileProtocol)
+    fontLoader.loadFonts(FontManifest.allFontIDs(), isFileProtocol)
       .then(() => {
         console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
         console.log("All metrics loaded directly to store");

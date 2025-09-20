@@ -1,1 +1,0 @@
-(bitmapTextManifest ??= {}).IDs = ["density-1-0-Arial-style-normal-weight-normal-size-19-0","density-1-0-Arial-style-normal-weight-normal-size-18-5","density-1-0-Arial-style-normal-weight-normal-size-18-0"];
