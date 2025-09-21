@@ -341,13 +341,14 @@
   ### Runtime Text Rendering Workflow
   ```
   User → src/core/BitmapText.drawTextFromAtlas → src/core/AtlasStore + src/core/FontMetricsStore
-    1. Measure text (src/core/BitmapText.measureText)
-    2. For each character:
+    1. Convert text to code point array ([...text])
+    2. Measure text (src/core/BitmapText.measureText)
+    3. For each character:
        a. Get glyph metrics (src/core/FontMetricsStore.getFontMetrics)
        b. Create colored glyph (src/core/BitmapText.createColoredGlyph)
        c. Render to main canvas (src/core/BitmapText.renderGlyphToMainCanvas)
        d. Calculate advancement with kerning (src/core/BitmapText.calculateAdvancement_CSS_Px:78)
-    3. Return final rendered text
+    4. Return final rendered text
   ```
 
   ## Extension Points
