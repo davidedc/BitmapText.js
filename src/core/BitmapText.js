@@ -97,17 +97,19 @@ class BitmapText {
     }
 
     // SUCCESS PATH: Calculate metrics normally
+    // Convert to array of code points for proper Unicode handling
+    const chars = [...text];
     let width_CSS_Px = 0;
-    let letterTextMetrics = fontMetrics.getTextMetrics(text[0]);
+    let letterTextMetrics = fontMetrics.getTextMetrics(chars[0]);
     const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
     let actualBoundingBoxRight_CSS_Px;
     let advancement_CSS_Px = 0;
 
-    for (let i = 0; i < text.length; i++) {
-      const letter = text[i];
-      const nextLetter = text[i + 1];
+    for (let i = 0; i < chars.length; i++) {
+      const letter = chars[i];
+      const nextLetter = chars[i + 1];
 
       letterTextMetrics = fontMetrics.getTextMetrics(letter);
 
@@ -246,15 +248,17 @@ class BitmapText {
     let placeholdersUsed = false;
 
     // Render text
+    // Convert to array of code points for proper Unicode handling
+    const chars = [...text];
     const textColor = textProperties.textColor;
     const position = {
       x: x_CSS_Px * fontProperties.pixelDensity,
       y: y_CSS_Px * fontProperties.pixelDensity
     };
 
-    for (let i = 0; i < text.length; i++) {
-      const currentLetter = text[i];
-      const nextLetter = text[i + 1];
+    for (let i = 0; i < chars.length; i++) {
+      const currentLetter = chars[i];
+      const nextLetter = chars[i + 1];
 
       // Check if this specific glyph has atlas data (excluding spaces)
       if (currentLetter !== ' ') {

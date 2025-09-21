@@ -161,9 +161,11 @@ class BitmapTextFAB extends BitmapText {
       textProperties = new TextProperties();
     }
 
-    for (let i = 0; i < text.length; i++) {
-      const letter = text[i];
-      const nextLetter = text[i + 1];
+    // Convert to array of code points for proper Unicode handling
+    const chars = [...text];
+    for (let i = 0; i < chars.length; i++) {
+      const letter = chars[i];
+      const nextLetter = chars[i + 1];
       const glyph = this.atlasStoreFAB.getGlyph(
         fontProperties,
         letter
