@@ -29,7 +29,6 @@ function downloadFontAssets(options) {
     }
   }
   
-  const IDs = [];
 
   sizes.forEach(size => {
       // Create FontPropertiesFAB for this specific size
@@ -59,7 +58,6 @@ function downloadFontAssets(options) {
 
       // Use pre-computed ID string from FontPropertiesFAB
       const IDString = fontProperties.idString;
-      IDs.push(IDString);
 
       // Add QOI to zip with timezone-corrected date
       // JavaScript Date() gives UTC, but JSZip interprets as local time
@@ -156,14 +154,6 @@ if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefi
       );
   });
 
-  // Add manifest file with timezone-corrected date
-  const manifestNow = new Date();
-  const manifestTimezoneOffset = manifestNow.getTimezoneOffset();
-  const manifestDate = new Date(manifestNow.getTime() - (manifestTimezoneOffset * 60 * 1000));
-  folder.file('font-registry.js', `// Auto-generated font registry
-if (typeof FontManifest !== 'undefined') {
-  FontManifest.addFontIDs(${JSON.stringify(IDs)});
-}`, { date: manifestDate });
 
   // Generate and download zip file
   return zip.generateAsync({ type: "blob" })

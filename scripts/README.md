@@ -158,6 +158,37 @@ npm run qoi-memory                                       # Using npm script
 - Displays compression ratios and memory savings
 - Identifies largest files by uncompressed size
 
+### 6. Font Registry Generator Script
+```bash
+node scripts/generate-font-registry.js [options]
+# or
+npm run generate-registry
+```
+
+**Options:**
+- `--help, -h` - Show help message
+- `--verbose, -v` - Show verbose output
+
+**Examples:**
+```bash
+node scripts/generate-font-registry.js                    # Generate registry from font-assets/
+node scripts/generate-font-registry.js --verbose          # Show detailed processing information
+npm run generate-registry                                 # Using npm script
+```
+
+**What it does:**
+- Scans font-assets/ directory for metrics-*.js files
+- Extracts font IDs from filenames (e.g., metrics-{ID}.js → {ID})
+- Generates font-registry.js with FontManifest.addFontIDs() call
+- Saves to font-assets/font-registry.js for use by test-renderer.html
+- Provides detailed feedback and error handling
+
+**When to use:**
+- After extracting font assets from fontAssets.zip
+- When you want to run test-renderer.html to view all available fonts
+- After manually adding/removing font assets
+- When font-registry.js is missing or outdated
+
 ---
 
 ## 📁 File Structure
@@ -168,6 +199,7 @@ scripts/
 ├── optimize-images.sh        # PNG compression
 ├── png-to-js-converter.js    # PNG → JS wrapper conversion
 ├── qoi-memory-calculator.js  # QOI memory usage analyzer
+├── generate-font-registry.js # Font registry generator
 ├── test-pipeline.sh          # One-time pipeline test
 └── README.md                 # This file
 

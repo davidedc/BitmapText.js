@@ -39,7 +39,8 @@ while [[ $# -gt 0 ]]; do
             echo "  4. Convert QOI files to PNG format"
             echo "  5. Optimize PNG files"
             echo "  6. Convert PNGs to JS wrappers"
-            echo "  7. Continue monitoring"
+            echo "  7. Generate font registry for test-renderer"
+            echo "  8. Continue monitoring"
             echo ""
             echo "Press Ctrl+C to stop monitoring."
             exit 0
@@ -285,12 +286,24 @@ function run_optimization() {
 
 function run_js_conversion() {
     log "INFO" "Converting PNGs to JS files..."
-    
+
     if node "$PROJECT_ROOT/scripts/png-to-js-converter.js" "$DATA_DIR"; then
         log "SUCCESS" "PNG to JS conversion completed"
         return 0
     else
         log "ERROR" "PNG to JS conversion failed"
+        return 1
+    fi
+}
+
+function generate_font_registry() {
+    log "INFO" "Generating font registry for test-renderer..."
+
+    if node "$PROJECT_ROOT/scripts/generate-font-registry.js"; then
+        log "SUCCESS" "Font registry generation completed"
+        return 0
+    else
+        log "WARNING" "Font registry generation failed"
         return 1
     fi
 }
@@ -330,8 +343,13 @@ function process_font_assets() {
     if ! run_js_conversion; then
         log "WARNING" "PNG to JS conversion failed, but continuing..."
     fi
-    
-    # Step 7: Move zip to trash
+
+    # Step 7: Generate font registry
+    if ! generate_font_registry; then
+        log "WARNING" "Font registry generation failed, but continuing..."
+    fi
+
+    # Step 8: Move zip to trash
     move_zip_to_trash
     
     log "SUCCESS" "Font assets processing pipeline completed!"

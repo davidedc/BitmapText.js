@@ -33,7 +33,8 @@
     "qoi-to-png": "node scripts/qoi-to-png-converter.js",
     "png-to-js": "node scripts/png-to-js-converter.js",
     "qoi-memory": "node scripts/qoi-memory-calculator.js",
-    "build-multi-size-demo": "./scripts/build-node-multi-size-demo.sh"
+    "build-multi-size-demo": "./scripts/build-node-multi-size-demo.sh",
+    "generate-registry": "node scripts/generate-font-registry.js"
   },
   "keywords": [
     "canvas",
