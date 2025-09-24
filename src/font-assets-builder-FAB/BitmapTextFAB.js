@@ -170,7 +170,7 @@ class BitmapTextFAB extends BitmapText {
         fontProperties,
         letter
       );
-      const letterTextMetrics = fontMetrics.getTextMetrics(letter);
+      const characterMetrics = fontMetrics.getCharacterMetrics(letter);
 
       if (glyph && glyph.tightCanvas) {
         // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
@@ -191,7 +191,7 @@ class BitmapTextFAB extends BitmapText {
         // it happens with a standard Canvas - one should just position the text
         // carefully to avoid this (although it's rare that people actually take care of this).
         const actualBoundingBoxLeftPull_CSS_Px = Math.round(
-          letterTextMetrics.actualBoundingBoxLeft
+          characterMetrics.actualBoundingBoxLeft
         );
 
         const yPos_Phys_Px =

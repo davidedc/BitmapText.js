@@ -100,8 +100,8 @@ class BitmapText {
     // Convert to array of code points for proper Unicode handling
     const chars = [...text];
     let width_CSS_Px = 0;
-    let letterTextMetrics = fontMetrics.getTextMetrics(chars[0]);
-    const actualBoundingBoxLeft_CSS_Px = letterTextMetrics.actualBoundingBoxLeft;
+    let characterMetrics = fontMetrics.getCharacterMetrics(chars[0]);
+    const actualBoundingBoxLeft_CSS_Px = characterMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
     let actualBoundingBoxRight_CSS_Px;
@@ -111,10 +111,10 @@ class BitmapText {
       const letter = chars[i];
       const nextLetter = chars[i + 1];
 
-      letterTextMetrics = fontMetrics.getTextMetrics(letter);
+      characterMetrics = fontMetrics.getCharacterMetrics(letter);
 
-      actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, letterTextMetrics.actualBoundingBoxAscent);
-      actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, letterTextMetrics.actualBoundingBoxDescent);
+      actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, characterMetrics.actualBoundingBoxAscent);
+      actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, characterMetrics.actualBoundingBoxDescent);
 
       advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter, textProperties);
       width_CSS_Px += advancement_CSS_Px;
@@ -124,7 +124,7 @@ class BitmapText {
     actualBoundingBoxRight_CSS_Px = width_CSS_Px - advancement_CSS_Px;
     // ... plus the actualBoundingBoxRight_CSS_Px of the last character
     // (this is in place of adding its advancement_CSS_Px)
-    actualBoundingBoxRight_CSS_Px += letterTextMetrics.actualBoundingBoxRight;
+    actualBoundingBoxRight_CSS_Px += characterMetrics.actualBoundingBoxRight;
 
     return {
       metrics: {
@@ -135,8 +135,8 @@ class BitmapText {
         actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
         actualBoundingBoxAscent,
         actualBoundingBoxDescent,
-        fontBoundingBoxAscent: letterTextMetrics.fontBoundingBoxAscent,
-        fontBoundingBoxDescent: letterTextMetrics.fontBoundingBoxDescent
+        fontBoundingBoxAscent: characterMetrics.fontBoundingBoxAscent,
+        fontBoundingBoxDescent: characterMetrics.fontBoundingBoxDescent
       },
       status: SUCCESS_STATUS  // Reuse immutable object for performance
     };
@@ -150,7 +150,7 @@ class BitmapText {
     if (!textProperties) {
       textProperties = new TextProperties();
     }
-    const letterTextMetrics = fontMetrics.getTextMetrics(letter);
+    const characterMetrics = fontMetrics.getCharacterMetrics(letter);
     let x_CSS_Px = 0;
 
     // TODO this "space" section should handle all characters without a glyph
@@ -162,7 +162,7 @@ class BitmapText {
     // but since at small sizes we meddle with kerning quite a bit, we want
     // to also meddle with this to try to make the width of text
     // similar to what the browser paints normally.
-    // console.log(letterTextMetrics.width + " " + x_CSS_Px);
+    // console.log(characterMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (letter === " ") {
       const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = fontMetrics.getSpaceAdvancementOverride();
@@ -170,12 +170,12 @@ class BitmapText {
         x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
       }
       else {
-        x_CSS_Px += letterTextMetrics.width;
+        x_CSS_Px += characterMetrics.width;
       }
     }
     // Non-space characters ------------------------------------------
     else {
-      x_CSS_Px += letterTextMetrics.width;
+      x_CSS_Px += characterMetrics.width;
     }
 
     // Next, apply the kerning correction ----------------------------
@@ -309,26 +309,26 @@ class BitmapText {
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
 
-    const metrics = fontMetrics.getGlyphMetrics(letter);
+    const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
     
     // If atlas is missing but metrics exist, draw placeholder rectangle
     if (!this.atlasStore.isValidAtlas(atlas)) {
       // For placeholder rectangles, we need tightWidth and tightHeight, but not xInAtlas
-      if (metrics.tightWidth && metrics.tightHeight) {
-        this.drawPlaceholderRectangle(ctx, position, metrics, textColor);
+      if (atlasPositioning.tightWidth && atlasPositioning.tightHeight) {
+        this.drawPlaceholderRectangle(ctx, position, atlasPositioning, textColor);
       }
       return;
     }
     
     // For normal glyph rendering, we need xInAtlas
-    if (!metrics.xInAtlas) return;
+    if (!atlasPositioning.xInAtlas) return;
 
-    const coloredGlyphCanvas = this.createColoredGlyph(atlas, metrics, textColor);
-    this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, metrics);
+    const coloredGlyphCanvas = this.createColoredGlyph(atlas, atlasPositioning, textColor);
+    this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning);
   }
 
-  createColoredGlyph(atlas, metrics, textColor) {
-    const { xInAtlas, tightWidth, tightHeight } = metrics;
+  createColoredGlyph(atlas, atlasPositioning, textColor) {
+    const { xInAtlas, tightWidth, tightHeight } = atlasPositioning;
     
     // Setup temporary canvas, same size as the glyph
     this.coloredGlyphCanvas.width = tightWidth;
@@ -354,8 +354,8 @@ class BitmapText {
     return this.coloredGlyphCanvas;
   }
 
-  renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, metrics) {
-    const { tightWidth, tightHeight, dx, dy } = metrics;
+  renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning) {
+    const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
     
      // see https://stackoverflow.com/a/6061102
     ctx.drawImage(
@@ -368,8 +368,8 @@ class BitmapText {
     );
   }
 
-  drawPlaceholderRectangle(ctx, position, metrics, textColor) {
-    const { tightWidth, tightHeight, dx, dy } = metrics;
+  drawPlaceholderRectangle(ctx, position, atlasPositioning, textColor) {
+    const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
     
     const rectX = position.x + dx;
     const rectY = position.y + dy;

@@ -102,7 +102,7 @@ class FontMetricsFAB extends FontMetrics {
   calculateAndSetFontMetrics(glyphs, fontProperties) {
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      let letterTextMetrics = this.getTextMetrics(letter);
+      let characterMetrics = this.getCharacterMetrics(letter);
       
       // Skip glyphs without valid tight canvas box, but set default metrics
       if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
@@ -125,7 +125,7 @@ class FontMetricsFAB extends FontMetrics {
         1;
       
       // Calculate positioning offsets for atlas rendering
-      const dx = - Math.round(letterTextMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
+      const dx = - Math.round(characterMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
       const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
       
       // Set the calculated metrics

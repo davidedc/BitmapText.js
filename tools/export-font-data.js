@@ -111,7 +111,7 @@ function downloadFontAssets(options) {
       const originalGlyph = metadata.characterMetrics[firstChar];
       
       // Use FontMetrics API to get the expanded glyph data
-      const expandedGlyph = expanded.getTextMetrics(firstChar);
+      const expandedGlyph = expanded.getCharacterMetrics(firstChar);
       
       if (!expandedGlyph) {
           console.error('Expanded glyph is undefined:', {

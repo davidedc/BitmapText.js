@@ -82,9 +82,9 @@ class AtlasStoreFAB extends AtlasStore {
     let maxHeight = 0;
 
     for (let letter in glyphs) {
-      const metrics = fontMetrics.getGlyphMetrics(letter);
-      const tightWidth = metrics.tightWidth;
-      const tightHeight = metrics.tightHeight;
+      const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
+      const tightWidth = atlasPositioning.tightWidth;
+      const tightHeight = atlasPositioning.tightHeight;
       
       if (tightWidth && !isNaN(tightWidth)) {
         fittingWidth += tightWidth;
@@ -104,8 +104,8 @@ class AtlasStoreFAB extends AtlasStore {
     // Draw each glyph into the atlas and record xInAtlas position
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      const metrics = fontMetrics.getGlyphMetrics(letter);
-      const tightWidth = metrics.tightWidth;
+      const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
+      const tightWidth = atlasPositioning.tightWidth;
       
       // Skip glyphs without valid tight canvas or width
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {

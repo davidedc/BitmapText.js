@@ -62,7 +62,7 @@ class FontMetrics {
    * @param {string} letter - Character to get metrics for
    * @returns {Object} Object with xInAtlas, tightWidth, tightHeight, dx, dy
    */
-  getGlyphMetrics(letter) {
+  getAtlasPositioning(letter) {
     return {
       xInAtlas: this._atlasPositioning.xInAtlas[letter],
       tightWidth: this._atlasPositioning.tightWidth[letter],
@@ -77,7 +77,7 @@ class FontMetrics {
    * @param {string} letter - Character to get metrics for
    * @returns {Object} TextMetrics-compatible object
    */
-  getTextMetrics(letter) {
+  getCharacterMetrics(letter) {
     return this._characterMetrics[letter];
   }
   
