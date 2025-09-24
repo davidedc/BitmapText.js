@@ -305,11 +305,6 @@ function getCharacterType(char) {
 
 ## 6. Implementation Considerations
 
-### Backward Compatibility
-- Maintain adapter layer during transition
-- Version the data format for detection
-- Provide migration utilities
-
 ### Character Support Tiers
 1. **Tier 1 (Optimized)**: ASCII + Latin-1 (0-255)
 2. **Tier 2 (Supported)**: Common symbols (€, •, —)
