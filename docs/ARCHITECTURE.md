@@ -120,10 +120,9 @@
     - `kerningTables`: Pair-wise character adjustments
     - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
   - Methods:
-    - `getFontMetrics()`, `setFontMetrics()`: Glyph positioning data
-    - `getKerningTable()`, `setKerningTable()`: Kerning management
-    - `getGlyphsTextMetrics()`, `setGlyphsTextMetrics()`: Text metrics
-    - `getSpaceAdvancementOverrideForSmallSizesInPx()`, `setSpaceAdvancementOverrideForSmallSizesInPx()`: Spacing overrides
+    - `getFontMetrics()`, `setFontMetrics()`: FontMetrics instance management
+    - `hasFontMetrics()`, `deleteFontMetrics()`: FontMetrics lifecycle management
+    - `getAvailableFonts()`: Available font configurations
 
   **TextProperties**
   - Purpose: Text rendering configuration management
