@@ -13,7 +13,7 @@ class GlyphFAB {
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
 
-    // glyphsTextMetrics actually belongs to the fontMetricsStore
+    // characterMetrics actually belongs to the fontMetricsStore
     // which is separate from the AtlasStoreFAB class
     fontMetricsStoreFAB.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
 

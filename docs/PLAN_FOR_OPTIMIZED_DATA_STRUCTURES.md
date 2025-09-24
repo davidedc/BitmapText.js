@@ -11,12 +11,19 @@ This document specifies optimized data structures for BitmapText.js that reduce 
 3. **Memory efficiency**: Arrays for dense sequential data, Maps for sparse data
 4. **Performance first**: Minimize operations in hot paths (text rendering loop)
 
-## 1. Glyph Metrics Storage
+## Terminology
+
+This optimization plan uses precise terminology to distinguish between two distinct types of metrics:
+
+- **Atlas Positioning**: Data about where and how glyphs are stored in the atlas bitmap (xInAtlas, tightWidth, tightHeight, dx, dy). This is the physical location and extraction information for glyph rendering.
+- **Character Metrics**: Standard text measurements compatible with Canvas TextMetrics API (width, actualBoundingBox*, fontBoundingBox*). This is the measurement data used for text layout and positioning.
+
+## 1. Atlas Positioning Storage
 
 ### Current Structure (Suboptimal)
 ```javascript
 // Dictionary with character keys
-fontMetrics = {
+atlasPositioning = {
   tightWidth: {"A": 13, "B": 10, ...},
   tightHeight: {"A": 14, "B": 14, ...},
   dx: {"A": 0, "B": 2, ...},
@@ -27,40 +34,40 @@ fontMetrics = {
 
 ### Optimized Structure
 ```javascript
-class OptimizedGlyphMetrics {
+class OptimizedAtlasPositioning {
   constructor() {
     // Dense array for Latin-1 (0-255) - most common characters
     // Each position stores null or metrics object
-    this.latin1Metrics = new Array(256).fill(null);
+    this.latin1Positioning = new Array(256).fill(null);
 
     // Map for characters beyond Latin-1 (€, •, —, emojis, etc.)
-    this.extendedMetrics = new Map();
+    this.extendedPositioning = new Map();
   }
 
-  setMetrics(char, metrics) {
+  setPositioning(char, positioning) {
     if (char.length === 1) {
       const code = char.charCodeAt(0);
       if (code < 256) {
         // Store as compact object in array
-        this.latin1Metrics[code] = {
-          tw: metrics.tightWidth,    // Using short keys
-          th: metrics.tightHeight,
-          dx: metrics.dx,
-          dy: metrics.dy,
-          x: metrics.xInAtlas
+        this.latin1Positioning[code] = {
+          tw: positioning.tightWidth,    // Using short keys
+          th: positioning.tightHeight,
+          dx: positioning.dx,
+          dy: positioning.dy,
+          x: positioning.xInAtlas
         };
         return;
       }
     }
     // Extended or multi-code-unit characters
-    this.extendedMetrics.set(char, metrics);
+    this.extendedPositioning.set(char, positioning);
   }
 
-  getMetrics(char) {
+  getPositioning(char) {
     if (char.length === 1) {
       const code = char.charCodeAt(0);
       if (code < 256) {
-        const m = this.latin1Metrics[code];
+        const m = this.latin1Positioning[code];
         if (!m) return null;
 
         // Return in expected format
@@ -73,17 +80,17 @@ class OptimizedGlyphMetrics {
         };
       }
     }
-    return this.extendedMetrics.get(char) || null;
+    return this.extendedPositioning.get(char) || null;
   }
 
-  hasGlyph(char) {
+  hasPositioning(char) {
     if (char.length === 1) {
       const code = char.charCodeAt(0);
       if (code < 256) {
-        return this.latin1Metrics[code] !== null;
+        return this.latin1Positioning[code] !== null;
       }
     }
-    return this.extendedMetrics.has(char);
+    return this.extendedPositioning.has(char);
   }
 }
 ```
@@ -101,11 +108,11 @@ class OptimizedGlyphMetrics {
   - Full array for BMP (8KB waste for sparse data)
   - String-keyed Map only (slower than array indexing)
 
-## 2. Text Metrics Storage
+## 2. Character Metrics Storage
 
 ### Current Structure (Suboptimal)
 ```javascript
-glyphsTextMetrics = {
+characterMetrics = {
   "A": {width: 12.67, actualBoundingBoxLeft: 0.01, ...},
   "B": {width: 12.67, actualBoundingBoxLeft: 0, ...},
   ...
@@ -114,34 +121,34 @@ glyphsTextMetrics = {
 
 ### Optimized Structure
 ```javascript
-class OptimizedTextMetrics {
+class OptimizedCharacterMetrics {
   constructor() {
     // Dense array for Latin-1
-    this.latin1TextMetrics = new Array(256).fill(null);
+    this.latin1CharacterMetrics = new Array(256).fill(null);
 
     // Map for extended characters
-    this.extendedTextMetrics = new Map();
+    this.extendedCharacterMetrics = new Map();
   }
 
-  setTextMetrics(char, metrics) {
+  setCharacterMetrics(char, metrics) {
     if (char.length === 1) {
       const code = char.charCodeAt(0);
       if (code < 256) {
-        this.latin1TextMetrics[code] = metrics;
+        this.latin1CharacterMetrics[code] = metrics;
         return;
       }
     }
-    this.extendedTextMetrics.set(char, metrics);
+    this.extendedCharacterMetrics.set(char, metrics);
   }
 
-  getTextMetrics(char) {
+  getCharacterMetrics(char) {
     if (char.length === 1) {
       const code = char.charCodeAt(0);
       if (code < 256) {
-        return this.latin1TextMetrics[code];
+        return this.latin1CharacterMetrics[code];
       }
     }
-    return this.extendedTextMetrics.get(char);
+    return this.extendedCharacterMetrics.get(char);
   }
 }
 ```
@@ -256,7 +263,8 @@ class OptimizedKerningTable {
 // CORRECT - iterates by code points, not code units
 for (const char of text) {
   // char may be 1 or 2 code units (e.g., "A" or "😀")
-  const metrics = fontMetrics.getMetrics(char);
+  const positioning = atlasPositioning.getPositioning(char);
+  const characterMetrics = characterStore.getCharacterMetrics(char);
 }
 
 // Or with index tracking:
@@ -287,8 +295,8 @@ function getCharacterType(char) {
 
 | Component | Current | Optimized | Reduction |
 |-----------|---------|-----------|-----------|
-| Glyph Metrics | ~3KB | ~1.5KB | 50% |
-| Text Metrics | ~4.7KB | ~2.2KB | 53% |
+| Atlas Positioning | ~3KB | ~1.5KB | 50% |
+| Character Metrics | ~4.7KB | ~2.2KB | 53% |
 | Kerning Table | ~2KB | ~1.3KB | 35% |
 | **Total** | **~9.7KB** | **~5KB** | **48%** |
 
@@ -296,9 +304,9 @@ function getCharacterType(char) {
 
 | Operation | Current | Optimized | Speedup |
 |-----------|---------|-----------|---------|
-| Glyph metrics (ASCII) | 8-12ns | 2-3ns | 3-4x |
-| Glyph metrics (Latin-1) | 8-12ns | 2-3ns | 3-4x |
-| Glyph metrics (extended) | 8-12ns | 5-7ns | 1.5x |
+| Atlas positioning (ASCII) | 8-12ns | 2-3ns | 3-4x |
+| Atlas positioning (Latin-1) | 8-12ns | 2-3ns | 3-4x |
+| Atlas positioning (extended) | 8-12ns | 5-7ns | 1.5x |
 | Kerning (no kern) | 8ns | 2-3ns | 3x |
 | Kerning (has kern) | 15-20ns | 10-12ns | 1.5x |
 | **Average rendering** | **~50ns/char** | **~20ns/char** | **2.5x** |
