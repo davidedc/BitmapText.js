@@ -8,15 +8,15 @@ class MetricsMinifier {
   
   /**
    * Minifies font metrics data for smaller file size
-   * @param {Object} metricsData - Full metrics object containing kerningTable, glyphsTextMetrics, etc.
+   * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
    * @returns {Object} Minified metrics with shortened keys and compacted structure
    */
   static minify(metricsData) {
     return {
       k: this.#minifyKerningTable(metricsData.kerningTable),
-      b: this.#extractBaseMetrics(metricsData.glyphsTextMetrics),
-      g: this.#minifyGlyphMetrics(metricsData.glyphsTextMetrics),
-      t: this.#minifyTightMetrics(metricsData.atlasMetrics),
+      b: this.#extractBaseMetrics(metricsData.characterMetrics),
+      g: this.#minifyGlyphMetrics(metricsData.characterMetrics),
+      t: this.#minifyTightMetrics(metricsData.atlasPositioning),
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
   }
@@ -26,9 +26,9 @@ class MetricsMinifier {
    * Uses first available character to determine base font properties
    * @private
    */
-  static #extractBaseMetrics(glyphsTextMetrics) {
-    const firstChar = Object.keys(glyphsTextMetrics)[0];
-    const firstGlyph = glyphsTextMetrics[firstChar];
+  static #extractBaseMetrics(characterMetrics) {
+    const firstChar = Object.keys(characterMetrics)[0];
+    const firstGlyph = characterMetrics[firstChar];
     
     return {
       fba: firstGlyph.fontBoundingBoxAscent,     // fontBoundingBoxAscent
@@ -44,9 +44,9 @@ class MetricsMinifier {
    * Array format: [width, actualBoundingBoxLeft, actualBoundingBoxRight, actualBoundingBoxAscent, actualBoundingBoxDescent]
    * @private
    */
-  static #minifyGlyphMetrics(glyphsTextMetrics) {
+  static #minifyGlyphMetrics(characterMetrics) {
     const minified = {};
-    Object.entries(glyphsTextMetrics).forEach(([char, glyph]) => {
+    Object.entries(characterMetrics).forEach(([char, glyph]) => {
       minified[char] = [
         glyph.width,
         glyph.actualBoundingBoxLeft,
@@ -70,13 +70,13 @@ class MetricsMinifier {
    * Minifies tight metrics with shortened property names
    * @private
    */
-  static #minifyTightMetrics(atlasMetrics) {
+  static #minifyTightMetrics(atlasPositioning) {
     return {
-      w: atlasMetrics.tightWidth,          // tightWidth
-      h: atlasMetrics.tightHeight,         // tightHeight
-      dx: atlasMetrics.dx,                 // dx
-      dy: atlasMetrics.dy,                 // dy
-      x: atlasMetrics.xInAtlas        // xInAtlas
+      w: atlasPositioning.tightWidth,          // tightWidth
+      h: atlasPositioning.tightHeight,         // tightHeight
+      dx: atlasPositioning.dx,                 // dx
+      dy: atlasPositioning.dy,                 // dy
+      x: atlasPositioning.xInAtlas        // xInAtlas
     };
   }
 }

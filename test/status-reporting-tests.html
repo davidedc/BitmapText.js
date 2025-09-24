@@ -185,6 +185,10 @@
   <script src="../src/core/BitmapText.js"></script>
 
   <script>
+    // Debug mode: re-throw errors instead of catching them for better console debugging
+    // Usage: ?debug=true in URL
+    const debugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
+
     // Test setup
     let atlasStore, fontMetricsStore, bitmapText;
     let testFontProperties, testTextProperties;
@@ -259,6 +263,7 @@
 
       } catch (error) {
         addTestResult('constants-test-result', `❌ Constants test failed: ${error.message}`, 'error');
+        if (debugMode) throw error; // Re-throw for better debugging
       }
     }
 
@@ -269,7 +274,7 @@
 
       // Create mock font metrics for success case
       const mockFontMetrics = new FontMetrics({
-        glyphsTextMetrics: {
+        characterMetrics: {
           'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'e': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'l': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
@@ -319,7 +324,7 @@
 
       // Create mock font metrics missing some characters
       const mockFontMetrics = new FontMetrics({
-        glyphsTextMetrics: {
+        characterMetrics: {
           'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'e': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'l': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
@@ -377,12 +382,12 @@
 
       // Create complete mock data (metrics + atlas)
       const mockFontMetrics = new FontMetrics({
-        glyphsTextMetrics: {
+        characterMetrics: {
           'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'i': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
         },
-        atlasMetrics: {
+        atlasPositioning: {
           tightWidth: { 'H': 10, 'i': 2 },
           tightHeight: { 'H': 13, 'i': 13 },
           dx: { 'H': 1, 'i': 1 },
@@ -451,12 +456,12 @@
 
       // Create metrics missing some characters
       const mockFontMetrics = new FontMetrics({
-        glyphsTextMetrics: {
+        characterMetrics: {
           'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           // Missing 'i' to create partial metrics
           ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
         },
-        atlasMetrics: { tightWidth: {}, tightHeight: {}, dx: {}, dy: {}, xInAtlas: {} },
+        atlasPositioning: { tightWidth: {}, tightHeight: {}, dx: {}, dy: {}, xInAtlas: {} },
         kerningTable: {},
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
@@ -491,12 +496,12 @@
 
       // Create complete metrics but no atlas
       const mockFontMetrics = new FontMetrics({
-        glyphsTextMetrics: {
+        characterMetrics: {
           'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'i': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
         },
-        atlasMetrics: {
+        atlasPositioning: {
           tightWidth: { 'H': 10, 'i': 2 },
           tightHeight: { 'H': 13, 'i': 13 },
           dx: { 'H': 1, 'i': 1 },
@@ -538,12 +543,12 @@
 
       // Create complete metrics with partial atlas data
       const mockFontMetrics = new FontMetrics({
-        glyphsTextMetrics: {
+        characterMetrics: {
           'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'i': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           ' ': { width: 4, actualBoundingBoxLeft: 0, actualBoundingBoxRight: 4, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 }
         },
-        atlasMetrics: {
+        atlasPositioning: {
           tightWidth: { 'H': 10, 'i': 2 },
           tightHeight: { 'H': 13, 'i': 13 },
           dx: { 'H': 1, 'i': 1 },
@@ -599,7 +604,7 @@
 
       // Create mock font metrics for performance test
       const mockFontMetrics = new FontMetrics({
-        glyphsTextMetrics: {
+        characterMetrics: {
           'H': { width: 12, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 11, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'e': { width: 9, actualBoundingBoxLeft: 0.5, actualBoundingBoxRight: 8.5, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },
           'l': { width: 4, actualBoundingBoxLeft: 1, actualBoundingBoxRight: 3, actualBoundingBoxAscent: 13, actualBoundingBoxDescent: 0, fontBoundingBoxAscent: 15, fontBoundingBoxDescent: -3 },

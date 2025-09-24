@@ -32,27 +32,27 @@ class FontMetrics {
     // Kerning table: character pairs → adjustment values
     this._kerningTable = data.kerningTable || {};
     
-    // Glyph text metrics: character → TextMetrics-compatible object
-    this._glyphsTextMetrics = data.glyphsTextMetrics || {};
+    // Character metrics: character → TextMetrics-compatible object
+    this._characterMetrics = data.characterMetrics || {};
     
     // Space advancement override for small font sizes
     this._spaceAdvancementOverride = data.spaceAdvancementOverrideForSmallSizesInPx || null;
     
-    // Font positioning metrics for atlas rendering
-    this._fontMetrics = {
-      tightWidth: data.atlasMetrics?.tightWidth || {},
-      tightHeight: data.atlasMetrics?.tightHeight || {},
-      dx: data.atlasMetrics?.dx || {},
-      dy: data.atlasMetrics?.dy || {},
-      xInAtlas: data.atlasMetrics?.xInAtlas || {}
+    // Atlas positioning metrics for glyph rendering
+    this._atlasPositioning = {
+      tightWidth: data.atlasPositioning?.tightWidth || {},
+      tightHeight: data.atlasPositioning?.tightHeight || {},
+      dx: data.atlasPositioning?.dx || {},
+      dy: data.atlasPositioning?.dy || {},
+      xInAtlas: data.atlasPositioning?.xInAtlas || {}
     };
     
     // Freeze for immutability (safe to use as value object)
     // Skip freezing if this is for font assets building (FAB)
     if (!options.mutable) {
       Object.freeze(this._kerningTable);
-      Object.freeze(this._glyphsTextMetrics);
-      Object.freeze(this._fontMetrics);
+      Object.freeze(this._characterMetrics);
+      Object.freeze(this._atlasPositioning);
       Object.freeze(this);
     }
   }
@@ -64,11 +64,11 @@ class FontMetrics {
    */
   getGlyphMetrics(letter) {
     return {
-      xInAtlas: this._fontMetrics.xInAtlas[letter],
-      tightWidth: this._fontMetrics.tightWidth[letter],
-      tightHeight: this._fontMetrics.tightHeight[letter],
-      dx: this._fontMetrics.dx[letter],
-      dy: this._fontMetrics.dy[letter]
+      xInAtlas: this._atlasPositioning.xInAtlas[letter],
+      tightWidth: this._atlasPositioning.tightWidth[letter],
+      tightHeight: this._atlasPositioning.tightHeight[letter],
+      dx: this._atlasPositioning.dx[letter],
+      dy: this._atlasPositioning.dy[letter]
     };
   }
   
@@ -78,7 +78,7 @@ class FontMetrics {
    * @returns {Object} TextMetrics-compatible object
    */
   getTextMetrics(letter) {
-    return this._glyphsTextMetrics[letter];
+    return this._characterMetrics[letter];
   }
   
   /**
@@ -98,7 +98,7 @@ class FontMetrics {
    * @returns {boolean} True if glyph has metrics
    */
   hasGlyph(letter) {
-    return letter in this._glyphsTextMetrics;
+    return letter in this._characterMetrics;
   }
   
   /**
@@ -122,7 +122,7 @@ class FontMetrics {
    * @returns {string[]} Array of available characters
    */
   getAvailableCharacters() {
-    return Object.keys(this._glyphsTextMetrics);
+    return Object.keys(this._characterMetrics);
   }
   
   /**
@@ -131,8 +131,8 @@ class FontMetrics {
    * @returns {boolean} True if glyph has positioning data
    */
   hasPositioningData(letter) {
-    return this._fontMetrics.tightWidth[letter] !== undefined &&
-           this._fontMetrics.tightHeight[letter] !== undefined;
+    return this._atlasPositioning.tightWidth[letter] !== undefined &&
+           this._atlasPositioning.tightHeight[letter] !== undefined;
   }
   
   /**
@@ -141,6 +141,6 @@ class FontMetrics {
    * @returns {boolean} True if glyph has atlas positioning
    */
   hasAtlasData(letter) {
-    return this._fontMetrics.xInAtlas[letter] !== undefined;
+    return this._atlasPositioning.xInAtlas[letter] !== undefined;
   }
 }

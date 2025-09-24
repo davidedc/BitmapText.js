@@ -33,14 +33,14 @@ class FontMetricsFAB extends FontMetrics {
   extractFontMetricsInstance() {
     return new FontMetrics({
       kerningTable: this._kerningTable,
-      glyphsTextMetrics: this._glyphsTextMetrics,
+      characterMetrics: this._characterMetrics,
       spaceAdvancementOverrideForSmallSizesInPx: this._spaceAdvancementOverride,
-      atlasMetrics: {
-        tightWidth: this._fontMetrics.tightWidth,
-        tightHeight: this._fontMetrics.tightHeight,
-        dx: this._fontMetrics.dx,
-        dy: this._fontMetrics.dy,
-        xInAtlas: this._fontMetrics.xInAtlas
+      atlasPositioning: {
+        tightWidth: this._atlasPositioning.tightWidth,
+        tightHeight: this._atlasPositioning.tightHeight,
+        dx: this._atlasPositioning.dx,
+        dy: this._atlasPositioning.dy,
+        xInAtlas: this._atlasPositioning.xInAtlas
       }
     });
   }
@@ -73,7 +73,7 @@ class FontMetricsFAB extends FontMetrics {
    * @param {Object} metrics - Object mapping characters to TextMetrics
    */
   setGlyphsTextMetrics(metrics) {
-    this._glyphsTextMetrics = { ...this._glyphsTextMetrics, ...metrics };
+    this._characterMetrics = { ...this._characterMetrics, ...metrics };
   }
   
   /**
@@ -82,7 +82,7 @@ class FontMetricsFAB extends FontMetrics {
    * @param {Object} metrics - TextMetrics-compatible object
    */
   setGlyphTextMetrics(letter, metrics) {
-    this._glyphsTextMetrics[letter] = metrics;
+    this._characterMetrics[letter] = metrics;
   }
   
   /**
@@ -107,10 +107,10 @@ class FontMetricsFAB extends FontMetrics {
       // Skip glyphs without valid tight canvas box, but set default metrics
       if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
         // Set minimal default metrics for glyphs without visible pixels
-        this._fontMetrics.tightWidth[letter] = 1;
-        this._fontMetrics.tightHeight[letter] = 1;
-        this._fontMetrics.dx[letter] = 0;
-        this._fontMetrics.dy[letter] = 0;
+        this._atlasPositioning.tightWidth[letter] = 1;
+        this._atlasPositioning.tightHeight[letter] = 1;
+        this._atlasPositioning.dx[letter] = 0;
+        this._atlasPositioning.dy[letter] = 0;
         continue;
       }
       
@@ -129,10 +129,10 @@ class FontMetricsFAB extends FontMetrics {
       const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
       
       // Set the calculated metrics
-      this._fontMetrics.tightWidth[letter] = tightWidth;
-      this._fontMetrics.tightHeight[letter] = tightHeight;
-      this._fontMetrics.dx[letter] = dx;
-      this._fontMetrics.dy[letter] = dy;
+      this._atlasPositioning.tightWidth[letter] = tightWidth;
+      this._atlasPositioning.tightHeight[letter] = tightHeight;
+      this._atlasPositioning.dx[letter] = dx;
+      this._atlasPositioning.dy[letter] = dy;
     }
   }
   
@@ -142,7 +142,7 @@ class FontMetricsFAB extends FontMetrics {
    * @param {number} xPosition - X position in atlas
    */
   setGlyphPositionInAtlas(letter, xPosition) {
-    this._fontMetrics.xInAtlas[letter] = xPosition;
+    this._atlasPositioning.xInAtlas[letter] = xPosition;
   }
   
   /**
@@ -152,10 +152,10 @@ class FontMetricsFAB extends FontMetrics {
   setFontMetrics(metrics) {
     // Set metrics for each letter in the font
     for (const metricKey in metrics) {
-      if (this._fontMetrics[metricKey]) {
+      if (this._atlasPositioning[metricKey]) {
         const letterMetrics = metrics[metricKey];
         for (const letter in letterMetrics) {
-          this._fontMetrics[metricKey][letter] = letterMetrics[letter];
+          this._atlasPositioning[metricKey][letter] = letterMetrics[letter];
         }
       }
     }
@@ -174,13 +174,13 @@ class FontMetricsFAB extends FontMetrics {
       
       // Check positioning metrics
       for (const metricType of requiredMetrics) {
-        if (this._fontMetrics[metricType][letter] === undefined) {
+        if (this._atlasPositioning[metricType][letter] === undefined) {
           missingMetrics.push(`${letter}:${metricType}`);
         }
       }
       
       // Check text metrics
-      if (!this._glyphsTextMetrics[letter]) {
+      if (!this._characterMetrics[letter]) {
         missingMetrics.push(`${letter}:textMetrics`);
       }
     }
@@ -193,7 +193,7 @@ class FontMetricsFAB extends FontMetrics {
    * @returns {Object} Statistics object with counts and info
    */
   getStatistics() {
-    const glyphCount = Object.keys(this._glyphsTextMetrics).length;
+    const glyphCount = Object.keys(this._characterMetrics).length;
     const kerningPairs = Object.values(this._kerningTable)
       .reduce((total, pairs) => total + Object.keys(pairs).length, 0);
     
@@ -201,8 +201,8 @@ class FontMetricsFAB extends FontMetrics {
       glyphCount,
       kerningPairs,
       hasSpaceOverride: this._spaceAdvancementOverride !== null,
-      atlasGlyphs: Object.keys(this._fontMetrics.xInAtlas).length,
-      positioningGlyphs: Object.keys(this._fontMetrics.tightWidth).length
+      atlasGlyphs: Object.keys(this._atlasPositioning.xInAtlas).length,
+      positioningGlyphs: Object.keys(this._atlasPositioning.tightWidth).length
     };
   }
   

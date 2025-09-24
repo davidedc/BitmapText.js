@@ -20,9 +20,9 @@ class MetricsExpander {
     
     const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k),
-      glyphsTextMetrics: this.#expandGlyphMetrics(minified.g, minified.b),
+      characterMetrics: this.#expandGlyphMetrics(minified.g, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s,
-      atlasMetrics: this.#expandTightMetrics(minified.t)
+      atlasPositioning: this.#expandTightMetrics(minified.t)
     };
     
     return new FontMetrics(expandedData);

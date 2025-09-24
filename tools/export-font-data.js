@@ -76,27 +76,27 @@ function downloadFontAssets(options) {
           return;
       }
       
-      // Extract atlas metrics directly from FontMetrics instance
-      const atlasMetrics = {
-          tightWidth: { ...fontMetrics._fontMetrics.tightWidth },
-          tightHeight: { ...fontMetrics._fontMetrics.tightHeight },
-          dx: { ...fontMetrics._fontMetrics.dx },
-          dy: { ...fontMetrics._fontMetrics.dy },
-          xInAtlas: { ...fontMetrics._fontMetrics.xInAtlas }
+      // Extract atlas positioning directly from FontMetrics instance
+      const atlasPositioning = {
+          tightWidth: { ...fontMetrics._atlasPositioning.tightWidth },
+          tightHeight: { ...fontMetrics._atlasPositioning.tightHeight },
+          dx: { ...fontMetrics._atlasPositioning.dx },
+          dy: { ...fontMetrics._atlasPositioning.dy },
+          xInAtlas: { ...fontMetrics._atlasPositioning.xInAtlas }
       };
       
-      // Extract glyph text metrics directly from FontMetrics instance
-      const glyphsTextMetrics = { ...fontMetrics._glyphsTextMetrics };
+      // Extract character metrics directly from FontMetrics instance
+      const characterMetrics = { ...fontMetrics._characterMetrics };
       
       const metadata = {
           kerningTable: fontMetrics._kerningTable,
-          glyphsTextMetrics: glyphsTextMetrics,
+          characterMetrics: characterMetrics,
           spaceAdvancementOverrideForSmallSizesInPx: fontMetrics._spaceAdvancementOverride,
-          atlasMetrics: atlasMetrics
+          atlasPositioning: atlasPositioning
       };
 
       // Check if we have any glyphs to export
-      if (Object.keys(glyphsTextMetrics).length === 0) {
+      if (Object.keys(characterMetrics).length === 0) {
           console.warn(`No glyphs found for ${fontProperties.key}, skipping export`);
           return;
       }
@@ -107,8 +107,8 @@ function downloadFontAssets(options) {
       
       // Instead of deep equality check, let's verify the essential properties are preserved
       // Note: expanded is a FontMetrics instance, not a plain object
-      const firstChar = Object.keys(metadata.glyphsTextMetrics)[0];
-      const originalGlyph = metadata.glyphsTextMetrics[firstChar];
+      const firstChar = Object.keys(metadata.characterMetrics)[0];
+      const originalGlyph = metadata.characterMetrics[firstChar];
       
       // Use FontMetrics API to get the expanded glyph data
       const expandedGlyph = expanded.getTextMetrics(firstChar);

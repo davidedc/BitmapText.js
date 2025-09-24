@@ -115,8 +115,8 @@
   **FontMetricsStore**
   - Purpose: Font metrics and positioning data repository
   - Data structures:
-    - `fontMetrics`: Position and dimension data (tightWidth, tightHeight, dx, dy, xInAtlas)
-    - `glyphsTextMetrics`: Text measurement data
+    - `atlasPositioning`: Position and dimension data (tightWidth, tightHeight, dx, dy, xInAtlas)
+    - `characterMetrics`: Text measurement data
     - `kerningTables`: Pair-wise character adjustments
     - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
   - Methods:
