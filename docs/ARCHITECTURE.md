@@ -353,7 +353,7 @@
   ## Extension Points
 
   ### Custom Glyph Sources
-  Override `src/font-assets-builder-FAB/AtlasStoreFAB.createCanvasesAndLetterTextMetrics()`
+  Override `src/font-assets-builder-FAB/GlyphFAB.createCanvasesAndCharacterMetrics()`
 
   ### Custom Kerning Rules
   Extend `Specs` class or modify specs DSL

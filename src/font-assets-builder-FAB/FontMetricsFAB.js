@@ -81,7 +81,7 @@ class FontMetricsFAB extends FontMetrics {
    * @param {string} letter - Character to set metrics for
    * @param {Object} metrics - TextMetrics-compatible object
    */
-  setGlyphTextMetrics(letter, metrics) {
+  setCharacterMetrics(letter, metrics) {
     this._characterMetrics[letter] = metrics;
   }
   
@@ -181,7 +181,7 @@ class FontMetricsFAB extends FontMetrics {
       
       // Check text metrics
       if (!this._characterMetrics[letter]) {
-        missingMetrics.push(`${letter}:textMetrics`);
+        missingMetrics.push(`${letter}:characterMetrics`);
       }
     }
     

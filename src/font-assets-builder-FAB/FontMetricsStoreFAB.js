@@ -131,9 +131,9 @@ class FontMetricsStoreFAB extends FontMetricsStore {
    * @param {string} letter - Character to set metrics for
    * @param {Object} metrics - TextMetrics-compatible object
    */
-  setGlyphTextMetrics(fontProperties, letter, metrics) {
+  setCharacterMetrics(fontProperties, letter, metrics) {
     const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
-    fontMetricsFAB.setGlyphTextMetrics(letter, metrics);
+    fontMetricsFAB.setCharacterMetrics(letter, metrics);
   }
   
   /**

@@ -20,7 +20,7 @@ class MetricsExpander {
     
     const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k),
-      characterMetrics: this.#expandGlyphMetrics(minified.g, minified.b),
+      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s,
       atlasPositioning: this.#expandTightMetrics(minified.t)
     };
@@ -41,7 +41,7 @@ class MetricsExpander {
    * Reconstructs full TextMetrics-compatible objects from compact arrays
    * @private
    */
-  static #expandGlyphMetrics(minifiedGlyphs, baseMetrics) {
+  static #expandCharacterMetrics(minifiedGlyphs, baseMetrics) {
     const expanded = {};
     Object.entries(minifiedGlyphs).forEach(([char, metrics]) => {
       expanded[char] = {

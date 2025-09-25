@@ -15,7 +15,7 @@ class MetricsMinifier {
     return {
       k: this.#minifyKerningTable(metricsData.kerningTable),
       b: this.#extractBaseMetrics(metricsData.characterMetrics),
-      g: this.#minifyGlyphMetrics(metricsData.characterMetrics),
+      g: this.#minifyCharacterMetrics(metricsData.characterMetrics),
       t: this.#minifyTightMetrics(metricsData.atlasPositioning),
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
@@ -44,7 +44,7 @@ class MetricsMinifier {
    * Array format: [width, actualBoundingBoxLeft, actualBoundingBoxRight, actualBoundingBoxAscent, actualBoundingBoxDescent]
    * @private
    */
-  static #minifyGlyphMetrics(characterMetrics) {
+  static #minifyCharacterMetrics(characterMetrics) {
     const minified = {};
     Object.entries(characterMetrics).forEach(([char, glyph]) => {
       minified[char] = [

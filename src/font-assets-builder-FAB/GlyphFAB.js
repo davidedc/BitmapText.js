@@ -8,14 +8,14 @@ class GlyphFAB {
       tightCanvas,
       tightCanvasBox,
       letterTextMetrics
-    } = this.createCanvasesAndLetterTextMetrics();
+    } = this.createCanvasesAndCharacterMetrics();
     this.canvas = canvas;
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
 
     // characterMetrics actually belongs to the fontMetricsStore
     // which is separate from the AtlasStoreFAB class
-    fontMetricsStoreFAB.setGlyphTextMetrics(this.fontProperties, letter, letterTextMetrics);
+    fontMetricsStoreFAB.setCharacterMetrics(this.fontProperties, letter, letterTextMetrics);
 
     this.displayCanvasesAndData();
   }
@@ -30,7 +30,7 @@ class GlyphFAB {
     }
   }
 
-  createCanvasWithLetterAndGetLetterTextMetrics() {
+  createCanvasWithCharacterAndGetItsMetricss() {
     const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = this.fontProperties;
     const canvas = document.createElement("canvas");
 
@@ -266,8 +266,8 @@ class GlyphFAB {
     return { tightCanvas, tightCanvasBox };
   }
 
-  createCanvasesAndLetterTextMetrics() {
-    const { canvas, letterTextMetrics } = this.createCanvasWithLetterAndGetLetterTextMetrics();
+  createCanvasesAndCharacterMetrics() {
+    const { canvas, letterTextMetrics } = this.createCanvasWithCharacterAndGetItsMetricss();
     const { tightCanvas, tightCanvasBox } =
       this.getBoundingBoxOfOnPixels(canvas);
 
