@@ -16,7 +16,7 @@ class MetricsMinifier {
       k: this.#minifyKerningTable(metricsData.kerningTable),
       b: this.#extractBaseMetrics(metricsData.characterMetrics),
       g: this.#minifyCharacterMetrics(metricsData.characterMetrics),
-      t: this.#minifyTightMetrics(metricsData.atlasPositioning),
+      t: this.#minifyAtlasPositioning(metricsData.atlasPositioning),
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
   }
@@ -70,7 +70,7 @@ class MetricsMinifier {
    * Minifies tight metrics with shortened property names
    * @private
    */
-  static #minifyTightMetrics(atlasPositioning) {
+  static #minifyAtlasPositioning(atlasPositioning) {
     return {
       w: atlasPositioning.tightWidth,          // tightWidth
       h: atlasPositioning.tightHeight,         // tightHeight
