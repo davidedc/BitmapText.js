@@ -22,7 +22,7 @@ class MetricsExpander {
       kerningTable: this.#expandKerningTable(minified.k),
       characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s,
-      atlasPositioning: this.#expandTightMetrics(minified.t)
+      atlasPositioning: this.#expandAtlasPositioning(minified.t)
     };
     
     return new FontMetrics(expandedData);
@@ -41,7 +41,7 @@ class MetricsExpander {
    * Reconstructs full TextMetrics-compatible objects from compact arrays
    * @private
    */
-  static #expandCharacterMetrics(minifiedGlyphs, baseMetrics) {
+  static #expandCharacterMetrics(minifiedGlyphs, metricsCommonToAllCharacters) {
     const expanded = {};
     Object.entries(minifiedGlyphs).forEach(([char, metrics]) => {
       expanded[char] = {
@@ -52,14 +52,17 @@ class MetricsExpander {
         actualBoundingBoxAscent: metrics[3],
         actualBoundingBoxDescent: metrics[4],
         
-        // Common metrics restored from base metrics
-        fontBoundingBoxAscent: baseMetrics.fba,
-        fontBoundingBoxDescent: baseMetrics.fbd,
-        emHeightAscent: baseMetrics.fba,          // Same as fontBoundingBoxAscent
-        emHeightDescent: baseMetrics.fbd,         // Same as fontBoundingBoxDescent
-        hangingBaseline: baseMetrics.hb,
-        alphabeticBaseline: baseMetrics.ab,
-        ideographicBaseline: baseMetrics.ib
+        // Copy over the metrics common to all characters.
+        // This is a bit of a waste of memory, however this object needs to
+        // look as much as possible like a TextMetrics object, and this
+        // is what it looks like.
+        fontBoundingBoxAscent: metricsCommonToAllCharacters.fba,
+        fontBoundingBoxDescent: metricsCommonToAllCharacters.fbd,
+        emHeightAscent: metricsCommonToAllCharacters.fba,          // Same as fontBoundingBoxAscent
+        emHeightDescent: metricsCommonToAllCharacters.fbd,         // Same as fontBoundingBoxDescent
+        hangingBaseline: metricsCommonToAllCharacters.hb,
+        alphabeticBaseline: metricsCommonToAllCharacters.ab,
+        ideographicBaseline: metricsCommonToAllCharacters.ib
       };
     });
     return expanded;
@@ -69,7 +72,7 @@ class MetricsExpander {
    * Expands tight metrics from shortened property names
    * @private
    */
-  static #expandTightMetrics(minified) {
+  static #expandAtlasPositioning(minified) {
     return {
       tightWidth: minified.w,           // w -> tightWidth
       tightHeight: minified.h,          // h -> tightHeight

@@ -14,7 +14,7 @@ class MetricsMinifier {
   static minify(metricsData) {
     return {
       k: this.#minifyKerningTable(metricsData.kerningTable),
-      b: this.#extractBaseMetrics(metricsData.characterMetrics),
+      b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
       g: this.#minifyCharacterMetrics(metricsData.characterMetrics),
       t: this.#minifyAtlasPositioning(metricsData.atlasPositioning),
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
@@ -22,11 +22,12 @@ class MetricsMinifier {
   }
   
   /**
-   * Extracts common base metrics shared across all glyphs
-   * Uses first available character to determine base font properties
+   * Extracts common metrics shared across all characters
+   * so that we don't need to repeat these in the serialised file.
+   * Extract these from the first available character
    * @private
    */
-  static #extractBaseMetrics(characterMetrics) {
+  static #extractMetricsCommonToAllCharacters(characterMetrics) {
     const firstChar = Object.keys(characterMetrics)[0];
     const firstGlyph = characterMetrics[firstChar];
     
