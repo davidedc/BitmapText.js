@@ -309,17 +309,19 @@ class BitmapText {
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
 
-    const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
-    
-    // If atlas is missing but metrics exist, draw placeholder rectangle
+    // If atlas is missing but metrics exist, draw simplified placeholder rectangle
     if (!this.atlasStore.isValidAtlas(atlas)) {
-      // For placeholder rectangles, we need tightWidth and tightHeight, but not xInAtlas
-      if (atlasPositioning.tightWidth && atlasPositioning.tightHeight) {
-        this.drawPlaceholderRectangle(ctx, position, atlasPositioning, textColor);
+      // Use character metrics for simplified placeholder (no atlas positioning needed)
+      const characterMetrics = fontMetrics.getCharacterMetrics(letter);
+      if (characterMetrics) {
+        this.drawPlaceholderRectangle(ctx, position, characterMetrics, textColor);
       }
       return;
     }
-    
+
+    // Only get atlas positioning when we have a valid atlas
+    const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
+
     // For normal glyph rendering, we need xInAtlas
     if (!atlasPositioning.xInAtlas) return;
 
@@ -368,18 +370,21 @@ class BitmapText {
     );
   }
 
-  drawPlaceholderRectangle(ctx, position, atlasPositioning, textColor) {
-    const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
-    
-    const rectX = position.x + dx;
-    const rectY = position.y + dy;
-    
+  drawPlaceholderRectangle(ctx, position, characterMetrics, textColor) {
+    // Use simplified rectangle based on character metrics instead of tight bounding box
+    const width = characterMetrics.width;
+    const height = characterMetrics.fontBoundingBoxAscent + characterMetrics.actualBoundingBoxDescent;
+
+    // Position at baseline (no dx/dy offsets needed for simplified placeholder)
+    const rectX = position.x;
+    const rectY = position.y - characterMetrics.fontBoundingBoxAscent - characterMetrics.fontBoundingBoxDescent - characterMetrics.alphabeticBaseline;
+
     // Default to black if textColor is null or undefined
     const actualColor = textColor || 'black';
-    
-    // Draw a filled rectangle at the same position and size as the glyph would be
+
+    // Draw a simplified rectangle using character width and ascent height
     ctx.fillStyle = actualColor;
-    ctx.fillRect(rectX, rectY, tightWidth, tightHeight);
+    ctx.fillRect(rectX, rectY, width, height);
   }
 
   calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter, textProperties) {
