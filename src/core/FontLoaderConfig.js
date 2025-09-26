@@ -27,7 +27,7 @@ class FontLoaderConfig {
   static messages = {
     metricsNotFound: (IDString) => `Metrics JS not found: metrics-${IDString}.js - font will not be available`,
     pngImageNotFound: (IDString) => `Atlas image not found: atlas-${IDString}.png - will use placeholder rectangles`,
-    jsImageNotFound: (IDString) => `Atlas JS not found: atlas-${IDString}.js - will use placeholder rectangles`,
+    jsImageNotFound: (IDString) => `Atlas JS not found: atlas-${IDString}-png.js - will use placeholder rectangles`,
     imageDataMissing: (IDString) => `Image data not found in JS file for ${IDString} - will use placeholder rectangles`,
     base64DecodeFailed: (IDString) => `Failed to decode base64 image data for ${IDString} - will use placeholder rectangles`
   };
@@ -46,6 +46,6 @@ class FontLoaderConfig {
   }
 
   static getImageJsPath(IDString) {
-    return `${this.paths.dataDir}${this.paths.imagePrefix}${IDString}${this.paths.jsExtension}`;
+    return `${this.paths.dataDir}${this.paths.imagePrefix}${IDString}-png${this.paths.jsExtension}`;
   }
 }

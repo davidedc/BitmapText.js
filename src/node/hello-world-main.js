@@ -35,25 +35,49 @@ function main() {
 
     console.log('Font metrics loaded successfully');
     
-    // Load and decode QOI atlas
-    const qoiPath = path.resolve(__dirname, 'font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
-    if (!fs.existsSync(qoiPath)) {
-      throw new Error(`QOI file not found: ${qoiPath}`);
+    // Load atlas from JS file containing base64-encoded QOI data
+    const atlasJSPath = path.resolve(__dirname, 'font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-qoi.js');
+    if (!fs.existsSync(atlasJSPath)) {
+      throw new Error(`Atlas JS file not found: ${atlasJSPath}`);
     }
-    
-    console.log('Loading QOI atlas...');
-    const qoiBuffer = fs.readFileSync(qoiPath);
+
+    console.log('Loading atlas from JS file...');
+
+    // Load FontLoader to make registerTempAtlasData available
+    // Check if FontLoader is already available (bundled mode) or needs to be required (standalone mode)
+    let FontLoader;
+    if (typeof global !== 'undefined' && global.FontLoader) {
+      FontLoader = global.FontLoader;
+    } else {
+      FontLoader = require('./font-loader-node.js');
+    }
+
+    // Execute the atlas JS file (which calls FontLoader.registerTempAtlasData)
+    const atlasJSCode = fs.readFileSync(atlasJSPath, 'utf8');
+    eval(atlasJSCode);
+
+    // Get the IDString for this font configuration
+    const expectedIDString = fontProperties.idString;
+
+    // Retrieve the base64 data
+    const base64Data = FontLoader.getTempAtlasData(expectedIDString);
+    if (!base64Data) {
+      throw new Error(`Atlas data not found for ${expectedIDString}`);
+    }
+
+    console.log('Converting base64 to QOI buffer...');
+    const qoiBuffer = FontLoader.base64ToBuffer(base64Data);
     const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
-    
+
     if (qoiData.error) {
-      throw new Error('Failed to decode QOI file');
+      throw new Error('Failed to decode QOI data from base64');
     }
-    
+
     console.log(`QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
-    
+
     // Create Image from QOI data
     const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
-    
+
     // Set atlas in store
     atlasStore.setAtlas(fontProperties, atlasImage);
     
@@ -108,7 +132,7 @@ function main() {
     console.error('Error:', error.message);
     console.error('\nTroubleshooting:');
     console.error('1. Make sure you run this from the project root directory');
-    console.error('2. Ensure font data exists: font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js and font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0.qoi');
+    console.error('2. Ensure font data exists: font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js and font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-qoi.js');
     console.error('3. Build font assets using public/font-assets-builder.html if needed');
     process.exit(1);
   }

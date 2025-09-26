@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
             echo "  3. Extract font assets to font-assets/"
             echo "  4. Convert QOI files to PNG format"
             echo "  5. Optimize PNG files"
-            echo "  6. Convert PNGs to JS wrappers"
+            echo "  6. Convert images (PNG and QOI) to JS wrappers"
             echo "  7. Generate font registry for test-renderer"
             echo "  8. Continue monitoring"
             echo ""
@@ -285,13 +285,13 @@ function run_optimization() {
 }
 
 function run_js_conversion() {
-    log "INFO" "Converting PNGs to JS files..."
+    log "INFO" "Converting image files (PNG and QOI) to JS files..."
 
-    if node "$PROJECT_ROOT/scripts/png-to-js-converter.js" "$DATA_DIR"; then
-        log "SUCCESS" "PNG to JS conversion completed"
+    if node "$PROJECT_ROOT/scripts/image-to-js-converter.js" "$DATA_DIR" --all; then
+        log "SUCCESS" "Image to JS conversion completed"
         return 0
     else
-        log "ERROR" "PNG to JS conversion failed"
+        log "ERROR" "Image to JS conversion failed"
         return 1
     fi
 }
@@ -339,9 +339,9 @@ function process_font_assets() {
         log "WARNING" "PNG optimization failed, but continuing..."
     fi
     
-    # Step 6: Convert PNGs to JS
+    # Step 6: Convert images (PNG and QOI) to JS
     if ! run_js_conversion; then
-        log "WARNING" "PNG to JS conversion failed, but continuing..."
+        log "WARNING" "Image to JS conversion failed, but continuing..."
     fi
 
     # Step 7: Generate font registry

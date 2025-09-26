@@ -59,33 +59,65 @@ function main() {
       console.log(`✓ Metrics loaded for size ${fontSize}`);
     }
     
-    // Load QOI atlases (check both main directory and removed-for-testing)
+    // Load FontLoader to make registerTempAtlasData available
+    // Check if FontLoader is already available (bundled mode) or needs to be required (standalone mode)
+    let FontLoader;
+    if (typeof global !== 'undefined' && global.FontLoader) {
+      FontLoader = global.FontLoader;
+    } else {
+      FontLoader = require('./font-loader-node.js');
+    }
+
+    // Load atlases from JS files containing base64-encoded QOI data
     const atlasMap = new Map();
-    
+
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
       const IDString = IDStrings[i];
-      
-      console.log(`Loading QOI atlas for size ${fontSize}...`);
-      
-      // Only check main directory (like browser version)
-      const qoiPath = path.resolve(__dirname, `font-assets/atlas-${IDString}.qoi`);
-      
-      if (fs.existsSync(qoiPath)) {
-        console.log(`  ↳ Loading: ${path.basename(qoiPath)}`);
-        const qoiBuffer = fs.readFileSync(qoiPath);
-        const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
-        
-        if (qoiData.error) {
-          console.warn(`  ↳ Failed to decode QOI for size ${fontSize}, will use placeholder rectangles`);
+      const fontProperties = fontPropertiesArray[i];
+
+      console.log(`Loading atlas from JS file for size ${fontSize}...`);
+
+      // Load atlas from JS file
+      const atlasJSPath = path.resolve(__dirname, `font-assets/atlas-${IDString}-qoi.js`);
+
+      if (fs.existsSync(atlasJSPath)) {
+        try {
+          console.log(`  ↳ Loading: ${path.basename(atlasJSPath)}`);
+
+          // Execute the atlas JS file (which calls FontLoader.registerTempAtlasData)
+          const atlasJSCode = fs.readFileSync(atlasJSPath, 'utf8');
+          eval(atlasJSCode);
+
+          // Get the IDString for this font configuration
+          const expectedIDString = fontProperties.idString;
+
+          // Retrieve the base64 data
+          const base64Data = FontLoader.getTempAtlasData(expectedIDString);
+          if (!base64Data) {
+            console.warn(`  ↳ Atlas data not found for ${expectedIDString}, will use placeholder rectangles`);
+            atlasMap.set(fontSize, null);
+            continue;
+          }
+
+          // Convert base64 to QOI buffer and decode
+          const qoiBuffer = FontLoader.base64ToBuffer(base64Data);
+          const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
+
+          if (qoiData.error) {
+            console.warn(`  ↳ Failed to decode QOI data from base64 for size ${fontSize}, will use placeholder rectangles`);
+            atlasMap.set(fontSize, null);
+          } else {
+            console.log(`  ↳ QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
+            const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
+            atlasMap.set(fontSize, atlasImage);
+          }
+        } catch (error) {
+          console.warn(`  ↳ Failed to load atlas for size ${fontSize}: ${error.message}, will use placeholder rectangles`);
           atlasMap.set(fontSize, null);
-        } else {
-          console.log(`  ↳ QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
-          const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
-          atlasMap.set(fontSize, atlasImage);
         }
       } else {
-        console.warn(`  ↳ QOI file not found for size ${fontSize}, will use placeholder rectangles`);
+        console.warn(`  ↳ Atlas JS file not found for size ${fontSize}, will use placeholder rectangles`);
         atlasMap.set(fontSize, null);
       }
     }
@@ -159,14 +191,14 @@ function main() {
     console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
     console.log(`File size: ${fs.statSync(outputPath).size} bytes`);
     console.log(`\nThe PNG contains "Hello World" rendered at ${fontSizes.join(', ')} sizes using bitmap fonts.`);
-    console.log(`Note: Sizes with missing QOI files will show black placeholder rectangles.`);
-    
+    console.log(`Note: Sizes with missing atlas JS files will show black placeholder rectangles.`);
+
   } catch (error) {
     console.error('Error:', error.message);
     console.error('\nTroubleshooting:');
     console.error('1. Make sure you run this from the project root directory');
     console.error('2. Ensure font metrics exist for all sizes:', fontSizes.map(s => `metrics-density-1-0-Arial-style-normal-weight-normal-size-${s.toString().replace('.', '-')}${s.toString().includes('.') ? '' : '-0'}.js`).join(', '));
-    console.error('3. QOI files are optional - missing ones will show placeholder rectangles');
+    console.error('3. Atlas JS files are optional - missing ones will show placeholder rectangles');
     console.error('4. Build font assets using public/font-assets-builder.html if needed');
     process.exit(1);
   }
