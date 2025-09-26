@@ -265,8 +265,8 @@
   When atlases are missing but metrics are available:
   1. Validate atlas using `isValidAtlas()`
   2. Fall back to placeholder rectangle mode
-  3. Draw black rectangle with correct dimensions from metrics
-  4. Apply proper positioning using dx/dy offsets
+  3. Draw simplified rectangle using character metrics (width × fontBoundingBoxAscent + actualBoundingBoxDescent)
+  4. Position at baseline using character metrics positioning
 
   ## QOI Image Format
 

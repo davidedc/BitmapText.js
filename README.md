@@ -199,7 +199,7 @@
   - **fontProperties**: FontProperties instance
   - **textProperties**: TextProperties instance (optional)
 
-  When atlases are missing but metrics are available, renders black placeholder rectangles and returns appropriate status.
+  When atlases are missing but metrics are available, renders simplified placeholder rectangles using character metrics and returns appropriate status.
 
   ### StatusCode Constants
 
@@ -449,7 +449,7 @@ setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, override)
   - Ensure canvases are attached to DOM before rendering for crisp text
   - Check pixel density scaling is applied correctly
   - Verify font data is loaded before attempting to render
-  - If you see black rectangles instead of text, atlases are missing but metrics are loaded (placeholder mode)
+  - If you see simplified black rectangles instead of text, atlases are missing but metrics are loaded (placeholder mode)
 
   **Performance Issues**
   - Pre-load atlases during initialization
