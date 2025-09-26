@@ -55,8 +55,8 @@ The bundled demos expect font assets in `examples/node/dist/font-assets/`. The `
 ```bash
 # Manual setup (if not using run-node-demos.sh)
 mkdir -p examples/node/dist/font-assets
-cp font-assets/*.js examples/node/dist/font-assets/
-cp font-assets/*.qoi examples/node/dist/font-assets/
+cp font-assets/*-qoi.js examples/node/dist/font-assets/
+cp font-assets/metrics-*.js examples/node/dist/font-assets/
 ```
 
 ## Source Code Locations

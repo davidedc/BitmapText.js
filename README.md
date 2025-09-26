@@ -438,7 +438,7 @@ setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, override)
   - Always serve files via HTTP server, not file:// protocol
   - Use `python -m http.server` or `npx http-server` for local development
   - Required for loading PNG atlases and calculating hashes
-  - For file:// protocol: Convert PNGs to JS files using `node scripts/png-to-js-converter.js [directory]`
+  - For file:// protocol: Convert images to JS files using `node scripts/image-to-js-converter.js [directory] --all`
 
   **QOI Format Issues**
   - Browser exports QOI format, pipeline converts to PNG automatically

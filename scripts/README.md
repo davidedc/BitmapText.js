@@ -121,15 +121,20 @@ npm run build-multi-size-demo
 - File size: ~52-58KB, ~1450-1600 lines each
 - No external dependencies required
 
-### 4. PNG to JS Converter Script
+### 4. Image to JS Converter Script
 ```bash
-node scripts/png-to-js-converter.js [directory]
+node scripts/image-to-js-converter.js [directory] [options]
 ```
+**Options:**
+- `--png`: Process PNG files only (generates *-png.js files)
+- `--qoi`: Process QOI files only (generates *-qoi.js files)
+- `--all`: Process both PNG and QOI files (default)
+
 **Examples:**
 ```bash
-node scripts/png-to-js-converter.js           # Uses font-assets/ directory
-node scripts/png-to-js-converter.js font-assets/     # Explicitly specify font-assets/
-node scripts/png-to-js-converter.js /path/to/pngs/  # Use custom directory
+node scripts/image-to-js-converter.js --all           # Process all images in font-assets/
+node scripts/image-to-js-converter.js font-assets --png    # Process PNG files only
+node scripts/image-to-js-converter.js /path/to/images --qoi # Process QOI files only
 ```
 
 ### 5. QOI Memory Calculator Script
@@ -197,7 +202,7 @@ npm run generate-registry                                 # Using npm script
 scripts/
 ├── watch-font-assets.sh     # Main monitoring script
 ├── optimize-images.sh        # PNG compression
-├── png-to-js-converter.js    # PNG → JS wrapper conversion
+├── image-to-js-converter.js   # Image → JS wrapper conversion (PNG/QOI)
 ├── qoi-memory-calculator.js  # QOI memory usage analyzer
 ├── generate-font-registry.js # Font registry generator
 ├── test-pipeline.sh          # One-time pipeline test
