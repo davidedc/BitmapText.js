@@ -217,6 +217,26 @@
   - Generates minified metadata and export formats
   - Extraction method to convert AtlasImageFAB to AtlasImage instances
 
+  **AtlasPositioningFAB extends AtlasPositioning**
+  - Font assets building capabilities for atlas positioning data management
+  - Calculates positioning data from glyph canvas bounds and font metrics
+  - Manages xInAtlas positions during atlas building process
+  - Provides extraction methods to create clean runtime AtlasPositioning instances
+  - Handles ONLY atlas positioning calculations (separated from FontMetricsFAB)
+
+  **FontMetricsFAB extends FontMetrics**
+  - Font assets building capabilities for font metrics data management
+  - Handles ONLY font metrics, kerning tables, and character measurements
+  - Building, validation, and optimization features for metrics data
+  - Provides extraction methods to create clean runtime FontMetrics instances
+  - Clean separation from atlas positioning (handled by AtlasPositioningFAB)
+
+  **FontMetricsStoreFAB extends FontMetricsStore**
+  - Font assets building store for FontMetricsFAB instances
+  - Manages font metrics calculation and validation during building
+  - Provides extraction methods to create clean runtime FontMetricsStore instances
+  - Focuses solely on font metrics (positioning handled separately by AtlasPositioningFAB)
+
   ### Supporting Classes
 
   **Specs**

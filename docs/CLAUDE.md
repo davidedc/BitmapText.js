@@ -63,6 +63,7 @@
   - **Atlas image management**: src/core/AtlasImage.js (immutable atlas image domain object)
   - **Atlas image building**: src/font-assets-builder-FAB/AtlasImageFAB.js (extends AtlasImage with building capabilities)
   - **Atlas positioning data**: src/core/AtlasPositioning.js (immutable positioning domain object)
+  - **Atlas positioning building**: src/font-assets-builder-FAB/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
   - **Atlas data combination**: src/core/AtlasData.js (combines AtlasImage + AtlasPositioning)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
