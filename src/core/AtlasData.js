@@ -7,7 +7,7 @@
 // - Part of "runtime-only" distribution for production applications
 // - Combines atlas image with character positioning data
 // - Provides unified interface for atlas image and positioning access
-// - Replaces storing raw images in AtlasStore
+// - Replaces storing raw images in AtlasDataStore
 //
 // ARCHITECTURE:
 // - Immutable object representing atlas image + positioning for ONE font configuration

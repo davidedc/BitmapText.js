@@ -13,7 +13,7 @@
 // - Stores FontMetrics instances for fast O(1) lookup by font properties
 // - Simple repository pattern with get/set/has operations
 // - FontMetrics instances encapsulate all metrics data and behavior
-// - Separate from AtlasStore to enable independent loading strategies
+// - Separate from AtlasDataStore to enable independent loading strategies
 //
 // SEPARATION RATIONALE:
 // - Font metrics are small data loaded from metrics-*.js files
