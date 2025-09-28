@@ -104,26 +104,7 @@ class FontMetricsStoreFAB extends FontMetricsStore {
     fontMetricsFAB.setKerningTable(kerningTable);
   }
   
-  /**
-   * Calculate and set font metrics from glyph data
-   * @param {FontProperties} fontProperties - Font configuration
-   * @param {Object} glyphs - Object mapping characters to glyph data
-   */
-  calculateAndSetFontMetrics(fontProperties, glyphs) {
-    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
-    fontMetricsFAB.calculateAndSetFontMetrics(glyphs, fontProperties);
-  }
   
-  /**
-   * Set glyph position in atlas after atlas is built
-   * @param {FontProperties} fontProperties - Font configuration
-   * @param {string} letter - Character to set position for
-   * @param {number} xPosition - X position in atlas
-   */
-  setGlyphPositionInAtlas(fontProperties, letter, xPosition) {
-    const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
-    fontMetricsFAB.setGlyphPositionInAtlas(letter, xPosition);
-  }
   
   /**
    * Set text metrics for a single glyph

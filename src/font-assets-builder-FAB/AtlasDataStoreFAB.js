@@ -69,12 +69,13 @@ class AtlasDataStoreFAB extends AtlasDataStore {
 
   // Build an atlas image from individual canvases for a specific font configuration
   // 1. Find all glyphs for the font configuration
-  // 2. Calculate atlas dimensions from glyph tight bounds
-  // 3. Create canvas and draw all glyphs horizontally
-  // 4. Store atlas and return image data
-  // 
-  // NOTE: This method focuses solely on atlas image generation.
-  // Font metrics calculation is handled by FontMetricsStoreFAB.calculateAndSetFontMetrics()
+  // 2. Calculate atlas positioning data using AtlasPositioningFAB
+  // 3. Calculate atlas dimensions from glyph tight bounds
+  // 4. Create canvas and draw all glyphs horizontally
+  // 5. Store atlas and return image data
+  //
+  // NOTE: This method now creates and manages AtlasPositioningFAB directly for clean separation.
+  // Font metrics are still available from fontMetricsStore but only for character measurements.
   buildAtlas(fontProperties, fontMetricsStore) {
     // Find all glyphs for this font configuration
     const glyphs = {};
@@ -84,28 +85,26 @@ class AtlasDataStoreFAB extends AtlasDataStore {
         glyphs[letter] = glyph;
       }
     }
-    
+
     if (Object.keys(glyphs).length === 0) return null;
 
-    // First, have the FontMetricsStoreFAB calculate all the font metrics
-    // This populates tightWidth, tightHeight, dx, dy in the fontMetricsStore
-    fontMetricsStore.calculateAndSetFontMetrics(fontProperties, glyphs);
-
-    // Get FontMetrics instance once for this font
-    const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
-    if (!fontMetrics) {
-      throw new Error(`No font metrics found for: ${fontProperties.key}`);
+    // Create AtlasPositioningFAB instance to handle positioning calculations
+    if (typeof AtlasPositioningFAB === 'undefined') {
+      throw new Error(`AtlasPositioningFAB class required for atlas building - not available for ${fontProperties.key}`);
     }
+    const atlasPositioningFAB = new AtlasPositioningFAB();
 
-    // Calculate atlas dimensions using the metrics from FontMetrics instance
+    // Calculate positioning data from glyph bounds and font metrics
+    atlasPositioningFAB.calculatePositioning(glyphs, fontProperties, fontMetricsStore);
+
+    // Calculate atlas dimensions using positioning data
     let fittingWidth = 0;
     let maxHeight = 0;
 
     for (let letter in glyphs) {
-      // Access atlas positioning directly from FontMetricsFAB internal structure
-      const tightWidth = fontMetrics._atlasPositioning.tightWidth[letter];
-      const tightHeight = fontMetrics._atlasPositioning.tightHeight[letter];
-      
+      const tightWidth = atlasPositioningFAB.getTightWidth(letter);
+      const tightHeight = atlasPositioningFAB.getTightHeight(letter);
+
       if (tightWidth && !isNaN(tightWidth)) {
         fittingWidth += tightWidth;
       }
@@ -124,9 +123,8 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     // Draw each glyph into the atlas and record xInAtlas position
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      // Access atlas positioning directly from FontMetricsFAB internal structure
-      const tightWidth = fontMetrics._atlasPositioning.tightWidth[letter];
-      
+      const tightWidth = atlasPositioningFAB.getTightWidth(letter);
+
       // Skip glyphs without valid tight canvas or width
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
         if (!tightWidth) {
@@ -137,19 +135,19 @@ class AtlasDataStoreFAB extends AtlasDataStore {
         }
         continue;
       }
-      
+
       // Draw the glyph at the current x position
       ctx.drawImage(glyph.tightCanvas, x, 0);
 
-      // Record the x position in the atlas for this glyph
-      fontMetricsStore.setGlyphPositionInAtlas(fontProperties, letter, x);
+      // Record the x position in the atlas using AtlasPositioningFAB
+      atlasPositioningFAB.setGlyphPositionInAtlas(letter, x);
 
       // Advance x position for next glyph
       x += tightWidth;
     }
 
-    // Get the atlas positioning data from fontMetrics
-    const atlasPositioning = fontMetrics.extractAtlasPositioning();
+    // Extract clean AtlasPositioning instance
+    const atlasPositioning = atlasPositioningFAB.extractAtlasPositioningInstance();
 
     // Create AtlasImageFAB instance from the generated canvas
     if (typeof AtlasImageFAB === 'undefined') {

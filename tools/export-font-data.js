@@ -97,8 +97,8 @@ function downloadFontAssets(options) {
           return;
       }
 
-      // Extract atlas positioning using new extraction method
-      const atlasPositioning = fontMetrics.extractAtlasPositioning();
+      // Get atlas positioning from AtlasData (it's already there!)
+      const atlasPositioning = atlasData.atlasPositioning;
       const atlasPositioningData = atlasPositioning.getRawData ? atlasPositioning.getRawData() : atlasPositioning;
 
       // Extract character metrics directly from FontMetrics instance

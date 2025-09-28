@@ -28,7 +28,7 @@ class AtlasPositioning {
       throw new Error('AtlasPositioning constructor requires data object');
     }
 
-    // Atlas positioning metrics for glyph rendering
+    // Atlas positioning data for glyph rendering
     this._tightWidth = data.tightWidth || {};
     this._tightHeight = data.tightHeight || {};
     this._dx = data.dx || {};

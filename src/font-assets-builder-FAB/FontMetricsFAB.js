@@ -1,7 +1,7 @@
 // FontMetricsFAB - Font Assets Building Class
 //
 // This class extends FontMetrics to provide font assets building capabilities
-// for font metrics data including glyph measurements, kerning tables, and positioning.
+// for font metrics data including glyph measurements and kerning tables.
 //
 // DISTRIBUTION ROLE:
 // - Part of "full toolkit" distribution for font assets building applications
@@ -12,27 +12,22 @@
 // - Inherits all runtime functionality from FontMetrics
 // - Uses mutable option to prevent freezing during building operations
 // - Validates and optimizes font metrics during the building process
-// - Generates and calculates metrics from glyph canvas data
+// - Handles ONLY font metrics, kerning, and character measurements
+//
+// SEPARATION OF CONCERNS:
+// - FontMetricsFAB: Handles ONLY font metrics, kerning, character measurements
+// - AtlasPositioningFAB: Handles ONLY atlas positioning data (separate class)
+// - Clean separation eliminates mixed responsibilities
 //
 // KEY CAPABILITIES:
 // - Build metrics from rendered glyph data
-// - Calculate positioning from canvas bounds
+// - Calculate kerning tables
 // - Validate metric completeness
 // - Extract clean immutable FontMetrics instances
 class FontMetricsFAB extends FontMetrics {
   constructor(data) {
     // Call super with mutable option to prevent freezing
     super(data || {}, { mutable: true });
-
-    // Add atlas positioning structure for FAB operations
-    // This is only used during building and will be extracted separately
-    this._atlasPositioning = {
-      tightWidth: data?.atlasPositioning?.tightWidth || {},
-      tightHeight: data?.atlasPositioning?.tightHeight || {},
-      dx: data?.atlasPositioning?.dx || {},
-      dy: data?.atlasPositioning?.dy || {},
-      xInAtlas: data?.atlasPositioning?.xInAtlas || {}
-    };
   }
   
   /**
@@ -48,30 +43,6 @@ class FontMetricsFAB extends FontMetrics {
     });
   }
 
-  /**
-   * Extract atlas positioning data as AtlasPositioning instance
-   * @returns {AtlasPositioning} Atlas positioning instance
-   */
-  extractAtlasPositioning() {
-    if (typeof AtlasPositioning === 'undefined') {
-      console.warn('AtlasPositioning class not available, returning raw data');
-      return {
-        tightWidth: this._atlasPositioning.tightWidth,
-        tightHeight: this._atlasPositioning.tightHeight,
-        dx: this._atlasPositioning.dx,
-        dy: this._atlasPositioning.dy,
-        xInAtlas: this._atlasPositioning.xInAtlas
-      };
-    }
-
-    return new AtlasPositioning({
-      tightWidth: this._atlasPositioning.tightWidth,
-      tightHeight: this._atlasPositioning.tightHeight,
-      dx: this._atlasPositioning.dx,
-      dy: this._atlasPositioning.dy,
-      xInAtlas: this._atlasPositioning.xInAtlas
-    });
-  }
   
   /**
    * Set kerning table for this font
@@ -121,98 +92,24 @@ class FontMetricsFAB extends FontMetrics {
     this._spaceAdvancementOverride = override;
   }
   
-  /**
-   * Calculate and set font positioning metrics from glyph data
-   * This method is called during atlas building to extract positioning data
-   * @param {Object} glyphs - Object mapping characters to glyph data
-   * @param {FontProperties} fontProperties - Font configuration for positioning calculations
-   */
-  calculateAndSetFontMetrics(glyphs, fontProperties) {
-    for (let letter in glyphs) {
-      let glyph = glyphs[letter];
-      let characterMetrics = this.getCharacterMetrics(letter);
-      
-      // Skip glyphs without valid tight canvas box, but set default metrics
-      if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
-        // Set minimal default metrics for glyphs without visible pixels
-        this._atlasPositioning.tightWidth[letter] = 1;
-        this._atlasPositioning.tightHeight[letter] = 1;
-        this._atlasPositioning.dx[letter] = 0;
-        this._atlasPositioning.dy[letter] = 0;
-        continue;
-      }
-      
-      // Calculate tight dimensions from glyph bounds
-      const tightWidth =
-        glyph.tightCanvasBox.bottomRightCorner.x -
-        glyph.tightCanvasBox.topLeftCorner.x +
-        1;
-      const tightHeight =
-        glyph.tightCanvasBox.bottomRightCorner.y -
-        glyph.tightCanvasBox.topLeftCorner.y +
-        1;
-      
-      // Calculate positioning offsets for atlas rendering
-      const dx = - Math.round(characterMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
-      const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
-      
-      // Set the calculated metrics
-      this._atlasPositioning.tightWidth[letter] = tightWidth;
-      this._atlasPositioning.tightHeight[letter] = tightHeight;
-      this._atlasPositioning.dx[letter] = dx;
-      this._atlasPositioning.dy[letter] = dy;
-    }
-  }
+  
+  
   
   /**
-   * Set glyph position in atlas after atlas is built
-   * @param {string} letter - Character to set position for
-   * @param {number} xPosition - X position in atlas
-   */
-  setGlyphPositionInAtlas(letter, xPosition) {
-    this._atlasPositioning.xInAtlas[letter] = xPosition;
-  }
-  
-  /**
-   * Set font positioning metrics from external data
-   * @param {Object} metrics - Object containing positioning metrics
-   */
-  setFontMetrics(metrics) {
-    // Set metrics for each letter in the font
-    for (const metricKey in metrics) {
-      if (this._atlasPositioning[metricKey]) {
-        const letterMetrics = metrics[metricKey];
-        for (const letter in letterMetrics) {
-          this._atlasPositioning[metricKey][letter] = letterMetrics[letter];
-        }
-      }
-    }
-  }
-  
-  /**
-   * Validate that all required metrics are present for expected characters
+   * Validate that all required font metrics are present for expected characters
    * @param {string[]} expectedLetters - Array of characters that should have metrics
    * @returns {string[]} Array of missing metrics (empty if all present)
    */
   validateFontMetrics(expectedLetters) {
     const missingMetrics = [];
-    
+
     for (const letter of expectedLetters) {
-      const requiredMetrics = ['tightWidth', 'tightHeight', 'dx', 'dy', 'xInAtlas'];
-      
-      // Check positioning metrics
-      for (const metricType of requiredMetrics) {
-        if (this._atlasPositioning[metricType][letter] === undefined) {
-          missingMetrics.push(`${letter}:${metricType}`);
-        }
-      }
-      
       // Check text metrics
       if (!this._characterMetrics[letter]) {
         missingMetrics.push(`${letter}:characterMetrics`);
       }
     }
-    
+
     return missingMetrics;
   }
   
@@ -224,13 +121,11 @@ class FontMetricsFAB extends FontMetrics {
     const glyphCount = Object.keys(this._characterMetrics).length;
     const kerningPairs = Object.values(this._kerningTable)
       .reduce((total, pairs) => total + Object.keys(pairs).length, 0);
-    
+
     return {
       glyphCount,
       kerningPairs,
-      hasSpaceOverride: this._spaceAdvancementOverride !== null,
-      atlasGlyphs: Object.keys(this._atlasPositioning.xInAtlas).length,
-      positioningGlyphs: Object.keys(this._atlasPositioning.tightWidth).length
+      hasSpaceOverride: this._spaceAdvancementOverride !== null
     };
   }
   
