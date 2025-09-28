@@ -33,7 +33,7 @@
   ```javascript
   // Import only the essential runtime classes (~18-22KB)
   import { BitmapText } from './src/core/BitmapText.js';
-  import { AtlasStore } from './src/core/AtlasStore.js';
+  import { AtlasDataStore } from './src/core/AtlasDataStore.js';
   import { FontMetricsStore } from './src/core/FontMetricsStore.js';
   import { FontProperties } from './src/core/FontProperties.js';
   import { TextProperties } from './src/core/TextProperties.js';
@@ -51,12 +51,12 @@
   ```javascript
   // Import full toolkit including font assets building tools (~55KB+)
   import { BitmapText } from './src/core/BitmapText.js';
-  import { AtlasStore } from './src/core/AtlasStore.js';
+  import { AtlasDataStore } from './src/core/AtlasDataStore.js';
   import { FontMetricsStore } from './src/core/FontMetricsStore.js';
   import { FontProperties } from './src/core/FontProperties.js';
   import { TextProperties } from './src/core/TextProperties.js';
   import { BitmapTextFAB } from './src/font-assets-builder-FAB/BitmapTextFAB.js';
-  import { AtlasStoreFAB } from './src/font-assets-builder-FAB/AtlasStoreFAB.js';
+  import { AtlasDataStoreFAB } from './src/font-assets-builder-FAB/AtlasDataStoreFAB.js';
   import { FontMetricsStoreFAB } from './src/font-assets-builder-FAB/FontMetricsStoreFAB.js';
   import { FontPropertiesFAB } from './src/font-assets-builder-FAB/FontPropertiesFAB.js';
   ```
@@ -78,9 +78,9 @@
 
   ```javascript
   // Load the library and font data
-  const atlasStore = new AtlasStore();
+  const atlasDataStore = new AtlasDataStore();
   const fontMetricsStore = new FontMetricsStore();
-  const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
+  const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
 
   // Load font data (from pre-generated atlases)
   // Metrics files automatically populate font metrics stores when loaded
@@ -152,7 +152,7 @@
   #### Constructor
 
   ```javascript
-  new BitmapText(atlasStore, fontMetricsStore)
+  new BitmapText(atlasDataStore, fontMetricsStore)
   ```
 
   #### Methods
@@ -296,13 +296,13 @@ new TextProperties(options = {})
 - **equals(other)**: Equality comparison
 - **toObject()**: Returns plain object representation
 
-  ## AtlasStore Class
+  ## AtlasDataStore Class
 
   Manages atlas images for font rendering. Usually populated automatically from manifest.
 
   Constructor
   
-  new AtlasStore()
+  new AtlasDataStore()
 
   Methods
 

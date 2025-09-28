@@ -13,7 +13,7 @@ function setupGlyphUIFAB() {
         // Pass individual properties to downloadFontAssets
         // (The function will create FontPropertiesFAB instances internally for each size)
         downloadFontAssets({
-            atlasStoreFAB,
+            atlasDataStoreFAB,
             fontMetricsStoreFAB,
             pixelDensity,
             fontFamily: fontFamilySelect.value,

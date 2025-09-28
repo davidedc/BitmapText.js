@@ -41,9 +41,9 @@ function main() {
 
     // Setup BitmapText system FIRST (so stores are available)
     console.log('Setting up BitmapText system...');
-    const atlasStore = new AtlasStore();
+    const atlasDataStore = new AtlasDataStore();
     const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
+    const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore, () => new Canvas());
 
     // Create IDStrings for all font configurations
     const IDStrings = fontPropertiesArray.map(createIDString);
@@ -156,7 +156,7 @@ function main() {
       console.log(`Setting up atlas for size ${fontSize}...`);
 
       if (atlasData) {
-        atlasStore.setAtlas(fontProperties, atlasData);
+        atlasDataStore.setAtlas(fontProperties, atlasData);
         console.log(`  ✓ Font size ${fontSize} ready with atlas`);
       } else {
         console.log(`  ✓ Font size ${fontSize} ready with placeholder mode (no atlas)`);

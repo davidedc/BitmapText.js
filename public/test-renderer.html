@@ -61,7 +61,7 @@ and then open the page from the browser at:
 <script src="../src/utils/HashStore.js"></script>
 <script src="../test/data/reference-hashes.js"></script>
 <script src="../src/utils/canvas-extensions.js"></script>
-<script src="../src/core/AtlasStore.js"></script>
+<script src="../src/core/AtlasDataStore.js"></script>
 <script src="../src/core/FontMetricsStore.js"></script>
 <script src="../src/core/BitmapText.js"></script>
 <script src="../test/utils/test-copy.js"></script>
@@ -79,7 +79,7 @@ and then open the page from the browser at:
 <script src="../src/minification/MetricsExpander.js"></script>
 
 <script >
-  const atlasStore = new AtlasStore();
+  const atlasDataStore = new AtlasDataStore();
   const fontMetricsStore = new FontMetricsStore();
 </script>
 
@@ -107,7 +107,7 @@ and then open the page from the browser at:
     // Load all fonts using FontLoader
     console.log("Using font registry IDs:", FontManifest.allFontIDs());
 
-    const fontLoader = new FontLoader(atlasStore, fontMetricsStore, (loaded, total) => {
+    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
       console.log(`loadedScripts: ${loaded} out of ${total}`);
     });
 
@@ -118,7 +118,7 @@ and then open the page from the browser at:
 
         startTiming('drawTestText');
         const fontProperties = getFontPropertiesFromUI();
-        drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
+        drawTestText_withStandardClass(fontProperties, atlasDataStore, fontMetricsStore);
         console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
       })
       .catch(error => {

@@ -178,7 +178,7 @@
   <!-- Expander utility to unpack minified font metrics data (depends on FontMetrics) -->
   <script src="../src/minification/MetricsExpander.js"></script>
   <!-- Data store for atlas images -->
-  <script src="../src/core/AtlasStore.js"></script>
+  <script src="../src/core/AtlasDataStore.js"></script>
   <!-- Data store for font metrics, kerning, and positioning -->
   <script src="../src/core/FontMetricsStore.js"></script>
   <!-- Main bitmap text rendering engine -->
@@ -190,14 +190,14 @@
     const debugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
 
     // Test setup
-    let atlasStore, fontMetricsStore, bitmapText;
+    let atlasDataStore, fontMetricsStore, bitmapText;
     let testFontProperties, testTextProperties;
 
     // Initialize test environment
     function initializeTestEnvironment() {
-      atlasStore = new AtlasStore();
+      atlasDataStore = new AtlasDataStore();
       fontMetricsStore = new FontMetricsStore();
-      bitmapText = new BitmapText(atlasStore, fontMetricsStore);
+      bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
 
       testFontProperties = new FontProperties(1, "Arial", "normal", "normal", 18);
       testTextProperties = new TextProperties({
@@ -410,7 +410,7 @@
       mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
       mockCtx.fillStyle = 'blue';
       mockCtx.fillRect(10, 0, 2, 13); // 'i' glyph
-      atlasStore.setAtlas(testFontProperties, mockCanvas);
+      atlasDataStore.setAtlas(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
@@ -569,7 +569,7 @@
       // Draw only 'H' glyph (green for visibility)
       mockCtx.fillStyle = 'green';
       mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
-      atlasStore.setAtlas(testFontProperties, mockCanvas);
+      atlasDataStore.setAtlas(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');

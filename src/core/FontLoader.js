@@ -18,7 +18,7 @@
 // DEPENDENCIES:
 // - FontLoaderConfig: For path building and error messages
 // - FontProperties: For ID string parsing and font identification
-// - AtlasStore: For storing loaded atlas images
+// - AtlasDataStore: For storing loaded atlas images
 // - FontMetricsStore: For receiving metrics data from loaded JS files
 
 // Shared utility for loading bitmap font data with error handling
@@ -29,8 +29,8 @@ class FontLoader {
   // Static storage for temporary atlas positioning data from JS files
   static _tempAtlasPositioning = {};
 
-  constructor(atlasStore, fontMetricsStore, onProgress = null) {
-    this.atlasStore = atlasStore;
+  constructor(atlasDataStore, fontMetricsStore, onProgress = null) {
+    this.atlasDataStore = atlasDataStore;
     this.fontMetricsStore = fontMetricsStore;
     this.onProgress = onProgress;
     this.loadedCount = 0;
@@ -145,10 +145,10 @@ class FontLoader {
           // Create AtlasData object containing both image and positioning
           if (typeof AtlasData !== 'undefined') {
             const atlasData = new AtlasData(img, atlasPositioning);
-            this.atlasStore.setAtlas(fontProperties, atlasData);
+            this.atlasDataStore.setAtlas(fontProperties, atlasData);
           } else {
             console.warn(`AtlasData class not available for ${IDString} - storing raw image`);
-            this.atlasStore.setAtlas(fontProperties, img);
+            this.atlasDataStore.setAtlas(fontProperties, img);
           }
 
           imageScript.remove();
@@ -192,10 +192,10 @@ class FontLoader {
         // PNG files don't have positioning data - create AtlasData with image only
         if (typeof AtlasData !== 'undefined') {
           const atlasData = new AtlasData(img, null);
-          this.atlasStore.setAtlas(fontProperties, atlasData);
+          this.atlasDataStore.setAtlas(fontProperties, atlasData);
         } else {
           console.warn(`AtlasData class not available for ${IDString} - storing raw image`);
-          this.atlasStore.setAtlas(fontProperties, img);
+          this.atlasDataStore.setAtlas(fontProperties, img);
         }
 
         this.incrementProgress();

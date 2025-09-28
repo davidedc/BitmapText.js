@@ -58,7 +58,7 @@
   <!-- Atlas positioning expander utilities -->
   <script src="../src/minification/AtlasExpander.js"></script>
   <!-- Data store for atlas images -->
-  <script src="../src/core/AtlasStore.js"></script>
+  <script src="../src/core/AtlasDataStore.js"></script>
   <!-- Data store for font metrics, kerning, and positioning -->
   <script src="../src/core/FontMetricsStore.js"></script>
   <!-- Main bitmap text rendering engine -->
@@ -83,9 +83,9 @@
     });
 
     // Initialize bitmap text system
-    const atlasStore = new AtlasStore();
+    const atlasDataStore = new AtlasDataStore();
     const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
+    const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
 
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
@@ -105,7 +105,7 @@
     
     // Create FontLoader to (later) load all the font data
     const isFileProtocol = window.location.href.includes("file://");
-    const fontLoader = new FontLoader(atlasStore, (loaded, total) => {
+    const fontLoader = new FontLoader(atlasDataStore, (loaded, total) => {
       console.log(`Loaded ${loaded} of ${total} files`);
     });
 

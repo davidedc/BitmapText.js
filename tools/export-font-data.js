@@ -1,6 +1,6 @@
 function downloadFontAssets(options) {
   const {
-      atlasStoreFAB,
+      atlasDataStoreFAB,
       fontMetricsStoreFAB,
       pixelDensity,
       fontFamily,
@@ -13,7 +13,7 @@ function downloadFontAssets(options) {
 
   const zip = new JSZip();
   const folder = zip.folder("fontAssets");
-  const atlasStore = atlasStoreFAB.extractAtlasStoreInstance();
+  const atlasDataStore = atlasDataStoreFAB.extractAtlasDataStoreInstance();
   const fontMetricsStore = fontMetricsStoreFAB.extractFontMetricsStoreInstance();
   
   // Find all available sizes by examining Map keys
@@ -21,7 +21,7 @@ function downloadFontAssets(options) {
   const sizes = new Set();
   const baseKeyPrefix = `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:`;
   
-  for (const [key, canvas] of atlasStore.atlases) {
+  for (const [key, canvas] of atlasDataStore.atlases) {
     if (key.startsWith(baseKeyPrefix)) {
       // Extract fontSize from key: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
       const fontSize = key.substring(baseKeyPrefix.length);
@@ -35,7 +35,7 @@ function downloadFontAssets(options) {
       const fontProperties = new FontPropertiesFAB(pixelDensity, fontFamily, fontStyle, fontWeight, size);
       
       // Get atlas data from Map-based storage
-      const atlasData = atlasStore.atlases.get(fontProperties.key);
+      const atlasData = atlasDataStore.atlases.get(fontProperties.key);
 
       // Skip if no atlas data exists for this configuration
       if (!atlasData) {

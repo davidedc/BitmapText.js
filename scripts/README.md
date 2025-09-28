@@ -114,7 +114,7 @@ npm run build-multi-size-demo
 - `src/node/canvas-mock.js` - Minimal Canvas implementation
 - `src/minification/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
-- `src/core/AtlasStore.js`, `src/core/FontMetricsStore.js`, `src/core/BitmapText.js` - Core classes
+- `src/core/AtlasDataStore.js`, `src/core/FontMetricsStore.js`, `src/core/BitmapText.js` - Core classes
 
 **Output:**
 - Self-contained executables: `examples/node/dist/hello-world.bundle.js`, `examples/node/dist/hello-world-multi-size.bundle.js`

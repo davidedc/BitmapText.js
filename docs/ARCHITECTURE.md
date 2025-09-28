@@ -18,7 +18,7 @@
   The system is architected with a **two-tier class hierarchy** where FAB classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
 
   **Distribution Strategy:**
-  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasStore, FontMetricsStore, FontProperties, TextProperties, FontLoader, FontLoaderConfig) for measuring and drawing pre-generated fonts
+  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasDataStore, FontMetricsStore, FontProperties, TextProperties, FontLoader, FontLoaderConfig) for measuring and drawing pre-generated fonts
   - **Full Distribution** (~55KB+): Core + FAB classes for complete font assets building and rendering capabilities
   - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
 
@@ -31,7 +31,7 @@
   **Implementation Pattern:**
   - **Core Classes**: Minimal, performance-optimized runtime functionality
   - **FAB Classes**: Extend core classes with font assets building capabilities (validation, font building, metrics calculation)
-  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractAtlasStoreInstance()`, `extractFontMetricsStoreInstance()`)
+  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractAtlasDataStoreInstance()`, `extractFontMetricsStoreInstance()`)
 
   This architecture allows developers to choose between a lightweight consumer library or a full font assets building toolkit based on their needs.
 
@@ -72,7 +72,7 @@
 
   **Runtime-Only Applications** (consuming pre-built fonts):
   - `BitmapText` - Text rendering and measurement
-  - `AtlasStore` - Atlas image storage and retrieval
+  - `AtlasDataStore` - Atlas data storage and retrieval
   - `FontMetricsStore` - Font metrics, kerning, and glyph positioning data
   - `FontProperties` - Font configuration management
   - `TextProperties` - Text rendering configuration (kerning, alignment, color)
@@ -85,7 +85,7 @@
   **Font Assets Building Applications**:
   - All Core Classes (above) +
   - `BitmapTextFAB` - Extended font assets building capabilities
-  - `AtlasStoreFAB` - Atlas building and optimization
+  - `AtlasDataStoreFAB` - Atlas building and optimization
   - `FontMetricsStoreFAB` - Font metrics calculation and kerning generation
   - `FontPropertiesFAB` - Validation and font configuration tools
   - **Bundle Size**: ~55KB+ including font assets building tools
@@ -104,7 +104,7 @@
     - Canvas rendering
     - Placeholder rectangle rendering for missing atlases
 
-  **AtlasStore**
+  **AtlasDataStore**
   - Purpose: Atlas image repository
   - Data structures:
     - `atlases`: AtlasData objects containing both image and positioning data
@@ -180,7 +180,7 @@
   - Creates individual glyph canvases
   - Calculates precise bounding boxes
 
-  **AtlasStoreFAB extends AtlasStore**
+  **AtlasDataStoreFAB extends AtlasDataStore**
   - Builds atlases from individual canvases
   - Optimizes glyph packing
   - Generates minified metadata
@@ -334,7 +334,7 @@
 
   ### Font Assets Building Workflow
   ```
-  User → public/font-assets-builder.html → BitmapTextFAB → AtlasStoreFAB
+  User → public/font-assets-builder.html → BitmapTextFAB → AtlasDataStoreFAB
     1. Load font specifications (src/specs/default-specs.js)
     2. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     3. Create individual glyph canvases
@@ -347,7 +347,7 @@
 
   ### Runtime Text Rendering Workflow
   ```
-  User → src/core/BitmapText.drawTextFromAtlas → src/core/AtlasStore + src/core/FontMetricsStore
+  User → src/core/BitmapText.drawTextFromAtlas → src/core/AtlasDataStore + src/core/FontMetricsStore
     1. Convert text to code point array ([...text])
     2. Measure text (src/core/BitmapText.measureText)
     3. For each character:
@@ -367,14 +367,14 @@
   Extend `Specs` class or modify specs DSL
 
   ### Alternative Storage
-  Replace `AtlasStore` with custom implementation
+  Replace `AtlasDataStore` with custom implementation
 
   ## Object-Oriented Design Patterns
 
   - **Template Method**: FAB classes extend base with hooks
   - **Strategy**: Pluggable specs and kerning algorithms
   - **Facade**: BitmapText provides simple API over complex internals
-  - **Repository**: AtlasStore manages data access
+  - **Repository**: AtlasDataStore manages data access
 
   ## API Usage
 

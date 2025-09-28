@@ -6,28 +6,28 @@
 // DISTRIBUTION ROLE:
 // - Part of "full toolkit" distribution for font assets building applications
 // - Extends BitmapText with building, validation, and generation features
-// - Works with AtlasStoreFAB and FontMetricsStoreFAB for complete font assets building
+// - Works with AtlasDataStoreFAB and FontMetricsStoreFAB for complete font assets building
 //
 // ARCHITECTURE:
-// - Constructed with AtlasStoreFAB (glyph and atlas building) and FontMetricsStoreFAB (metrics)
+// - Constructed with AtlasDataStoreFAB (glyph and atlas building) and FontMetricsStoreFAB (metrics)
 // - Inherits all runtime text rendering from BitmapText
 // - Adds glyph creation, kerning calculation, and font assets building methods
 // - Integrates with font assets building pipeline and specifications
 //
 // SEPARATION OF CONCERNS:
-// - Uses AtlasStoreFAB for glyph storage and atlas building
+// - Uses AtlasDataStoreFAB for glyph storage and atlas building
 // - Uses FontMetricsStoreFAB for metrics calculation and kerning management
 // - Both stores work together during the font assets building process
 class BitmapTextFAB extends BitmapText {
 
-  constructor(atlasStoreFAB, fontMetricsStoreFAB, canvasFactory) {
+  constructor(atlasDataStoreFAB, fontMetricsStoreFAB, canvasFactory) {
     // Pass both stores to parent BitmapText constructor
-    // Parent expects (atlasStore, fontMetricsStore, canvasFactory)
-    super(atlasStoreFAB, fontMetricsStoreFAB, canvasFactory);
-    
+    // Parent expects (atlasDataStore, fontMetricsStore, canvasFactory)
+    super(atlasDataStoreFAB, fontMetricsStoreFAB, canvasFactory);
+
     // Store references to FAB-specific stores for building operations
-    // Note: this.atlasStore and this.fontMetricsStore are already set by parent
-    this.atlasStoreFAB = atlasStoreFAB;
+    // Note: this.atlasDataStore and this.fontMetricsStore are already set by parent
+    this.atlasDataStoreFAB = atlasDataStoreFAB;
     this.fontMetricsStoreFAB = fontMetricsStoreFAB;
   }
 
@@ -166,7 +166,7 @@ class BitmapTextFAB extends BitmapText {
     for (let i = 0; i < chars.length; i++) {
       const letter = chars[i];
       const nextLetter = chars[i + 1];
-      const glyph = this.atlasStoreFAB.getGlyph(
+      const glyph = this.atlasDataStoreFAB.getGlyph(
         fontProperties,
         letter
       );

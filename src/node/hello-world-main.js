@@ -31,9 +31,9 @@ function main() {
 
     // Setup BitmapText system FIRST (so stores are available)
     console.log('Setting up BitmapText system...');
-    const atlasStore = new AtlasStore();
+    const atlasDataStore = new AtlasDataStore();
     const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasStore, fontMetricsStore, () => new Canvas());
+    const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore, () => new Canvas());
 
     // Load and execute font metrics (will auto-install to store)
     const fontMetricsPath = path.resolve(__dirname, 'font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
@@ -103,7 +103,7 @@ function main() {
     }
 
     // Set atlas in store
-    atlasStore.setAtlas(fontProperties, atlasData);
+    atlasDataStore.setAtlas(fontProperties, atlasData);
     
     // Create output canvas
     console.log('Creating canvas and rendering...');

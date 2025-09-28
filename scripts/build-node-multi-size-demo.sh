@@ -38,7 +38,7 @@ FILES_TO_CHECK=(
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
-  "$SRC_DIR/core/AtlasStore.js"
+  "$SRC_DIR/core/AtlasDataStore.js"
   "$SRC_DIR/core/FontMetricsStore.js"
   "$SRC_DIR/core/BitmapText.js"
   "$SRC_DIR/node/hello-world-multi-size-main.js"
@@ -69,7 +69,7 @@ cat > "$OUTPUT_FILE" << 'EOF'
  * Source files:
  *   - src/node/hello-world-multi-size-main.js (main demo logic)
  *   - src/core/BitmapText.js (core rendering)
- *   - src/core/AtlasStore.js (atlas storage)
+ *   - src/core/AtlasDataStore.js (atlas data storage)
  *   - src/node/canvas-mock.js (Canvas implementation)
  *   - lib/QOIDecode.js, lib/PngEncoder.js (image handling)
  * 
@@ -198,12 +198,12 @@ echo "" >> "$OUTPUT_FILE"
 cat "$LIB_DIR/PngEncoder.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate AtlasStore
+# Concatenate AtlasDataStore
 echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// ATLAS STORE" >> "$OUTPUT_FILE"
+echo "// ATLAS DATA STORE" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/AtlasStore.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/AtlasDataStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontMetricsStore

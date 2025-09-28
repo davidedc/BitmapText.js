@@ -129,12 +129,12 @@ function drawTestText(fontProperties) {
   const measureTextCrispBitmapFAB = text => bitmapTextFAB.measureText(text, fontProperties, textProperties);
   const linesMeasures_CSS_PxFAB = measureMultilineText(testCopyLines, measureTextCrispBitmapFAB);
   // generating the atlas with the full class is necessary to then being able to draw the text with the "normal" class
-  buildAndDisplayAtlas(atlasStoreFAB, fontProperties);
+  buildAndDisplayAtlas(atlasDataStoreFAB, fontProperties);
   // note that this one doesn't use the atlas, it uses the canvas stored in each glyph
   drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures_CSS_PxFAB, testCopyLines, bitmapTextFAB, fontProperties, testCopyChoiceNumber, textProperties);
 }
 
-function drawTestText_withStandardClass(originalFontProperties, atlasStore, fontMetricsStore) {
+function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, fontMetricsStore) {
 
   let linesMeasures_CSS_PxForcedPixelDensity1 = null;
 
@@ -143,7 +143,7 @@ function drawTestText_withStandardClass(originalFontProperties, atlasStore, font
 
   // this is going to be the class that is going to be used to render the text
   // outside of the editor.
-  const bitmapText = new BitmapText(atlasStore, fontMetricsStore);
+  const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
 
   // Get TextProperties from UI state (respects kerning checkbox)
   const textProperties = getTextPropertiesFromUI();
@@ -283,9 +283,9 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
 
   // Check if we're in placeholder mode (metrics available but atlas missing)
   let isPlaceholderMode = false;
-  if (bitmapText && bitmapText.atlasStore) {
-    const atlas = bitmapText.atlasStore.getAtlas(fontProperties);
-    isPlaceholderMode = !bitmapText.atlasStore.isValidAtlas(atlas);
+  if (bitmapText && bitmapText.atlasDataStore) {
+    const atlas = bitmapText.atlasDataStore.getAtlas(fontProperties);
+    isPlaceholderMode = !bitmapText.atlasDataStore.isValidAtlas(atlas);
   }
 
   // Update section label if in placeholder mode
@@ -379,9 +379,9 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   addElementToDOM(document.createElement('br'));
 }
 
-function buildAndDisplayAtlas(atlasStore, fontProperties) {
+function buildAndDisplayAtlas(atlasDataStore, fontProperties) {
   addElementToDOM(createDivWithText("Atlas:"));
-  const [atlasImage, atlasCtx] = atlasStore.buildAtlas(fontProperties, fontMetricsStoreFAB);
+  const [atlasImage, atlasCtx] = atlasDataStore.buildAtlas(fontProperties, fontMetricsStoreFAB);
   addElementToDOM(atlasImage);
   
   addCanvasInfoToDOM(atlasCtx.canvas, getHashMatchInfo(atlasCtx, fontProperties, 'atlas'));

@@ -13,10 +13,10 @@
       "require": "./src/core/BitmapText.js"
     },
     "./core/BitmapText": "./src/core/BitmapText.js",
-    "./core/AtlasStore": "./src/core/AtlasStore.js",
+    "./core/AtlasDataStore": "./src/core/AtlasDataStore.js",
     "./core/FontProperties": "./src/core/FontProperties.js",
     "./font-assets-builder-FAB/BitmapTextFAB": "./src/font-assets-builder-FAB/BitmapTextFAB.js",
-    "./font-assets-builder-FAB/AtlasStoreFAB": "./src/font-assets-builder-FAB/AtlasStoreFAB.js",
+    "./font-assets-builder-FAB/AtlasDataStoreFAB": "./src/font-assets-builder-FAB/AtlasDataStoreFAB.js",
     "./font-assets-builder-FAB/FontPropertiesFAB": "./src/font-assets-builder-FAB/FontPropertiesFAB.js"
   },
   "directories": {

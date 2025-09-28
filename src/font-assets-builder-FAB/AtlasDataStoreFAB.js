@@ -1,26 +1,26 @@
-// AtlasStoreFAB - Font Assets Building Class for storage of Atlas Data (which
+// AtlasDataStoreFAB - Font Assets Building Class for storage of Atlas Data (which
 // includes atlas positioning data and atlas images)
-// 
-// This class extends AtlasStore to provide font assets building capabilities
+//
+// This class extends AtlasDataStore to provide font assets building capabilities
 // for atlas image generation and management.
 //
 // DISTRIBUTION ROLE:
 // - Part of "full toolkit" distribution for font assets building applications
-// - Extends AtlasStore with atlas building, optimization, and generation features
+// - Extends AtlasDataStore with atlas building, optimization, and generation features
 // - Works in conjunction with FontMetricsStoreFAB for complete font assets building
-// - Provides extraction methods to create clean runtime AtlasStore instances
+// - Provides extraction methods to create clean runtime AtlasDataStore instances
 //
 // ARCHITECTURE:
-// - Inherits atlas storage functionality from AtlasStore
+// - Inherits atlas storage functionality from AtlasDataStore
 // - Adds glyph storage and atlas building pipeline
 // - Focuses solely on image atlas generation (metrics handled by FontMetricsStoreFAB)
 // - Integrates with FontMetricsStoreFAB during the building process
 //
 // SEPARATION OF CONCERNS:
-// - AtlasStoreFAB: Handles atlas image building from individual canvases
+// - AtlasDataStoreFAB: Handles atlas image building from individual canvases
 // - FontMetricsStoreFAB: Handles metrics calculation and positioning data
 // - Both work together during font assets building but can be used independently
-class AtlasStoreFAB extends AtlasStore {
+class AtlasDataStoreFAB extends AtlasDataStore {
   constructor() {
     super();
     // FAB-specific glyph storage using Map for O(1) lookups
@@ -28,10 +28,10 @@ class AtlasStoreFAB extends AtlasStore {
     this.glyphs = new Map();
   }
 
-  // Extract a clean AtlasStore instance for runtime distribution
+  // Extract a clean AtlasDataStore instance for runtime distribution
   // This removes FAB-specific functionality and provides only runtime atlas data
-  extractAtlasStoreInstance() {
-    const instance = new AtlasStore();
+  extractAtlasDataStoreInstance() {
+    const instance = new AtlasDataStore();
     instance.atlases = this.atlases;
     return instance;
   }

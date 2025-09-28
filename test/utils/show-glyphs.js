@@ -13,10 +13,10 @@ function isFontMetricsAvailable(fontProperties, fontMetricsStore) {
 }
 
 // Check if atlas images are available (needed for actual glyph rendering)
-function isAtlasAvailable(fontProperties, atlasStore) {
+function isAtlasAvailable(fontProperties, atlasDataStore) {
   try {
-    const atlas = atlasStore.getAtlas(fontProperties);
-    return atlasStore.isValidAtlas(atlas);
+    const atlas = atlasDataStore.getAtlas(fontProperties);
+    return atlasDataStore.isValidAtlas(atlas);
   } catch (error) {
     return false;
   }
@@ -60,7 +60,7 @@ function showGlyphs() {
   
   // Check availability levels
   const hasMetrics = isFontMetricsAvailable(fontProperties, fontMetricsStore);
-  const hasAtlases = isAtlasAvailable(fontProperties, atlasStore);
+  const hasAtlases = isAtlasAvailable(fontProperties, atlasDataStore);
   
   if (!hasMetrics) {
     showFontError(`Font metrics not available for ${fontProperties.fontSize}px ${fontProperties.fontFamily} ${fontProperties.fontStyle} ${fontProperties.fontWeight}. Available sizes may be limited.`);
@@ -74,7 +74,7 @@ function showGlyphs() {
   
   try {
     // Render using standard classes - will automatically use placeholder mode if atlases missing
-    drawTestText_withStandardClass(fontProperties, atlasStore, fontMetricsStore);
+    drawTestText_withStandardClass(fontProperties, atlasDataStore, fontMetricsStore);
   } catch (error) {
     showFontError(`Error rendering text: ${error.message}`);
     console.error('Error in showGlyphs:', error);

@@ -15,16 +15,16 @@ if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' |
 // - Contains no font generation code to keep bundle size minimal
 // 
 // ARCHITECTURE:
-// - Constructed with an AtlasStore (atlas images) and FontMetricsStore (metrics data)
+// - Constructed with an AtlasDataStore (atlas images) and FontMetricsStore (metrics data)
 // - Draws text by looking up glyphs from atlases and positioning them with metrics/kerning
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
 // - Supports placeholder rectangles when atlases are missing but metrics are available
-// - Separates image assets (AtlasStore) from positioning data (FontMetricsStore) for flexible loading
+// - Separates image assets (AtlasDataStore) from positioning data (FontMetricsStore) for flexible loading
 //
 // For font assets building capabilities, use BitmapTextFAB which extends this class.
 class BitmapText {
-  constructor(atlasStore, fontMetricsStore, canvasFactory) {
-    this.atlasStore = atlasStore;
+  constructor(atlasDataStore, fontMetricsStore, canvasFactory) {
+    this.atlasDataStore = atlasDataStore;
     this.fontMetricsStore = fontMetricsStore;
     // we keep one canvas and a context for coloring all the glyphs
     if (canvasFactory) {
@@ -240,8 +240,8 @@ class BitmapText {
     }
 
     // Check atlas availability
-    const atlas = this.atlasStore.getAtlas(fontProperties);
-    const atlasValid = this.atlasStore.isValidAtlas(atlas);
+    const atlas = this.atlasDataStore.getAtlas(fontProperties);
+    const atlasValid = this.atlasDataStore.isValidAtlas(atlas);
 
     // Track which glyphs are missing from atlas (for partial atlas status)
     const missingAtlasChars = new Set();
@@ -262,7 +262,7 @@ class BitmapText {
 
       // Check if this specific glyph has atlas positioning data (excluding spaces)
       if (currentLetter !== ' ') {
-        if (!atlasValid || !this.atlasStore.hasAtlasPositioning(fontProperties, currentLetter)) {
+        if (!atlasValid || !this.atlasDataStore.hasAtlasPositioning(fontProperties, currentLetter)) {
           missingAtlasChars.add(currentLetter);
           placeholdersUsed = true;
         }
@@ -311,7 +311,7 @@ class BitmapText {
     // 2. We could cache the colored atlases in a small LRU cache
 
     // If atlas is missing but metrics exist, draw simplified placeholder rectangle
-    if (!this.atlasStore.isValidAtlas(atlas)) {
+    if (!this.atlasDataStore.isValidAtlas(atlas)) {
       // Use character metrics for simplified placeholder (no atlas positioning needed)
       const characterMetrics = fontMetrics.getCharacterMetrics(letter);
       if (characterMetrics) {
@@ -321,13 +321,13 @@ class BitmapText {
     }
 
     // Get atlas positioning from atlas store instead of font metrics
-    const atlasPositioning = this.atlasStore.getAtlasPositioning(fontProperties, letter);
+    const atlasPositioning = this.atlasDataStore.getAtlasPositioning(fontProperties, letter);
 
     // For normal glyph rendering, we need xInAtlas
     if (!atlasPositioning || !atlasPositioning.xInAtlas) return;
 
     // Get the atlas image for rendering
-    const atlasImage = this.atlasStore.getAtlasImage(fontProperties);
+    const atlasImage = this.atlasDataStore.getAtlasImage(fontProperties);
     const coloredGlyphCanvas = this.createColoredGlyph(atlasImage, atlasPositioning, textColor);
     this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning);
   }

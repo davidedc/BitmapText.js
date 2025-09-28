@@ -58,9 +58,9 @@
 <script src="../test/data/reference-hashes.js"></script>
 <script src="../src/utils/canvas-extensions.js"></script>
 <script src="../src/font-assets-builder-FAB/GlyphFAB.js"></script>
-<script src="../src/core/AtlasStore.js"></script>
+<script src="../src/core/AtlasDataStore.js"></script>
 <script src="../src/core/FontMetricsStore.js"></script>
-<script src="../src/font-assets-builder-FAB/AtlasStoreFAB.js"></script>
+<script src="../src/font-assets-builder-FAB/AtlasDataStoreFAB.js"></script>
 <script src="../src/font-assets-builder-FAB/FontMetricsStoreFAB.js"></script>
 <script src="../src/core/BitmapText.js"></script>
 <script src="../src/font-assets-builder-FAB/BitmapTextFAB.js"></script>
@@ -88,9 +88,9 @@
 <script src="../src/utils/deep-equal.js"></script>
 
 <script >
-  const atlasStoreFAB = new AtlasStoreFAB();
+  const atlasDataStoreFAB = new AtlasDataStoreFAB();
   const fontMetricsStoreFAB = new FontMetricsStoreFAB();
-  const bitmapTextFAB = new BitmapTextFAB(atlasStoreFAB, fontMetricsStoreFAB);
+  const bitmapTextFAB = new BitmapTextFAB(atlasDataStoreFAB, fontMetricsStoreFAB);
     
   updatePageContent();
 </script>

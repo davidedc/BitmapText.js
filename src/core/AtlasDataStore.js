@@ -1,11 +1,11 @@
-// AtlasStore - Core Runtime Class
+// AtlasDataStore - Core Runtime Class
 //
 // This is a CORE RUNTIME class designed for minimal bundle size (~2-3KB).
 // It provides essential atlas data storage and retrieval for text rendering.
 //
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications
-// - Extended by AtlasStoreFAB for font assets building and generation
+// - Extended by AtlasDataStoreFAB for font assets building and generation
 // - Contains only atlas data structures and accessors needed at runtime
 // - No font generation, validation, or optimization code
 //
@@ -22,8 +22,8 @@
 // - Independent of font metrics which are small and loaded upfront
 // - Aligns with file structure: atlas-*.js vs metrics-*.js
 //
-// For font assets building and generation capabilities, use AtlasStoreFAB.
-class AtlasStore {
+// For font assets building and generation capabilities, use AtlasDataStoreFAB.
+class AtlasDataStore {
   constructor() {
     // Keys are FontProperties.key strings for O(1) lookup
 

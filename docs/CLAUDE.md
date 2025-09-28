@@ -11,7 +11,7 @@
 
   ## Project Structure at a Glance
 
-  - **Core runtime**: src/core/BitmapText.js, src/core/AtlasStore.js, src/core/FontMetricsStore.js, src/core/FontProperties.js
+  - **Core runtime**: src/core/BitmapText.js, src/core/AtlasDataStore.js, src/core/FontMetricsStore.js, src/core/FontProperties.js
   - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
   - **Font utilities**: src/core/FontLoader.js, src/core/FontLoaderConfig.js
   - **Font data**: font-assets/
@@ -63,7 +63,7 @@
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
-  - **Atlas validation**: src/core/AtlasStore.isValidAtlas:1
+  - **Atlas validation**: src/core/AtlasDataStore.isValidAtlas:1
   - **Font loading utilities**: src/core/FontLoader.js
   - **Loading configuration**: src/core/FontLoaderConfig.js
   - **Font registry management**: src/core/FontManifest.js (replaces global bitmapTextManifest)
