@@ -410,7 +410,7 @@
       mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
       mockCtx.fillStyle = 'blue';
       mockCtx.fillRect(10, 0, 2, 13); // 'i' glyph
-      atlasDataStore.setAtlas(testFontProperties, mockCanvas);
+      atlasDataStore.setAtlasData(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
@@ -569,7 +569,7 @@
       // Draw only 'H' glyph (green for visibility)
       mockCtx.fillStyle = 'green';
       mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
-      atlasDataStore.setAtlas(testFontProperties, mockCanvas);
+      atlasDataStore.setAtlasData(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');

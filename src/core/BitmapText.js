@@ -239,9 +239,9 @@ class BitmapText {
       };
     }
 
-    // Check atlas availability
-    const atlas = this.atlasDataStore.getAtlas(fontProperties);
-    const atlasValid = this.atlasDataStore.isValidAtlas(atlas);
+    // Check atlas data availability
+    const atlasData = this.atlasDataStore.getAtlasData(fontProperties);
+    const atlasValid = this.atlasDataStore.isValidAtlas(atlasData);
 
     // Track which glyphs are missing from atlas (for partial atlas status)
     const missingAtlasChars = new Set();
@@ -272,7 +272,7 @@ class BitmapText {
       this.drawLetter(ctx,
         currentLetter,
         position,
-        atlas,
+        atlasData,
         fontMetrics,
         textColor,
         fontProperties
@@ -305,14 +305,14 @@ class BitmapText {
     };
   }
 
-  drawLetter(ctx, letter, position, atlas, fontMetrics, textColor, fontProperties) {
+  drawLetter(ctx, letter, position, atlasData, fontMetrics, textColor, fontProperties) {
     // There are several optimisations possible here:
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
 
-    // If atlas is missing but metrics exist, draw simplified placeholder rectangle
-    if (!this.atlasDataStore.isValidAtlas(atlas)) {
-      // Use character metrics for simplified placeholder (no atlas positioning needed)
+    // If atlasData is missing but metrics exist, draw simplified placeholder rectangle
+    if (!this.atlasDataStore.isValidAtlas(atlasData)) {
+      // Use character metrics for simplified placeholder (no atlasData positioning needed)
       const characterMetrics = fontMetrics.getCharacterMetrics(letter);
       if (characterMetrics) {
         this.drawPlaceholderRectangle(ctx, position, characterMetrics, textColor);
@@ -320,19 +320,19 @@ class BitmapText {
       return;
     }
 
-    // Get atlas positioning from atlas store instead of font metrics
+    // Get atlasData positioning from atlasData store instead of font metrics
     const atlasPositioning = this.atlasDataStore.getAtlasPositioning(fontProperties, letter);
 
     // For normal glyph rendering, we need xInAtlas
     if (!atlasPositioning || !atlasPositioning.xInAtlas) return;
 
-    // Get the atlas image for rendering
+    // Get the atlasData image for rendering
     const atlasImage = this.atlasDataStore.getAtlasImage(fontProperties);
     const coloredGlyphCanvas = this.createColoredGlyph(atlasImage, atlasPositioning, textColor);
     this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning);
   }
 
-  createColoredGlyph(atlas, atlasPositioning, textColor) {
+  createColoredGlyph(atlasImage, atlasPositioning, textColor) {
     const { xInAtlas, tightWidth, tightHeight } = atlasPositioning;
     
     // Setup temporary canvas, same size as the glyph
@@ -344,7 +344,7 @@ class BitmapText {
     this.coloredGlyphCtx.globalCompositeOperation = 'source-over'; // reset the composite operation
     // see https://stackoverflow.com/a/6061102
     this.coloredGlyphCtx.drawImage(
-      atlas,
+      atlasImage,
       xInAtlas, 0,
       tightWidth, tightHeight,
       0, 0,

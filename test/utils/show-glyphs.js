@@ -12,11 +12,11 @@ function isFontMetricsAvailable(fontProperties, fontMetricsStore) {
   }
 }
 
-// Check if atlas images are available (needed for actual glyph rendering)
+// Check if atlasData images are available (needed for actual glyph rendering)
 function isAtlasAvailable(fontProperties, atlasDataStore) {
   try {
-    const atlas = atlasDataStore.getAtlas(fontProperties);
-    return atlasDataStore.isValidAtlas(atlas);
+    const atlasData = atlasDataStore.getAtlasData(fontProperties);
+    return atlasDataStore.isValidAtlas(atlasData);
   } catch (error) {
     return false;
   }

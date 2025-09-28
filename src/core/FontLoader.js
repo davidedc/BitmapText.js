@@ -153,7 +153,7 @@ class FontLoader {
             throw new Error(`AtlasData class required for font loading - not available for ${IDString}`);
           }
           const atlasData = new AtlasData(atlasImage, atlasPositioning);
-          this.atlasDataStore.setAtlas(fontProperties, atlasData);
+          this.atlasDataStore.setAtlasData(fontProperties, atlasData);
 
           imageScript.remove();
           delete FontLoader._tempAtlasData[IDString]; // Clean up temporary image data
@@ -204,7 +204,7 @@ class FontLoader {
           throw new Error(`AtlasData class required for font loading - not available for ${IDString}`);
         }
         const atlasData = new AtlasData(atlasImage, null);
-        this.atlasDataStore.setAtlas(fontProperties, atlasData);
+        this.atlasDataStore.setAtlasData(fontProperties, atlasData);
 
         this.incrementProgress();
         resolve();

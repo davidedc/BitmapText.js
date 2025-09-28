@@ -31,14 +31,14 @@ class AtlasDataStore {
     this.atlases = new Map(); // fontProperties.key → AtlasData
   }
 
-  getAtlas(fontProperties) {
+  getAtlasData(fontProperties) {
     return this.atlases.get(fontProperties.key);
   }
 
-  setAtlas(fontProperties, atlasData) {
+  setAtlasData(fontProperties, atlasData) {
     // Only accept AtlasData instances
     if (!(atlasData instanceof AtlasData)) {
-      throw new Error('AtlasDataStore.setAtlas requires AtlasData instance (not raw images)');
+      throw new Error('AtlasDataStore.setAtlasData requires AtlasData instance (not raw images)');
     }
     this.atlases.set(fontProperties.key, atlasData);
   }

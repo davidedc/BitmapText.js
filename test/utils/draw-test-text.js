@@ -281,11 +281,11 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
   // if scale is null then set it to 1
   if (!scale) scale = 1;
 
-  // Check if we're in placeholder mode (metrics available but atlas missing)
+  // Check if we're in placeholder mode (metrics available but atlasData missing)
   let isPlaceholderMode = false;
   if (bitmapText && bitmapText.atlasDataStore) {
-    const atlas = bitmapText.atlasDataStore.getAtlas(fontProperties);
-    isPlaceholderMode = !bitmapText.atlasDataStore.isValidAtlas(atlas);
+    const atlasData = bitmapText.atlasDataStore.getAtlasData(fontProperties);
+    isPlaceholderMode = !bitmapText.atlasDataStore.isValidAtlas(atlasData);
   }
 
   // Update section label if in placeholder mode

@@ -162,7 +162,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
       throw new Error(`AtlasData class required for atlas building - not available for ${fontProperties.key}`);
     }
     const atlasData = new AtlasData(atlasImageFAB, atlasPositioning);
-    this.setAtlas(fontProperties, atlasData);
+    this.setAtlasData(fontProperties, atlasData);
 
     // Return only the AtlasImageFAB instance
     return atlasImageFAB;

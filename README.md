@@ -306,15 +306,15 @@ new TextProperties(options = {})
 
   Methods
 
-  getAtlas(fontProperties)
+  getAtlasData(fontProperties)
   - Returns atlas for the specified font properties
   - Parameters: fontProperties - FontProperties instance
 
-  setAtlas(fontProperties, atlas)
+  setAtlasData(fontProperties, atlas)
   - Sets atlas for the specified font properties
   - Parameters:
     - fontProperties: FontProperties instance
-    - atlas: Canvas or Image element
+    - atlas: AtlasData instance
 
   isValidAtlas(atlas)
   - Validates if an atlas is properly loaded and usable

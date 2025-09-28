@@ -109,7 +109,7 @@
   - Data structures:
     - `atlases`: AtlasData objects containing both image and positioning data
   - Methods:
-    - `getAtlas()`, `setAtlas()`: Atlas storage and retrieval
+    - `getAtlasData()`, `setAtlasData()`: Atlas storage and retrieval
     - `isValidAtlas()`: Validates atlas integrity
 
   **AtlasImage**

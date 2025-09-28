@@ -103,7 +103,7 @@ function main() {
     }
 
     // Set atlas in store
-    atlasDataStore.setAtlas(fontProperties, atlasData);
+    atlasDataStore.setAtlasData(fontProperties, atlasData);
     
     // Create output canvas
     console.log('Creating canvas and rendering...');

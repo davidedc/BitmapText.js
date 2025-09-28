@@ -156,7 +156,7 @@ function main() {
       console.log(`Setting up atlas for size ${fontSize}...`);
 
       if (atlasData) {
-        atlasDataStore.setAtlas(fontProperties, atlasData);
+        atlasDataStore.setAtlasData(fontProperties, atlasData);
         console.log(`  ✓ Font size ${fontSize} ready with atlas`);
       } else {
         console.log(`  ✓ Font size ${fontSize} ready with placeholder mode (no atlas)`);
