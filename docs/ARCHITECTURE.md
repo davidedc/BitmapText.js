@@ -53,7 +53,7 @@
             ┌──────────────────┐
             │  Bitmap Font     │
             │  Data Files      │
-            │  (.js + .png)    │
+            │ (metrics + atlas) │
             └──────────────────┘
                       │
                       ▼
@@ -107,16 +107,24 @@
   **AtlasStore**
   - Purpose: Atlas image repository
   - Data structures:
-    - `atlases`: Canvas/Image elements with rendered glyphs
+    - `atlases`: AtlasData objects containing both image and positioning data
   - Methods:
     - `getAtlas()`, `setAtlas()`: Atlas storage and retrieval
     - `isValidAtlas()`: Validates atlas integrity
 
-  **FontMetricsStore**
-  - Purpose: Font metrics and positioning data repository
+  **AtlasData**
+  - Purpose: Encapsulates atlas image and glyph positioning data
   - Data structures:
-    - `atlasPositioning`: Position and dimension data (tightWidth, tightHeight, dx, dy, xInAtlas)
-    - `characterMetrics`: Text measurement data
+    - `_image`: Canvas/Image with rendered glyphs
+    - `_atlasPositioning`: Position and dimension data (tightWidth, tightHeight, dx, dy, xInAtlas)
+  - Methods:
+    - `getImage()`: Access to atlas image
+    - `getAtlasPositioning()`: Access to glyph positioning data
+
+  **FontMetricsStore**
+  - Purpose: Font metrics repository
+  - Data structures:
+    - `characterMetrics`: Text measurement data for layout calculation
     - `kerningTables`: Pair-wise character adjustments
     - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
   - Methods:
@@ -334,7 +342,7 @@
     5. Calculate kerning tables
     6. Build optimized atlases
     7. Generate minified metadata
-    8. Export metrics-*.js files + .qoi atlases + font-registry.js
+    8. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
   ```
 
   ### Runtime Text Rendering Workflow
