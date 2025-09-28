@@ -23,6 +23,16 @@ class FontMetricsFAB extends FontMetrics {
   constructor(data) {
     // Call super with mutable option to prevent freezing
     super(data || {}, { mutable: true });
+
+    // Add atlas positioning structure for FAB operations
+    // This is only used during building and will be extracted separately
+    this._atlasPositioning = {
+      tightWidth: data?.atlasPositioning?.tightWidth || {},
+      tightHeight: data?.atlasPositioning?.tightHeight || {},
+      dx: data?.atlasPositioning?.dx || {},
+      dy: data?.atlasPositioning?.dy || {},
+      xInAtlas: data?.atlasPositioning?.xInAtlas || {}
+    };
   }
   
   /**
@@ -34,14 +44,32 @@ class FontMetricsFAB extends FontMetrics {
     return new FontMetrics({
       kerningTable: this._kerningTable,
       characterMetrics: this._characterMetrics,
-      spaceAdvancementOverrideForSmallSizesInPx: this._spaceAdvancementOverride,
-      atlasPositioning: {
+      spaceAdvancementOverrideForSmallSizesInPx: this._spaceAdvancementOverride
+    });
+  }
+
+  /**
+   * Extract atlas positioning data as AtlasPositioning instance
+   * @returns {AtlasPositioning} Atlas positioning instance
+   */
+  extractAtlasPositioning() {
+    if (typeof AtlasPositioning === 'undefined') {
+      console.warn('AtlasPositioning class not available, returning raw data');
+      return {
         tightWidth: this._atlasPositioning.tightWidth,
         tightHeight: this._atlasPositioning.tightHeight,
         dx: this._atlasPositioning.dx,
         dy: this._atlasPositioning.dy,
         xInAtlas: this._atlasPositioning.xInAtlas
-      }
+      };
+    }
+
+    return new AtlasPositioning({
+      tightWidth: this._atlasPositioning.tightWidth,
+      tightHeight: this._atlasPositioning.tightHeight,
+      dx: this._atlasPositioning.dx,
+      dy: this._atlasPositioning.dy,
+      xInAtlas: this._atlasPositioning.xInAtlas
     });
   }
   

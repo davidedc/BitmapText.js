@@ -1,4 +1,5 @@
-// AtlasStoreFAB - Font Assets Building Class for Atlas Images
+// AtlasStoreFAB - Font Assets Building Class for storage of Atlas Data (which
+// includes atlas positioning data and atlas images)
 // 
 // This class extends AtlasStore to provide font assets building capabilities
 // for atlas image generation and management.
@@ -82,9 +83,9 @@ class AtlasStoreFAB extends AtlasStore {
     let maxHeight = 0;
 
     for (let letter in glyphs) {
-      const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
-      const tightWidth = atlasPositioning.tightWidth;
-      const tightHeight = atlasPositioning.tightHeight;
+      // Access atlas positioning directly from FontMetricsFAB internal structure
+      const tightWidth = fontMetrics._atlasPositioning.tightWidth[letter];
+      const tightHeight = fontMetrics._atlasPositioning.tightHeight[letter];
       
       if (tightWidth && !isNaN(tightWidth)) {
         fittingWidth += tightWidth;
@@ -104,8 +105,8 @@ class AtlasStoreFAB extends AtlasStore {
     // Draw each glyph into the atlas and record xInAtlas position
     for (let letter in glyphs) {
       let glyph = glyphs[letter];
-      const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
-      const tightWidth = atlasPositioning.tightWidth;
+      // Access atlas positioning directly from FontMetricsFAB internal structure
+      const tightWidth = fontMetrics._atlasPositioning.tightWidth[letter];
       
       // Skip glyphs without valid tight canvas or width
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
@@ -128,8 +129,17 @@ class AtlasStoreFAB extends AtlasStore {
       x += tightWidth;
     }
 
-    // Store the completed atlas
-    this.setAtlas(fontProperties, canvas);
+    // Get the atlas positioning data from fontMetrics
+    const atlasPositioning = fontMetrics.extractAtlasPositioning();
+
+    // Create AtlasData object combining canvas and positioning
+    if (typeof AtlasData !== 'undefined') {
+      const atlasData = new AtlasData(canvas, atlasPositioning);
+      this.setAtlas(fontProperties, atlasData);
+    } else {
+      console.warn('AtlasData class not available, storing raw canvas');
+      this.setAtlas(fontProperties, canvas);
+    }
 
     // Create PNG export for saving
     const atlasPNG = ctx.toPNGImage();

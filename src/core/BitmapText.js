@@ -260,9 +260,9 @@ class BitmapText {
       const currentLetter = chars[i];
       const nextLetter = chars[i + 1];
 
-      // Check if this specific glyph has atlas data (excluding spaces)
+      // Check if this specific glyph has atlas positioning data (excluding spaces)
       if (currentLetter !== ' ') {
-        if (!atlasValid || !fontMetrics.hasAtlasData(currentLetter)) {
+        if (!atlasValid || !this.atlasStore.hasAtlasPositioning(fontProperties, currentLetter)) {
           missingAtlasChars.add(currentLetter);
           placeholdersUsed = true;
         }
@@ -274,7 +274,8 @@ class BitmapText {
         position,
         atlas,
         fontMetrics,
-        textColor
+        textColor,
+        fontProperties
       );
 
       position.x += this.calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter, textProperties);
@@ -304,7 +305,7 @@ class BitmapText {
     };
   }
 
-  drawLetter(ctx, letter, position, atlas, fontMetrics, textColor) {
+  drawLetter(ctx, letter, position, atlas, fontMetrics, textColor, fontProperties) {
     // There are several optimisations possible here:
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
@@ -319,13 +320,15 @@ class BitmapText {
       return;
     }
 
-    // Only get atlas positioning when we have a valid atlas
-    const atlasPositioning = fontMetrics.getAtlasPositioning(letter);
+    // Get atlas positioning from atlas store instead of font metrics
+    const atlasPositioning = this.atlasStore.getAtlasPositioning(fontProperties, letter);
 
     // For normal glyph rendering, we need xInAtlas
-    if (!atlasPositioning.xInAtlas) return;
+    if (!atlasPositioning || !atlasPositioning.xInAtlas) return;
 
-    const coloredGlyphCanvas = this.createColoredGlyph(atlas, atlasPositioning, textColor);
+    // Get the atlas image for rendering
+    const atlasImage = this.atlasStore.getAtlasImage(fontProperties);
+    const coloredGlyphCanvas = this.createColoredGlyph(atlasImage, atlasPositioning, textColor);
     this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning);
   }
 

@@ -25,6 +25,16 @@ function createIDString(fontProperties) {
   return fontProperties.idString;
 }
 
+// Helper function to get status name from code
+function getStatusName(code) {
+  const statusNames = {
+    [StatusCode.SUCCESS]: 'SUCCESS',
+    [StatusCode.PARTIAL_SUCCESS]: 'PARTIAL_SUCCESS',
+    [StatusCode.FAILURE]: 'FAILURE'
+  };
+  return statusNames[code] || `UNKNOWN(${code})`;
+}
+
 function main() {
   try {
     console.log('BitmapText.js Node.js Multi-Size Demo - Loading font data...');
@@ -110,7 +120,22 @@ function main() {
           } else {
             console.log(`  ↳ QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
             const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
-            atlasMap.set(fontSize, atlasImage);
+
+            // Get positioning data and create AtlasData object
+            const positioningData = FontLoader._tempAtlasPositioning[expectedIDString];
+            let atlasData;
+
+            if (positioningData) {
+              // Expand positioning data and create AtlasData object
+              const atlasPositioning = AtlasExpander.expand(positioningData);
+              atlasData = new AtlasData(atlasImage, atlasPositioning);
+            } else {
+              // Fallback to raw image if no positioning data
+              console.warn(`  ↳ No positioning data found for size ${fontSize}, using raw image`);
+              atlasData = atlasImage;
+            }
+
+            atlasMap.set(fontSize, atlasData);
           }
         } catch (error) {
           console.warn(`  ↳ Failed to load atlas for size ${fontSize}: ${error.message}, will use placeholder rectangles`);
@@ -126,12 +151,12 @@ function main() {
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
       const fontProperties = fontPropertiesArray[i];
-      const atlasImage = atlasMap.get(fontSize);
+      const atlasData = atlasMap.get(fontSize);
 
       console.log(`Setting up atlas for size ${fontSize}...`);
 
-      if (atlasImage) {
-        atlasStore.setAtlas(fontProperties, atlasImage);
+      if (atlasData) {
+        atlasStore.setAtlas(fontProperties, atlasData);
         console.log(`  ✓ Font size ${fontSize} ready with atlas`);
       } else {
         console.log(`  ✓ Font size ${fontSize} ready with placeholder mode (no atlas)`);
@@ -150,13 +175,16 @@ function main() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Render "Hello World" at each font size
+    let allSuccess = true;
+    let actualGlyphsDrawn = 0;
+
     fontPropertiesArray.forEach((fontProperties, index) => {
       const yPosition = 50 + (index * 50); // Space lines 50px apart
       const text = `Hello World (size ${fontProperties.fontSize})`;
-      
+
       console.log(`Rendering "${text}" at y=${yPosition}`);
-      
-      bitmapText.drawTextFromAtlas(
+
+      const result = bitmapText.drawTextFromAtlas(
         ctx,
         text,
         20,  // x position
@@ -164,9 +192,30 @@ function main() {
         fontProperties,
         textProperties  // text rendering properties including color and kerning
       );
+
+      // Log detailed rendering results for each size
+      console.log(`  Result for size ${fontProperties.fontSize}:`, {
+        rendered: result.rendered,
+        statusCode: result.status.code,
+        statusName: getStatusName(result.status.code),
+        placeholdersUsed: result.status.placeholdersUsed,
+        missingChars: result.status.missingChars ? [...result.status.missingChars].join('') : 'none',
+        missingAtlasChars: result.status.missingAtlasChars ? [...result.status.missingAtlasChars].join('') : 'none'
+      });
+
+      if (result.rendered && result.status.code === StatusCode.SUCCESS) {
+        actualGlyphsDrawn++;
+      } else {
+        allSuccess = false;
+      }
     });
-    
-    console.log('Multi-size text rendered successfully');
+
+    console.log(`Multi-size rendering complete: ${actualGlyphsDrawn}/${fontSizes.length} sizes rendered with actual glyphs`);
+    if (allSuccess) {
+      console.log('✅ All sizes rendered successfully with actual glyphs!');
+    } else {
+      console.log('⚠️ Some sizes used placeholders or failed to render');
+    }
     
     // Export to PNG
     console.log('Encoding PNG...');

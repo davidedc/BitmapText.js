@@ -6,6 +6,7 @@
 # Parse command line arguments
 PRESERVE_ORIGINALS=false
 REMOVE_QOI=false
+KEEP_POSITIONING=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -21,6 +22,10 @@ while [[ $# -gt 0 ]]; do
             REMOVE_QOI=true
             shift
             ;;
+        --keep-positioning)
+            KEEP_POSITIONING=true
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [options]"
             echo ""
@@ -30,6 +35,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --preserve-originals     Keep .orig.png backup files after optimization"
             echo "  --no-preserve-originals  Remove .orig.png backup files after optimization (default)"
             echo "  --remove-qoi            Remove .qoi files after conversion to PNG"
+            echo "  --keep-positioning      Keep positioning JSON files after JS conversion"
             echo "  -h, --help              Show this help message"
             echo ""
             echo "The script will:"
@@ -287,7 +293,15 @@ function run_optimization() {
 function run_js_conversion() {
     log "INFO" "Converting image files (PNG and QOI) to JS files..."
 
-    if node "$PROJECT_ROOT/scripts/image-to-js-converter.js" "$DATA_DIR" --all; then
+    local positioning_flag=""
+    if [ "$KEEP_POSITIONING" = "true" ]; then
+        positioning_flag="--keep-positioning"
+        log "INFO" "Positioning JSON files will be preserved after conversion"
+    else
+        log "INFO" "Positioning JSON files will be removed after conversion"
+    fi
+
+    if node "$PROJECT_ROOT/scripts/image-to-js-converter.js" "$DATA_DIR" --all $positioning_flag; then
         log "SUCCESS" "Image to JS conversion completed"
         return 0
     else
@@ -384,6 +398,7 @@ function main() {
     log "INFO" "Monitoring: $FONT_ASSETS_FILE"
     log "INFO" "Preserve originals: $PRESERVE_ORIGINALS"
     log "INFO" "Remove QOI files: $REMOVE_QOI"
+    log "INFO" "Keep positioning files: $KEEP_POSITIONING"
     
     # Change to project root
     cd "$PROJECT_ROOT" || {

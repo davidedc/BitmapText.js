@@ -15,6 +15,16 @@ const textProperties = new TextProperties({
   textColor: '#000000'         // Black color
 });
 
+// Helper function to get status name from code
+function getStatusName(code) {
+  const statusNames = {
+    [StatusCode.SUCCESS]: 'SUCCESS',
+    [StatusCode.PARTIAL_SUCCESS]: 'PARTIAL_SUCCESS',
+    [StatusCode.FAILURE]: 'FAILURE'
+  };
+  return statusNames[code] || `UNKNOWN(${code})`;
+}
+
 function main() {
   try {
     console.log('BitmapText.js Node.js Demo - Loading font data...');
@@ -35,7 +45,7 @@ function main() {
 
     console.log('Font metrics loaded successfully');
     
-    // Load atlas from JS file containing base64-encoded QOI data
+    // Load atlas from JS file containing base64-encoded QOI data AND positioning data
     const atlasJSPath = path.resolve(__dirname, 'font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-qoi.js');
     if (!fs.existsSync(atlasJSPath)) {
       throw new Error(`Atlas JS file not found: ${atlasJSPath}`);
@@ -52,7 +62,7 @@ function main() {
       FontLoader = require('./font-loader-node.js');
     }
 
-    // Execute the atlas JS file (which calls FontLoader.registerTempAtlasData)
+    // Execute the atlas JS file (which calls FontLoader.registerTempAtlasData and stores positioning)
     const atlasJSCode = fs.readFileSync(atlasJSPath, 'utf8');
     eval(atlasJSCode);
 
@@ -78,8 +88,22 @@ function main() {
     // Create Image from QOI data
     const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
 
+    // Get positioning data and create AtlasData object
+    const positioningData = FontLoader._tempAtlasPositioning[expectedIDString];
+    let atlasData;
+
+    if (positioningData) {
+      // Expand positioning data and create AtlasData object
+      const atlasPositioning = AtlasExpander.expand(positioningData);
+      atlasData = new AtlasData(atlasImage, atlasPositioning);
+    } else {
+      // Fallback to raw image if no positioning data
+      console.warn('No positioning data found, using raw image');
+      atlasData = atlasImage;
+    }
+
     // Set atlas in store
-    atlasStore.setAtlas(fontProperties, atlasImage);
+    atlasStore.setAtlas(fontProperties, atlasData);
     
     // Create output canvas
     console.log('Creating canvas and rendering...');
@@ -92,8 +116,8 @@ function main() {
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, 300, 100);
     
-    // Render "Hello World" using bitmap text
-    bitmapText.drawTextFromAtlas(
+    // Render "Hello World" using bitmap text - API returns status info
+    const result = bitmapText.drawTextFromAtlas(
       ctx,
       "Hello World",
       10,  // x position
@@ -101,8 +125,29 @@ function main() {
       fontProperties,
       textProperties  // text rendering properties including color and kerning
     );
-    
-    console.log('Text rendered successfully');
+
+    // Log detailed rendering results
+    console.log('DrawText result:', {
+      rendered: result.rendered,
+      statusCode: result.status.code,
+      statusName: getStatusName(result.status.code),
+      placeholdersUsed: result.status.placeholdersUsed,
+      missingChars: result.status.missingChars ? [...result.status.missingChars].join('') : 'none',
+      missingAtlasChars: result.status.missingAtlasChars ? [...result.status.missingAtlasChars].join('') : 'none'
+    });
+
+    if (result.rendered) {
+      if (result.status.code === StatusCode.SUCCESS) {
+        console.log('✅ Text rendered successfully with actual glyphs!');
+      } else {
+        console.log('⚠️ Text rendered with issues (may show placeholders)');
+        if (result.status.placeholdersUsed) {
+          console.log('📦 Some glyphs rendered as placeholder rectangles');
+        }
+      }
+    } else {
+      console.log('❌ Text rendering failed completely');
+    }
     
     // Export to PNG
     console.log('Encoding PNG...');

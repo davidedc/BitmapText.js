@@ -21,8 +21,7 @@ class MetricsExpander {
     const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k),
       characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b),
-      spaceAdvancementOverrideForSmallSizesInPx: minified.s,
-      atlasPositioning: this.#expandAtlasPositioning(minified.t)
+      spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
     
     return new FontMetrics(expandedData);
@@ -68,17 +67,4 @@ class MetricsExpander {
     return expanded;
   }
   
-  /**
-   * Expands tight metrics from shortened property names
-   * @private
-   */
-  static #expandAtlasPositioning(minified) {
-    return {
-      tightWidth: minified.w,           // w -> tightWidth
-      tightHeight: minified.h,          // h -> tightHeight
-      dx: minified.dx,                  // dx unchanged
-      dy: minified.dy,                  // dy unchanged
-      xInAtlas: minified.x         // x -> xInAtlas
-    };
-  }
 }

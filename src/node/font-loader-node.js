@@ -21,6 +21,9 @@ class FontLoader {
   // Static storage for temporary atlas data from JS files
   static _tempAtlasData = {};
 
+  // Static storage for temporary atlas positioning data from JS files
+  static _tempAtlasPositioning = {};
+
   // Static method for atlas JS files to register their temporary base64 data
   // This method name conveys that these are temporary data strings
   // that will be deleted once processed
@@ -49,6 +52,7 @@ class FontLoader {
   // Clear all temporary atlas data (useful for cleanup)
   static clearTempAtlasData() {
     FontLoader._tempAtlasData = {};
+    FontLoader._tempAtlasPositioning = {};
   }
 
   // Load and execute an atlas JS file, returning the base64 data

@@ -38,38 +38,13 @@ class FontMetrics {
     // Space advancement override for small font sizes
     this._spaceAdvancementOverride = data.spaceAdvancementOverrideForSmallSizesInPx || null;
     
-    // Atlas positioning metrics for glyph rendering
-    this._atlasPositioning = {
-      tightWidth: data.atlasPositioning?.tightWidth || {},
-      tightHeight: data.atlasPositioning?.tightHeight || {},
-      dx: data.atlasPositioning?.dx || {},
-      dy: data.atlasPositioning?.dy || {},
-      xInAtlas: data.atlasPositioning?.xInAtlas || {}
-    };
-    
     // Freeze for immutability (safe to use as value object)
     // Skip freezing if this is for font assets building (FAB)
     if (!options.mutable) {
       Object.freeze(this._kerningTable);
       Object.freeze(this._characterMetrics);
-      Object.freeze(this._atlasPositioning);
       Object.freeze(this);
     }
-  }
-  
-  /**
-   * Get positioning metrics for glyph rendering from atlas
-   * @param {string} letter - Character to get metrics for
-   * @returns {Object} Object with xInAtlas, tightWidth, tightHeight, dx, dy
-   */
-  getAtlasPositioning(letter) {
-    return {
-      xInAtlas: this._atlasPositioning.xInAtlas[letter],
-      tightWidth: this._atlasPositioning.tightWidth[letter],
-      tightHeight: this._atlasPositioning.tightHeight[letter],
-      dx: this._atlasPositioning.dx[letter],
-      dy: this._atlasPositioning.dy[letter]
-    };
   }
   
   /**
@@ -125,22 +100,4 @@ class FontMetrics {
     return Object.keys(this._characterMetrics);
   }
   
-  /**
-   * Check if this font has positioning data (atlas metrics)
-   * @param {string} letter - Character to check
-   * @returns {boolean} True if glyph has positioning data
-   */
-  hasPositioningData(letter) {
-    return this._atlasPositioning.tightWidth[letter] !== undefined &&
-           this._atlasPositioning.tightHeight[letter] !== undefined;
-  }
-  
-  /**
-   * Check if this font has atlas data (xInAtlas positioning)
-   * @param {string} letter - Character to check  
-   * @returns {boolean} True if glyph has atlas positioning
-   */
-  hasAtlasData(letter) {
-    return this._atlasPositioning.xInAtlas[letter] !== undefined;
-  }
 }

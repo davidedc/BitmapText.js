@@ -16,7 +16,6 @@ class MetricsMinifier {
       k: this.#minifyKerningTable(metricsData.kerningTable),
       b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
       g: this.#minifyCharacterMetrics(metricsData.characterMetrics),
-      t: this.#minifyAtlasPositioning(metricsData.atlasPositioning),
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
   }
@@ -67,17 +66,4 @@ class MetricsMinifier {
     return { ...kerningTable };
   }
   
-  /**
-   * Minifies tight metrics with shortened property names
-   * @private
-   */
-  static #minifyAtlasPositioning(atlasPositioning) {
-    return {
-      w: atlasPositioning.tightWidth,          // tightWidth
-      h: atlasPositioning.tightHeight,         // tightHeight
-      dx: atlasPositioning.dx,                 // dx
-      dy: atlasPositioning.dy,                 // dy
-      x: atlasPositioning.xInAtlas        // xInAtlas
-    };
-  }
 }
