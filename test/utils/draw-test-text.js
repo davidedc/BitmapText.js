@@ -381,10 +381,19 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
 
 function buildAndDisplayAtlas(atlasDataStore, fontProperties) {
   addElementToDOM(createDivWithText("Atlas:"));
-  const [atlasImage, atlasCtx] = atlasDataStore.buildAtlas(fontProperties, fontMetricsStoreFAB);
-  addElementToDOM(atlasImage);
-  
-  addCanvasInfoToDOM(atlasCtx.canvas, getHashMatchInfo(atlasCtx, fontProperties, 'atlas'));
+  const atlasImageFAB = atlasDataStore.buildAtlas(fontProperties, fontMetricsStoreFAB);
+
+  // Create a display copy of the canvas to prevent DOM cleanup from affecting stored data
+  const originalCanvas = atlasImageFAB.image;
+  const displayCanvas = document.createElement('canvas');
+  displayCanvas.width = originalCanvas.width;
+  displayCanvas.height = originalCanvas.height;
+  const displayCtx = displayCanvas.getContext('2d');
+  displayCtx.drawImage(originalCanvas, 0, 0);
+
+  addElementToDOM(displayCanvas);
+
+  addCanvasInfoToDOM(displayCanvas, getHashMatchInfo(displayCtx, fontProperties, 'atlas'));
   addElementToDOM(document.createElement('br'));
 }
 

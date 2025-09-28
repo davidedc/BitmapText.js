@@ -36,21 +36,20 @@ class AtlasDataStore {
   }
 
   setAtlas(fontProperties, atlasData) {
+    // Only accept AtlasData instances
+    if (!(atlasData instanceof AtlasData)) {
+      throw new Error('AtlasDataStore.setAtlas requires AtlasData instance (not raw images)');
+    }
     this.atlases.set(fontProperties.key, atlasData);
   }
 
-  // Convenience method to get just the image from AtlasData
+  // Convenience method to get just the image element from AtlasData
   getAtlasImage(fontProperties) {
     const atlasData = this.atlases.get(fontProperties.key);
     if (!atlasData) return undefined;
 
-    // Handle both AtlasData objects and raw images for compatibility
-    if (atlasData.image) {
-      return atlasData.image;
-    }
-
-    // Raw image/canvas - return directly
-    return atlasData;
+    // AtlasData always contains AtlasImage instance
+    return atlasData.atlasImage.image;
   }
 
   // Convenience method to get positioning from AtlasData
@@ -58,13 +57,8 @@ class AtlasDataStore {
     const atlasData = this.atlases.get(fontProperties.key);
     if (!atlasData) return undefined;
 
-    // Handle both AtlasData objects and raw images for compatibility
-    if (atlasData.getPositioning) {
-      return atlasData.getPositioning(letter);
-    }
-
-    // Raw image/canvas - no positioning data available
-    return undefined;
+    // AtlasData always contains AtlasPositioning instance
+    return atlasData.getPositioning(letter);
   }
 
   // Check if positioning data exists for a character
@@ -72,22 +66,41 @@ class AtlasDataStore {
     const atlasData = this.atlases.get(fontProperties.key);
     if (!atlasData) return false;
 
-    // Handle both AtlasData objects and raw images for compatibility
-    if (atlasData.hasPositioning) {
-      return atlasData.hasPositioning(letter);
-    }
-
-    // Raw image/canvas - no positioning data available
-    return false;
+    // AtlasData always contains AtlasPositioning instance
+    return atlasData.hasPositioning(letter);
   }
 
   // Helper method to check if an atlas is valid for rendering
   isValidAtlas(atlas) {
-    // Handle both AtlasData objects and raw images for compatibility
-    if (atlas && atlas.isValid) {
-      return atlas.isValid();
+    // Only work with AtlasData instances
+    if (!(atlas instanceof AtlasData)) {
+      return false;
     }
-    // Fallback for raw images
-    return atlas && typeof atlas === 'object' && atlas.width > 0;
+    return atlas.isValid();
+  }
+
+  // Get all available font properties keys
+  getAvailableFonts() {
+    return Array.from(this.atlases.keys());
+  }
+
+  // Check if atlas exists for font properties
+  hasAtlas(fontProperties) {
+    return this.atlases.has(fontProperties.key);
+  }
+
+  // Remove atlas for font properties
+  deleteAtlas(fontProperties) {
+    return this.atlases.delete(fontProperties.key);
+  }
+
+  // Clear all atlases
+  clear() {
+    this.atlases.clear();
+  }
+
+  // Get count of stored atlases
+  size() {
+    return this.atlases.size;
   }
 }

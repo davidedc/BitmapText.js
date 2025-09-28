@@ -5,13 +5,13 @@
 //
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications
-// - Combines atlas image with character positioning data
+// - Combines AtlasImage with AtlasPositioning data
 // - Provides unified interface for atlas image and positioning access
-// - Replaces storing raw images in AtlasDataStore
+// - Establishes architectural symmetry: AtlasImage + AtlasPositioning = AtlasData
 //
 // ARCHITECTURE:
 // - Immutable object representing atlas image + positioning for ONE font configuration
-// - Stores Canvas/Image element with character positioning maps
+// - Stores AtlasImage instance with AtlasPositioning instance
 // - Provides clean API for accessing both image and positioning data
 // - Validates atlas integrity for rendering safety
 //
@@ -19,18 +19,24 @@
 // - Atlas positioning data moved from FontMetrics to be co-located with atlas images
 // - Reduces metrics file sizes (positioning only loaded when atlas is loaded)
 // - Better separation: metrics for measurement, atlas for rendering
+// - Perfect symmetry: both image and positioning are encapsulated in domain objects
 //
 class AtlasData {
-  constructor(image, atlasPositioning) {
-    // Validate inputs
-    if (!image) {
-      throw new Error('AtlasData constructor requires image');
+  constructor(atlasImage, atlasPositioning) {
+    // Validate AtlasImage instance
+    if (!(atlasImage instanceof AtlasImage)) {
+      throw new Error('AtlasData constructor requires AtlasImage instance (not raw Canvas/Image)');
     }
 
-    // Store image (Canvas or Image element)
-    this._image = image;
+    // Validate AtlasPositioning instance (optional but recommended)
+    if (atlasPositioning && !(atlasPositioning instanceof AtlasPositioning)) {
+      throw new Error('AtlasData constructor requires AtlasPositioning instance (not raw positioning object)');
+    }
 
-    // Store positioning data (AtlasPositioning instance or raw positioning object)
+    // Store AtlasImage instance
+    this._atlasImage = atlasImage;
+
+    // Store AtlasPositioning instance
     this._atlasPositioning = atlasPositioning;
 
     // Freeze for immutability (safe to use as value object)
@@ -38,11 +44,11 @@ class AtlasData {
   }
 
   /**
-   * Get the atlas image
-   * @returns {Canvas|Image} Atlas image element
+   * Get the AtlasImage instance
+   * @returns {AtlasImage} AtlasImage instance
    */
-  get image() {
-    return this._image;
+  get atlasImage() {
+    return this._atlasImage;
   }
 
   /**
@@ -53,19 +59,8 @@ class AtlasData {
   getPositioning(letter) {
     if (!this._atlasPositioning) return undefined;
 
-    // Handle both AtlasPositioning instances and raw objects
-    if (this._atlasPositioning.getPositioning) {
-      return this._atlasPositioning.getPositioning(letter);
-    }
-
-    // Handle raw positioning object (fallback for simple cases)
-    return {
-      xInAtlas: this._atlasPositioning.xInAtlas?.[letter],
-      tightWidth: this._atlasPositioning.tightWidth?.[letter],
-      tightHeight: this._atlasPositioning.tightHeight?.[letter],
-      dx: this._atlasPositioning.dx?.[letter],
-      dy: this._atlasPositioning.dy?.[letter]
-    };
+    // Delegate to AtlasPositioning instance
+    return this._atlasPositioning.getPositioning(letter);
   }
 
   /**
@@ -76,13 +71,8 @@ class AtlasData {
   hasPositioning(letter) {
     if (!this._atlasPositioning) return false;
 
-    // Handle both AtlasPositioning instances and raw objects
-    if (this._atlasPositioning.hasPositioning) {
-      return this._atlasPositioning.hasPositioning(letter);
-    }
-
-    // Handle raw positioning object
-    return this._atlasPositioning.xInAtlas?.[letter] !== undefined;
+    // Delegate to AtlasPositioning instance
+    return this._atlasPositioning.hasPositioning(letter);
   }
 
   /**
@@ -90,10 +80,7 @@ class AtlasData {
    * @returns {boolean} True if atlas has valid image and dimensions
    */
   isValid() {
-    return this._image &&
-           typeof this._image === 'object' &&
-           this._image.width > 0 &&
-           this._image.height > 0;
+    return this._atlasImage && this._atlasImage.isValid();
   }
 
   /**
@@ -103,12 +90,66 @@ class AtlasData {
   getAvailableCharacters() {
     if (!this._atlasPositioning) return [];
 
-    // Handle both AtlasPositioning instances and raw objects
-    if (this._atlasPositioning.getAvailableCharacters) {
-      return this._atlasPositioning.getAvailableCharacters();
-    }
+    // Delegate to AtlasPositioning instance
+    return this._atlasPositioning.getAvailableCharacters();
+  }
 
-    // Handle raw positioning object
-    return Object.keys(this._atlasPositioning.xInAtlas || {});
+  /**
+   * Get the width of the atlas image
+   * @returns {number} Width in pixels
+   */
+  get width() {
+    return this._atlasImage.width;
+  }
+
+  /**
+   * Get the height of the atlas image
+   * @returns {number} Height in pixels
+   */
+  get height() {
+    return this._atlasImage.height;
+  }
+
+  /**
+   * Check if the atlas can be rendered
+   * @returns {boolean} True if atlas is ready for rendering operations
+   */
+  canRender() {
+    return this._atlasImage && this._atlasImage.canRender();
+  }
+
+  /**
+   * Get the AtlasPositioning instance
+   * @returns {AtlasPositioning|null} AtlasPositioning instance or null
+   */
+  get atlasPositioning() {
+    return this._atlasPositioning;
+  }
+
+  /**
+   * Check if this atlas data equals another atlas data
+   * @param {AtlasData} other - Another AtlasData instance
+   * @returns {boolean} True if they reference the same image and positioning
+   */
+  equals(other) {
+    if (!(other instanceof AtlasData)) return false;
+    return this._atlasImage.equals(other._atlasImage) &&
+           this._atlasPositioning === other._atlasPositioning;
+  }
+
+  /**
+   * Get debug information about this atlas data
+   * @returns {Object} Debug information
+   */
+  getDebugInfo() {
+    return {
+      atlasImage: this._atlasImage ? this._atlasImage.getDebugInfo() : null,
+      atlasPositioning: this._atlasPositioning ? {
+        availableCharacters: this._atlasPositioning.getAvailableCharacters().length,
+        characters: this._atlasPositioning.getAvailableCharacters().slice(0, 10) // First 10 for brevity
+      } : null,
+      isValid: this.isValid(),
+      canRender: this.canRender()
+    };
   }
 }

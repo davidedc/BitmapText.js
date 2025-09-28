@@ -30,9 +30,28 @@ class AtlasDataStoreFAB extends AtlasDataStore {
 
   // Extract a clean AtlasDataStore instance for runtime distribution
   // This removes FAB-specific functionality and provides only runtime atlas data
+  // Converts AtlasImageFAB instances to AtlasImage instances
   extractAtlasDataStoreInstance() {
     const instance = new AtlasDataStore();
-    instance.atlases = this.atlases;
+
+    // Convert AtlasData containing AtlasImageFAB to AtlasData containing AtlasImage
+    for (const [fontKey, atlasData] of this.atlases) {
+      if (atlasData instanceof AtlasData) {
+        // Check if the atlasData contains AtlasImageFAB
+        if (atlasData.atlasImage instanceof AtlasImageFAB) {
+          // Extract clean AtlasImage instance
+          const cleanAtlasImage = atlasData.atlasImage.extractAtlasImageInstance();
+          const cleanAtlasData = new AtlasData(cleanAtlasImage, atlasData.atlasPositioning);
+          instance.atlases.set(fontKey, cleanAtlasData);
+        } else {
+          // Already contains AtlasImage, copy as-is
+          instance.atlases.set(fontKey, atlasData);
+        }
+      } else {
+        console.warn(`Unexpected atlas data type for ${fontKey} - skipping`);
+      }
+    }
+
     return instance;
   }
 
@@ -132,22 +151,21 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     // Get the atlas positioning data from fontMetrics
     const atlasPositioning = fontMetrics.extractAtlasPositioning();
 
-    // Create AtlasData object combining canvas and positioning
-    if (typeof AtlasData !== 'undefined') {
-      const atlasData = new AtlasData(canvas, atlasPositioning);
-      this.setAtlas(fontProperties, atlasData);
-    } else {
-      console.warn('AtlasData class not available, storing raw canvas');
-      this.setAtlas(fontProperties, canvas);
+    // Create AtlasImageFAB instance from the generated canvas
+    if (typeof AtlasImageFAB === 'undefined') {
+      throw new Error(`AtlasImageFAB class required for atlas building - not available for ${fontProperties.key}`);
     }
+    const atlasImageFAB = AtlasImageFAB.createFromCanvas(canvas);
 
-    // Create PNG export for saving
-    const atlasPNG = ctx.toPNGImage();
-    
-    // NOTE: The canvas can be used immediately for setAtlas, but the PNG image
-    // needs processing time before it can be used for rendering. Return both
-    // for different use cases.
-    return [atlasPNG, ctx];
+    // Create AtlasData object combining AtlasImageFAB and AtlasPositioning
+    if (typeof AtlasData === 'undefined') {
+      throw new Error(`AtlasData class required for atlas building - not available for ${fontProperties.key}`);
+    }
+    const atlasData = new AtlasData(atlasImageFAB, atlasPositioning);
+    this.setAtlas(fontProperties, atlasData);
+
+    // Return only the AtlasImageFAB instance
+    return atlasImageFAB;
   }
 
 }

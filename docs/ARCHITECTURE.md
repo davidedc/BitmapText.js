@@ -112,14 +112,38 @@
     - `getAtlas()`, `setAtlas()`: Atlas storage and retrieval
     - `isValidAtlas()`: Validates atlas integrity
 
-  **AtlasData**
-  - Purpose: Encapsulates atlas image and glyph positioning data
+  **AtlasImage**
+  - Purpose: Encapsulates atlas image as immutable domain object
   - Data structures:
-    - `_image`: Canvas/Image with rendered glyphs
-    - `_atlasPositioning`: Position and dimension data (tightWidth, tightHeight, dx, dy, xInAtlas)
+    - `_image`: Canvas/Image element with rendered glyphs
   - Methods:
-    - `getImage()`: Access to atlas image
-    - `getAtlasPositioning()`: Access to glyph positioning data
+    - `get image()`: Access to atlas image element
+    - `get width()`, `get height()`: Convenient dimension accessors
+    - `isValid()`: Validates image integrity
+    - `canRender()`: Checks if ready for drawing operations
+    - `getImageType()`: Returns 'canvas' or 'image'
+
+  **AtlasPositioning**
+  - Purpose: Encapsulates glyph positioning data as immutable domain object
+  - Data structures:
+    - `_tightWidth`, `_tightHeight`: Glyph dimensions
+    - `_dx`, `_dy`: Position offsets
+    - `_xInAtlas`: Horizontal positions in atlas
+  - Methods:
+    - `getPositioning()`: Access to positioning data for specific character
+    - `hasPositioning()`: Check if character has positioning data
+    - `getAvailableCharacters()`: List all characters with positioning
+
+  **AtlasData**
+  - Purpose: Combines AtlasImage and AtlasPositioning for complete atlas representation
+  - Data structures:
+    - `_atlasImage`: AtlasImage instance
+    - `_atlasPositioning`: AtlasPositioning instance
+  - Methods:
+    - `get image()`: Access to atlas image element (delegates to AtlasImage)
+    - `get atlasImage()`: Access to AtlasImage instance
+    - `getPositioning()`: Access to glyph positioning data (delegates to AtlasPositioning)
+    - `isValid()`: Validates both image and positioning integrity
 
   **FontMetricsStore**
   - Purpose: Font metrics repository
@@ -180,10 +204,18 @@
   - Creates individual glyph canvases
   - Calculates precise bounding boxes
 
+  **AtlasImageFAB extends AtlasImage**
+  - Font assets building capabilities for atlas image management
+  - Factory methods for creating from canvas, base64, or URL
+  - Image format conversion and export (PNG, QOI, base64)
+  - Atlas validation and optimization features
+  - Extraction method to create clean AtlasImage instances
+
   **AtlasDataStoreFAB extends AtlasDataStore**
-  - Builds atlases from individual canvases
-  - Optimizes glyph packing
-  - Generates minified metadata
+  - Builds atlases from individual canvases using AtlasImageFAB
+  - Optimizes glyph packing and atlas generation
+  - Generates minified metadata and export formats
+  - Extraction method to convert AtlasImageFAB to AtlasImage instances
 
   ### Supporting Classes
 

@@ -128,6 +128,12 @@ class FontLoader {
         img.onload = () => {
           const fontProperties = FontProperties.fromIDString(IDString);
 
+          // Create AtlasImage instance from loaded image
+          if (typeof AtlasImage === 'undefined') {
+            throw new Error(`AtlasImage class required for font loading - not available for ${IDString}`);
+          }
+          const atlasImage = new AtlasImage(img);
+
           // Get atlas positioning data
           const positioningData = FontLoader._tempAtlasPositioning[IDString];
           let atlasPositioning = null;
@@ -142,14 +148,12 @@ class FontLoader {
             }
           }
 
-          // Create AtlasData object containing both image and positioning
-          if (typeof AtlasData !== 'undefined') {
-            const atlasData = new AtlasData(img, atlasPositioning);
-            this.atlasDataStore.setAtlas(fontProperties, atlasData);
-          } else {
-            console.warn(`AtlasData class not available for ${IDString} - storing raw image`);
-            this.atlasDataStore.setAtlas(fontProperties, img);
+          // Create AtlasData object containing AtlasImage and AtlasPositioning
+          if (typeof AtlasData === 'undefined') {
+            throw new Error(`AtlasData class required for font loading - not available for ${IDString}`);
           }
+          const atlasData = new AtlasData(atlasImage, atlasPositioning);
+          this.atlasDataStore.setAtlas(fontProperties, atlasData);
 
           imageScript.remove();
           delete FontLoader._tempAtlasData[IDString]; // Clean up temporary image data
@@ -189,14 +193,18 @@ class FontLoader {
       img.onload = () => {
         const fontProperties = FontProperties.fromIDString(IDString);
 
-        // PNG files don't have positioning data - create AtlasData with image only
-        if (typeof AtlasData !== 'undefined') {
-          const atlasData = new AtlasData(img, null);
-          this.atlasDataStore.setAtlas(fontProperties, atlasData);
-        } else {
-          console.warn(`AtlasData class not available for ${IDString} - storing raw image`);
-          this.atlasDataStore.setAtlas(fontProperties, img);
+        // Create AtlasImage instance from loaded PNG image
+        if (typeof AtlasImage === 'undefined') {
+          throw new Error(`AtlasImage class required for font loading - not available for ${IDString}`);
         }
+        const atlasImage = new AtlasImage(img);
+
+        // PNG files don't have positioning data - create AtlasData with AtlasImage only
+        if (typeof AtlasData === 'undefined') {
+          throw new Error(`AtlasData class required for font loading - not available for ${IDString}`);
+        }
+        const atlasData = new AtlasData(atlasImage, null);
+        this.atlasDataStore.setAtlas(fontProperties, atlasData);
 
         this.incrementProgress();
         resolve();

@@ -33,6 +33,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/core/FontMetrics.js"
   "$SRC_DIR/minification/MetricsExpander.js"
   "$SRC_DIR/core/AtlasPositioning.js"
+  "$SRC_DIR/core/AtlasImage.js"
   "$SRC_DIR/core/AtlasData.js"
   "$SRC_DIR/minification/AtlasExpander.js"
   "$LIB_DIR/QOIDecode.js"
@@ -151,6 +152,14 @@ echo "// ATLAS POSITIONING CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/core/AtlasPositioning.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate AtlasImage class (BEFORE AtlasData since AtlasData depends on AtlasImage)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// ATLAS IMAGE CLASS" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/AtlasImage.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate AtlasData class

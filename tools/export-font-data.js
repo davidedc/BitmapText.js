@@ -21,7 +21,7 @@ function downloadFontAssets(options) {
   const sizes = new Set();
   const baseKeyPrefix = `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:`;
   
-  for (const [key, canvas] of atlasDataStore.atlases) {
+  for (const [key, atlasData] of atlasDataStore.atlases) {
     if (key.startsWith(baseKeyPrefix)) {
       // Extract fontSize from key: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
       const fontSize = key.substring(baseKeyPrefix.length);
@@ -42,11 +42,23 @@ function downloadFontAssets(options) {
           return;
       }
 
-      // Extract canvas from AtlasData object or use directly if it's a raw canvas
-      const canvas = atlasData.image || atlasData;
+      // AtlasData always contains AtlasImage instance
+      if (!(atlasData instanceof AtlasData)) {
+          console.error(`Expected AtlasData instance for ${fontProperties.key}, got:`, typeof atlasData);
+          return;
+      }
+
+      // Get canvas from AtlasImage
+      const canvas = atlasData.atlasImage.image;
 
       if (!canvas || !canvas.getContext) {
-          console.warn(`Invalid canvas for ${fontProperties.key}, skipping export`);
+          console.warn(`Invalid canvas from AtlasImage for ${fontProperties.key}, skipping export`);
+          return;
+      }
+
+      // Skip canvases with 0x0 dimensions (nothing to export)
+      if (canvas.width === 0 || canvas.height === 0) {
+          console.warn(`Canvas has 0x0 dimensions for ${fontProperties.key}, skipping export`);
           return;
       }
 

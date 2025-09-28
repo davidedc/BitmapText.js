@@ -58,4 +58,34 @@ class AtlasExpander {
       xInAtlas: minified.x || {}        // x -> xInAtlas
     };
   }
+
+  /**
+   * Creates AtlasData instance from image and minified positioning data
+   * @param {Canvas|Image|AtlasImage} image - Image element, Canvas, or AtlasImage instance
+   * @param {Object} minifiedPositioning - Minified positioning object with shortened keys
+   * @returns {AtlasData} AtlasData instance combining AtlasImage and AtlasPositioning
+   */
+  static createAtlasData(image, minifiedPositioning) {
+    // Check if required classes are available
+    if (typeof AtlasData === 'undefined') {
+      throw new Error('AtlasData class not found. Please ensure AtlasData.js is loaded before AtlasExpander.js');
+    }
+    if (typeof AtlasImage === 'undefined') {
+      throw new Error('AtlasImage class not found. Please ensure AtlasImage.js is loaded before AtlasExpander.js');
+    }
+
+    // Create AtlasImage instance if not already one
+    let atlasImage;
+    if (image instanceof AtlasImage) {
+      atlasImage = image;
+    } else {
+      atlasImage = new AtlasImage(image);
+    }
+
+    // Expand positioning data
+    const atlasPositioning = this.expand(minifiedPositioning);
+
+    // Create and return AtlasData instance
+    return new AtlasData(atlasImage, atlasPositioning);
+  }
 }
