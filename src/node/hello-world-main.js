@@ -94,7 +94,7 @@ function main() {
 
     if (positioningData) {
       // Expand positioning data and create AtlasData object
-      const atlasPositioning = AtlasExpander.expand(positioningData);
+      const atlasPositioning = AtlasDataExpander.expand(positioningData);
       atlasData = new AtlasData(new AtlasImage(atlasImage), atlasPositioning);
     } else {
       // Fallback to raw image if no positioning data

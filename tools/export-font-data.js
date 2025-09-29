@@ -99,7 +99,7 @@ function downloadFontAssets(options) {
 
       // Get atlas positioning from AtlasData (it's already there!)
       const atlasPositioning = atlasData.atlasPositioning;
-      const atlasPositioningData = atlasPositioning.getRawData ? atlasPositioning.getRawData() : atlasPositioning;
+      const atlasPositioningData = AtlasDataMinifier.getRawData(atlasPositioning);
 
       // Extract character metrics directly from FontMetrics instance
       const characterMetrics = { ...fontMetrics._characterMetrics };
@@ -171,7 +171,7 @@ if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefi
       );
 
       // Add positioning JSON file to zip
-      const minifiedAtlasPositioning = AtlasMinifier.minify(atlasPositioningData);
+      const minifiedAtlasPositioning = AtlasDataMinifier.minify(atlasPositioningData);
       folder.file(
           `atlas-${IDString}-positioning.json`,
           JSON.stringify(minifiedAtlasPositioning, null, 2), // Pretty-printed JSON for debugging

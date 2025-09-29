@@ -35,7 +35,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/core/AtlasPositioning.js"
   "$SRC_DIR/core/AtlasImage.js"
   "$SRC_DIR/core/AtlasData.js"
-  "$SRC_DIR/minification/AtlasExpander.js"
+  "$SRC_DIR/minification/AtlasDataExpander.js"
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
@@ -175,12 +175,12 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/core/AtlasData.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate AtlasExpander
+# Concatenate AtlasDataExpander
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// ATLAS EXPANDER UTILITY" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/minification/AtlasExpander.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/minification/AtlasDataExpander.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate QOI decoder

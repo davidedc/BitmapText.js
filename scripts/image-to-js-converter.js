@@ -142,7 +142,7 @@ function generateJSContent(idString, base64Data, imageType, originalFilename, po
     if (positioningData) {
         positioningCode = `
 // Register atlas positioning data
-if (typeof AtlasExpander !== 'undefined' && typeof FontLoader !== 'undefined') {
+if (typeof AtlasDataExpander !== 'undefined' && typeof FontLoader !== 'undefined') {
   // Store positioning data for this font
   if (!FontLoader._tempAtlasPositioning) {
     FontLoader._tempAtlasPositioning = {};

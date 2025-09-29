@@ -135,17 +135,4 @@ class AtlasPositioning {
     return this._dy[letter];
   }
 
-  /**
-   * Get raw positioning maps (for compatibility/debugging)
-   * @returns {Object} Raw positioning data
-   */
-  getRawData() {
-    return {
-      tightWidth: this._tightWidth,
-      tightHeight: this._tightHeight,
-      dx: this._dx,
-      dy: this._dy,
-      xInAtlas: this._xInAtlas
-    };
-  }
 }

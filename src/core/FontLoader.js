@@ -140,10 +140,10 @@ class FontLoader {
 
           if (positioningData) {
             // Expand minified positioning data to AtlasPositioning instance
-            if (typeof AtlasExpander !== 'undefined') {
-              atlasPositioning = AtlasExpander.expand(positioningData);
+            if (typeof AtlasDataExpander !== 'undefined') {
+              atlasPositioning = AtlasDataExpander.expand(positioningData);
             } else {
-              console.warn(`AtlasExpander not available for ${IDString} - positioning data will be raw`);
+              console.warn(`AtlasDataExpander not available for ${IDString} - positioning data will be raw`);
               atlasPositioning = positioningData;
             }
           }

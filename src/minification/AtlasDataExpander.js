@@ -1,10 +1,20 @@
-// Static utility class for expanding minified atlas positioning data (runtime only)
+// AtlasDataExpander - Static utility class for expanding minified atlas positioning data (runtime only)
 // Converts compact format back to AtlasPositioning instances for use by the rendering engine
+//
+// ARCHITECTURAL DESIGN RATIONALE:
+// This class works with minified atlas positioning data that was processed by AtlasDataMinifier.
+// It operates on runtime-ready instances and provides clean AtlasPositioning instances for
+// the rendering engine, maintaining the separation between build-time and runtime functionality.
+//
+// The expansion process ensures that:
+// 1. Minified data (w, h, x) is properly expanded to full property names (tightWidth, tightHeight, xInAtlas)
+// 2. Runtime AtlasPositioning instances are created for the rendering pipeline
+// 3. AtlasData instances can be properly constructed from loaded image and positioning data
 
-class AtlasExpander {
+class AtlasDataExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
   constructor() {
-    throw new Error('AtlasExpander cannot be instantiated - use static methods');
+    throw new Error('AtlasDataExpander cannot be instantiated - use static methods');
   }
 
   /**
@@ -15,7 +25,7 @@ class AtlasExpander {
   static expand(minified) {
     // Check if AtlasPositioning class is available (for cases where loaded as standalone)
     if (typeof AtlasPositioning === 'undefined') {
-      throw new Error('AtlasPositioning class not found. Please ensure AtlasPositioning.js is loaded before AtlasExpander.js');
+      throw new Error('AtlasPositioning class not found. Please ensure AtlasPositioning.js is loaded before AtlasDataExpander.js');
     }
 
     if (!minified) {
@@ -68,10 +78,10 @@ class AtlasExpander {
   static createAtlasData(image, minifiedPositioning) {
     // Check if required classes are available
     if (typeof AtlasData === 'undefined') {
-      throw new Error('AtlasData class not found. Please ensure AtlasData.js is loaded before AtlasExpander.js');
+      throw new Error('AtlasData class not found. Please ensure AtlasData.js is loaded before AtlasDataExpander.js');
     }
     if (typeof AtlasImage === 'undefined') {
-      throw new Error('AtlasImage class not found. Please ensure AtlasImage.js is loaded before AtlasExpander.js');
+      throw new Error('AtlasImage class not found. Please ensure AtlasImage.js is loaded before AtlasDataExpander.js');
     }
 
     // Create AtlasImage instance if not already one
