@@ -65,6 +65,8 @@
   - **Atlas positioning data**: src/core/AtlasPositioning.js (immutable positioning domain object)
   - **Atlas positioning building**: src/font-assets-builder-FAB/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
   - **Atlas data combination**: src/core/AtlasData.js (combines AtlasImage + AtlasPositioning)
+  - **Atlas data minification**: src/minification/AtlasDataMinifier.js (compacts atlas positioning for serialization)
+  - **Atlas data expansion**: src/minification/AtlasDataExpander.js (restores atlas positioning from minified data)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1

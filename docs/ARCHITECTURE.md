@@ -352,17 +352,29 @@
 
   Font data is minified for efficient storage and network transfer:
 
-  **Minification (src/minification/MetricsMinifier.js)**:
+  **Font Metrics Minification (src/minification/MetricsMinifier.js)**:
   1. **Dynamic Base Metrics**: Uses first available character for base font metrics extraction
   2. **Nested Structure Flattening**: Converts multi-level font property objects to flat arrays
   3. **Data Deduplication**: Removes redundant entries across similar font configurations
   4. **Property Name Shortening**: Optimizes repeated font family/style/weight combinations
 
-  **Expansion (src/minification/MetricsExpander.js)**:
+  **Font Metrics Expansion (src/minification/MetricsExpander.js)**:
   1. **Array to Object Mapping**: Rebuilds nested property structures
   2. **Property Reconstruction**: Restores font property hierarchies
   3. **Metrics Expansion**: Reconstructs full glyph metrics from minified data
   4. **Essential Property Validation**: Verifies key metrics are preserved during roundtrip
+
+  **Atlas Data Minification (src/minification/AtlasDataMinifier.js)**:
+  1. **Property Key Shortening**: Converts verbose keys (tightWidth → w, tightHeight → h, xInAtlas → x)
+  2. **Raw Data Extraction**: Extracts positioning data from AtlasPositioning instances for serialization
+  3. **Non-FAB Instance Processing**: Operates on extracted runtime instances to ensure only runtime-needed data is serialized
+  4. **Compact Format Generation**: Creates minimal positioning objects for file size optimization
+
+  **Atlas Data Expansion (src/minification/AtlasDataExpander.js)**:
+  1. **Property Key Restoration**: Expands shortened keys back to full names (w → tightWidth, h → tightHeight, x → xInAtlas)
+  2. **AtlasPositioning Creation**: Reconstructs AtlasPositioning instances from minified data
+  3. **AtlasData Assembly**: Combines expanded positioning with AtlasImage instances
+  4. **Runtime Instance Generation**: Creates clean runtime objects from serialized data
 
   ## Memory Management
 
