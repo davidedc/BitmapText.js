@@ -43,33 +43,6 @@ class AtlasDataStore {
     this.atlases.set(fontProperties.key, atlasData);
   }
 
-  // Convenience method to get just the image element from AtlasData
-  getAtlasImage(fontProperties) {
-    const atlasData = this.atlases.get(fontProperties.key);
-    if (!atlasData) return undefined;
-
-    // AtlasData always contains AtlasImage instance
-    return atlasData.atlasImage.image;
-  }
-
-  // Convenience method to get positioning from AtlasData
-  getAtlasPositioning(fontProperties, letter) {
-    const atlasData = this.atlases.get(fontProperties.key);
-    if (!atlasData) return undefined;
-
-    // AtlasData always contains AtlasPositioning instance
-    return atlasData.getPositioning(letter);
-  }
-
-  // Check if positioning data exists for a character
-  hasAtlasPositioning(fontProperties, letter) {
-    const atlasData = this.atlases.get(fontProperties.key);
-    if (!atlasData) return false;
-
-    // AtlasData always contains AtlasPositioning instance
-    return atlasData.hasPositioning(letter);
-  }
-
   // Helper method to check if an atlas is valid for rendering
   isValidAtlas(atlas) {
     // Only work with AtlasData instances

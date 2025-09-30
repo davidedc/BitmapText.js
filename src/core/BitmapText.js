@@ -262,7 +262,7 @@ class BitmapText {
 
       // Check if this specific glyph has atlas positioning data (excluding spaces)
       if (currentLetter !== ' ') {
-        if (!atlasValid || !this.atlasDataStore.hasAtlasPositioning(fontProperties, currentLetter)) {
+        if (!atlasValid || !atlasData.hasPositioning(currentLetter)) {
           missingAtlasChars.add(currentLetter);
           placeholdersUsed = true;
         }
@@ -319,7 +319,6 @@ class BitmapText {
       return;
     }
 
-    // Get atlasData positioning from atlasData store instead of font metrics
     const atlasPositioning = atlasData.atlasPositioning.getPositioning(letter);
 
     // For normal glyph rendering, we need xInAtlas

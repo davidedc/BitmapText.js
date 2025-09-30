@@ -33,8 +33,8 @@ class AtlasImage {
       throw new Error('AtlasImage constructor requires Canvas or Image element with width property');
     }
 
-    // Store image (Canvas or Image element)
-    this._image = image;
+    // Store image (Canvas or Image element) - public field (object is frozen)
+    this.image = image;
 
     // Freeze for immutability (safe to use as value object)
     // Skip freezing if this is for font assets building (FAB)
@@ -44,20 +44,12 @@ class AtlasImage {
   }
 
   /**
-   * Get the atlas image element
-   * @returns {Canvas|Image} Atlas image element
-   */
-  get image() {
-    return this._image;
-  }
-
-  /**
    * Get the width of the atlas image
    * @returns {number} Width in pixels
    */
   get width() {
     // Handle both Canvas (width) and Image (naturalWidth/width) elements
-    return this._image.naturalWidth || this._image.width || 0;
+    return this.image.naturalWidth || this.image.width || 0;
   }
 
   /**
@@ -66,7 +58,7 @@ class AtlasImage {
    */
   get height() {
     // Handle both Canvas (height) and Image (naturalHeight/height) elements
-    return this._image.naturalHeight || this._image.height || 0;
+    return this.image.naturalHeight || this.image.height || 0;
   }
 
   /**
@@ -74,8 +66,8 @@ class AtlasImage {
    * @returns {boolean} True if image has valid dimensions
    */
   isValid() {
-    return this._image &&
-           typeof this._image === 'object' &&
+    return this.image &&
+           typeof this.image === 'object' &&
            this.width > 0 &&
            this.height > 0;
   }
@@ -88,8 +80,8 @@ class AtlasImage {
     if (!this.isValid()) return false;
 
     // For Image elements, check if they're loaded
-    if (this._image instanceof Image) {
-      return this._image.complete && this._image.naturalWidth > 0;
+    if (this.image instanceof Image) {
+      return this.image.complete && this.image.naturalWidth > 0;
     }
 
     // Canvas elements are always ready if they have valid dimensions
@@ -101,11 +93,11 @@ class AtlasImage {
    * @returns {string} 'canvas' or 'image'
    */
   getImageType() {
-    if (this._image instanceof HTMLCanvasElement ||
-        (typeof OffscreenCanvas !== 'undefined' && this._image instanceof OffscreenCanvas)) {
+    if (this.image instanceof HTMLCanvasElement ||
+        (typeof OffscreenCanvas !== 'undefined' && this.image instanceof OffscreenCanvas)) {
       return 'canvas';
     }
-    if (this._image instanceof Image || this._image instanceof HTMLImageElement) {
+    if (this.image instanceof Image || this.image instanceof HTMLImageElement) {
       return 'image';
     }
     return 'unknown';
@@ -118,7 +110,7 @@ class AtlasImage {
    */
   getContext(contextType = '2d') {
     if (this.getImageType() === 'canvas') {
-      return this._image.getContext(contextType);
+      return this.image.getContext(contextType);
     }
     return null;
   }
@@ -130,7 +122,7 @@ class AtlasImage {
    */
   equals(other) {
     if (!(other instanceof AtlasImage)) return false;
-    return this._image === other._image;
+    return this.image === other.image;
   }
 
   /**
