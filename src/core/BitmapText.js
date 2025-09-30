@@ -274,8 +274,7 @@ class BitmapText {
         position,
         atlasData,
         fontMetrics,
-        textColor,
-        fontProperties
+        textColor
       );
 
       position.x += this.calculateLetterAdvancement(fontMetrics, fontProperties, currentLetter, nextLetter, textProperties);
@@ -305,7 +304,7 @@ class BitmapText {
     };
   }
 
-  drawLetter(ctx, letter, position, atlasData, fontMetrics, textColor, fontProperties) {
+  drawLetter(ctx, letter, position, atlasData, fontMetrics, textColor) {
     // There are several optimisations possible here:
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
@@ -321,13 +320,13 @@ class BitmapText {
     }
 
     // Get atlasData positioning from atlasData store instead of font metrics
-    const atlasPositioning = this.atlasDataStore.getAtlasPositioning(fontProperties, letter);
+    const atlasPositioning = atlasData.atlasPositioning.getPositioning(letter);
 
     // For normal glyph rendering, we need xInAtlas
     if (!atlasPositioning || !atlasPositioning.xInAtlas) return;
 
     // Get the atlasData image for rendering
-    const atlasImage = this.atlasDataStore.getAtlasImage(fontProperties);
+    const atlasImage = atlasData.atlasImage.image;
     const coloredGlyphCanvas = this.createColoredGlyph(atlasImage, atlasPositioning, textColor);
     this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning);
   }
