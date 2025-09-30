@@ -115,9 +115,8 @@
   **AtlasImage**
   - Purpose: Encapsulates atlas image as immutable domain object
   - Data structures:
-    - `_image`: Canvas/Image element with rendered glyphs
+    - `image`: Canvas/Image element with rendered glyphs (public field, object frozen)
   - Methods:
-    - `get image()`: Access to atlas image element
     - `get width()`, `get height()`: Convenient dimension accessors
     - `isValid()`: Validates image integrity
     - `canRender()`: Checks if ready for drawing operations
@@ -137,13 +136,14 @@
   **AtlasData**
   - Purpose: Combines AtlasImage and AtlasPositioning for complete atlas representation
   - Data structures:
-    - `_atlasImage`: AtlasImage instance
-    - `_atlasPositioning`: AtlasPositioning instance
+    - `atlasImage`: AtlasImage instance (public field, object frozen)
+    - `atlasPositioning`: AtlasPositioning instance (public field, object frozen)
   - Methods:
-    - `get image()`: Access to atlas image element (delegates to AtlasImage)
-    - `get atlasImage()`: Access to AtlasImage instance
-    - `getPositioning()`: Access to glyph positioning data (delegates to AtlasPositioning)
+    - `hasPositioning()`: Null-safe check if positioning data exists for character
     - `isValid()`: Validates both image and positioning integrity
+    - `getAvailableCharacters()`: List all characters with positioning
+    - `get width()`, `get height()`: Convenient dimension accessors
+    - `canRender()`: Checks if ready for rendering operations
 
   **FontMetricsStore**
   - Purpose: Font metrics repository
