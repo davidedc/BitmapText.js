@@ -1,7 +1,7 @@
 // FontLoader Node.js Implementation
 //
 // This is a minimal Node.js-compatible implementation of FontLoader
-// that provides the registerTempAtlasData functionality needed for
+// that provides the registerAtlasPackage functionality needed for
 // loading atlas data from JavaScript files in Node.js environment.
 //
 // This allows the Node.js demos to use the same .js atlas files
@@ -9,8 +9,8 @@
 //
 // USAGE:
 // 1. Load this module to make FontLoader available globally
-// 2. Execute atlas .js files (which call FontLoader.registerTempAtlasData)
-// 3. Retrieve base64 data using FontLoader.getTempAtlasData
+// 2. Execute atlas .js files (which call FontLoader.registerAtlasPackage)
+// 3. Access package data using FontLoader._tempAtlasPackages[IDString]
 // 4. Convert base64 to Buffer and decode as needed
 
 // Node.js modules
@@ -18,67 +18,71 @@ const fs = require('fs');
 
 // FontLoader class for Node.js environment
 class FontLoader {
-  // Static storage for temporary atlas data from JS files
-  static _tempAtlasData = {};
+  // Static storage for atlas packages (base64 + positioning) from JS files
+  // Each package contains both image data and positioning data as an atomic unit
+  static _tempAtlasPackages = {};
 
-  // Static storage for temporary atlas positioning data from JS files
-  static _tempAtlasPositioning = {};
-
-  // Static method for atlas JS files to register their temporary base64 data
-  // This method name conveys that these are temporary data strings
-  // that will be deleted once processed
-  static registerTempAtlasData(IDString, base64Data) {
+  // Static method for atlas JS files to register complete packages
+  // Takes BOTH base64 image data and positioning data together since they're always paired
+  static registerAtlasPackage(IDString, base64Data, positioningData) {
     if (typeof IDString !== 'string' || typeof base64Data !== 'string') {
-      console.warn('FontLoader.registerTempAtlasData: Invalid arguments - both IDString and base64Data must be strings');
+      console.warn('FontLoader.registerAtlasPackage: Invalid arguments - IDString and base64Data must be strings');
       return;
     }
-    FontLoader._tempAtlasData[IDString] = base64Data;
-  }
-
-  // Get and remove temporary atlas data (cleanup after use)
-  static getTempAtlasData(IDString) {
-    const data = FontLoader._tempAtlasData[IDString];
-    if (data) {
-      delete FontLoader._tempAtlasData[IDString]; // Clean up temporary data
+    if (positioningData !== null && positioningData !== undefined && typeof positioningData !== 'object') {
+      console.warn('FontLoader.registerAtlasPackage: Invalid positioningData - must be object, null, or undefined');
+      return;
     }
-    return data;
+
+    FontLoader._tempAtlasPackages[IDString] = {
+      base64Data: base64Data,
+      positioningData: positioningData
+    };
   }
 
-  // Check if temporary atlas data exists for an IDString
-  static hasTempAtlasData(IDString) {
-    return IDString in FontLoader._tempAtlasData;
+  // Get and remove temporary atlas package (cleanup after use)
+  static getTempAtlasPackage(IDString) {
+    const pkg = FontLoader._tempAtlasPackages[IDString];
+    if (pkg) {
+      delete FontLoader._tempAtlasPackages[IDString]; // Clean up temporary package
+    }
+    return pkg;
   }
 
-  // Clear all temporary atlas data (useful for cleanup)
-  static clearTempAtlasData() {
-    FontLoader._tempAtlasData = {};
-    FontLoader._tempAtlasPositioning = {};
+  // Check if temporary atlas package exists for an IDString
+  static hasTempAtlasPackage(IDString) {
+    return IDString in FontLoader._tempAtlasPackages;
   }
 
-  // Load and execute an atlas JS file, returning the base64 data
+  // Clear all temporary atlas packages (useful for cleanup)
+  static clearTempAtlasPackages() {
+    FontLoader._tempAtlasPackages = {};
+  }
+
+  // Load and execute an atlas JS file, returning the atlas package
   static loadAtlasJS(jsFilePath, expectedIDString = null) {
     try {
       if (!fs.existsSync(jsFilePath)) {
         throw new Error(`Atlas JS file not found: ${jsFilePath}`);
       }
 
-      // Execute the JS file (which should call registerTempAtlasData)
+      // Execute the JS file (which should call registerAtlasPackage)
       const jsCode = fs.readFileSync(jsFilePath, 'utf8');
       eval(jsCode);
 
-      // If expectedIDString provided, return that specific data
+      // If expectedIDString provided, return that specific package
       if (expectedIDString) {
-        const data = FontLoader.getTempAtlasData(expectedIDString);
-        if (!data) {
-          throw new Error(`Expected atlas data for '${expectedIDString}' not found in ${jsFilePath}`);
+        const pkg = FontLoader.getTempAtlasPackage(expectedIDString);
+        if (!pkg) {
+          throw new Error(`Expected atlas package for '${expectedIDString}' not found in ${jsFilePath}`);
         }
-        return data;
+        return pkg;
       }
 
-      // Otherwise return all available data
-      const allData = { ...FontLoader._tempAtlasData };
-      FontLoader.clearTempAtlasData();
-      return allData;
+      // Otherwise return all available packages
+      const allPackages = { ...FontLoader._tempAtlasPackages };
+      FontLoader.clearTempAtlasPackages();
+      return allPackages;
 
     } catch (error) {
       console.error('FontLoader.loadAtlasJS failed:', error.message);

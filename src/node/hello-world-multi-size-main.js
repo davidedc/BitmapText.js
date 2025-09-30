@@ -102,16 +102,16 @@ function main() {
           // Get the IDString for this font configuration
           const expectedIDString = fontProperties.idString;
 
-          // Retrieve the base64 data
-          const base64Data = FontLoader.getTempAtlasData(expectedIDString);
-          if (!base64Data) {
-            console.warn(`  ↳ Atlas data not found for ${expectedIDString}, will use placeholder rectangles`);
+          // Get package to access base64 data and positioning
+          const pkg = FontLoader._tempAtlasPackages[expectedIDString];
+          if (!pkg || !pkg.base64Data) {
+            console.warn(`  ↳ Atlas package not found for ${expectedIDString}, will use placeholder rectangles`);
             atlasMap.set(fontSize, null);
             continue;
           }
 
           // Convert base64 to QOI buffer and decode
-          const qoiBuffer = FontLoader.base64ToBuffer(base64Data);
+          const qoiBuffer = FontLoader.base64ToBuffer(pkg.base64Data);
           const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
 
           if (qoiData.error) {
@@ -121,19 +121,11 @@ function main() {
             console.log(`  ↳ QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
             const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
 
-            // Get positioning data and create AtlasData object
-            const positioningData = FontLoader._tempAtlasPositioning[expectedIDString];
-            let atlasData;
+            // Create complete AtlasData from package
+            const atlasData = AtlasDataExpander.createAtlasData(atlasImage, pkg.positioningData);
 
-            if (positioningData) {
-              // Expand positioning data and create AtlasData object
-              const atlasPositioning = AtlasDataExpander.expand(positioningData);
-              atlasData = new AtlasData(new AtlasImage(atlasImage), atlasPositioning);
-            } else {
-              // Fallback to raw image if no positioning data
-              console.warn(`  ↳ No positioning data found for size ${fontSize}, using raw image`);
-              atlasData = atlasImage;
-            }
+            // Clean up package
+            delete FontLoader._tempAtlasPackages[expectedIDString];
 
             atlasMap.set(fontSize, atlasData);
           }

@@ -69,14 +69,14 @@ function main() {
     // Get the IDString for this font configuration
     const expectedIDString = fontProperties.idString;
 
-    // Retrieve the base64 data
-    const base64Data = FontLoader.getTempAtlasData(expectedIDString);
-    if (!base64Data) {
-      throw new Error(`Atlas data not found for ${expectedIDString}`);
+    // Get package to access base64 data and positioning
+    const pkg = FontLoader._tempAtlasPackages[expectedIDString];
+    if (!pkg || !pkg.base64Data) {
+      throw new Error(`Atlas package not found for ${expectedIDString}`);
     }
 
     console.log('Converting base64 to QOI buffer...');
-    const qoiBuffer = FontLoader.base64ToBuffer(base64Data);
+    const qoiBuffer = FontLoader.base64ToBuffer(pkg.base64Data);
     const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
 
     if (qoiData.error) {
@@ -88,19 +88,11 @@ function main() {
     // Create Image from QOI data
     const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
 
-    // Get positioning data and create AtlasData object
-    const positioningData = FontLoader._tempAtlasPositioning[expectedIDString];
-    let atlasData;
+    // Create complete AtlasData from package
+    const atlasData = AtlasDataExpander.createAtlasData(atlasImage, pkg.positioningData);
 
-    if (positioningData) {
-      // Expand positioning data and create AtlasData object
-      const atlasPositioning = AtlasDataExpander.expand(positioningData);
-      atlasData = new AtlasData(new AtlasImage(atlasImage), atlasPositioning);
-    } else {
-      // Fallback to raw image if no positioning data
-      console.warn('No positioning data found, using raw image');
-      atlasData = atlasImage;
-    }
+    // Clean up package
+    delete FontLoader._tempAtlasPackages[expectedIDString];
 
     // Set atlas in store
     atlasDataStore.setAtlasData(fontProperties, atlasData);

@@ -23,11 +23,9 @@
 
 // Shared utility for loading bitmap font data with error handling
 class FontLoader {
-  // Static storage for temporary atlas data from JS files
-  static _tempAtlasData = {};
-
-  // Static storage for temporary atlas positioning data from JS files
-  static _tempAtlasPositioning = {};
+  // Static storage for atlas packages (base64 + positioning) from JS files
+  // Each package contains both image data and positioning data as an atomic unit
+  static _tempAtlasPackages = {};
 
   constructor(atlasDataStore, fontMetricsStore, onProgress = null) {
     this.atlasDataStore = atlasDataStore;
@@ -37,15 +35,57 @@ class FontLoader {
     this.totalCount = 0;
   }
 
-  // Static method for atlas JS files to register their temporary base64 data
-  // This method name conveys that these are temporary data:image/png;base64 strings
-  // that will be deleted once an image is created from them
-  static registerTempAtlasData(IDString, base64Data) {
+  // Static method for atlas JS files to register complete packages
+  // Takes BOTH base64 image data and positioning data together since they're always paired
+  static registerAtlasPackage(IDString, base64Data, positioningData) {
     if (typeof IDString !== 'string' || typeof base64Data !== 'string') {
-      console.warn('FontLoader.registerTempAtlasData: Invalid arguments - both IDString and base64Data must be strings');
+      console.warn('FontLoader.registerAtlasPackage: Invalid arguments - IDString and base64Data must be strings');
       return;
     }
-    FontLoader._tempAtlasData[IDString] = base64Data;
+    if (positioningData !== null && positioningData !== undefined && typeof positioningData !== 'object') {
+      console.warn('FontLoader.registerAtlasPackage: Invalid positioningData - must be object, null, or undefined');
+      return;
+    }
+
+    FontLoader._tempAtlasPackages[IDString] = {
+      base64Data: base64Data,
+      positioningData: positioningData
+    };
+  }
+
+  // Creates AtlasData from loaded image and temp package data, then stores in AtlasDataStore
+  // This encapsulates the entire flow: retrieve package → expand positioning → create AtlasData → store → cleanup
+  // @param {string} IDString - Font ID string
+  // @param {Image|Canvas} image - Loaded/decoded image or canvas element
+  // @returns {boolean} - True if package found, false if missing (will still create AtlasData without positioning)
+  createAndStoreAtlasDataFromPackage(IDString, image) {
+    const fontProperties = FontProperties.fromIDString(IDString);
+
+    // Get temp package (may not exist)
+    const pkg = FontLoader._tempAtlasPackages[IDString];
+
+    // Clean up immediately
+    delete FontLoader._tempAtlasPackages[IDString];
+
+    // Extract positioning data (null/undefined if no package)
+    const positioningData = pkg ? pkg.positioningData : null;
+
+    // Use AtlasDataExpander.createAtlasData() to handle expansion and AtlasData creation
+    // This method handles null positioning gracefully (will create AtlasData with null positioning)
+    let atlasData;
+    if (typeof AtlasDataExpander !== 'undefined') {
+      atlasData = AtlasDataExpander.createAtlasData(image, positioningData);
+    } else {
+      // Fallback without AtlasDataExpander
+      console.warn(`AtlasDataExpander not available for ${IDString} - creating AtlasData without positioning`);
+      const atlasImage = new AtlasImage(image);
+      atlasData = new AtlasData(atlasImage, null);
+    }
+
+    // Store in atlas data store
+    this.atlasDataStore.setAtlasData(fontProperties, atlasData);
+
+    return pkg !== null && pkg !== undefined;
   }
 
   // Load font data for a single ID string
@@ -112,9 +152,9 @@ class FontLoader {
       imageScript.src = FontLoaderConfig.getImageJsPath(IDString);
 
       imageScript.onload = () => {
-        const imageData = FontLoader._tempAtlasData[IDString];
+        const pkg = FontLoader._tempAtlasPackages[IDString];
 
-        if (!imageData) {
+        if (!pkg || !pkg.base64Data) {
           console.warn(FontLoaderConfig.messages.imageDataMissing(IDString));
           imageScript.remove();
           this.incrementProgress();
@@ -123,42 +163,13 @@ class FontLoader {
         }
 
         const img = new Image();
-        img.src = `data:image/png;base64,${imageData}`;
+        img.src = `data:image/png;base64,${pkg.base64Data}`;
 
         img.onload = () => {
-          const fontProperties = FontProperties.fromIDString(IDString);
-
-          // Create AtlasImage instance from loaded image
-          if (typeof AtlasImage === 'undefined') {
-            throw new Error(`AtlasImage class required for font loading - not available for ${IDString}`);
-          }
-          const atlasImage = new AtlasImage(img);
-
-          // Get atlas positioning data
-          const positioningData = FontLoader._tempAtlasPositioning[IDString];
-          let atlasPositioning = null;
-
-          if (positioningData) {
-            // Expand minified positioning data to AtlasPositioning instance
-            if (typeof AtlasDataExpander !== 'undefined') {
-              atlasPositioning = AtlasDataExpander.expand(positioningData);
-            } else {
-              console.warn(`AtlasDataExpander not available for ${IDString} - positioning data will be raw`);
-              atlasPositioning = positioningData;
-            }
-          }
-
-          // Create AtlasData object containing AtlasImage and AtlasPositioning
-          if (typeof AtlasData === 'undefined') {
-            throw new Error(`AtlasData class required for font loading - not available for ${IDString}`);
-          }
-          const atlasData = new AtlasData(atlasImage, atlasPositioning);
-          this.atlasDataStore.setAtlasData(fontProperties, atlasData);
+          // Complete flow: get package → expand → create AtlasData → store → cleanup
+          this.createAndStoreAtlasDataFromPackage(IDString, img);
 
           imageScript.remove();
-          delete FontLoader._tempAtlasData[IDString]; // Clean up temporary image data
-          delete FontLoader._tempAtlasPositioning[IDString]; // Clean up temporary positioning data
-
           this.incrementProgress();
           resolve();
         };
@@ -166,8 +177,7 @@ class FontLoader {
         img.onerror = () => {
           console.warn(FontLoaderConfig.messages.base64DecodeFailed(IDString));
           imageScript.remove();
-          delete FontLoader._tempAtlasData[IDString]; // Clean up temporary image data
-          delete FontLoader._tempAtlasPositioning[IDString]; // Clean up temporary positioning data
+          delete FontLoader._tempAtlasPackages[IDString]; // Clean up package
           this.incrementProgress();
           resolve(); // Not a failure - will use placeholder rectangles
         };
