@@ -22,6 +22,10 @@
   - ✅ Placeholder rectangle rendering when glyphs not loaded (to support dynamic loading)
   - ✅ Minimal runtime dependencies
 
+  ## Limitations
+
+  **Compound Emoji Support**: The library operates on Unicode code points, not grapheme clusters. Basic emojis work ('😀'), but compound emojis don't ('👨‍👩‍👧' family emoji, '🏳️‍🌈' rainbow flag). See docs/ARCHITECTURE.md for details.
+
   ## Distribution & Usage Options
 
   BitmapText.js is designed with **modular architecture** to optimize bundle sizes for different use cases:
@@ -341,12 +345,12 @@ setKerningTable(fontProperties, kerningTable)
   - fontProperties: FontProperties instance
   - kerningTable: Kerning data structure
 
-getFontMetrics(fontProperties, letter)
+getFontMetrics(fontProperties, char)
 - Returns metrics for a specific glyph including position in atlas and dimensions
 - Returns object with: xInAtlas, tightWidth, tightHeight, dx, dy
 - Parameters:
   - fontProperties: Font configuration object
-  - letter: Character to get metrics for
+  - char: Character to get metrics for
 
 setFontMetrics(fontProperties, metrics)
 - Sets font metrics for the specified font properties
@@ -354,11 +358,11 @@ setFontMetrics(fontProperties, metrics)
   - fontProperties: Font configuration object
   - metrics: Metrics data structure
 
-getGlyphsTextMetrics(fontProperties, letter)
+getGlyphsTextMetrics(fontProperties, char)
 - Returns TextMetrics-compatible object for a specific glyph
 - Parameters:
   - fontProperties: Font configuration object
-  - letter: Character to get metrics for
+  - char: Character to get metrics for
 
 setGlyphsTextMetrics(fontProperties, metrics)
 - Sets text metrics for glyphs

@@ -46,14 +46,14 @@ class AtlasData {
   /**
    * Check if positioning data exists for a character
    * Null-safe convenience method for checking positioning availability
-   * @param {string} letter - Character to check
+   * @param {string} char - Character (code point) to check
    * @returns {boolean} True if positioning data exists
    */
-  hasPositioning(letter) {
+  hasPositioning(char) {
     if (!this.atlasPositioning) return false;
 
     // Delegate to AtlasPositioning instance
-    return this.atlasPositioning.hasPositioning(letter);
+    return this.atlasPositioning.hasPositioning(char);
   }
 
   /**

@@ -77,11 +77,11 @@ class FontMetricsFAB extends FontMetrics {
   
   /**
    * Set text metrics for a single glyph
-   * @param {string} letter - Character to set metrics for
+   * @param {string} char - Character (code point) to set metrics for
    * @param {Object} metrics - TextMetrics-compatible object
    */
-  setCharacterMetrics(letter, metrics) {
-    this._characterMetrics[letter] = metrics;
+  setCharacterMetrics(char, metrics) {
+    this._characterMetrics[char] = metrics;
   }
   
   /**
@@ -97,16 +97,16 @@ class FontMetricsFAB extends FontMetrics {
   
   /**
    * Validate that all required font metrics are present for expected characters
-   * @param {string[]} expectedLetters - Array of characters that should have metrics
+   * @param {string[]} expectedChars - Array of characters that should have metrics
    * @returns {string[]} Array of missing metrics (empty if all present)
    */
-  validateFontMetrics(expectedLetters) {
+  validateFontMetrics(expectedChars) {
     const missingMetrics = [];
 
-    for (const letter of expectedLetters) {
+    for (const char of expectedChars) {
       // Check text metrics
-      if (!this._characterMetrics[letter]) {
-        missingMetrics.push(`${letter}:characterMetrics`);
+      if (!this._characterMetrics[char]) {
+        missingMetrics.push(`${char}:characterMetrics`);
       }
     }
 

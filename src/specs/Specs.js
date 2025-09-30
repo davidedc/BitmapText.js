@@ -73,7 +73,7 @@ class Specs {
   }
 
   // for this one, the sizes don't form a partition, so we need to check all the entries
-  // and return the first match where the letter is found
+  // and return the first match where the character is found
   //
   // Example:
   //
@@ -86,13 +86,13 @@ class Specs {
   //    W: 1
   //  13 to 13 at pixel density 1
   //    v: 1
-  getSingleFloatCorrectionForLetter(fontProperties, letter, correctionKey) {
+  getSingleFloatCorrectionForChar(fontProperties, char, correctionKey) {
     const correctionEntries = this.getCorrectionEntries(fontProperties, correctionKey);
     if (!correctionEntries) return 0;
 
     for (const correctionEntry of correctionEntries) {
-      for (const charAndOffset of correctionEntry.lettersAndTheirCorrections) {
-        if (charAndOffset.string.indexOf(letter) !== -1) {
+      for (const charAndOffset of correctionEntry.charsAndTheirCorrections) {
+        if (charAndOffset.string.indexOf(char) !== -1) {
           return charAndOffset.adjustment;
         }
       }

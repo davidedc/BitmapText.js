@@ -178,6 +178,41 @@
     - Protocol detection (file:// vs http://) for appropriate loading strategy
     - Graceful degradation: missing atlases result in placeholder rectangles
 
+## Terminology
+
+**Character vs Glyph vs Code Point:**
+
+- **Character**: Input unit of text - specifically a Unicode code point. Used for:
+  - Method parameters (`char`)
+  - Variables representing input text units
+  - Examples: 'A', '5', '!', '😀' (basic emoji)
+
+- **Glyph**: Visual representation/bitmap in the atlas. Used for:
+  - Atlas contents
+  - Rendered output
+  - Methods like `hasGlyph()`, `renderGlyph()`
+
+- **Code Point**: Technical term for Unicode character representation
+  - JavaScript's `[...text]` splits strings into code points
+  - NOT grapheme clusters (user-perceived characters)
+
+**Current Limitation - Compound Emojis:**
+
+The library operates on Unicode code points, not grapheme clusters. This means:
+
+✓ **Works:** Basic characters, numbers, symbols, basic emojis
+- 'Hello', '123', '!@#', '😀', 'é'
+
+✗ **Doesn't work:** Compound emojis (multi-code-point sequences)
+- '👨‍👩‍👧' (family emoji - splits into 5 code points with ZWJ)
+- '🏳️‍🌈' (rainbow flag - splits into 4 code points)
+- Emojis with skin tone modifiers
+
+To support compound emojis would require:
+1. Using `Intl.Segmenter` for grapheme cluster iteration
+2. Updating data structures for multi-code-point keys
+3. Building atlas entries for compound characters
+
   **FontLoaderConfig**
   - Purpose: Font loading configuration management
   - Responsibilities:

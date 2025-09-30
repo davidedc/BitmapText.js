@@ -222,8 +222,8 @@ Advancement override for small sizes in px
 -
 // nothing in here
 --
-// For small sizes, instead of shortening the distance between letters based on
-// the advancement length of the first letter and the kerning value (as we do for large sizes),
+// For small sizes, instead of shortening the distance between characters based on
+// the advancement length of the first character and the kerning value (as we do for large sizes),
 // we just output a small number like 0,1,2, so we just "discretise" the kerning.
 Kerning discretisation for small sizes
 -

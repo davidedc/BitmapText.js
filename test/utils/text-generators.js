@@ -10,7 +10,7 @@ function generateUpperCasePairs() {
     return pairs;
 }
 
-// all pairs of mixed-case letters
+// all pairs of mixed-case characters
 // i.e. Aa, Ab, Ac, ..., Zz
 
 function generateMixedCasePairs() {
@@ -23,7 +23,7 @@ function generateMixedCasePairs() {
     return pairs;
 }
 
-// all pairs of lowercase letters
+// all pairs of lowercase characters
 // i.e. aa, ab, ac, ..., zz
 
 function generateLowerCasePairs() {

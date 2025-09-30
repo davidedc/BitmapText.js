@@ -52,8 +52,8 @@ class AtlasPositioningFAB extends AtlasPositioning {
    * @param {FontMetricsStore} fontMetricsStore - Store to get character metrics from
    */
   calculatePositioning(glyphs, fontProperties, fontMetricsStore) {
-    for (let letter in glyphs) {
-      let glyph = glyphs[letter];
+    for (let char in glyphs) {
+      let glyph = glyphs[char];
 
       // Get character metrics from FontMetricsStore
       const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
@@ -61,15 +61,15 @@ class AtlasPositioningFAB extends AtlasPositioning {
         throw new Error(`No font metrics found for: ${fontProperties.key}`);
       }
 
-      let characterMetrics = fontMetrics.getCharacterMetrics(letter);
+      let characterMetrics = fontMetrics.getCharacterMetrics(char);
 
       // Skip glyphs without valid tight canvas box, but set default metrics
       if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
         // Set minimal default metrics for glyphs without visible pixels
-        this._tightWidth[letter] = 1;
-        this._tightHeight[letter] = 1;
-        this._dx[letter] = 0;
-        this._dy[letter] = 0;
+        this._tightWidth[char] = 1;
+        this._tightHeight[char] = 1;
+        this._dx[char] = 0;
+        this._dy[char] = 0;
         continue;
       }
 
@@ -88,33 +88,33 @@ class AtlasPositioningFAB extends AtlasPositioning {
       const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
 
       // Set the calculated metrics
-      this._tightWidth[letter] = tightWidth;
-      this._tightHeight[letter] = tightHeight;
-      this._dx[letter] = dx;
-      this._dy[letter] = dy;
+      this._tightWidth[char] = tightWidth;
+      this._tightHeight[char] = tightHeight;
+      this._dx[char] = dx;
+      this._dy[char] = dy;
     }
   }
 
   /**
    * Set glyph position in atlas after atlas is built
-   * @param {string} letter - Character to set position for
+   * @param {string} char - Character to set position for
    * @param {number} xPosition - X position in atlas
    */
-  setGlyphPositionInAtlas(letter, xPosition) {
-    this._xInAtlas[letter] = xPosition;
+  setGlyphPositionInAtlas(char, xPosition) {
+    this._xInAtlas[char] = xPosition;
   }
 
   /**
    * Validate that all required positioning data is present for expected characters
-   * @param {string[]} expectedLetters - Array of characters that should have positioning
+   * @param {string[]} expectedChars - Array of characters that should have positioning
    * @returns {string[]} Array of missing positioning data (empty if all present)
    */
-  validatePositioning(expectedLetters) {
+  validatePositioning(expectedChars) {
     const missingPositioning = [];
 
-    for (const letter of expectedLetters) {
-      if (!this.hasPositioning(letter)) {
-        missingPositioning.push(`${letter}: missing positioning`);
+    for (const char of expectedChars) {
+      if (!this.hasPositioning(char)) {
+        missingPositioning.push(`${char}: missing positioning`);
       }
     }
 

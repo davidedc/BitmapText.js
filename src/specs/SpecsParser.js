@@ -86,7 +86,7 @@ class SpecsParser {
   // Kerning
   // -
   // [integer] to [integer]
-  //   [letters or "*any*"] followed by [letters or "*any*"]: [float]
+  //   [characters or "*any*"] followed by [characters or "*any*"]: [float]
   //   ...
   // ...
   //
@@ -104,11 +104,11 @@ class SpecsParser {
   //   *any* followed by LKJLKJF: 0.2
   parseSubSpec(name, content) {
     const parsers = {
-      "ActualBoundingBoxLeft correction px": this.parseSizeBasedSpec.bind(this, 'letters'),
-      "CropLeft correction px": this.parseSizeBasedSpec.bind(this, 'letters'),
-      "ActualBoundingBoxRight correction px": this.parseSizeBasedSpec.bind(this, 'letters'),
-      "ActualBoundingBoxRight correction proportional": this.parseSizeBasedSpec.bind(this, 'letters'),
-      "Advancement correction proportional": this.parseSizeBasedSpec.bind(this, 'letters'),
+      "ActualBoundingBoxLeft correction px": this.parseSizeBasedSpec.bind(this, 'chars'),
+      "CropLeft correction px": this.parseSizeBasedSpec.bind(this, 'chars'),
+      "ActualBoundingBoxRight correction px": this.parseSizeBasedSpec.bind(this, 'chars'),
+      "ActualBoundingBoxRight correction proportional": this.parseSizeBasedSpec.bind(this, 'chars'),
+      "Advancement correction proportional": this.parseSizeBasedSpec.bind(this, 'chars'),
       "Space advancement override for small sizes in px": this.parseSizeBasedSpec.bind(this, 'single'),
       "Advancement override for small sizes in px": this.parseSizeBasedSpec.bind(this, 'single'),
       "Kerning discretisation for small sizes": this.parseSizeBasedSpec.bind(this, 'sizeBracket'),
@@ -156,8 +156,8 @@ class SpecsParser {
       case 'kerning':
         entry.kerning = [];
         break;
-      case 'letters':
-        entry.lettersAndTheirCorrections = [];
+      case 'chars':
+        entry.charsAndTheirCorrections = [];
         break;
       case 'single':
         entry.correction = null;
@@ -176,8 +176,8 @@ class SpecsParser {
       case 'kerning':
         entry.kerning.push(parsedLine);
         break;
-      case 'letters':
-        entry.lettersAndTheirCorrections.push(parsedLine);
+      case 'chars':
+        entry.charsAndTheirCorrections.push(parsedLine);
         break;
       case 'single':
         entry.correction = parsedLine;
@@ -194,7 +194,7 @@ class SpecsParser {
   parseSizeBasedLine(type, line) {
     const trimmedLine = line.trim();
     switch (type) {
-      case 'letters':
+      case 'chars':
         return this.parseCharsAndCorrectionLine(trimmedLine);
       case 'single':
         return this.parseCorrectionLine(trimmedLine);
@@ -275,7 +275,7 @@ class SpecsParser {
   }
 
   // example:
-  //   [letters or "*any*"] followed by [letters or "*any*"]: [float]
+  //   [characters or "*any*"] followed by [characters or "*any*"]: [float]
   // e.g.
   //   absvds followed by dshkjshdfjhsdfsdfjkh: 0.1
   parseKerningLine(line) {

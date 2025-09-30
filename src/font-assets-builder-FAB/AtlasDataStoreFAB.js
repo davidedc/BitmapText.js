@@ -24,7 +24,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   constructor() {
     super();
     // FAB-specific glyph storage using Map for O(1) lookups
-    // Key format: fontProperties.key + ":" + letter
+    // Key format: fontProperties.key + ":" + char
     this.glyphs = new Map();
   }
 
@@ -58,12 +58,12 @@ class AtlasDataStoreFAB extends AtlasDataStore {
 
 
   addGlyph(glyph) {
-    const glyphKey = `${glyph.fontProperties.key}:${glyph.letter}`;
+    const glyphKey = `${glyph.fontProperties.key}:${glyph.char}`;
     this.glyphs.set(glyphKey, glyph);
   }
 
-  getGlyph(fontProperties, letter) {
-    const glyphKey = `${fontProperties.key}:${letter}`;
+  getGlyph(fontProperties, char) {
+    const glyphKey = `${fontProperties.key}:${char}`;
     return this.glyphs.get(glyphKey);
   }
 
@@ -81,8 +81,8 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     const glyphs = {};
     for (const [glyphKey, glyph] of this.glyphs) {
       if (glyphKey.startsWith(fontProperties.key + ':')) {
-        const letter = glyphKey.substring(fontProperties.key.length + 1);
-        glyphs[letter] = glyph;
+        const char = glyphKey.substring(fontProperties.key.length + 1);
+        glyphs[char] = glyph;
       }
     }
 
@@ -101,9 +101,9 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     let fittingWidth = 0;
     let maxHeight = 0;
 
-    for (let letter in glyphs) {
-      const tightWidth = atlasPositioningFAB.getTightWidth(letter);
-      const tightHeight = atlasPositioningFAB.getTightHeight(letter);
+    for (let char in glyphs) {
+      const tightWidth = atlasPositioningFAB.getTightWidth(char);
+      const tightHeight = atlasPositioningFAB.getTightHeight(char);
 
       if (tightWidth && !isNaN(tightWidth)) {
         fittingWidth += tightWidth;
@@ -121,17 +121,17 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     let x = 0;
 
     // Draw each glyph into the atlas and record xInAtlas position
-    for (let letter in glyphs) {
-      let glyph = glyphs[letter];
-      const tightWidth = atlasPositioningFAB.getTightWidth(letter);
+    for (let char in glyphs) {
+      let glyph = glyphs[char];
+      const tightWidth = atlasPositioningFAB.getTightWidth(char);
 
       // Skip glyphs without valid tight canvas or width
       if (!glyph.tightCanvas || !tightWidth || isNaN(tightWidth)) {
         if (!tightWidth) {
-          console.warn(`glyph ${fontProperties.fontStyle} ${fontProperties.fontWeight} ${fontProperties.fontFamily} ${fontProperties.fontSize} ${letter} has no tightWidth`);
+          console.warn(`glyph ${fontProperties.fontStyle} ${fontProperties.fontWeight} ${fontProperties.fontFamily} ${fontProperties.fontSize} ${char} has no tightWidth`);
         }
         if (!glyph.tightCanvas) {
-          console.warn(`glyph ${fontProperties.fontStyle} ${fontProperties.fontWeight} ${fontProperties.fontFamily} ${fontProperties.fontSize} ${letter} has no tightCanvas`);
+          console.warn(`glyph ${fontProperties.fontStyle} ${fontProperties.fontWeight} ${fontProperties.fontFamily} ${fontProperties.fontSize} ${char} has no tightCanvas`);
         }
         continue;
       }
@@ -140,7 +140,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
       ctx.drawImage(glyph.tightCanvas, x, 0);
 
       // Record the x position in the atlas using AtlasPositioningFAB
-      atlasPositioningFAB.setGlyphPositionInAtlas(letter, x);
+      atlasPositioningFAB.setGlyphPositionInAtlas(char, x);
 
       // Advance x position for next glyph
       x += tightWidth;

@@ -109,12 +109,12 @@ class FontMetricsStoreFAB extends FontMetricsStore {
   /**
    * Set text metrics for a single glyph
    * @param {FontProperties} fontProperties - Font configuration
-   * @param {string} letter - Character to set metrics for
+   * @param {string} char - Character (code point) to set metrics for
    * @param {Object} metrics - TextMetrics-compatible object
    */
-  setCharacterMetrics(fontProperties, letter, metrics) {
+  setCharacterMetrics(fontProperties, char, metrics) {
     const fontMetricsFAB = this.getFontMetricsFAB(fontProperties);
-    fontMetricsFAB.setCharacterMetrics(letter, metrics);
+    fontMetricsFAB.setCharacterMetrics(char, metrics);
   }
   
   /**
@@ -140,13 +140,13 @@ class FontMetricsStoreFAB extends FontMetricsStore {
   /**
    * Validate that all required metrics are present for expected characters
    * @param {FontProperties} fontProperties - Font configuration
-   * @param {string[]} expectedLetters - Array of characters that should have metrics
+   * @param {string[]} expectedChars - Array of characters that should have metrics
    * @returns {string[]} Array of missing metrics (empty if all present)
    */
-  validateFontMetrics(fontProperties, expectedLetters) {
+  validateFontMetrics(fontProperties, expectedChars) {
     const fontMetrics = this.getFontMetrics(fontProperties);
     if (fontMetrics && fontMetrics.validateFontMetrics) {
-      return fontMetrics.validateFontMetrics(expectedLetters);
+      return fontMetrics.validateFontMetrics(expectedChars);
     }
     return [];
   }

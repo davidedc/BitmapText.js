@@ -1,13 +1,13 @@
 class GlyphFAB {
-  constructor(letter, fontProperties) {
-    this.letter = letter;
+  constructor(char, fontProperties) {
+    this.char = char;
     this.fontProperties = fontProperties;
 
     const {
       canvas,
       tightCanvas,
       tightCanvasBox,
-      letterTextMetrics
+      charTextMetrics
     } = this.createCanvasesAndCharacterMetrics();
     this.canvas = canvas;
     this.tightCanvas = tightCanvas;
@@ -15,7 +15,7 @@ class GlyphFAB {
 
     // characterMetrics actually belongs to the fontMetricsStore
     // which is separate from the AtlasDataStoreFAB class
-    fontMetricsStoreFAB.setCharacterMetrics(this.fontProperties, letter, letterTextMetrics);
+    fontMetricsStoreFAB.setCharacterMetrics(this.fontProperties, char, charTextMetrics);
 
     this.displayCanvasesAndData();
   }
@@ -49,125 +49,125 @@ class GlyphFAB {
     const ctx = canvas.getContext("2d");
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
 
-    // size the canvas so it fits the this.letter
-    const letterTextMetricsOrig = ctx.measureText(this.letter);
+    // size the canvas so it fits the this.char
+    const charTextMetricsOrig = ctx.measureText(this.char);
 
-    // let's make a copy of letterTextMetricsOrig into letterTextMetrics
+    // let's make a copy of charTextMetricsOrig into charTextMetrics
     // so we can modify it
-    let letterTextMetrics = {};
-    for (let key in letterTextMetricsOrig) {
-      letterTextMetrics[key] = letterTextMetricsOrig[key];
+    let charTextMetrics = {};
+    for (let key in charTextMetricsOrig) {
+      charTextMetrics[key] = charTextMetricsOrig[key];
     }
 
     // for the space character, Chrome gives actualBoundingBoxLeft == actualBoundingBoxRight == 0
     // even if the width is not 0. Since we are going to use the actualBoundingBoxLeft and actualBoundingBoxRight
     // to size the canvas, we need to fix that.
     if (
-      letterTextMetrics.actualBoundingBoxLeft === 0 &&
-      letterTextMetrics.actualBoundingBoxRight === 0
+      charTextMetrics.actualBoundingBoxLeft === 0 &&
+      charTextMetrics.actualBoundingBoxRight === 0
     ) {
-      letterTextMetrics.actualBoundingBoxRight = letterTextMetrics.width;
+      charTextMetrics.actualBoundingBoxRight = charTextMetrics.width;
     }
 
     //////////////////////////////////////////////
-    // START OF LETTER-LEVEL RENDERING CORRECTIONS
+    // START OF CHARACTER-LEVEL RENDERING CORRECTIONS
     //////////////////////////////////////////////
     // These defects we are fixing are visible at small sizes (12px or so), however
     // that's a crucial use case for a crisp text renderer.
     // The defects to be corrected can be spotted by disabling all the kerning corrections and
     // rendering at size 12 (pretty much the smallest legible size) and looking
-    // for problems like letters that touch, letters that miss a pixel, letter that
+    // for problems like characters that touch, characters that miss a pixel, character that
     // are systematically too far/close to the previous/next, etc.
     // These corrections are specific to the font, and also
     // likely specific to the OS, browser and possibly
     // depend on other factors like the screen resolution, etc.
-    // HOWEVER once we fix them, we bake the letters and their sizes and
+    // HOWEVER once we fix them, we bake the characters and their sizes and
     // the kerning info into a format that we re-use pixel-identically in all
     // OSs and browsers, so these corrections only need to be done in
     // one place to get a good rendering everywhere.
-    // for the letter "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...
+    // for the character "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...
     // ...don't understand why, but the actualBoundingBoxLeft + actualBoundingBoxRight
-    // is not enough to fit the letter in the canvas and the top-right gets ever so slightly clipped...
+    // is not enough to fit the character in the canvas and the top-right gets ever so slightly clipped...
 
     // get the specs for "ActualBoundingBoxLeft correction px" of this
     // font family and style and weight and size
 
-    letterTextMetrics.actualBoundingBoxLeft += specs.getSingleFloatCorrectionForLetter(
+    charTextMetrics.actualBoundingBoxLeft += specs.getSingleFloatCorrectionForChar(
       this.fontProperties,
-      this.letter,
+      this.char,
       "ActualBoundingBoxLeft correction px"
     );
 
-    letterTextMetrics.actualBoundingBoxRight += specs.getSingleFloatCorrectionForLetter(
+    charTextMetrics.actualBoundingBoxRight += specs.getSingleFloatCorrectionForChar(
       this.fontProperties,
-      this.letter,
+      this.char,
       "ActualBoundingBoxRight correction px"
     );
 
-    letterTextMetrics.actualBoundingBoxLeft += Math.floor(
+    charTextMetrics.actualBoundingBoxLeft += Math.floor(
       fontSize *
-        specs.getSingleFloatCorrectionForLetter(
+        specs.getSingleFloatCorrectionForChar(
           this.fontProperties,
-          this.letter,
+          this.char,
           "ActualBoundingBoxLeft correction proportional"
         )
     );
 
-    letterTextMetrics.actualBoundingBoxRight += Math.floor(
+    charTextMetrics.actualBoundingBoxRight += Math.floor(
       fontSize *
-        specs.getSingleFloatCorrectionForLetter(
+        specs.getSingleFloatCorrectionForChar(
           this.fontProperties,
-          this.letter,
+          this.char,
           "ActualBoundingBoxRight correction proportional"
         )
     );
 
-    letterTextMetrics.width += Math.floor(
+    charTextMetrics.width += Math.floor(
       fontSize *
-        specs.getSingleFloatCorrectionForLetter(
+        specs.getSingleFloatCorrectionForChar(
           this.fontProperties,
-          this.letter,
+          this.char,
           "Advancement correction proportional"
         )
     );
 
     if (truncateMetrics) {
-      // go through all letterTextMetrics values and truncate them to fewer decimal places
-      for (let key in letterTextMetrics) {
-        letterTextMetrics[key] = Math.round(letterTextMetrics[key] * 10000) / 10000;
+      // go through all charTextMetrics values and truncate them to fewer decimal places
+      for (let key in charTextMetrics) {
+        charTextMetrics[key] = Math.round(charTextMetrics[key] * 10000) / 10000;
       }
     }
 
-    // END OF LETTER-LEVEL RENDERING CORRECTIONS
+    // END OF CHARACTER-LEVEL RENDERING CORRECTIONS
     /////////////////////////////////////////////
 
     // Happens at small sizes due to a browser rendering defect.
-    // This correction will simply paint the letter
+    // This correction will simply paint the character
     // n pixel more to the right in the mini canvas
-    const cropLeftCorrection_CSS_Px = specs.getSingleFloatCorrectionForLetter(
+    const cropLeftCorrection_CSS_Px = specs.getSingleFloatCorrectionForChar(
       this.fontProperties,
-      this.letter,
+      this.char,
       "CropLeft correction px",
     );
 
     const canvasPixelsWidth = Math.round(
-      letterTextMetrics.actualBoundingBoxLeft +
-        letterTextMetrics.actualBoundingBoxRight
+      charTextMetrics.actualBoundingBoxLeft +
+        charTextMetrics.actualBoundingBoxRight
     );
     canvas.style.width = canvasPixelsWidth + "px";
     canvas.width = canvasPixelsWidth * pixelDensity;
 
     const div = document.createElement("div");
-    div.textContent = `${this.letter} bbox left: ${letterTextMetrics.actualBoundingBoxLeft} bbox right: ${letterTextMetrics.actualBoundingBoxRight}`;
+    div.textContent = `${this.char} bbox left: ${charTextMetrics.actualBoundingBoxLeft} bbox right: ${charTextMetrics.actualBoundingBoxRight}`;
     // add to the textcontent the actualBoundingBoxLeft in red if it's not 0
-    if (letterTextMetrics.actualBoundingBoxLeft !== 0) {
+    if (charTextMetrics.actualBoundingBoxLeft !== 0) {
       div.style.color = "red";
     }
     document.body.appendChild(div);
 
     const canvasPixelsHeight = Math.round(
-      letterTextMetrics.fontBoundingBoxAscent +
-        letterTextMetrics.fontBoundingBoxDescent
+      charTextMetrics.fontBoundingBoxAscent +
+        charTextMetrics.fontBoundingBoxDescent
     );
     canvas.style.height = canvasPixelsHeight + "px";
     canvas.height = canvasPixelsHeight * pixelDensity;
@@ -184,8 +184,8 @@ class GlyphFAB {
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
 
     ctx.fillText(
-      this.letter,
-      Math.round(letterTextMetrics.actualBoundingBoxLeft) +
+      this.char,
+      Math.round(charTextMetrics.actualBoundingBoxLeft) +
         cropLeftCorrection_CSS_Px,
       canvas.height / pixelDensity - 1
     );
@@ -195,11 +195,11 @@ class GlyphFAB {
       canvas.remove();
     }
 
-    return { canvas, letterTextMetrics };
+    return { canvas, charTextMetrics };
   }
 
   getBoundingBoxOfOnPixels(canvas) {
-    // get the image data, and from it get the tight bounding box of the letter/text
+    // get the image data, and from it get the tight bounding box of the character/text
     const onPixelsArray = this.getOnPixelsArray(canvas);
     const tightCanvasBox = this.getBoundingBox(canvas, onPixelsArray);
 
@@ -267,7 +267,7 @@ class GlyphFAB {
   }
 
   createCanvasesAndCharacterMetrics() {
-    const { canvas, letterTextMetrics } = this.createCanvasWithCharacterAndGetItsMetricss();
+    const { canvas, charTextMetrics } = this.createCanvasWithCharacterAndGetItsMetricss();
     const { tightCanvas, tightCanvasBox } =
       this.getBoundingBoxOfOnPixels(canvas);
 
@@ -276,7 +276,7 @@ class GlyphFAB {
         canvas,
         tightCanvas: null,
         tightCanvasBox: null,
-        letterTextMetrics
+        charTextMetrics
       };
 
     const div = document.createElement("div");
@@ -288,7 +288,7 @@ class GlyphFAB {
     }`;
     document.body.appendChild(div);
 
-    return { canvas, tightCanvas, tightCanvasBox, letterTextMetrics };
+    return { canvas, tightCanvas, tightCanvasBox, charTextMetrics };
   }
 
   // function that gets the bounding box of the text and its position, by looking at the pixels
@@ -320,10 +320,10 @@ class GlyphFAB {
       }
     }
 
-    // print out the letter, and the bounding box width and height
+    // print out the character, and the bounding box width and height
     // if both objects are not null
     if (topLeftCorner !== null && bottomRightCorner !== null)
-      console.log(this.letter + " " + (bottomRightCorner.x - topLeftCorner.x + 1) + " " + (bottomRightCorner.y - topLeftCorner.y + 1));
+      console.log(this.char + " " + (bottomRightCorner.x - topLeftCorner.x + 1) + " " + (bottomRightCorner.y - topLeftCorner.y + 1));
 
     // return the bounding box
     return {

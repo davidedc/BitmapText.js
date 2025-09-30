@@ -49,37 +49,37 @@ class AtlasPositioning {
 
   /**
    * Get positioning metrics for glyph rendering from atlas
-   * @param {string} letter - Character to get positioning for
+   * @param {string} char - Character (code point) to get positioning for
    * @returns {Object} Object with xInAtlas, tightWidth, tightHeight, dx, dy
    */
-  getPositioning(letter) {
+  getPositioning(char) {
     return {
-      xInAtlas: this._xInAtlas[letter],
-      tightWidth: this._tightWidth[letter],
-      tightHeight: this._tightHeight[letter],
-      dx: this._dx[letter],
-      dy: this._dy[letter]
+      xInAtlas: this._xInAtlas[char],
+      tightWidth: this._tightWidth[char],
+      tightHeight: this._tightHeight[char],
+      dx: this._dx[char],
+      dy: this._dy[char]
     };
   }
 
   /**
    * Check if positioning data exists for a character
-   * @param {string} letter - Character to check
+   * @param {string} char - Character (code point) to check
    * @returns {boolean} True if positioning data exists
    */
-  hasPositioning(letter) {
-    return this._xInAtlas[letter] !== undefined &&
-           this._tightWidth[letter] !== undefined &&
-           this._tightHeight[letter] !== undefined;
+  hasPositioning(char) {
+    return this._xInAtlas[char] !== undefined &&
+           this._tightWidth[char] !== undefined &&
+           this._tightHeight[char] !== undefined;
   }
 
   /**
    * Check if atlas position (xInAtlas) exists for a character
-   * @param {string} letter - Character to check
+   * @param {string} char - Character (code point) to check
    * @returns {boolean} True if atlas position exists
    */
-  hasAtlasPosition(letter) {
-    return this._xInAtlas[letter] !== undefined;
+  hasAtlasPosition(char) {
+    return this._xInAtlas[char] !== undefined;
   }
 
   /**
@@ -92,47 +92,47 @@ class AtlasPositioning {
 
   /**
    * Get tight width for a character
-   * @param {string} letter - Character to get width for
+   * @param {string} char - Character (code point) to get width for
    * @returns {number|undefined} Tight width or undefined if not found
    */
-  getTightWidth(letter) {
-    return this._tightWidth[letter];
+  getTightWidth(char) {
+    return this._tightWidth[char];
   }
 
   /**
    * Get tight height for a character
-   * @param {string} letter - Character to get height for
+   * @param {string} char - Character (code point) to get height for
    * @returns {number|undefined} Tight height or undefined if not found
    */
-  getTightHeight(letter) {
-    return this._tightHeight[letter];
+  getTightHeight(char) {
+    return this._tightHeight[char];
   }
 
   /**
    * Get X position in atlas for a character
-   * @param {string} letter - Character to get X position for
+   * @param {string} char - Character (code point) to get X position for
    * @returns {number|undefined} X position in atlas or undefined if not found
    */
-  getXInAtlas(letter) {
-    return this._xInAtlas[letter];
+  getXInAtlas(char) {
+    return this._xInAtlas[char];
   }
 
   /**
    * Get dx offset for a character
-   * @param {string} letter - Character to get dx for
+   * @param {string} char - Character (code point) to get dx for
    * @returns {number|undefined} dx offset or undefined if not found
    */
-  getDx(letter) {
-    return this._dx[letter];
+  getDx(char) {
+    return this._dx[char];
   }
 
   /**
    * Get dy offset for a character
-   * @param {string} letter - Character to get dy for
+   * @param {string} char - Character (code point) to get dy for
    * @returns {number|undefined} dy offset or undefined if not found
    */
-  getDy(letter) {
-    return this._dy[letter];
+  getDy(char) {
+    return this._dy[char];
   }
 
 }

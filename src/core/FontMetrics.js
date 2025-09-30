@@ -49,11 +49,11 @@ class FontMetrics {
   
   /**
    * Get text measurement metrics for a character
-   * @param {string} letter - Character to get metrics for
+   * @param {string} char - Character (code point) to get metrics for
    * @returns {Object} TextMetrics-compatible object
    */
-  getCharacterMetrics(letter) {
-    return this._characterMetrics[letter];
+  getCharacterMetrics(char) {
+    return this._characterMetrics[char];
   }
   
   /**
@@ -69,11 +69,11 @@ class FontMetrics {
   
   /**
    * Check if glyph exists in this font
-   * @param {string} letter - Character to check
+   * @param {string} char - Character (code point) to check
    * @returns {boolean} True if glyph has metrics
    */
-  hasGlyph(letter) {
-    return letter in this._characterMetrics;
+  hasGlyph(char) {
+    return char in this._characterMetrics;
   }
   
   /**

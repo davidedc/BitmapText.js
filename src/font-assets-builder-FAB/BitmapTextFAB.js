@@ -31,44 +31,44 @@ class BitmapTextFAB extends BitmapText {
     this.fontMetricsStoreFAB = fontMetricsStoreFAB;
   }
 
-  hasLotsOfSpaceAtBottomRight(letter) {
-    return ['V', '7', '/', 'T', 'Y'].indexOf(letter) !== -1;
+  hasLotsOfSpaceAtBottomRight(char) {
+    return ['V', '7', '/', 'T', 'Y'].indexOf(char) !== -1;
   }
 
-  hasLotsOfSpaceAtBottomLeft(letter) {
-    return ['V', '\\', 'T', 'Y'].indexOf(letter) !== -1;
+  hasLotsOfSpaceAtBottomLeft(char) {
+    return ['V', '\\', 'T', 'Y'].indexOf(char) !== -1;
   }
 
-  hasSomeSpaceAtBottomLeft(letter) {
-    return ['W', '7'].indexOf(letter) !== -1;
+  hasSomeSpaceAtBottomLeft(char) {
+    return ['W', '7'].indexOf(char) !== -1;
   }
 
 
-  hasSomeSpaceAtBottomRight(letter) {
-    return ['W', 'f', 'P'].indexOf(letter) !== -1;
+  hasSomeSpaceAtBottomRight(char) {
+    return ['W', 'f', 'P'].indexOf(char) !== -1;
   }
 
-  hasSpaceAtTopRight(letter) {
-    return ['A', '\\', 'L', 'h'].indexOf(letter) !== -1;
+  hasSpaceAtTopRight(char) {
+    return ['A', '\\', 'L', 'h'].indexOf(char) !== -1;
   }
 
-  protrudesBottomLeft(letter) {
-    return ['A', '/'].indexOf(letter) !== -1;
+  protrudesBottomLeft(char) {
+    return ['A', '/'].indexOf(char) !== -1;
   }
 
-  protrudesBottomRight(letter) {
-    return ['A', '\\', 'L'].indexOf(letter) !== -1;
+  protrudesBottomRight(char) {
+    return ['A', '\\', 'L'].indexOf(char) !== -1;
   }
 
-  protrudesTopLeft(letter) {
-    return ['V', 'W', '\\', 'T', 'Y'].indexOf(letter) !== -1;
+  protrudesTopLeft(char) {
+    return ['V', 'W', '\\', 'T', 'Y'].indexOf(char) !== -1;
   }
 
-  isShortCharacter(letter) {
-    return ['a', 'c', 'e', 'g', 'i', 'j', 'm', 'n', 'o', 'p', 'q', 'r', 's', 'u', 'v', 'w', 'x', 'y', 'z', '.', ',', ':', ';', '—', '·', 'Ç', 'à', 'ç', '•'].indexOf(letter) !== -1;
+  isShortCharacter(char) {
+    return ['a', 'c', 'e', 'g', 'i', 'j', 'm', 'n', 'o', 'p', 'q', 'r', 's', 'u', 'v', 'w', 'x', 'y', 'z', '.', ',', ':', ';', '—', '·', 'Ç', 'à', 'ç', '•'].indexOf(char) !== -1;
   }
 
-  getKerningCorrectionFromSpec(fontProperties, letter, nextLetter) {
+  getKerningCorrectionFromSpec(fontProperties, char, nextChar) {
     const { fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
 
     if (specs.specCombinationExists(fontProperties, "Kerning cutoff")) {
@@ -80,7 +80,7 @@ class BitmapTextFAB extends BitmapText {
     if (specs.specCombinationExists(fontProperties, "Kerning")) {
       // for all entries in the Kerning array with a sizeRange that includes the current font size
       //   get the kerning array and for each one:
-      //     if letter matches any of the letters in the "left" object or the "left" object is "*any*" and the nextLetter matches any of the letters in the "right" object or the "right" object is "*any*"
+      //     if charmatches any of the characters in the "left" object or the "left" object is "*any*" and the nextChar matches any of the characters in the "right" object or the "right" object is "*any*"
       //       return the value of the "adjustment" property
       for (const kerningEntry of specs.kerning(fontProperties)) {
         if (
@@ -89,9 +89,9 @@ class BitmapTextFAB extends BitmapText {
         ) {
           for (const kerning of kerningEntry.kerning) {
             if (
-              (kerning.left.includes(letter) ||
+              (kerning.left.includes(char) ||
                 kerning.left.includes("*any*")) &&
-              (kerning.right.includes(nextLetter) ||
+              (kerning.right.includes(nextChar) ||
                 kerning.right.includes("*any*"))
             ) {
               return kerning.adjustment;
@@ -108,28 +108,28 @@ class BitmapTextFAB extends BitmapText {
     if (this.fontMetricsStoreFAB.kerningTableExists(fontProperties))
       return;
 
-    // go through all the letters and for each letter, go through all the other letters
-    // and calculate the kerning correction between the two letters
+    // go through all the characters and for each character, go through all the other characters
+    // and calculate the kerning correction between the two characters
     // and store it in the kerningTable
     const kerningTable = {};
-    for (const letter of characterSet) {
-      kerningTable[letter] = {};
-      for (const nextLetter of characterSet) {
+    for (const char of characterSet) {
+      kerningTable[char] = {};
+      for (const nextChar of characterSet) {
         const kerningCorrection = this.getKerningCorrectionFromSpec(
           fontProperties,
-          letter,
-          nextLetter
+          char,
+          nextChar
         );
         if (kerningCorrection !== 0) {
-          kerningTable[letter][nextLetter] = kerningCorrection;
+          kerningTable[char][nextChar] = kerningCorrection;
         }
       }
     }
 
-    // prune the letters that don't have any kerning corrections
-    for (const letter in kerningTable) {
-      if (Object.keys(kerningTable[letter]).length === 0) {
-        delete kerningTable[letter];
+    // prune the characters that don't have any kerning corrections
+    for (const char in kerningTable) {
+      if (Object.keys(kerningTable[char]).length === 0) {
+        delete kerningTable[char];
       }
     }
 
@@ -164,13 +164,13 @@ class BitmapTextFAB extends BitmapText {
     // Convert to array of code points for proper Unicode handling
     const chars = [...text];
     for (let i = 0; i < chars.length; i++) {
-      const letter = chars[i];
-      const nextLetter = chars[i + 1];
+      const char = chars[i];
+      const nextChar = chars[i + 1];
       const glyph = this.atlasDataStoreFAB.getGlyph(
         fontProperties,
-        letter
+        char
       );
-      const characterMetrics = fontMetrics.getCharacterMetrics(letter);
+      const characterMetrics = fontMetrics.getCharacterMetrics(char);
 
       if (glyph && glyph.tightCanvas) {
         // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
@@ -205,20 +205,20 @@ class BitmapTextFAB extends BitmapText {
         const leftSpacing_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
 
         // Example: the user asks to draw the potential bottom of the text (i.e. including the most descending parts
-        // that might or might not be painted on that last row of pixels, depending on the letter, typically
-        // "Ç" or "ç" or italic f in Times New Roman are the most descending letters, and they touch the bottom
-        // because we set textBaseline to 'bottom'. If the letter does not touch the bottom, the number of empty rows
+        // that might or might not be painted on that last row of pixels, depending on the character, typically
+        // "Ç" or "ç" or italic f in Times New Roman are the most descending characters, and they touch the bottom
+        // because we set textBaseline to 'bottom'. If the chardoes not touch the bottom, the number of empty rows
         // (obviously not in the tightCanvas because... it's tight) is measured by distanceBetweenBottomAndBottomOfCanvas)
         // at y = 20 (i.e. the 21st pixel starting from the top).
-        // I.e. y = 20 (line 21) is the bottom-most row of pixels that the most descending letters would touch.
+        // I.e. y = 20 (line 21) is the bottom-most row of pixels that the most descending characters would touch.
         // The tight canvas of the glyph is 10px tall, and
         // the distance between the bottom of the tight canvas and the bottom of the canvas is 5px.
-        // Hence we paint the letter starting the top at row (20 + 1) - (10-1) - 5 = row 7. Row 7 i.e. y = 6.
+        // Hence we paint the charstarting the top at row (20 + 1) - (10-1) - 5 = row 7. Row 7 i.e. y = 6.
         //   explained: (20+1) is the row of y = 20; - (10-1) brings you to the top of the tight canvas,
         //              and to leave 5 spaces below you have to subtract 5.
         // That's what we do below applying the formula below:
         //     y = 20 - 10 - 5 + 1 = 6.
-        // Let's verify that: painting the first row of the letter at y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
+        // Let's verify that: painting the first row of the charat y = 6 i.e. row 7 means that the tight box will span from row 7 to row 16
         // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
         // (which is what we wanted).
         // See https://www.w3schools.com/jsref/canvas_drawimage.asp
@@ -230,7 +230,7 @@ class BitmapTextFAB extends BitmapText {
       }
 
       x_Phys_Px +=
-        this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, letter, nextLetter, textProperties) *
+        this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, char, nextChar, textProperties) *
         fontProperties.pixelDensity;
     }
   }
