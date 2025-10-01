@@ -95,7 +95,7 @@ and then open the page from the browser at:
   console.log("FontManifest available:", typeof FontManifest !== 'undefined' && FontManifest.count() > 0);
 
   if (typeof FontLoader === 'undefined') {
-    console.error("FontLoader is not defined. Check that font-loader.js loaded properly.");
+    console.error("FontLoader is not defined. Check that FontLoader.js loaded properly.");
   } else if (typeof FontManifest === 'undefined' || FontManifest.count() === 0) {
     console.error("FontManifest is not available or contains no fonts. Check that FontManifest.js and font-registry.js loaded properly.");
   } else {

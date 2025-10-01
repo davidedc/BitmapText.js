@@ -26,7 +26,7 @@ mkdir -p "$OUTPUT_DIR"
 # Verify all source files exist
 FILES_TO_CHECK=(
   "$SRC_DIR/node/canvas-mock.js"
-  "$SRC_DIR/node/font-loader-node.js"
+  "$SRC_DIR/node/FontLoader-node.js"
   "$SRC_DIR/core/StatusCode.js"
   "$SRC_DIR/core/FontProperties.js"
   "$SRC_DIR/core/TextProperties.js"
@@ -108,7 +108,7 @@ echo "// =======================================================================
 echo "// FONTLOADER NODE.JS IMPLEMENTATION" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-tail -n +25 "$SRC_DIR/node/font-loader-node.js" >> "$OUTPUT_FILE"
+tail -n +25 "$SRC_DIR/node/FontLoader-node.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate StatusCode class (MUST BE FIRST before BitmapText)

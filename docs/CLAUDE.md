@@ -71,7 +71,7 @@
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
   - **Atlas validation**: src/core/AtlasDataStore.isValidAtlas:1
-  - **Font loading utilities**: src/core/FontLoader.js (browser), src/node/font-loader-node.js (Node.js - unified API)
+  - **Font loading utilities**: src/core/FontLoader.js (browser), src/node/FontLoader-node.js (Node.js - unified API)
   - **Loading configuration**: src/core/FontLoaderConfig.js
   - **Font registry management**: src/core/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.getHash:1
