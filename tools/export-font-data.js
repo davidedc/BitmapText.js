@@ -35,7 +35,7 @@ function downloadFontAssets(options) {
       const fontProperties = new FontPropertiesFAB(pixelDensity, fontFamily, fontStyle, fontWeight, size);
       
       // Get atlas data from Map-based storage
-      const atlasData = atlasDataStore.atlases.get(fontProperties.key);
+      const atlasData = atlasDataStore.getAtlasData(fontProperties);
 
       // Skip if no atlas data exists for this configuration
       if (!atlasData) {
