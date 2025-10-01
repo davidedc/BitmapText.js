@@ -39,6 +39,11 @@ class AtlasDataMinifier {
   /**
    * Extracts raw positioning data from AtlasPositioning instance
    * Used only for serialization/minification - not needed at runtime
+   * This would be better as a method in AtlasPositioningFAB, however it
+   * wouldn't work there because at time of minification (where this is needed)
+   * we have only AtlasPositioning instances. So in theory we could put it in
+   * AtlasPositioning class, however this is never used at runtime so it
+   * would be a waste of space at runtime, so here we are, it's a method here.
    * @param {AtlasPositioning} atlasPositioning - AtlasPositioning instance
    * @returns {Object} Raw positioning data
    */

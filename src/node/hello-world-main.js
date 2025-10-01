@@ -35,67 +35,21 @@ function main() {
     const fontMetricsStore = new FontMetricsStore();
     const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore, () => new Canvas());
 
-    // Load and execute font metrics (will auto-install to store)
-    const fontMetricsPath = path.resolve(__dirname, 'font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js');
-    if (!fs.existsSync(fontMetricsPath)) {
-      throw new Error(`Font metrics file not found: ${fontMetricsPath}`);
-    }
-    const fontMetricsCode = fs.readFileSync(fontMetricsPath, 'utf8');
-    eval(fontMetricsCode);
+    // Create FontLoader instance with progress tracking
+    console.log('Initializing FontLoader...');
+    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
+      console.log(`Loading progress: ${loaded}/${total}`);
+    });
 
-    console.log('Font metrics loaded successfully');
-    
-    // Load atlas from JS file containing base64-encoded QOI data AND positioning data
-    const atlasJSPath = path.resolve(__dirname, 'font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-qoi.js');
-    if (!fs.existsSync(atlasJSPath)) {
-      throw new Error(`Atlas JS file not found: ${atlasJSPath}`);
-    }
-
-    console.log('Loading atlas from JS file...');
-
-    // Load FontLoader to make registerTempAtlasData available
-    // Check if FontLoader is already available (bundled mode) or needs to be required (standalone mode)
-    let FontLoader;
-    if (typeof global !== 'undefined' && global.FontLoader) {
-      FontLoader = global.FontLoader;
-    } else {
-      FontLoader = require('./font-loader-node.js');
-    }
-
-    // Execute the atlas JS file (which calls FontLoader.registerTempAtlasData and stores positioning)
-    const atlasJSCode = fs.readFileSync(atlasJSPath, 'utf8');
-    eval(atlasJSCode);
-
-    // Get the IDString for this font configuration
+    // Load font using unified API (same as browser version)
+    // This loads BOTH metrics and atlas in one call
     const expectedIDString = fontProperties.idString;
+    console.log(`Loading font: ${expectedIDString}...`);
 
-    // Get package to access base64 data and positioning
-    const pkg = FontLoader._tempAtlasPackages[expectedIDString];
-    if (!pkg || !pkg.base64Data) {
-      throw new Error(`Atlas package not found for ${expectedIDString}`);
-    }
+    // Note: loadFont in Node.js is synchronous but maintains same API signature
+    fontLoader.loadFont(expectedIDString, false);
 
-    console.log('Converting base64 to QOI buffer...');
-    const qoiBuffer = FontLoader.base64ToBuffer(pkg.base64Data);
-    const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
-
-    if (qoiData.error) {
-      throw new Error('Failed to decode QOI data from base64');
-    }
-
-    console.log(`QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
-
-    // Create Image from QOI data
-    const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
-
-    // Create complete AtlasData from package
-    const atlasData = AtlasDataExpander.createAtlasData(atlasImage, pkg.positioningData);
-
-    // Clean up package
-    delete FontLoader._tempAtlasPackages[expectedIDString];
-
-    // Set atlas in store
-    atlasDataStore.setAtlasData(fontProperties, atlasData);
+    console.log('Font loaded successfully');
     
     // Create output canvas
     console.log('Creating canvas and rendering...');

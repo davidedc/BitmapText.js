@@ -108,7 +108,7 @@ echo "// =======================================================================
 echo "// FONTLOADER NODE.JS IMPLEMENTATION" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-tail -n +18 "$SRC_DIR/node/font-loader-node.js" >> "$OUTPUT_FILE"
+tail -n +25 "$SRC_DIR/node/font-loader-node.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate StatusCode class (MUST BE FIRST before BitmapText)

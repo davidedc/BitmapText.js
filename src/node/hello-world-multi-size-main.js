@@ -50,108 +50,36 @@ function main() {
     console.log('Font sizes:', fontSizes);
     console.log('IDStrings:', IDStrings);
 
-    // Load metrics for all font sizes (will auto-install to store)
-    for (let i = 0; i < fontSizes.length; i++) {
-      const fontSize = fontSizes[i];
-      const IDString = IDStrings[i];
+    // Create FontLoader instance with progress tracking
+    console.log('Initializing FontLoader...');
+    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
+      console.log(`Loading progress: ${loaded}/${total}`);
+    });
 
-      console.log(`Loading metrics for size ${fontSize}...`);
+    // Load all fonts using unified API (same as browser version)
+    // This loads BOTH metrics and atlases in one call
+    console.log(`Loading ${fontSizes.length} fonts...`);
 
-      // Load font metrics (JS file) - will auto-install to fontMetricsStore
-      const fontMetricsPath = path.resolve(__dirname, `font-assets/metrics-${IDString}.js`);
-      if (!fs.existsSync(fontMetricsPath)) {
-        throw new Error(`Font metrics file not found: ${fontMetricsPath}`);
-      }
+    // Note: loadFonts in Node.js is synchronous but maintains same API signature
+    fontLoader.loadFonts(IDStrings, false);
 
-      // Execute the font metrics JS file (will populate store directly)
-      const fontMetricsCode = fs.readFileSync(fontMetricsPath, 'utf8');
-      eval(fontMetricsCode);
-      console.log(`✓ Metrics loaded for size ${fontSize}`);
-    }
-    
-    // Load FontLoader to make registerTempAtlasData available
-    // Check if FontLoader is already available (bundled mode) or needs to be required (standalone mode)
-    let FontLoader;
-    if (typeof global !== 'undefined' && global.FontLoader) {
-      FontLoader = global.FontLoader;
-    } else {
-      FontLoader = require('./font-loader-node.js');
-    }
+    console.log('All fonts loaded successfully');
 
-    // Load atlases from JS files containing base64-encoded QOI data
-    const atlasMap = new Map();
-
-    for (let i = 0; i < fontSizes.length; i++) {
-      const fontSize = fontSizes[i];
-      const IDString = IDStrings[i];
-      const fontProperties = fontPropertiesArray[i];
-
-      console.log(`Loading atlas from JS file for size ${fontSize}...`);
-
-      // Load atlas from JS file
-      const atlasJSPath = path.resolve(__dirname, `font-assets/atlas-${IDString}-qoi.js`);
-
-      if (fs.existsSync(atlasJSPath)) {
-        try {
-          console.log(`  ↳ Loading: ${path.basename(atlasJSPath)}`);
-
-          // Execute the atlas JS file (which calls FontLoader.registerTempAtlasData)
-          const atlasJSCode = fs.readFileSync(atlasJSPath, 'utf8');
-          eval(atlasJSCode);
-
-          // Get the IDString for this font configuration
-          const expectedIDString = fontProperties.idString;
-
-          // Get package to access base64 data and positioning
-          const pkg = FontLoader._tempAtlasPackages[expectedIDString];
-          if (!pkg || !pkg.base64Data) {
-            console.warn(`  ↳ Atlas package not found for ${expectedIDString}, will use placeholder rectangles`);
-            atlasMap.set(fontSize, null);
-            continue;
-          }
-
-          // Convert base64 to QOI buffer and decode
-          const qoiBuffer = FontLoader.base64ToBuffer(pkg.base64Data);
-          const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
-
-          if (qoiData.error) {
-            console.warn(`  ↳ Failed to decode QOI data from base64 for size ${fontSize}, will use placeholder rectangles`);
-            atlasMap.set(fontSize, null);
-          } else {
-            console.log(`  ↳ QOI decoded: ${qoiData.width}x${qoiData.height}, ${qoiData.channels} channels`);
-            const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
-
-            // Create complete AtlasData from package
-            const atlasData = AtlasDataExpander.createAtlasData(atlasImage, pkg.positioningData);
-
-            // Clean up package
-            delete FontLoader._tempAtlasPackages[expectedIDString];
-
-            atlasMap.set(fontSize, atlasData);
-          }
-        } catch (error) {
-          console.warn(`  ↳ Failed to load atlas for size ${fontSize}: ${error.message}, will use placeholder rectangles`);
-          atlasMap.set(fontSize, null);
-        }
-      } else {
-        console.warn(`  ↳ Atlas JS file not found for size ${fontSize}, will use placeholder rectangles`);
-        atlasMap.set(fontSize, null);
-      }
-    }
-    
-    // Process font atlases and populate atlas store for all sizes
+    // Check which fonts loaded successfully (for reporting purposes)
+    console.log('\nFont loading summary:');
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
       const fontProperties = fontPropertiesArray[i];
-      const atlasData = atlasMap.get(fontSize);
 
-      console.log(`Setting up atlas for size ${fontSize}...`);
+      const hasMetrics = fontMetricsStore.hasFontMetrics(fontProperties);
+      const hasAtlas = atlasDataStore.hasAtlas(fontProperties);
 
-      if (atlasData) {
-        atlasDataStore.setAtlasData(fontProperties, atlasData);
-        console.log(`  ✓ Font size ${fontSize} ready with atlas`);
+      if (hasMetrics && hasAtlas) {
+        console.log(`  ✓ Font size ${fontSize}: ready with full atlas`);
+      } else if (hasMetrics) {
+        console.log(`  ✓ Font size ${fontSize}: ready with placeholder mode (no atlas)`);
       } else {
-        console.log(`  ✓ Font size ${fontSize} ready with placeholder mode (no atlas)`);
+        console.log(`  ✗ Font size ${fontSize}: no metrics available`);
       }
     }
     

@@ -98,12 +98,12 @@ echo "" >> "$OUTPUT_FILE"
 tail -n +2 "$SRC_DIR/node/canvas-mock.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate FontLoader for Node.js (skip require statements to avoid duplicates)
+# Concatenate FontLoader for Node.js (skip header comments and fs require to avoid duplicates)
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// FONTLOADER NODE.JS IMPLEMENTATION" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-tail -n +18 "$SRC_DIR/node/font-loader-node.js" >> "$OUTPUT_FILE"
+tail -n +25 "$SRC_DIR/node/font-loader-node.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate StatusCode class (MUST BE FIRST before BitmapText)
