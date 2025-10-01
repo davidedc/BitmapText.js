@@ -360,7 +360,7 @@ class BitmapText {
   renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning) {
     const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
     
-     // see https://stackoverflow.com/a/6061102
+    // see https://stackoverflow.com/a/6061102
     ctx.drawImage(
       coloredGlyphCanvas,
       0, 0,

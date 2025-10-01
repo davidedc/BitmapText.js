@@ -18,6 +18,27 @@ class AtlasDataExpander {
   }
 
   /**
+   * Reconstructs xInAtlas positions from tightWidth data
+   * Characters are positioned sequentially in the atlas in the order they appear
+   * in the minified data (JavaScript for...in iteration order)
+   * @param {Object} minified - Minified positioning data with 'w' property
+   * @returns {Object} Map of character to xInAtlas position
+   */
+  static reconstructXInAtlas(minified) {
+    const xInAtlas = {};
+    let x = 0;
+
+    // Iterate in the same order as atlas was built (JavaScript for...in order)
+    // All characters in minified.w are in the atlas (non-atlas chars filtered during minification)
+    for (let char in minified.w) {
+      xInAtlas[char] = x;
+      x += minified.w[char];
+    }
+
+    return xInAtlas;
+  }
+
+  /**
    * Expands minified atlas positioning back to AtlasPositioning instance for runtime use
    * @param {Object} minified - Minified positioning object with shortened keys
    * @returns {AtlasPositioning} AtlasPositioning instance with expanded data
@@ -33,12 +54,16 @@ class AtlasDataExpander {
       return new AtlasPositioning({});
     }
 
+    // Reconstruct xInAtlas from width data (ALL values at once, single batch operation)
+    // If minified.x exists (old format), use it; otherwise reconstruct (new format)
+    const xInAtlas = minified.x || this.reconstructXInAtlas(minified);
+
     const expandedData = {
       tightWidth: minified.w || {},     // w -> tightWidth
       tightHeight: minified.h || {},    // h -> tightHeight
       dx: minified.dx || {},            // dx unchanged
       dy: minified.dy || {},            // dy unchanged
-      xInAtlas: minified.x || {}        // x -> xInAtlas
+      xInAtlas: xInAtlas                // Reconstructed from width data or legacy format
     };
 
     return new AtlasPositioning(expandedData);
@@ -60,12 +85,16 @@ class AtlasDataExpander {
       };
     }
 
+    // Reconstruct xInAtlas from width data
+    // If minified.x exists (old format), use it; otherwise reconstruct (new format)
+    const xInAtlas = minified.x || this.reconstructXInAtlas(minified);
+
     return {
       tightWidth: minified.w || {},     // w -> tightWidth
       tightHeight: minified.h || {},    // h -> tightHeight
       dx: minified.dx || {},            // dx unchanged
       dy: minified.dy || {},            // dy unchanged
-      xInAtlas: minified.x || {}        // x -> xInAtlas
+      xInAtlas: xInAtlas                // Reconstructed from width data or legacy format
     };
   }
 
