@@ -20,15 +20,17 @@ examples/node/
 ### `dist/hello-world.bundle.js`
 - **Purpose**: Demonstrates basic bitmap text rendering at font size 19
 - **Output**: Creates `hello-world-output.png` in current directory
-- **Features**: Basic "Hello World" rendering with QOI atlas loading
+- **Features**:
+  - Basic "Hello World" rendering with QOI atlas loading
+  - Uses FontLoader instance API for unified font loading
 - **Source**: Built from `src/node/hello-world-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world.bundle.js`
 
 ### `dist/hello-world-multi-size.bundle.js`
 - **Purpose**: Demonstrates multi-size font rendering (18, 18.5, 19)
-- **Output**: Creates `hello-world-multi-size-output.png` in current directory  
-- **Features**: 
-  - Multi-size font loading
+- **Output**: Creates `hello-world-multi-size-output.png` in current directory
+- **Features**:
+  - Multi-size font loading using FontLoader.loadFonts() batch API
   - Placeholder rectangle fallback for missing atlases
   - Demonstrates graceful degradation
 - **Source**: Built from `src/node/hello-world-multi-size-main.js` + core library files
@@ -65,14 +67,16 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the single-size demo:
 1. **Main logic**: `src/node/hello-world-main.js`
-2. **Core rendering**: `src/core/BitmapText.js`, `src/core/AtlasDataStore.js`, `src/core/FontMetricsStore.js`
-3. **Canvas implementation**: `src/node/canvas-mock.js`
-4. **Image libraries**: `lib/QOIDecode.js`, `lib/PngEncoder.js`
+2. **Font loading**: `src/node/font-loader-node.js` (Node.js FontLoader implementation)
+3. **Core rendering**: `src/core/BitmapText.js`, `src/core/AtlasDataStore.js`, `src/core/FontMetricsStore.js`
+4. **Canvas implementation**: `src/node/canvas-mock.js`
+5. **Image libraries**: `lib/QOIDecode.js`, `lib/PngEncoder.js`
 
 ### For the multi-size demo:
 1. **Main logic**: `src/node/hello-world-multi-size-main.js`
-2. **Core rendering**: Same as above
-3. **Other components**: Same as above
+2. **Font loading**: `src/node/font-loader-node.js` (same FontLoader API as browser)
+3. **Core rendering**: Same as above
+4. **Other components**: Same as above
 
 ## How to Rebuild
 
@@ -104,11 +108,12 @@ npm run build-multi-size-demo
 Each bundled file contains these sections in order:
 1. **Header**: Usage instructions and warnings
 2. **Canvas Mock**: Minimal Canvas API implementation for Node.js
-3. **Utility Functions**: Nested property helpers, metrics expansion
-4. **Image Libraries**: QOI decoder, PNG encoder
-5. **Core Classes**: AtlasDataStore, FontMetricsStore, BitmapText
-6. **Demo Logic**: The actual demo code from src/node/
-7. **Font Assets**: Inlined font data and metrics
+3. **FontLoader**: Node.js implementation with unified API (instance-based, matches browser version)
+4. **Utility Functions**: Nested property helpers, metrics expansion
+5. **Image Libraries**: QOI decoder, PNG encoder
+6. **Core Classes**: AtlasDataStore, FontMetricsStore, BitmapText
+7. **Demo Logic**: The actual demo code from src/node/
+8. **Font Assets**: External font-assets/ directory (not inlined)
 
 ## Why Bundled Files?
 

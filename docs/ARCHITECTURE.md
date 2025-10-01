@@ -169,14 +169,18 @@
     - `textColor`: CSS color specification
 
   **FontLoader**
-  - Purpose: Consolidated font loading utility
+  - Purpose: Consolidated font loading utility (unified API across browser and Node.js)
   - Responsibilities:
-    - Promise-based font data loading
+    - Instance-based font data loading with progress tracking
     - Error handling for missing files
-    - Progress tracking and callbacks
+    - Progress callbacks via constructor parameter
     - Support for both PNG and JS atlases
     - Protocol detection (file:// vs http://) for appropriate loading strategy
     - Graceful degradation: missing atlases result in placeholder rectangles
+  - Browser Implementation: Promise-based, async, DOM script loading
+  - Node.js Implementation: Synchronous, fs.readFileSync, eval-based loading
+  - Shared Public API: Constructor, loadFont(), loadFonts(), createAndStoreAtlasDataFromPackage(), isComplete()
+  - Static Method: registerAtlasPackage() for atlas JS files to register data
 
 ## Terminology
 
@@ -305,7 +309,9 @@ To support compound emojis would require:
   ### Runtime Phase
 
   1. **Data Loading**
-     font-registry.js → FontManifest → FontLoader → Load Atlas JS → Load Atlas PNG → Direct FontMetricsStore Population
+     - Browser: font-registry.js → FontManifest → FontLoader instance → loadFonts() → Promise-based loading of metrics + atlases
+     - Node.js: FontLoader instance → loadFonts() → Synchronous fs-based loading of metrics + atlases
+     - Both: Atlas JS files call FontLoader.registerAtlasPackage() → createAndStoreAtlasDataFromPackage() → Direct store population
 
   2. **Text Rendering**
      Text String → Measure → Apply Kerning → Copy Glyphs → Composite Color
@@ -442,6 +448,25 @@ To support compound emojis would require:
     6. Build optimized atlases
     7. Generate minified metadata
     8. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
+  ```
+
+  ### Runtime Font Loading Workflow (Unified API)
+  ```
+  Browser:
+    User → FontLoader instance → loadFonts(IDStrings)
+      1. For each IDString: loadFont(IDString)
+      2. loadMetrics() → Create <script> tag → Await load → metrics file evals and populates store
+      3. loadAtlas() → Create <script> or <img> → Await load → createAndStoreAtlasDataFromPackage()
+      4. Progress callbacks fire for each file loaded
+      5. Return Promise when complete
+
+  Node.js:
+    User → FontLoader instance → loadFonts(IDStrings)
+      1. For each IDString: loadFont(IDString)
+      2. loadMetrics() → fs.readFileSync() → eval with fontMetricsStore in scope → Direct store population
+      3. loadAtlas() → fs.readFileSync() → eval → registerAtlasPackage() → QOI decode → createAndStoreAtlasDataFromPackage()
+      4. Progress callbacks fire synchronously for each file
+      5. Return immediately (synchronous)
   ```
 
   ### Runtime Text Rendering Workflow
