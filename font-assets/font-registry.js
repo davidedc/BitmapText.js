@@ -1,5 +1,5 @@
 // Auto-generated font registry
-// Generated: 2025-10-01T10:48:14.493Z
+// Generated: 2025-10-02T10:49:30.521Z
 // Source: metrics files in font-assets/
 // Font count: 3
 //
