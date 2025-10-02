@@ -125,14 +125,16 @@
   **AtlasPositioning**
   - Purpose: Encapsulates glyph positioning data as immutable domain object
   - Data structures:
-    - `_tightWidth`, `_tightHeight`: Glyph dimensions
-    - `_dx`, `_dy`: Position offsets relative to text cursor
-    - `_xInAtlas`: Horizontal positions in atlas (reconstructed from tightWidth at load time, not serialized)
+    - `_tightWidth`: Glyph width (serialized)
+    - `_tightHeight`: Glyph height (reconstructed from atlas image pixels, not serialized)
+    - `_dx`, `_dy`: Position offsets relative to text cursor (serialized)
+    - `_xInAtlas`: Horizontal positions in atlas (reconstructed from tightWidth, not serialized)
   - Serialization optimization:
-    - xInAtlas values NOT stored in font asset files (reconstructed on load)
-    - Reconstruction: sum of all previous character widths in JavaScript iteration order
-    - ~20% file size reduction per font with no runtime performance impact
+    - xInAtlas reconstructed by summing tightWidth values in iteration order
+    - tightHeight reconstructed by scanning atlas image pixels from bottom upward
+    - Only 3 properties serialized: tightWidth, dx, dy (41% file size reduction)
     - All positioning data stored in memory for O(1) access during rendering
+    - Reconstruction happens once at load time with validation at build time
   - Methods:
     - `getPositioning()`: Access to positioning data for specific character
     - `hasPositioning()`: Check if character has positioning data
@@ -264,7 +266,7 @@ To support compound emojis would require:
   **AtlasPositioningFAB extends AtlasPositioning**
   - Font assets building capabilities for atlas positioning data management
   - Calculates positioning data from glyph canvas bounds and font metrics
-  - Manages xInAtlas positions during atlas building process
+  - Manages xInAtlas and tightHeight during atlas building process
   - Provides extraction methods to create clean runtime AtlasPositioning instances
   - Handles ONLY atlas positioning calculations (separated from FontMetricsFAB)
 
@@ -410,21 +412,32 @@ To support compound emojis would require:
   3. **Metrics Expansion**: Reconstructs full glyph metrics from minified data
   4. **Essential Property Validation**: Verifies key metrics are preserved during roundtrip
 
+  **Atlas Reconstruction Utilities (src/minification/AtlasReconstructionUtils.js)**:
+  1. **Shared Reconstruction Algorithms**: Central utility used by both minifier (validation) and expander (runtime)
+  2. **getImageData()**: Extracts ImageData from Canvas/Image/AtlasImage with environment detection (document.createElement in browser, Canvas class in Node.js)
+  3. **reconstructXInAtlas()**: Reconstructs horizontal positions by summing tightWidth values
+  4. **reconstructTightHeight()**: Reconstructs heights by scanning atlas image pixels bottom-upward
+  5. **Single Source of Truth**: Eliminates code duplication between build-time validation and runtime reconstruction
+  6. **Cross-Platform Support**: Works in both browser and Node.js environments
+
   **Atlas Data Minification (src/minification/AtlasDataMinifier.js)**:
-  1. **Property Key Shortening**: Converts verbose keys (tightWidth → w, tightHeight → h, dx → dx, dy → dy)
-  2. **xInAtlas Exclusion**: Does NOT serialize xInAtlas positions (reconstructed at runtime for ~20% file size reduction)
-  3. **Atlas-Only Characters**: Only includes characters actually in the atlas (excludes space and other non-visual characters)
-  4. **Reconstruction Validation**: Validates that xInAtlas can be correctly reconstructed from width data before minification
-  5. **Raw Data Extraction**: Extracts positioning data from AtlasPositioning instances for serialization
-  6. **Non-FAB Instance Processing**: Operates on extracted runtime instances to ensure only runtime-needed data is serialized
-  7. **Compact Format Generation**: Creates minimal positioning objects with only 4 properties (w, h, dx, dy)
+  1. **Property Key Shortening**: Converts verbose keys (tightWidth → w, dx → dx, dy → dy)
+  2. **xInAtlas Exclusion**: Does NOT serialize xInAtlas positions (reconstructed at runtime)
+  3. **tightHeight Exclusion**: Does NOT serialize tightHeight (reconstructed from atlas image pixels)
+  4. **Atlas-Only Characters**: Only includes characters actually in the atlas (excludes space and other non-visual characters)
+  5. **Reconstruction Validation**: Validates both xInAtlas and tightHeight can be correctly reconstructed before minification
+  6. **Raw Data Extraction**: Extracts positioning data from AtlasPositioning instances for serialization
+  7. **Non-FAB Instance Processing**: Operates on extracted runtime instances to ensure only runtime-needed data is serialized
+  8. **Compact Format Generation**: Creates minimal positioning objects with only 3 properties (w, dx, dy) - 41% file size reduction
 
   **Atlas Data Expansion (src/minification/AtlasDataExpander.js)**:
-  1. **Property Key Restoration**: Expands shortened keys back to full names (w → tightWidth, h → tightHeight)
-  2. **xInAtlas Reconstruction**: Reconstructs all xInAtlas positions by summing tightWidth values in JavaScript iteration order (single batch operation at load time)
-  3. **AtlasPositioning Creation**: Reconstructs complete AtlasPositioning instances with all 5 properties from minified 4-property data
-  4. **AtlasData Assembly**: Combines expanded positioning with AtlasImage instances
-  5. **Runtime Instance Generation**: Creates clean runtime objects from serialized data with O(1) positioning access
+  1. **Property Key Restoration**: Expands shortened keys back to full names (w → tightWidth)
+  2. **xInAtlas Reconstruction**: Reconstructs all xInAtlas positions by summing tightWidth values (single batch operation at load time)
+  3. **tightHeight Reconstruction**: Reconstructs all tightHeight values by scanning atlas image pixels from bottom upward
+  4. **AtlasPositioning Creation**: Reconstructs complete AtlasPositioning instances with all 5 properties from minified 3-property data
+  5. **AtlasData Assembly**: Combines expanded positioning with AtlasImage instances
+  6. **Runtime Instance Generation**: Creates clean runtime objects from serialized data with O(1) positioning access
+  7. **Backward Compatibility**: Supports both old format (with h, x) and new optimized format (without h, x)
 
   ## Memory Management
 

@@ -65,6 +65,7 @@
   - **Atlas positioning data**: src/core/AtlasPositioning.js (immutable positioning domain object)
   - **Atlas positioning building**: src/font-assets-builder-FAB/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
   - **Atlas data combination**: src/core/AtlasData.js (combines AtlasImage + AtlasPositioning)
+  - **Atlas reconstruction utilities**: src/minification/AtlasReconstructionUtils.js (shared reconstruction algorithms)
   - **Atlas data minification**: src/minification/AtlasDataMinifier.js (compacts atlas positioning for serialization)
   - **Atlas data expansion**: src/minification/AtlasDataExpander.js (restores atlas positioning from minified data)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
