@@ -129,10 +129,48 @@ class Context2D {
     }
   }
   
+  getImageData(x, y, w, h) {
+    if (!this.canvas.data) {
+      return {
+        width: w,
+        height: h,
+        data: new Uint8ClampedArray(w * h * 4)
+      };
+    }
+
+    const canvasWidth = this.canvas.width;
+    const canvasHeight = this.canvas.height;
+    const canvasData = this.canvas.data;
+    const imageData = new Uint8ClampedArray(w * h * 4);
+
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const srcX = x + px;
+        const srcY = y + py;
+
+        if (srcX >= 0 && srcX < canvasWidth && srcY >= 0 && srcY < canvasHeight) {
+          const srcI = (srcY * canvasWidth + srcX) * 4;
+          const destI = (py * w + px) * 4;
+
+          imageData[destI] = canvasData[srcI];
+          imageData[destI + 1] = canvasData[srcI + 1];
+          imageData[destI + 2] = canvasData[srcI + 2];
+          imageData[destI + 3] = canvasData[srcI + 3];
+        }
+      }
+    }
+
+    return {
+      width: w,
+      height: h,
+      data: imageData
+    };
+  }
+
   _parseColor(color) {
     if (color === 'white') return [255, 255, 255];
     if (color === 'black' || color === '#000000') return [0, 0, 0];
-    
+
     // Simple hex parsing
     if (color.startsWith('#')) {
       const hex = color.slice(1);
@@ -144,7 +182,7 @@ class Context2D {
         ];
       }
     }
-    
+
     return [0, 0, 0]; // Default to black
   }
 }

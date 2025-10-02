@@ -171,7 +171,8 @@ if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefi
       );
 
       // Add positioning JSON file to zip
-      const minifiedAtlasPositioning = AtlasDataMinifier.minify(atlasPositioningData);
+      // Pass atlasImage for tightHeight reconstruction validation
+      const minifiedAtlasPositioning = AtlasDataMinifier.minifyFromInstance(atlasPositioning, atlasData.atlasImage);
       folder.file(
           `atlas-${IDString}-positioning.json`,
           JSON.stringify(minifiedAtlasPositioning, null, 2), // Pretty-printed JSON for debugging
