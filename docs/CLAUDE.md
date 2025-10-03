@@ -66,10 +66,10 @@
   - **Atlas positioning building**: src/font-assets-builder-FAB/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
   - **Atlas data combination**: src/core/AtlasData.js (combines AtlasImage + AtlasPositioning)
   - **Atlas reconstruction utilities**: src/minification/AtlasReconstructionUtils.js (shared reconstruction algorithms)
-  - **Atlas data minification**: src/minification/AtlasDataMinifier.js (compacts atlas positioning for serialization)
-  - **Atlas data expansion**: src/minification/AtlasDataExpander.js (restores atlas positioning from minified data)
-  - **Atlas building**: src/minification/AtlasBuilder.js (builds atlases with variable-width cells)
-  - **Tight atlas reconstruction**: src/core/TightAtlasReconstructor.js (reconstructs tight atlases from atlases via pixel scanning)
+  - **Atlas data minification**: src/minification/AtlasDataMinifier.js (legacy - pre-Phase 1)
+  - **Atlas data expansion**: src/minification/AtlasDataExpander.js (legacy - pre-Phase 1, backward compatible)
+  - **Atlas building**: src/minification/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
+  - **Tight atlas reconstruction**: src/core/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
