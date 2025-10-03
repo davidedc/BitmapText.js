@@ -7,11 +7,13 @@ class GlyphFAB {
       canvas,
       tightCanvas,
       tightCanvasBox,
-      charTextMetrics
+      charTextMetrics,
+      canvasCopy
     } = this.createCanvasesAndCharacterMetrics();
     this.canvas = canvas;
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
+    this.canvasCopy = canvasCopy; // PHASE 1: Preserve canvas copy for export
 
     // characterMetrics actually belongs to the fontMetricsStore
     // which is separate from the AtlasDataStoreFAB class
@@ -190,12 +192,25 @@ class GlyphFAB {
       canvas.height / pixelDensity - 1
     );
 
+    // PHASE 1: Create a copy of the canvas BEFORE removing it from DOM
+    // This preserves the image data for export, even after the original canvas is removed
+    const canvasCopy = document.createElement('canvas');
+    canvasCopy.width = canvas.width;
+    canvasCopy.height = canvas.height;
+    const copyCtx = canvasCopy.getContext('2d');
+    copyCtx.drawImage(canvas, 0, 0);
+
+    // Debug log to verify this code is running
+    if (this.char === ' ' && Math.random() < 0.1) {
+      console.log(`[GlyphFAB] Created canvasCopy for space character: ${canvasCopy.width}x${canvasCopy.height}`);
+    }
+
     if (drawCrisply) {
       // now can remove the canvas from the page
       canvas.remove();
     }
 
-    return { canvas, charTextMetrics };
+    return { canvas, charTextMetrics, canvasCopy };
   }
 
   getBoundingBoxOfOnPixels(canvas) {
@@ -267,7 +282,7 @@ class GlyphFAB {
   }
 
   createCanvasesAndCharacterMetrics() {
-    const { canvas, charTextMetrics } = this.createCanvasWithCharacterAndGetItsMetricss();
+    const { canvas, charTextMetrics, canvasCopy } = this.createCanvasWithCharacterAndGetItsMetricss();
     const { tightCanvas, tightCanvasBox } =
       this.getBoundingBoxOfOnPixels(canvas);
 
@@ -276,7 +291,8 @@ class GlyphFAB {
         canvas,
         tightCanvas: null,
         tightCanvasBox: null,
-        charTextMetrics
+        charTextMetrics,
+        canvasCopy  // PHASE 1: Include canvasCopy even when no tight canvas
       };
 
     const div = document.createElement("div");
@@ -288,7 +304,7 @@ class GlyphFAB {
     }`;
     document.body.appendChild(div);
 
-    return { canvas, tightCanvas, tightCanvasBox, charTextMetrics };
+    return { canvas, tightCanvas, tightCanvasBox, charTextMetrics, canvasCopy };
   }
 
   // function that gets the bounding box of the text and its position, by looking at the pixels

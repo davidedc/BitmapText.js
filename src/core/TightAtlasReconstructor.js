@@ -242,7 +242,7 @@ class TightAtlasReconstructor {
       }
 
       // Extract tight glyph from original atlas
-      const tempCanvas = document.createElement('canvas');
+      const tempCanvas = canvasFactory();
       tempCanvas.width = bounds.width;
       tempCanvas.height = bounds.height;
       const tempCtx = tempCanvas.getContext('2d');

@@ -25,8 +25,8 @@ const fs = require('fs');
 
 // FontLoader class for Node.js environment
 class FontLoader {
-  // Static storage for atlas packages (base64 + positioning) from JS files
-  // Each package contains both image data and positioning data as an atomic unit
+  // Static storage for atlas packages (base64 only) from JS files
+  // PHASE 1: No positioning data - will be reconstructed at runtime
   // Shared across all FontLoader instances (matches browser behavior)
   static _tempAtlasPackages = {};
 
@@ -37,34 +37,31 @@ class FontLoader {
     this.onProgress = onProgress;
     this.loadedCount = 0;
     this.totalCount = 0;
+    // Canvas factory for TightAtlasReconstructor (Node.js uses canvas-mock)
+    this.canvasFactory = () => new Canvas(0, 0);
   }
 
-  // Static method for atlas JS files to register complete packages
-  // Takes BOTH base64 image data and positioning data together since they're always paired
+  // Static method for atlas JS files to register packages
+  // PHASE 1: Only takes base64 data (NO positioning data)
   // IDENTICAL API TO BROWSER VERSION
-  static registerAtlasPackage(IDString, base64Data, positioningData) {
+  static registerAtlasPackage(IDString, base64Data) {
     if (typeof IDString !== 'string' || typeof base64Data !== 'string') {
       console.warn('FontLoader.registerAtlasPackage: Invalid arguments - IDString and base64Data must be strings');
       return;
     }
-    if (positioningData !== null && positioningData !== undefined && typeof positioningData !== 'object') {
-      console.warn('FontLoader.registerAtlasPackage: Invalid positioningData - must be object, null, or undefined');
-      return;
-    }
 
     FontLoader._tempAtlasPackages[IDString] = {
-      base64Data: base64Data,
-      positioningData: positioningData
+      base64Data: base64Data
     };
   }
 
-  // Creates AtlasData from loaded image and temp package data, then stores in AtlasDataStore
-  // This encapsulates the entire flow: retrieve package → expand positioning → create AtlasData → store → cleanup
+  // Creates AtlasData from loaded Atlas image, then stores in AtlasDataStore
+  // PHASE 1: Uses TightAtlasReconstructor to convert Atlas → Tight Atlas + positioning
   // IDENTICAL API TO BROWSER VERSION
   // @param {string} IDString - Font ID string
-  // @param {Image|Canvas} image - Loaded/decoded image or canvas element
-  // @returns {boolean} - True if package found, false if missing (will still create AtlasData without positioning)
-  createAndStoreAtlasDataFromPackage(IDString, image) {
+  // @param {Canvas} atlasImage - Loaded Atlas image (variable-width cells format)
+  // @returns {boolean} - True if successful, false if metrics not available
+  createAndStoreAtlasDataFromPackage(IDString, atlasImage) {
     const fontProperties = FontProperties.fromIDString(IDString);
 
     // Get temp package (may not exist)
@@ -73,25 +70,32 @@ class FontLoader {
     // Clean up immediately
     delete FontLoader._tempAtlasPackages[IDString];
 
-    // Extract positioning data (null/undefined if no package)
-    const positioningData = pkg ? pkg.positioningData : null;
+    // PHASE 1: Reconstruct tight atlas from Atlas image using TightAtlasReconstructor
+    // This requires FontMetrics to be loaded first (for cell dimensions)
+    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
 
-    // Use AtlasDataExpander.createAtlasData() to handle expansion and AtlasData creation
-    // This method handles null positioning gracefully (will create AtlasData with null positioning)
-    let atlasData;
-    if (typeof AtlasDataExpander !== 'undefined') {
-      atlasData = AtlasDataExpander.createAtlasData(image, positioningData);
-    } else {
-      // Fallback without AtlasDataExpander
-      console.warn(`AtlasDataExpander not available for ${IDString} - creating AtlasData without positioning`);
-      const atlasImage = new AtlasImage(image);
-      atlasData = new AtlasData(atlasImage, null);
+    if (!fontMetrics) {
+      console.warn(`FontLoader: Metrics not loaded for ${IDString} - cannot reconstruct tight atlas`);
+      console.warn('Make sure metrics are loaded before atlases');
+      return false;
     }
+
+    // Check if TightAtlasReconstructor is available
+    if (typeof TightAtlasReconstructor === 'undefined') {
+      throw new Error(`TightAtlasReconstructor required for font loading - not available for ${IDString}`);
+    }
+
+    // Reconstruct tight atlas + positioning from Atlas image
+    const { atlasImage: tightAtlasImage, atlasPositioning } =
+      TightAtlasReconstructor.reconstructFromAtlas(atlasImage, fontMetrics, this.canvasFactory);
+
+    // Create AtlasData instance
+    const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);
 
     // Store in atlas data store
     this.atlasDataStore.setAtlasData(fontProperties, atlasData);
 
-    return pkg !== null && pkg !== undefined;
+    return true;
   }
 
   // Load font data for a single ID string

@@ -59,6 +59,8 @@
   <script src="../src/core/AtlasData.js"></script>
   <!-- Atlas reconstruction utilities (shared between minifier and expander) -->
   <script src="../src/minification/AtlasReconstructionUtils.js"></script>
+  <!-- Tight atlas reconstructor for converting Atlas → Tight Atlas at runtime -->
+  <script src="../src/core/TightAtlasReconstructor.js"></script>
   <!-- Atlas positioning expander utilities -->
   <script src="../src/minification/AtlasDataExpander.js"></script>
   <!-- Data store for atlas images -->
@@ -109,7 +111,7 @@
     
     // Create FontLoader to (later) load all the font data
     const isFileProtocol = window.location.href.includes("file://");
-    const fontLoader = new FontLoader(atlasDataStore, (loaded, total) => {
+    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
       console.log(`Loaded ${loaded} of ${total} files`);
     });
 

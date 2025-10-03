@@ -36,6 +36,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/core/AtlasImage.js"
   "$SRC_DIR/core/AtlasData.js"
   "$SRC_DIR/minification/AtlasReconstructionUtils.js"
+  "$SRC_DIR/core/TightAtlasReconstructor.js"
   "$SRC_DIR/minification/AtlasDataExpander.js"
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
@@ -182,6 +183,14 @@ echo "// ATLAS RECONSTRUCTION UTILITIES" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/minification/AtlasReconstructionUtils.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate TightAtlasReconstructor (PHASE 1: Runtime atlas reconstruction)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// TIGHT ATLAS RECONSTRUCTOR" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/TightAtlasReconstructor.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate AtlasDataExpander

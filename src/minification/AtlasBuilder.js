@@ -94,7 +94,21 @@ class AtlasBuilder {
       // glyph.canvas contains the character at its original position within
       // the actualBoundingBox × fontBoundingBox rectangle
       if (glyph && glyph.canvas) {
-        ctx.drawImage(glyph.canvas, x, 0);
+        // PHASE 1: If canvas has invalid dimensions (0x0), use canvasCopy instead
+        const hasInvalidDimensions = glyph.canvas.width === 0 || glyph.canvas.height === 0;
+        const hasCanvasCopy = !!glyph.canvasCopy;
+
+        if (hasInvalidDimensions && !hasCanvasCopy) {
+          console.error(`AtlasBuilder: Character '${char}' has invalid canvas (${glyph.canvas.width}x${glyph.canvas.height}) and no canvasCopy!`);
+          console.error('Glyph object:', glyph);
+        }
+
+        if (hasInvalidDimensions && hasCanvasCopy) {
+          // Use the preserved canvas copy
+          ctx.drawImage(glyph.canvasCopy, x, 0);
+        } else {
+          ctx.drawImage(glyph.canvas, x, 0);
+        }
       } else {
         console.warn(`AtlasBuilder: Character '${char}' has no character canvas`);
       }

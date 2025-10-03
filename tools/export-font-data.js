@@ -13,43 +13,71 @@ function downloadFontAssets(options) {
 
   const zip = new JSZip();
   const folder = zip.folder("fontAssets");
-  const atlasDataStore = atlasDataStoreFAB.extractAtlasDataStoreInstance();
-  const fontMetricsStore = fontMetricsStoreFAB.extractFontMetricsStoreInstance();
-  
-  // Find all available sizes by examining Map keys
-  // as atlases is a Map with FontProperties.key as keys
+
+  // Find all available sizes by examining glyphs in atlasDataStoreFAB
+  // We look at glyphs (not atlases) because that's what actually got built
   const sizes = new Set();
   const baseKeyPrefix = `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:`;
-  
-  for (const [key, atlasData] of atlasDataStore.atlases) {
-    if (key.startsWith(baseKeyPrefix)) {
-      // Extract fontSize from key: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
-      const fontSize = key.substring(baseKeyPrefix.length);
+
+  // Scan through glyphs map to find which font sizes have been built
+  for (const [glyphKey, glyph] of atlasDataStoreFAB.glyphs) {
+    if (glyphKey.startsWith(baseKeyPrefix)) {
+      // Extract font properties key from glyphKey: "fontProperties.key:char"
+      const colonIndex = glyphKey.lastIndexOf(':');
+      const fontKey = glyphKey.substring(0, colonIndex);
+      // Extract fontSize from fontKey: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
+      const fontSize = fontKey.substring(baseKeyPrefix.length);
       sizes.add(parseFloat(fontSize));
     }
   }
-  
+
+  if (sizes.size === 0) {
+    alert('No fonts have been built yet. Please select a font configuration and wait for glyphs to render before downloading.');
+    return;
+  }
+
+  console.log(`Found ${sizes.size} font size(s) to export:`, Array.from(sizes));
+
 
   sizes.forEach(size => {
       // Create FontPropertiesFAB for this specific size
       const fontProperties = new FontPropertiesFAB(pixelDensity, fontFamily, fontStyle, fontWeight, size);
-      
-      // Get atlas data from Map-based storage
-      const atlasData = atlasDataStore.getAtlasData(fontProperties);
 
-      // Skip if no atlas data exists for this configuration
-      if (!atlasData) {
+      console.log(`\n=== Exporting ${fontProperties.key} ===`);
+
+      // Check if glyphs exist for this font
+      const glyphs = atlasDataStoreFAB.getGlyphsForFont(fontProperties);
+      const glyphCount = Object.keys(glyphs).length;
+      console.log(`Found ${glyphCount} glyphs for ${fontProperties.key}`);
+
+      if (glyphCount === 0) {
+          console.warn(`No glyphs found for ${fontProperties.key}, skipping export`);
           return;
       }
 
-      // AtlasData always contains AtlasImage instance
-      if (!(atlasData instanceof AtlasData)) {
-          console.error(`Expected AtlasData instance for ${fontProperties.key}, got:`, typeof atlasData);
+      // Log first few glyphs to verify they have canvases
+      const sampleChars = Object.keys(glyphs).slice(0, 3);
+      for (const char of sampleChars) {
+          const glyph = glyphs[char];
+          console.log(`  Glyph '${char}': canvas=${!!glyph.canvas}, tightCanvas=${!!glyph.tightCanvas}`);
+          if (glyph.canvas) {
+              console.log(`    canvas dimensions: ${glyph.canvas.width}x${glyph.canvas.height}`);
+          }
+      }
+
+      // PHASE 1: Build Atlas (variable-width cells) instead of tight atlas
+      // Use AtlasDataStoreFAB.buildAtlas() which properly wraps AtlasBuilder
+      console.log(`Building Atlas for ${fontProperties.key}...`);
+      const atlasResult = atlasDataStoreFAB.buildAtlas(fontProperties, fontMetricsStoreFAB);
+
+      // Skip if atlas building failed
+      if (!atlasResult || !atlasResult.canvas) {
+          console.error(`Failed to build atlas for ${fontProperties.key}, skipping export`);
           return;
       }
 
-      // Get canvas from AtlasImage
-      const canvas = atlasData.atlasImage.image;
+      console.log(`Atlas built successfully: ${atlasResult.canvas.width}x${atlasResult.canvas.height}`);
+      const canvas = atlasResult.canvas;
 
       if (!canvas || !canvas.getContext) {
           console.warn(`Invalid canvas from AtlasImage for ${fontProperties.key}, skipping export`);
@@ -88,8 +116,10 @@ function downloadFontAssets(options) {
       const currentDate = new Date(now.getTime() - (timezoneOffset * 60 * 1000));
       folder.file(`atlas-${IDString}.qoi`, qoiBase64, { base64: true, date: currentDate });
 
-      // Extract metadata using FontMetricsFAB instance
-      // Get FontMetricsFAB instance for this font configuration
+      // PHASE 1: NO positioning data exported - will be reconstructed at runtime from Atlas image
+      // The Atlas format (variable-width cells) allows runtime reconstruction of tight atlas + positioning
+
+      // Get FontMetrics instance for this font configuration
       const fontMetrics = fontMetricsStoreFAB.getFontMetrics(fontProperties);
 
       if (!fontMetrics) {
@@ -97,14 +127,10 @@ function downloadFontAssets(options) {
           return;
       }
 
-      // Get atlas positioning from AtlasData (it's already there!)
-      const atlasPositioning = atlasData.atlasPositioning;
-      const atlasPositioningData = AtlasDataMinifier.getRawData(atlasPositioning);
-
       // Extract character metrics directly from FontMetrics instance
       const characterMetrics = { ...fontMetrics._characterMetrics };
 
-      // Split data: metrics data (for metrics files) and atlas positioning data (for atlas files)
+      // Metrics data (positioning data NO LONGER exported - reconstructed at runtime)
       const metricsData = {
           kerningTable: fontMetrics._kerningTable,
           characterMetrics: characterMetrics,
@@ -170,14 +196,8 @@ if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefi
           { date: currentDate }
       );
 
-      // Add positioning JSON file to zip
-      // Pass atlasImage for tightHeight reconstruction validation
-      const minifiedAtlasPositioning = AtlasDataMinifier.minifyFromInstance(atlasPositioning, atlasData.atlasImage);
-      folder.file(
-          `atlas-${IDString}-positioning.json`,
-          JSON.stringify(minifiedAtlasPositioning, null, 2), // Pretty-printed JSON for debugging
-          { date: currentDate }
-      );
+      // PHASE 1: NO positioning JSON file - positioning will be reconstructed at runtime from Atlas image
+      // This eliminates ~3.7KB per font (75% of previous serialized size)
   });
 
 
