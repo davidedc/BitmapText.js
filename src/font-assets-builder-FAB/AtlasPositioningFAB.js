@@ -52,7 +52,11 @@ class AtlasPositioningFAB extends AtlasPositioning {
    * @param {FontMetricsStore} fontMetricsStore - Store to get character metrics from
    */
   calculatePositioning(glyphs, fontProperties, fontMetricsStore) {
-    for (let char in glyphs) {
+    // ⚠️ CRITICAL FIX: Use sorted character order for determinism
+    // JavaScript for...in iteration order is not guaranteed to be stable
+    const sortedChars = Object.keys(glyphs).sort();
+
+    for (const char of sortedChars) {
       let glyph = glyphs[char];
 
       // Get character metrics from FontMetricsStore

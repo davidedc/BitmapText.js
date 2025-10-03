@@ -101,7 +101,19 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     let fittingWidth = 0;
     let maxHeight = 0;
 
-    for (let char in glyphs) {
+    // ⚠️ CRITICAL FIX: Use sorted character order for determinism
+    // JavaScript for...in iteration order is not guaranteed to be stable
+    const sortedChars = Object.keys(glyphs).sort();
+
+    for (const char of sortedChars) {
+      const glyph = glyphs[char];
+
+      // Only include dimensions for glyphs that will actually be drawn
+      // Skip glyphs without tightCanvas (like space) to match drawing logic
+      if (!glyph.tightCanvas) {
+        continue;
+      }
+
       const tightWidth = atlasPositioningFAB.getTightWidth(char);
       const tightHeight = atlasPositioningFAB.getTightHeight(char);
 
@@ -121,7 +133,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     let x = 0;
 
     // Draw each glyph into the atlas and record xInAtlas position
-    for (let char in glyphs) {
+    for (const char of sortedChars) {
       let glyph = glyphs[char];
       const tightWidth = atlasPositioningFAB.getTightWidth(char);
 
@@ -164,6 +176,67 @@ class AtlasDataStoreFAB extends AtlasDataStore {
 
     // Return only the AtlasImageFAB instance
     return atlasImageFAB;
+  }
+
+  /**
+   * Get glyphs for a specific font configuration (helper method)
+   * @param {FontProperties} fontProperties - Font configuration
+   * @returns {Object} Map of char → GlyphFAB
+   */
+  getGlyphsForFont(fontProperties) {
+    const glyphs = {};
+    for (const [glyphKey, glyph] of this.glyphs) {
+      if (glyphKey.startsWith(fontProperties.key + ':')) {
+        const char = glyphKey.substring(fontProperties.key.length + 1);
+        glyphs[char] = glyph;
+      }
+    }
+    return glyphs;
+  }
+
+  /**
+   * Build original-bounds atlas for validation/export (NEW METHOD for Phase 0)
+   * Uses glyph.canvas (original bounds) instead of glyph.tightCanvas
+   *
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {FontMetricsStore} fontMetricsStore - Font metrics store
+   * @returns {{canvas, cellWidths, cellHeight, characters, totalWidth}}
+   */
+  buildOriginalAtlas(fontProperties, fontMetricsStore) {
+    const glyphs = this.getGlyphsForFont(fontProperties);
+    const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
+
+    if (!fontMetrics) {
+      throw new Error(`No FontMetrics found for ${fontProperties.key}`);
+    }
+
+    return OriginalAtlasBuilder.buildOriginalAtlas(glyphs, fontMetrics);
+  }
+
+  /**
+   * Build tight atlas from original-bounds atlas (NEW METHOD for Phase 0 validation)
+   * Reconstructs tight atlas by scanning original-bounds atlas pixels
+   *
+   * @param {Canvas|Image} originalAtlasCanvas - Original-bounds atlas image
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {FontMetricsStore} fontMetricsStore - Font metrics store
+   * @returns {AtlasData} AtlasData containing reconstructed tight atlas and positioning
+   */
+  buildTightAtlasFromOriginal(originalAtlasCanvas, fontProperties, fontMetricsStore) {
+    const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
+
+    if (!fontMetrics) {
+      throw new Error(`No FontMetrics found for ${fontProperties.key}`);
+    }
+
+    const { atlasImage, atlasPositioning } =
+      TightAtlasReconstructor.reconstructFromOriginalAtlas(
+        originalAtlasCanvas,
+        fontMetrics,
+        () => document.createElement('canvas')
+      );
+
+    return new AtlasData(atlasImage, atlasPositioning);
   }
 
 }

@@ -26,6 +26,72 @@
   <main>
     <div id="selectors"></div>
     <div id="testCopyCanvases" style="clear:both;"></div>
+
+    <!-- VALIDATION HARNESS SECTION (Phase 0) -->
+    <div id="validation-section" style="margin-top: 40px; border-top: 3px solid #333; padding-top: 20px;">
+      <h2>🔬 Validation Harness: Original-Bounds → Tight Reconstruction</h2>
+
+      <button onclick="runValidationHarness()" style="font-size: 16px; padding: 10px 20px; margin: 10px 0;">
+        Run Validation
+      </button>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px;">
+        <!-- Column 1: Current (Control) -->
+        <div>
+          <h3>PATH A: Current Tight (Control)</h3>
+          <canvas id="current-tight-atlas" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
+          <div id="current-atlas-info" style="font-family: monospace; font-size: 12px;"></div>
+          <canvas id="current-render" data-validation="true" style="border: 1px solid #ccc; margin-top: 10px;"></canvas>
+        </div>
+
+        <!-- Column 2: Original-Bounds -->
+        <div>
+          <h3>PATH B: Original-Bounds</h3>
+          <canvas id="original-bounds-atlas" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
+          <div id="original-atlas-info" style="font-family: monospace; font-size: 12px;"></div>
+        </div>
+
+        <!-- Column 3: Reconstructed -->
+        <div>
+          <h3>PATH B: Reconstructed Tight</h3>
+          <canvas id="reconstructed-tight-atlas" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
+          <div id="reconstructed-atlas-info" style="font-family: monospace; font-size: 12px;"></div>
+          <canvas id="reconstructed-render" data-validation="true" style="border: 1px solid #ccc; margin-top: 10px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Comparison Results -->
+      <div id="comparison-results" style="margin-top: 20px; padding: 20px; background: #f0f0f0; border-radius: 5px;">
+        <h3>📊 Comparison Results</h3>
+
+        <div id="atlas-comparison" style="margin: 10px 0;">
+          <h4>Atlas Image Comparison:</h4>
+          <div id="atlas-pixel-diff"></div>
+        </div>
+
+        <div id="positioning-comparison" style="margin: 10px 0;">
+          <h4>Positioning Data Comparison:</h4>
+          <div id="positioning-diff-summary"></div>
+          <table id="positioning-diff-table" style="font-family: monospace; font-size: 11px; border-collapse: collapse; margin-top: 10px;">
+          </table>
+        </div>
+
+        <div id="render-comparison" style="margin: 10px 0;">
+          <h4>Render Comparison:</h4>
+          <div id="render-hash-diff"></div>
+        </div>
+
+        <div id="performance-metrics" style="margin: 10px 0;">
+          <h4>Performance Metrics:</h4>
+          <div id="reconstruction-time"></div>
+        </div>
+
+        <div id="file-size-estimates" style="margin: 10px 0;">
+          <h4>File Size Estimates:</h4>
+          <div id="size-comparison"></div>
+        </div>
+      </div>
+    </div>
   </main>
 </body>
 
@@ -57,6 +123,9 @@
 <script src="../src/minification/AtlasReconstructionUtils.js"></script>
 <script src="../src/minification/AtlasDataMinifier.js"></script>
 <script src="../src/minification/AtlasDataExpander.js"></script>
+<!-- NEW: Phase 0 validation utilities -->
+<script src="../src/minification/OriginalAtlasBuilder.js"></script>
+<script src="../src/core/TightAtlasReconstructor.js"></script>
 <script src="../src/utils/HashStore.js"></script>
 <script src="../test/data/reference-hashes.js"></script>
 <script src="../src/utils/canvas-extensions.js"></script>
@@ -95,8 +164,335 @@
   const atlasDataStoreFAB = new AtlasDataStoreFAB();
   const fontMetricsStoreFAB = new FontMetricsStoreFAB();
   const bitmapTextFAB = new BitmapTextFAB(atlasDataStoreFAB, fontMetricsStoreFAB);
-    
+
   updatePageContent();
+</script>
+
+<!-- VALIDATION HARNESS JAVASCRIPT (Phase 0) -->
+<script>
+  let currentFontProperties = null;
+
+  // Track current font properties from UI selections
+  function trackCurrentFontProperties() {
+    // This will be called when user selects font options
+    // For now, we'll use a default or let user trigger validation manually
+  }
+
+  function runValidationHarness() {
+    console.log('🔬 Starting Validation Harness...');
+
+    // Get current font properties from the UI state
+    // If not available, use a default font configuration
+    if (!currentFontProperties) {
+      currentFontProperties = new FontProperties(
+        1.0,           // pixelDensity
+        'Arial',       // fontFamily
+        'normal',      // fontStyle
+        'normal',      // fontWeight
+        18             // fontSize
+      );
+      console.log('Using default font properties:', currentFontProperties);
+    }
+
+    try {
+      // STEP 1: Prepare font metrics and glyphs
+      console.log('Preparing font metrics and glyphs...');
+
+      // Reset FontMetricsFAB for this font
+      fontMetricsStoreFAB.resetFontMetricsFAB(currentFontProperties);
+
+      // Build kerning table
+      bitmapTextFAB.buildKerningTableIfDoesntExist(currentFontProperties);
+
+      // Create glyphs for this font
+      createGlyphsAndAddToFullStore(currentFontProperties);
+
+      // PATH A: Current tight atlas building (control)
+      console.time('PATH A: Current tight atlas build');
+      atlasDataStoreFAB.buildAtlas(currentFontProperties, fontMetricsStoreFAB);
+      const currentAtlasData = atlasDataStoreFAB.getAtlasData(currentFontProperties);
+      console.timeEnd('PATH A: Current tight atlas build');
+
+      if (!currentAtlasData) {
+        throw new Error('Failed to build current atlas - no atlas data returned');
+      }
+
+      const currentAtlasPositioning = currentAtlasData.atlasPositioning;
+
+      // PATH B: Original-bounds → Reconstructed tight
+      console.time('PATH B: Original-bounds atlas build');
+      const originalAtlasResult = atlasDataStoreFAB.buildOriginalAtlas(currentFontProperties, fontMetricsStoreFAB);
+      console.timeEnd('PATH B: Original-bounds atlas build');
+
+      console.time('PATH B: Tight atlas reconstruction');
+      const reconstructedAtlasData = atlasDataStoreFAB.buildTightAtlasFromOriginal(
+        originalAtlasResult.canvas,
+        currentFontProperties,
+        fontMetricsStoreFAB
+      );
+      console.timeEnd('PATH B: Tight atlas reconstruction');
+
+      // Display atlases
+      displayAtlasCanvas(currentAtlasData.atlasImage.image, 'current-tight-atlas');
+      displayAtlasCanvas(originalAtlasResult.canvas, 'original-bounds-atlas');
+      displayAtlasCanvas(reconstructedAtlasData.atlasImage.image, 'reconstructed-tight-atlas');
+
+      // Display info
+      document.getElementById('current-atlas-info').innerHTML =
+        `Dims: ${currentAtlasData.atlasImage.width}×${currentAtlasData.atlasImage.height}`;
+      document.getElementById('original-atlas-info').innerHTML =
+        `Dims: ${originalAtlasResult.canvas.width}×${originalAtlasResult.canvas.height}`;
+      document.getElementById('reconstructed-atlas-info').innerHTML =
+        `Dims: ${reconstructedAtlasData.atlasImage.width}×${reconstructedAtlasData.atlasImage.height}`;
+
+      // Render both
+      const currentRenderCanvas = document.getElementById('current-render');
+      const reconstructedRenderCanvas = document.getElementById('reconstructed-render');
+
+      renderTestText(currentRenderCanvas, currentAtlasData, currentFontProperties);
+      renderTestText(reconstructedRenderCanvas, reconstructedAtlasData, currentFontProperties);
+
+
+      // COMPARE EVERYTHING
+      const comparison = {
+        atlasPixelDiff: compareAtlasImages(
+          currentAtlasData.atlasImage.image,
+          reconstructedAtlasData.atlasImage.image
+        ),
+        positioningDiff: comparePositioning(
+          currentAtlasPositioning,
+          reconstructedAtlasData.atlasPositioning
+        ),
+        renderHashDiff: compareRenderHashes(
+          currentRenderCanvas,
+          reconstructedRenderCanvas
+        )
+      };
+
+      // Display comparison results
+      displayComparisonResults(comparison, originalAtlasResult);
+
+      // Final verdict
+      const resultsDiv = document.getElementById('comparison-results');
+      if (comparison.atlasPixelDiff === 0 &&
+          comparison.positioningDiff.totalDifferences === 0 &&
+          comparison.renderHashDiff.identical) {
+        console.log('✅ VALIDATION PASSED: Perfect match!');
+        resultsDiv.style.background = '#d4edda';
+        resultsDiv.innerHTML = '<h2 style="color: #155724;">✅ VALIDATION PASSED</h2>' + resultsDiv.innerHTML;
+      } else {
+        console.error('❌ VALIDATION FAILED: Differences detected');
+        resultsDiv.style.background = '#f8d7da';
+        resultsDiv.innerHTML = '<h2 style="color: #721c24;">❌ VALIDATION FAILED</h2>' + resultsDiv.innerHTML;
+        console.log('Differences:', comparison);
+      }
+
+    } catch (error) {
+      console.error('Validation harness error:', error);
+      const resultsDiv = document.getElementById('comparison-results');
+      resultsDiv.style.background = '#f8d7da';
+      resultsDiv.innerHTML = `<h2 style="color: #721c24;">❌ ERROR</h2><p>${error.message}</p><pre>${error.stack}</pre>`;
+    }
+  }
+
+  function displayAtlasCanvas(sourceCanvas, targetId) {
+    const target = document.getElementById(targetId);
+    target.width = sourceCanvas.width;
+    target.height = sourceCanvas.height;
+    const ctx = target.getContext('2d');
+    ctx.drawImage(sourceCanvas, 0, 0);
+  }
+
+  function comparePositioning(posA, posB) {
+    const charsA = posA.getAvailableCharacters().sort();
+    const charsB = posB.getAvailableCharacters().sort();
+
+    const differences = {
+      tightWidth: [],
+      tightHeight: [],
+      dx: [],
+      dy: [],
+      xInAtlas: [],
+      totalDifferences: 0,
+      characterCountMismatch: charsA.length !== charsB.length
+    };
+
+    for (const char of charsA) {
+      const a = posA.getPositioning(char);
+      const b = posB.getPositioning(char);
+
+      if (!b || b.tightWidth === undefined) {
+        differences.totalDifferences++;
+        continue;
+      }
+
+      if (a.tightWidth !== b.tightWidth) {
+        differences.tightWidth.push({char, a: a.tightWidth, b: b.tightWidth});
+        differences.totalDifferences++;
+      }
+      if (a.tightHeight !== b.tightHeight) {
+        differences.tightHeight.push({char, a: a.tightHeight, b: b.tightHeight});
+        differences.totalDifferences++;
+      }
+      if (a.dx !== b.dx) {
+        differences.dx.push({char, a: a.dx, b: b.dx});
+        differences.totalDifferences++;
+      }
+      if (a.dy !== b.dy) {
+        differences.dy.push({char, a: a.dy, b: b.dy});
+        differences.totalDifferences++;
+      }
+      if (a.xInAtlas !== b.xInAtlas) {
+        differences.xInAtlas.push({char, a: a.xInAtlas, b: b.xInAtlas});
+        differences.totalDifferences++;
+      }
+    }
+
+    return differences;
+  }
+
+  function compareAtlasImages(imgA, imgB) {
+    if (imgA.width !== imgB.width || imgA.height !== imgB.height) {
+      console.error(`Atlas dimension mismatch: A=${imgA.width}×${imgA.height}, B=${imgB.width}×${imgB.height}`);
+      return -1; // Dimension mismatch
+    }
+
+    const ctxA = document.createElement('canvas').getContext('2d');
+    ctxA.canvas.width = imgA.width;
+    ctxA.canvas.height = imgA.height;
+    ctxA.drawImage(imgA, 0, 0);
+    const dataA = ctxA.getImageData(0, 0, imgA.width, imgA.height).data;
+
+    const ctxB = document.createElement('canvas').getContext('2d');
+    ctxB.canvas.width = imgB.width;
+    ctxB.canvas.height = imgB.height;
+    ctxB.drawImage(imgB, 0, 0);
+    const dataB = ctxB.getImageData(0, 0, imgB.width, imgB.height).data;
+
+    let diffCount = 0;
+    let firstDiffPixel = null;
+    for (let i = 0; i < dataA.length; i += 4) {
+      const pixelIndex = i / 4;
+      const x = pixelIndex % imgA.width;
+      const y = Math.floor(pixelIndex / imgA.width);
+
+      const rDiff = dataA[i] !== dataB[i];
+      const gDiff = dataA[i+1] !== dataB[i+1];
+      const bDiff = dataA[i+2] !== dataB[i+2];
+      const aDiff = dataA[i+3] !== dataB[i+3];
+
+      if (rDiff || gDiff || bDiff || aDiff) {
+        if (!firstDiffPixel) {
+          firstDiffPixel = {
+            x, y,
+            a: { r: dataA[i], g: dataA[i+1], b: dataA[i+2], a: dataA[i+3] },
+            b: { r: dataB[i], g: dataB[i+1], b: dataB[i+2], a: dataB[i+3] }
+          };
+        }
+        diffCount++;
+      }
+    }
+
+    if (firstDiffPixel) {
+      console.log(`First pixel difference at (${firstDiffPixel.x}, ${firstDiffPixel.y}):`);
+      console.log(`  PATH A: rgba(${firstDiffPixel.a.r}, ${firstDiffPixel.a.g}, ${firstDiffPixel.a.b}, ${firstDiffPixel.a.a})`);
+      console.log(`  PATH B: rgba(${firstDiffPixel.b.r}, ${firstDiffPixel.b.g}, ${firstDiffPixel.b.b}, ${firstDiffPixel.b.a})`);
+    }
+
+    return diffCount;
+  }
+
+  function compareRenderHashes(canvasA, canvasB) {
+    const hashA = canvasA.getHash ? canvasA.getHash() : 'N/A';
+    const hashB = canvasB.getHash ? canvasB.getHash() : 'N/A';
+
+    return {
+      hashA,
+      hashB,
+      identical: hashA === hashB
+    };
+  }
+
+  function displayComparisonResults(comparison, originalAtlasResult) {
+    // Atlas comparison
+    const atlasDiv = document.getElementById('atlas-pixel-diff');
+    if (comparison.atlasPixelDiff === -1) {
+      atlasDiv.innerHTML = '❌ Dimension mismatch';
+      atlasDiv.style.color = '#721c24';
+    } else if (comparison.atlasPixelDiff === 0) {
+      atlasDiv.innerHTML = '✅ Perfect match (0 pixel differences)';
+      atlasDiv.style.color = '#155724';
+    } else {
+      atlasDiv.innerHTML = `❌ ${comparison.atlasPixelDiff} pixel differences`;
+      atlasDiv.style.color = '#721c24';
+    }
+
+    // Positioning comparison
+    const posDiv = document.getElementById('positioning-diff-summary');
+    if (comparison.positioningDiff.totalDifferences === 0) {
+      posDiv.innerHTML = '✅ Perfect match (0 differences across all properties)';
+      posDiv.style.color = '#155724';
+    } else {
+      posDiv.innerHTML = `❌ ${comparison.positioningDiff.totalDifferences} total differences`;
+      posDiv.style.color = '#721c24';
+
+      // Build detailed table
+      const table = document.getElementById('positioning-diff-table');
+      let html = '<tr style="background: #ddd;"><th style="padding: 5px; border: 1px solid #999;">Property</th><th style="padding: 5px; border: 1px solid #999;">Char</th><th style="padding: 5px; border: 1px solid #999;">Path A</th><th style="padding: 5px; border: 1px solid #999;">Path B</th></tr>';
+
+      for (const prop of ['tightWidth', 'tightHeight', 'dx', 'dy', 'xInAtlas']) {
+        for (const diff of comparison.positioningDiff[prop]) {
+          const charDisplay = diff.char === ' ' ? 'SPACE' : diff.char;
+          html += `<tr><td style="padding: 5px; border: 1px solid #ccc;">${prop}</td><td style="padding: 5px; border: 1px solid #ccc;">${charDisplay}</td><td style="padding: 5px; border: 1px solid #ccc;">${diff.a}</td><td style="padding: 5px; border: 1px solid #ccc;">${diff.b}</td></tr>`;
+        }
+      }
+      table.innerHTML = html;
+    }
+
+    // Render comparison
+    const renderDiv = document.getElementById('render-hash-diff');
+    if (comparison.renderHashDiff.identical) {
+      renderDiv.innerHTML = `✅ Perfect match (Hash: ${comparison.renderHashDiff.hashA})`;
+      renderDiv.style.color = '#155724';
+    } else {
+      renderDiv.innerHTML = `❌ Hashes differ:<br>Path A: ${comparison.renderHashDiff.hashA}<br>Path B: ${comparison.renderHashDiff.hashB}`;
+      renderDiv.style.color = '#721c24';
+    }
+
+    // File size estimates
+    const sizeDiv = document.getElementById('size-comparison');
+    if (originalAtlasResult) {
+      const originalSize = originalAtlasResult.canvas.width * originalAtlasResult.canvas.height * 4;
+      const originalSizeKB = (originalSize / 1024).toFixed(2);
+      sizeDiv.innerHTML = `Original-bounds atlas: ${originalAtlasResult.canvas.width}×${originalAtlasResult.canvas.height} = ${originalSizeKB} KB uncompressed<br>` +
+                          `Estimated PNG: ~${(originalSize * 0.015 / 1024).toFixed(2)} KB (1.5% compression ratio estimate)`;
+    }
+  }
+
+  function renderTestText(canvas, atlasData, fontProperties) {
+    canvas.width = 800;
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Create temporary atlas store for this specific test
+    const tempAtlasStore = new AtlasDataStore();
+    tempAtlasStore.setAtlasData(fontProperties, atlasData);
+
+    // Create temporary metrics store (use existing metrics)
+    const tempMetricsStore = new FontMetricsStore();
+    const fontMetrics = fontMetricsStoreFAB.getFontMetrics(fontProperties);
+    if (fontMetrics) {
+      tempMetricsStore.setFontMetrics(fontProperties, fontMetrics);
+    }
+
+    const tempBitmapText = new BitmapText(tempAtlasStore, tempMetricsStore);
+
+    const testText = "Hello World! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const textProps = new TextProperties();
+    tempBitmapText.drawTextFromAtlas(ctx, testText, 10, 50, fontProperties, textProps);
+  }
 </script>
 
 
