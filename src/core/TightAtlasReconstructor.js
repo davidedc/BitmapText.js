@@ -1,21 +1,21 @@
 // TightAtlasReconstructor - Core Runtime Class
 //
 // This is a CORE RUNTIME class designed for reconstructing tight atlases from
-// original-bounds atlases via pixel scanning.
+// standard atlases via pixel scanning.
 //
 // DISTRIBUTION ROLE:
 // - Part of validation harness (Phase 0) in font-assets-builder.html
-// - Will be part of runtime distribution if Phase 0 validation succeeds
-// - Reconstructs tight atlas + positioning data from original-bounds atlas
+// - Will be part of runtime distribution after Phase 1
+// - Reconstructs tight atlas + positioning data from atlas image
 //
 // ARCHITECTURE:
-// - Takes original-bounds atlas image and FontMetrics
+// - Takes atlas image (variable-width cells) and FontMetrics
 // - Scans each character cell to find tight bounding box
-// - Repacks into tight atlas (same as current system)
+// - Repacks into tight atlas
 // - Calculates positioning data (dx, dy) using EXACT formulas from AtlasPositioningFAB
 //
 // CRITICAL REQUIREMENTS:
-// - MUST use sorted character order (same as OriginalAtlasBuilder)
+// - MUST use sorted character order (same as AtlasBuilder)
 // - dx/dy formulas MUST match AtlasPositioningFAB.js:87-88 exactly
 // - MUST handle multi-part glyphs (i, j with dots) correctly
 // - MUST use 4-step optimized tight bounds detection algorithm
@@ -27,18 +27,18 @@ class TightAtlasReconstructor {
   }
 
   /**
-   * Main entry point - reconstructs tight atlas from original-bounds atlas
-   * @param {Image|Canvas|AtlasImage} originalAtlasImage - Original-bounds atlas image
+   * Main entry point - reconstructs tight atlas from standard atlas
+   * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells)
    * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions and positioning
    * @param {Function} canvasFactory - Factory for creating canvases (e.g., () => document.createElement('canvas'))
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static reconstructFromOriginalAtlas(originalAtlasImage, fontMetrics, canvasFactory) {
-    // 1. Get ImageData from original atlas for pixel scanning
-    const imageData = AtlasReconstructionUtils.getImageData(originalAtlasImage);
+  static reconstructFromAtlas(atlasImage, fontMetrics, canvasFactory) {
+    // 1. Get ImageData from atlas for pixel scanning
+    const imageData = AtlasReconstructionUtils.getImageData(atlasImage);
 
     // 2. Get SORTED character list (CRITICAL for determinism)
-    // Must match the order used in OriginalAtlasBuilder
+    // Must match the order used in AtlasBuilder
     const characters = fontMetrics.getAvailableCharacters().sort();
 
     if (characters.length === 0) {
@@ -88,7 +88,7 @@ class TightAtlasReconstructor {
       tightBounds,
       characters,
       fontMetrics,
-      originalAtlasImage,
+      atlasImage,
       canvasFactory
     );
   }
@@ -185,11 +185,11 @@ class TightAtlasReconstructor {
    * @param {Object} tightBounds - Map of char → {left, top, width, height} within cells
    * @param {Array<string>} characters - Sorted array of characters
    * @param {FontMetrics} fontMetrics - Font metrics for positioning calculations
-   * @param {Image|Canvas} originalAtlasImage - Original atlas image for extraction
+   * @param {Image|Canvas} atlasImage - Atlas image for extraction
    * @param {Function} canvasFactory - Factory for creating canvases
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static packTightAtlas(tightBounds, characters, fontMetrics, originalAtlasImage, canvasFactory) {
+  static packTightAtlas(tightBounds, characters, fontMetrics, atlasImage, canvasFactory) {
     // Calculate tight atlas dimensions
     let totalWidth = 0;
     let maxHeight = 0;
@@ -223,7 +223,7 @@ class TightAtlasReconstructor {
     for (const char of characters) {
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
-      // Calculate cell dimensions (same as OriginalAtlasBuilder)
+      // Calculate cell dimensions (same as AtlasBuilder)
       // MUST be calculated for ALL characters to track cellX correctly
       const cellWidth = Math.ceil(
         charMetrics.actualBoundingBoxLeft +
@@ -247,15 +247,15 @@ class TightAtlasReconstructor {
       tempCanvas.height = bounds.height;
       const tempCtx = tempCanvas.getContext('2d');
 
-      // Copy tight region from original atlas to temp canvas
+      // Copy tight region from atlas to temp canvas
       const srcX = Math.floor(cellX + bounds.left);
       const srcY = Math.floor(bounds.top);
       const srcW = Math.floor(bounds.width);
       const srcH = Math.floor(bounds.height);
 
       tempCtx.drawImage(
-        originalAtlasImage,
-        srcX, srcY,  // Source position in original atlas
+        atlasImage,
+        srcX, srcY,  // Source position in atlas
         srcW, srcH,  // Source dimensions
         0, 0,        // Dest position in temp canvas
         srcW, srcH   // Dest dimensions
@@ -269,7 +269,7 @@ class TightAtlasReconstructor {
 
       const pixelDensity = charMetrics.pixelDensity || 1;
 
-      // Calculate distance from bottom of tight bounds to bottom of original canvas
+      // Calculate distance from bottom of tight bounds to bottom of character canvas
       // This is used in the dy calculation
       // Note: bounds.top + bounds.height - 1 gives the Y coordinate of the bottom pixel (like bottomRightCorner.y)
       const distanceBetweenBottomAndBottomOfCanvas =
@@ -296,9 +296,9 @@ class TightAtlasReconstructor {
     }
 
     // Create domain objects
-    const atlasImage = new AtlasImage(tightCanvas);
+    const tightAtlasImage = new AtlasImage(tightCanvas);
     const atlasPositioning = new AtlasPositioning(positioning);
 
-    return { atlasImage, atlasPositioning };
+    return { atlasImage: tightAtlasImage, atlasPositioning };
   }
 }

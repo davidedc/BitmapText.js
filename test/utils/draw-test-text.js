@@ -381,7 +381,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
 
 function buildAndDisplayAtlas(atlasDataStore, fontProperties) {
   addElementToDOM(createDivWithText("Atlas:"));
-  const atlasImageFAB = atlasDataStore.buildAtlas(fontProperties, fontMetricsStoreFAB);
+  const atlasImageFAB = atlasDataStore.buildTightAtlas(fontProperties, fontMetricsStoreFAB);
 
   // Create a display copy of the canvas to prevent DOM cleanup from affecting stored data
   const originalCanvas = atlasImageFAB.image;

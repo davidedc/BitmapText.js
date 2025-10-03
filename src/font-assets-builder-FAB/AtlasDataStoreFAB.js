@@ -67,7 +67,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     return this.glyphs.get(glyphKey);
   }
 
-  // Build an atlas image from individual canvases for a specific font configuration
+  // Build a tight atlas image from individual canvases for a specific font configuration
   // 1. Find all glyphs for the font configuration
   // 2. Calculate atlas positioning data using AtlasPositioningFAB
   // 3. Calculate atlas dimensions from glyph tight bounds
@@ -76,7 +76,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   //
   // NOTE: This method now creates and manages AtlasPositioningFAB directly for clean separation.
   // Font metrics are still available from fontMetricsStore but only for character measurements.
-  buildAtlas(fontProperties, fontMetricsStore) {
+  buildTightAtlas(fontProperties, fontMetricsStore) {
     // Find all glyphs for this font configuration
     const glyphs = {};
     for (const [glyphKey, glyph] of this.glyphs) {
@@ -195,14 +195,14 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   }
 
   /**
-   * Build original-bounds atlas for validation/export (NEW METHOD for Phase 0)
-   * Uses glyph.canvas (original bounds) instead of glyph.tightCanvas
+   * Build atlas for validation/export (NEW METHOD for Phase 0)
+   * Uses glyph.canvas (variable-width cells) instead of glyph.tightCanvas
    *
    * @param {FontProperties} fontProperties - Font configuration
    * @param {FontMetricsStore} fontMetricsStore - Font metrics store
    * @returns {{canvas, cellWidths, cellHeight, characters, totalWidth}}
    */
-  buildOriginalAtlas(fontProperties, fontMetricsStore) {
+  buildAtlas(fontProperties, fontMetricsStore) {
     const glyphs = this.getGlyphsForFont(fontProperties);
     const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
 
@@ -210,19 +210,19 @@ class AtlasDataStoreFAB extends AtlasDataStore {
       throw new Error(`No FontMetrics found for ${fontProperties.key}`);
     }
 
-    return OriginalAtlasBuilder.buildOriginalAtlas(glyphs, fontMetrics);
+    return AtlasBuilder.buildAtlas(glyphs, fontMetrics);
   }
 
   /**
-   * Build tight atlas from original-bounds atlas (NEW METHOD for Phase 0 validation)
-   * Reconstructs tight atlas by scanning original-bounds atlas pixels
+   * Reconstruct tight atlas from standard atlas (NEW METHOD for Phase 0 validation)
+   * Reconstructs tight atlas by scanning atlas pixels
    *
-   * @param {Canvas|Image} originalAtlasCanvas - Original-bounds atlas image
+   * @param {Canvas|Image} atlasCanvas - Atlas image (variable-width cells)
    * @param {FontProperties} fontProperties - Font configuration
    * @param {FontMetricsStore} fontMetricsStore - Font metrics store
    * @returns {AtlasData} AtlasData containing reconstructed tight atlas and positioning
    */
-  buildTightAtlasFromOriginal(originalAtlasCanvas, fontProperties, fontMetricsStore) {
+  reconstructTightAtlas(atlasCanvas, fontProperties, fontMetricsStore) {
     const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
 
     if (!fontMetrics) {
@@ -230,8 +230,8 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     }
 
     const { atlasImage, atlasPositioning } =
-      TightAtlasReconstructor.reconstructFromOriginalAtlas(
-        originalAtlasCanvas,
+      TightAtlasReconstructor.reconstructFromAtlas(
+        atlasCanvas,
         fontMetrics,
         () => document.createElement('canvas')
       );

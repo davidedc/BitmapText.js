@@ -1,12 +1,12 @@
-// OriginalAtlasBuilder - Build-Time Utility
+// AtlasBuilder - Build-Time Utility
 //
-// This utility class builds original-bounds atlases from individual glyph canvases.
-// Original-bounds atlases use each character's actualBoundingBox width and the font's
+// This utility class builds atlases from individual glyph canvases.
+// Atlases use each character's actualBoundingBox width and the font's
 // fontBoundingBox height, creating variable-width cells at a constant height.
 //
 // DISTRIBUTION ROLE:
 // - Part of validation harness (Phase 0) in font-assets-builder.html
-// - Used for building original-bounds atlases that will be reconstructed at runtime
+// - Used for building atlases that will be reconstructed at runtime into tight atlases
 // - NOT part of runtime distribution (only needed during font generation)
 //
 // ARCHITECTURE:
@@ -16,30 +16,30 @@
 //
 // CRITICAL REQUIREMENTS:
 // - MUST use sorted character order (same as TightAtlasReconstructor)
-// - MUST use glyph.canvas (original bounds), NOT glyph.tightCanvas
+// - MUST use glyph.canvas (standard cells), NOT glyph.tightCanvas
 // - Cell widths MUST match character metrics exactly
 // - Cell height MUST be constant across all characters in font
 
-class OriginalAtlasBuilder {
+class AtlasBuilder {
   // Private constructor - prevent instantiation following Effective Java patterns
   constructor() {
-    throw new Error('OriginalAtlasBuilder cannot be instantiated - use static methods');
+    throw new Error('AtlasBuilder cannot be instantiated - use static methods');
   }
 
   /**
-   * Build original-bounds atlas from glyphs
+   * Build atlas from glyphs (variable-width cells format)
    * @param {Object} glyphs - Map of char → GlyphFAB instances
    * @param {FontMetrics} fontMetrics - Font metrics for dimensions
    * @returns {{canvas, cellWidths, cellHeight, characters, totalWidth}}
    */
-  static buildOriginalAtlas(glyphs, fontMetrics) {
+  static buildAtlas(glyphs, fontMetrics) {
     // ⚠️ CRITICAL: Use SORTED characters for determinism
     // JavaScript object iteration order is not guaranteed to be stable across
     // build and runtime environments. Explicit sorting ensures consistency.
     const characters = Object.keys(glyphs).sort();
 
     if (characters.length === 0) {
-      throw new Error('OriginalAtlasBuilder: No glyphs provided for atlas building');
+      throw new Error('AtlasBuilder: No glyphs provided for atlas building');
     }
 
     // Get first character's metrics for cell height calculation
@@ -48,7 +48,7 @@ class OriginalAtlasBuilder {
     const firstMetrics = fontMetrics.getCharacterMetrics(firstChar);
 
     if (!firstMetrics) {
-      throw new Error(`OriginalAtlasBuilder: No metrics found for character '${firstChar}'`);
+      throw new Error(`AtlasBuilder: No metrics found for character '${firstChar}'`);
     }
 
     const cellHeight = Math.ceil(
@@ -64,12 +64,12 @@ class OriginalAtlasBuilder {
       const metrics = fontMetrics.getCharacterMetrics(char);
 
       if (!metrics) {
-        console.warn(`OriginalAtlasBuilder: No metrics found for character '${char}', skipping`);
+        console.warn(`AtlasBuilder: No metrics found for character '${char}', skipping`);
         continue;
       }
 
       // Cell width = actualBoundingBoxLeft + actualBoundingBoxRight
-      // This matches the original canvas dimensions from GlyphFAB.js:153-156
+      // This matches the character canvas dimensions from GlyphFAB.js:153-156
       const cellWidth = Math.ceil(
         metrics.actualBoundingBoxLeft +
         metrics.actualBoundingBoxRight
@@ -79,24 +79,24 @@ class OriginalAtlasBuilder {
       totalWidth += cellWidth;
     }
 
-    // Create canvas for original-bounds atlas
+    // Create canvas for atlas (variable-width cells)
     const canvas = document.createElement('canvas');
     canvas.width = totalWidth;
     canvas.height = cellHeight;
     const ctx = canvas.getContext('2d');
 
-    // Draw each glyph's ORIGINAL canvas (NOT tight!) in sequence
+    // Draw each glyph's character canvas (NOT tight!) in sequence
     let x = 0;
     for (const char of characters) {
       const glyph = glyphs[char];
 
-      // ⚠️ CRITICAL: Use glyph.canvas (original bounds), NOT glyph.tightCanvas
+      // ⚠️ CRITICAL: Use glyph.canvas (standard cells), NOT glyph.tightCanvas
       // glyph.canvas contains the character at its original position within
       // the actualBoundingBox × fontBoundingBox rectangle
       if (glyph && glyph.canvas) {
         ctx.drawImage(glyph.canvas, x, 0);
       } else {
-        console.warn(`OriginalAtlasBuilder: Character '${char}' has no original canvas`);
+        console.warn(`AtlasBuilder: Character '${char}' has no character canvas`);
       }
 
       x += cellWidths[char];

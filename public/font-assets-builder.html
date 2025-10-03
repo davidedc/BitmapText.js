@@ -29,7 +29,7 @@
 
     <!-- VALIDATION HARNESS SECTION (Phase 0) -->
     <div id="validation-section" style="margin-top: 40px; border-top: 3px solid #333; padding-top: 20px;">
-      <h2>🔬 Validation Harness: Original-Bounds → Tight Reconstruction</h2>
+      <h2>🔬 Validation Harness: Atlas → Tight Atlas Reconstruction</h2>
       <p style="font-size: 14px; color: #666; margin: 5px 0;">
         Validation runs automatically when you change font settings above. You can also click the button to re-run manually.
       </p>
@@ -41,24 +41,24 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px;">
         <!-- Column 1: Current (Control) -->
         <div>
-          <h3>PATH A: Current Tight (Control)</h3>
-          <canvas id="current-tight-atlas" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
-          <div id="current-atlas-info" style="font-family: monospace; font-size: 12px;"></div>
+          <h3>PATH A: Tight Atlas (Current)</h3>
+          <canvas id="tight-atlas-current" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
+          <div id="tight-atlas-current-info" style="font-family: monospace; font-size: 12px;"></div>
           <canvas id="current-render" data-validation="true" style="border: 1px solid #ccc; margin-top: 10px;"></canvas>
         </div>
 
-        <!-- Column 2: Original-Bounds -->
+        <!-- Column 2: Atlas Source -->
         <div>
-          <h3>PATH B: Original-Bounds</h3>
-          <canvas id="original-bounds-atlas" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
-          <div id="original-atlas-info" style="font-family: monospace; font-size: 12px;"></div>
+          <h3>PATH B: Atlas (Source)</h3>
+          <canvas id="atlas-source" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
+          <div id="atlas-source-info" style="font-family: monospace; font-size: 12px;"></div>
         </div>
 
         <!-- Column 3: Reconstructed -->
         <div>
-          <h3>PATH B: Reconstructed Tight</h3>
-          <canvas id="reconstructed-tight-atlas" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
-          <div id="reconstructed-atlas-info" style="font-family: monospace; font-size: 12px;"></div>
+          <h3>PATH B: Tight Atlas (Reconstructed)</h3>
+          <canvas id="tight-atlas-reconstructed" data-validation="true" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
+          <div id="tight-atlas-reconstructed-info" style="font-family: monospace; font-size: 12px;"></div>
           <canvas id="reconstructed-render" data-validation="true" style="border: 1px solid #ccc; margin-top: 10px;"></canvas>
         </div>
       </div>
@@ -132,7 +132,7 @@
 <script src="../src/minification/AtlasDataMinifier.js"></script>
 <script src="../src/minification/AtlasDataExpander.js"></script>
 <!-- NEW: Phase 0 validation utilities -->
-<script src="../src/minification/OriginalAtlasBuilder.js"></script>
+<script src="../src/minification/AtlasBuilder.js"></script>
 <script src="../src/core/TightAtlasReconstructor.js"></script>
 <script src="../src/utils/HashStore.js"></script>
 <script src="../test/data/reference-hashes.js"></script>
@@ -196,28 +196,28 @@
 
       const currentAtlasPositioning = currentAtlasData.atlasPositioning;
 
-      // PATH B: Original-bounds → Reconstructed tight
-      console.time('PATH B: Original-bounds atlas build');
-      const originalAtlasResult = atlasDataStoreFAB.buildOriginalAtlas(currentFontProperties, fontMetricsStoreFAB);
-      console.timeEnd('PATH B: Original-bounds atlas build');
+      // PATH B: Atlas → Reconstructed tight
+      console.time('PATH B: Atlas build');
+      const atlasResult = atlasDataStoreFAB.buildAtlas(currentFontProperties, fontMetricsStoreFAB);
+      console.timeEnd('PATH B: Atlas build');
 
       console.time('PATH B: Tight atlas reconstruction');
-      const reconstructedAtlasData = atlasDataStoreFAB.buildTightAtlasFromOriginal(
-        originalAtlasResult.canvas,
+      const reconstructedAtlasData = atlasDataStoreFAB.reconstructTightAtlas(
+        atlasResult.canvas,
         currentFontProperties,
         fontMetricsStoreFAB
       );
       console.timeEnd('PATH B: Tight atlas reconstruction');
 
       // Display atlases
-      displayAtlasCanvas(currentAtlasData.atlasImage.image, 'current-tight-atlas');
-      displayAtlasCanvas(originalAtlasResult.canvas, 'original-bounds-atlas');
-      displayAtlasCanvas(reconstructedAtlasData.atlasImage.image, 'reconstructed-tight-atlas');
+      displayAtlasCanvas(currentAtlasData.atlasImage.image, 'tight-atlas-current');
+      displayAtlasCanvas(atlasResult.canvas, 'atlas-source');
+      displayAtlasCanvas(reconstructedAtlasData.atlasImage.image, 'tight-atlas-reconstructed');
 
       // Display info using the same format as the main atlases, including positioning hash
-      displayAtlasInfo(currentAtlasData.atlasImage.image, 'current-atlas-info', currentFontProperties, 'current tight atlas', currentAtlasData.atlasPositioning);
-      displayAtlasInfo(originalAtlasResult.canvas, 'original-atlas-info', currentFontProperties, 'original bounds atlas', null);
-      displayAtlasInfo(reconstructedAtlasData.atlasImage.image, 'reconstructed-atlas-info', currentFontProperties, 'reconstructed tight atlas', reconstructedAtlasData.atlasPositioning);
+      displayAtlasInfo(currentAtlasData.atlasImage.image, 'tight-atlas-current-info', currentFontProperties, 'tight atlas (current)', currentAtlasData.atlasPositioning);
+      displayAtlasInfo(atlasResult.canvas, 'atlas-source-info', currentFontProperties, 'atlas', null);
+      displayAtlasInfo(reconstructedAtlasData.atlasImage.image, 'tight-atlas-reconstructed-info', currentFontProperties, 'tight atlas (reconstructed)', reconstructedAtlasData.atlasPositioning);
 
       // Render both
       const currentRenderCanvas = document.getElementById('current-render');
@@ -244,7 +244,7 @@
       };
 
       // Display comparison results
-      displayComparisonResults(comparison, originalAtlasResult);
+      displayComparisonResults(comparison, atlasResult);
 
       // Final verdict
       const resultsDiv = document.getElementById('comparison-results');
@@ -410,7 +410,7 @@
     };
   }
 
-  function displayComparisonResults(comparison, originalAtlasResult) {
+  function displayComparisonResults(comparison, atlasResult) {
     // Atlas comparison
     const atlasDiv = document.getElementById('atlas-pixel-diff');
     if (comparison.atlasPixelDiff === -1) {
@@ -458,11 +458,11 @@
 
     // File size estimates
     const sizeDiv = document.getElementById('size-comparison');
-    if (originalAtlasResult) {
-      const originalSize = originalAtlasResult.canvas.width * originalAtlasResult.canvas.height * 4;
-      const originalSizeKB = (originalSize / 1024).toFixed(2);
-      sizeDiv.innerHTML = `Original-bounds atlas: ${originalAtlasResult.canvas.width}×${originalAtlasResult.canvas.height} = ${originalSizeKB} KB uncompressed<br>` +
-                          `Estimated PNG: ~${(originalSize * 0.015 / 1024).toFixed(2)} KB (1.5% compression ratio estimate)`;
+    if (atlasResult) {
+      const atlasSize = atlasResult.canvas.width * atlasResult.canvas.height * 4;
+      const atlasSizeKB = (atlasSize / 1024).toFixed(2);
+      sizeDiv.innerHTML = `Atlas: ${atlasResult.canvas.width}×${atlasResult.canvas.height} = ${atlasSizeKB} KB uncompressed<br>` +
+                          `Estimated PNG: ~${(atlasSize * 0.015 / 1024).toFixed(2)} KB (1.5% compression ratio estimate)`;
     }
   }
 

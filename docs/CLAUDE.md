@@ -68,8 +68,8 @@
   - **Atlas reconstruction utilities**: src/minification/AtlasReconstructionUtils.js (shared reconstruction algorithms)
   - **Atlas data minification**: src/minification/AtlasDataMinifier.js (compacts atlas positioning for serialization)
   - **Atlas data expansion**: src/minification/AtlasDataExpander.js (restores atlas positioning from minified data)
-  - **Original atlas building**: src/minification/OriginalAtlasBuilder.js (builds original-bounds atlases for validation)
-  - **Tight atlas reconstruction**: src/core/TightAtlasReconstructor.js (reconstructs tight atlases from original-bounds via pixel scanning)
+  - **Atlas building**: src/minification/AtlasBuilder.js (builds atlases with variable-width cells)
+  - **Tight atlas reconstruction**: src/core/TightAtlasReconstructor.js (reconstructs tight atlases from atlases via pixel scanning)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1

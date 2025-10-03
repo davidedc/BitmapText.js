@@ -1,9 +1,29 @@
-# Atlas Optimization: Original-Bounds→Tight Conversion Plan
+# Atlas Optimization: Atlas→Tight Conversion Plan
 ## VALIDATION-FIRST APPROACH (REVISED)
+
+## Atlas Nomenclature
+
+This document uses the following terminology:
+
+- **Atlas**: Variable-width cells (actualBoundingBox width × fontBoundingBox height)
+  - The straightforward, natural representation of how browsers measure text
+  - Serialized format (Phase 1+)
+  - Built by `AtlasBuilder`
+
+- **Tight Atlas**: Cropped glyphs packed horizontally
+  - Runtime internal representation
+  - Reconstructed from Atlas via pixel scanning by `TightAtlasReconstructor`
+  - Never serialized (calculated at runtime)
+
+- **Fixed-Width Atlas**: All cells same width (examined but not implemented)
+  - Alternative approach with uniform grid
+  - Not used in current implementation
+
+**Important**: `AtlasImage` and `AtlasData` are format-agnostic containers. The format (standard vs tight) is communicated through method names and documentation, not the type system.
 
 ## Document Purpose
 
-This document captures the complete context, analysis, and implementation plan for optimizing atlas serialization by using **original-bounds atlases** (based on font metrics bounding boxes) that are converted to tight atlases at runtime.
+This document captures the complete context, analysis, and implementation plan for optimizing atlas serialization by using **atlases** (variable-width cells based on font metrics bounding boxes) that are converted to tight atlases at runtime.
 
 
 
@@ -57,10 +77,10 @@ The current system uses tight atlases (minimal bounding boxes around each glyph)
 
 ### Key Insight
 
-PNG/QOI compression handles empty space extremely efficiently. An original-bounds atlas (with uniform height cells and some empty space) compresses to nearly the same size as a tight atlas, potentially even smaller due to better compression characteristics.
+PNG/QOI compression handles empty space extremely efficiently. An atlas (with uniform height cells and some empty space) compresses to nearly the same size as a tight atlas, potentially even smaller due to better compression characteristics.
 
 This means we can:
-1. **Serialize**: Original-bounds atlases (NO positioning data needed)
+1. **Serialize**: Atlases (NO positioning data needed)
 2. **Runtime**: Reconstruct tight atlases by scanning pixels once during load
 3. **Result**: Eliminate 3.7 KB of positioning data, add ~10-15ms one-time reconstruction cost
 
@@ -260,7 +280,7 @@ ctx.fillText(
 
 We have THREE approaches to consider:
 
-### Approach A: Fixed-Width Original-Bounds Atlas
+### Approach A: Fixed-Width Atlas
 
 **Structure**:
 ```
@@ -281,7 +301,7 @@ Uncompressed: 2,530 × 21 × 4 = 212,520 bytes = 207.5 KB
 
 ---
 
-### Approach B: Variable-Width Original-Bounds Atlas ⭐ RECOMMENDED
+### Approach B: Atlas (Variable-Width Cells) ⭐ RECOMMENDED
 
 **Structure**:
 ```
