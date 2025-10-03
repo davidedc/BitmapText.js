@@ -139,6 +139,7 @@
     - `getPositioning()`: Access to positioning data for specific character
     - `hasPositioning()`: Check if character has positioning data
     - `getAvailableCharacters()`: List all characters with positioning
+    - `getHash()`: Generate deterministic cross-platform hash of positioning data (FNV-1a, 6-char hex)
 
   **AtlasData**
   - Purpose: Combines AtlasImage and AtlasPositioning for complete atlas representation
@@ -262,6 +263,8 @@ To support compound emojis would require:
   - Optimizes glyph packing and atlas generation
   - Generates minified metadata and export formats
   - Extraction method to convert AtlasImageFAB to AtlasImage instances
+  - Supports building original-bounds atlases for validation (buildOriginalAtlas)
+  - Supports tight atlas reconstruction from original-bounds (buildTightAtlasFromOriginal)
 
   **AtlasPositioningFAB extends AtlasPositioning**
   - Font assets building capabilities for atlas positioning data management
@@ -299,6 +302,25 @@ To support compound emojis would require:
   - Verification of pixel-identical consistency across browsers
   - Test infrastructure support with reference hash storage
   - Includes canvas dimensions in hash calculation for robustness
+
+  ### Minification and Atlas Reconstruction
+
+  **AtlasReconstructionUtils**
+  - Shared utilities for atlas reconstruction algorithms
+  - Provides getImageData() for extracting pixel data from various image sources
+  - Used by both AtlasDataExpander (runtime) and TightAtlasReconstructor (validation)
+
+  **OriginalAtlasBuilder**
+  - Builds original-bounds atlases from glyph canvases
+  - Uses variable-width cells (actualBoundingBox) × constant height (fontBoundingBox)
+  - Maintains sorted character order for determinism
+  - Used in Phase 0 validation harness to test atlas reconstruction
+
+  **TightAtlasReconstructor**
+  - Reconstructs tight atlases from original-bounds atlases via pixel scanning
+  - Uses 4-step optimized tight bounds detection (bottom→top, top→bottom, left→right, right→left)
+  - Calculates positioning data using exact formulas from AtlasPositioningFAB
+  - Used in Phase 0 validation to verify pixel-perfect reconstruction accuracy
 
   ## Data Flow
 

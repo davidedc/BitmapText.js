@@ -68,6 +68,8 @@
   - **Atlas reconstruction utilities**: src/minification/AtlasReconstructionUtils.js (shared reconstruction algorithms)
   - **Atlas data minification**: src/minification/AtlasDataMinifier.js (compacts atlas positioning for serialization)
   - **Atlas data expansion**: src/minification/AtlasDataExpander.js (restores atlas positioning from minified data)
+  - **Original atlas building**: src/minification/OriginalAtlasBuilder.js (builds original-bounds atlases for validation)
+  - **Tight atlas reconstruction**: src/core/TightAtlasReconstructor.js (reconstructs tight atlases from original-bounds via pixel scanning)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
@@ -75,8 +77,9 @@
   - **Font loading utilities**: src/core/FontLoader.js (browser), src/node/FontLoader-node.js (Node.js - unified API)
   - **Loading configuration**: src/core/FontLoaderConfig.js
   - **Font registry management**: src/core/FontManifest.js (replaces global bitmapTextManifest)
-  - **Hash verification**: src/utils/canvas-extensions.getHash:1
+  - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/core/AtlasPositioning.getHash:149 (positioning data hash)
   - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
+  - **Validation harness**: public/font-assets-builder.html (Phase 0 validation comparing current vs reconstructed atlases)
 
   ## Development Tips
 
