@@ -30,9 +30,12 @@
     <!-- VALIDATION HARNESS SECTION (Phase 0) -->
     <div id="validation-section" style="margin-top: 40px; border-top: 3px solid #333; padding-top: 20px;">
       <h2>🔬 Validation Harness: Original-Bounds → Tight Reconstruction</h2>
+      <p style="font-size: 14px; color: #666; margin: 5px 0;">
+        Validation runs automatically when you change font settings above. You can also click the button to re-run manually.
+      </p>
 
       <button onclick="runValidationHarness()" style="font-size: 16px; padding: 10px 20px; margin: 10px 0;">
-        Run Validation
+        Re-run Validation
       </button>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px;">
@@ -107,6 +110,11 @@
   let specsDefault;
   function updatePageContent() {
     buildAndShowGlyphs();
+    // Also run validation harness to keep it in sync with UI
+    // Check if validation function exists (it's defined later in the page)
+    if (typeof runValidationHarness === 'function') {
+      runValidationHarness();
+    }
   }
 </script>
 
@@ -170,51 +178,20 @@
 
 <!-- VALIDATION HARNESS JAVASCRIPT (Phase 0) -->
 <script>
-  let currentFontProperties = null;
-
-  // Track current font properties from UI selections
-  function trackCurrentFontProperties() {
-    // This will be called when user selects font options
-    // For now, we'll use a default or let user trigger validation manually
-  }
-
   function runValidationHarness() {
     console.log('🔬 Starting Validation Harness...');
 
     // Get current font properties from the UI state
-    // If not available, use a default font configuration
-    if (!currentFontProperties) {
-      currentFontProperties = new FontProperties(
-        1.0,           // pixelDensity
-        'Arial',       // fontFamily
-        'normal',      // fontStyle
-        'normal',      // fontWeight
-        18             // fontSize
-      );
-      console.log('Using default font properties:', currentFontProperties);
-    }
+    const currentFontProperties = getFontPropertiesFromUI();
+    console.log('Using font properties from UI:', currentFontProperties);
 
     try {
-      // STEP 1: Prepare font metrics and glyphs
-      console.log('Preparing font metrics and glyphs...');
-
-      // Reset FontMetricsFAB for this font
-      fontMetricsStoreFAB.resetFontMetricsFAB(currentFontProperties);
-
-      // Build kerning table
-      bitmapTextFAB.buildKerningTableIfDoesntExist(currentFontProperties);
-
-      // Create glyphs for this font
-      createGlyphsAndAddToFullStore(currentFontProperties);
-
-      // PATH A: Current tight atlas building (control)
-      console.time('PATH A: Current tight atlas build');
-      atlasDataStoreFAB.buildAtlas(currentFontProperties, fontMetricsStoreFAB);
+      // PATH A: Reuse the tight atlas already built by buildAndShowGlyphs()
+      // No need to rebuild - glyphs and atlas are already in atlasDataStoreFAB
       const currentAtlasData = atlasDataStoreFAB.getAtlasData(currentFontProperties);
-      console.timeEnd('PATH A: Current tight atlas build');
 
       if (!currentAtlasData) {
-        throw new Error('Failed to build current atlas - no atlas data returned');
+        throw new Error('No atlas data found - buildAndShowGlyphs() should have created it');
       }
 
       const currentAtlasPositioning = currentAtlasData.atlasPositioning;
@@ -237,13 +214,10 @@
       displayAtlasCanvas(originalAtlasResult.canvas, 'original-bounds-atlas');
       displayAtlasCanvas(reconstructedAtlasData.atlasImage.image, 'reconstructed-tight-atlas');
 
-      // Display info
-      document.getElementById('current-atlas-info').innerHTML =
-        `Dims: ${currentAtlasData.atlasImage.width}×${currentAtlasData.atlasImage.height}`;
-      document.getElementById('original-atlas-info').innerHTML =
-        `Dims: ${originalAtlasResult.canvas.width}×${originalAtlasResult.canvas.height}`;
-      document.getElementById('reconstructed-atlas-info').innerHTML =
-        `Dims: ${reconstructedAtlasData.atlasImage.width}×${reconstructedAtlasData.atlasImage.height}`;
+      // Display info using the same format as the main atlases, including positioning hash
+      displayAtlasInfo(currentAtlasData.atlasImage.image, 'current-atlas-info', currentFontProperties, 'current tight atlas', currentAtlasData.atlasPositioning);
+      displayAtlasInfo(originalAtlasResult.canvas, 'original-atlas-info', currentFontProperties, 'original bounds atlas', null);
+      displayAtlasInfo(reconstructedAtlasData.atlasImage.image, 'reconstructed-atlas-info', currentFontProperties, 'reconstructed tight atlas', reconstructedAtlasData.atlasPositioning);
 
       // Render both
       const currentRenderCanvas = document.getElementById('current-render');
@@ -301,6 +275,29 @@
     target.height = sourceCanvas.height;
     const ctx = target.getContext('2d');
     ctx.drawImage(sourceCanvas, 0, 0);
+  }
+
+  function displayAtlasInfo(canvas, targetDivId, fontProperties, hashSuffix, atlasPositioning = null) {
+    const targetDiv = document.getElementById(targetDivId);
+    const ctx = canvas.getContext('2d');
+    const hashString = ctx.getHashString();
+
+    // Get hash match info if available
+    let additionalInfo = '';
+    if (typeof calculateFontPropertiesHashKey === 'function' && typeof hashStore !== 'undefined') {
+      const hashKey = calculateFontPropertiesHashKey(fontProperties, hashSuffix);
+      const result = hashStore.compareHash(hashKey, hashString);
+      additionalInfo = result.message || '';
+    }
+
+    // Add positioning hash if available
+    let positioningHashInfo = '';
+    if (atlasPositioning && typeof atlasPositioning.getHash === 'function') {
+      const posHash = atlasPositioning.getHash();
+      positioningHashInfo = ` pos: ${posHash}`;
+    }
+
+    targetDiv.innerHTML = `${canvas.width} x ${canvas.height} hash: ${hashString}${positioningHashInfo} ${additionalInfo}`;
   }
 
   function comparePositioning(posA, posB) {
@@ -493,6 +490,9 @@
     const textProps = new TextProperties();
     tempBitmapText.drawTextFromAtlas(ctx, testText, 10, 50, fontProperties, textProps);
   }
+
+  // Run validation on initial page load
+  runValidationHarness();
 </script>
 
 
