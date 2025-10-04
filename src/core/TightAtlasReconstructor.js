@@ -19,6 +19,13 @@
 // - dx/dy formulas MUST match AtlasPositioningFAB.js:87-88 exactly
 // - MUST handle multi-part glyphs (i, j with dots) correctly
 // - MUST use 4-step optimized tight bounds detection algorithm
+//
+// PARAMETER ORDER NOTE:
+// The packTightAtlas() method has parameters in this order:
+// (tightBounds, characters, cachedMetrics, sourceAtlasImage, canvasFactory)
+// This differs from AtlasBuilder.buildAtlas() which uses (glyphs, fontMetrics).
+// This inconsistency exists for historical reasons and will be standardized
+// in a future refactor to improve API consistency.
 
 class TightAtlasReconstructor {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -49,12 +56,9 @@ class TightAtlasReconstructor {
     // Cell height is constant across all characters in this font
     const firstChar = characters[0];
     const firstMetrics = fontMetrics.getCharacterMetrics(firstChar);
-    const cellHeight = Math.ceil(
-      firstMetrics.fontBoundingBoxAscent +
-      firstMetrics.fontBoundingBoxDescent
-    );
+    const cellHeight = AtlasCellDimensions.getHeight(firstMetrics);
 
-    // 4. Scan each cell to find tight bounds within the original-bounds cell
+    // 4. Scan each cell to find tight bounds within the atlas cell
     let cellX = 0;
     const tightBounds = {};
 
@@ -62,10 +66,7 @@ class TightAtlasReconstructor {
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
       // Cell width is variable per character
-      const cellWidth = Math.ceil(
-        charMetrics.actualBoundingBoxLeft +
-        charMetrics.actualBoundingBoxRight
-      );
+      const cellWidth = AtlasCellDimensions.getWidth(charMetrics);
 
       // Find tight bounds within this cell using 4-step optimized algorithm
       const bounds = this.findTightBounds(
@@ -187,11 +188,11 @@ class TightAtlasReconstructor {
    * @param {Object} tightBounds - Map of char → {left, top, width, height} within cells
    * @param {Array<string>} characters - Sorted array of characters
    * @param {FontMetrics} fontMetrics - Font metrics for positioning calculations
-   * @param {Image|Canvas} atlasImage - Atlas image for extraction
+   * @param {Image|Canvas} sourceAtlasImage - Source Atlas image for extraction
    * @param {Function} canvasFactory - Factory for creating canvases
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static packTightAtlas(tightBounds, characters, fontMetrics, atlasImage, canvasFactory) {
+  static packTightAtlas(tightBounds, characters, fontMetrics, sourceAtlasImage, canvasFactory) {
     // Calculate tight atlas dimensions
     let totalWidth = 0;
     let maxHeight = 0;
@@ -227,14 +228,8 @@ class TightAtlasReconstructor {
 
       // Calculate cell dimensions (same as AtlasBuilder)
       // MUST be calculated for ALL characters to track cellX correctly
-      const cellWidth = Math.ceil(
-        charMetrics.actualBoundingBoxLeft +
-        charMetrics.actualBoundingBoxRight
-      );
-      const cellHeight = Math.ceil(
-        charMetrics.fontBoundingBoxAscent +
-        charMetrics.fontBoundingBoxDescent
-      );
+      const cellWidth = AtlasCellDimensions.getWidth(charMetrics);
+      const cellHeight = AtlasCellDimensions.getHeight(charMetrics);
 
       const bounds = tightBounds[char];
       if (!bounds) {
@@ -256,7 +251,7 @@ class TightAtlasReconstructor {
       const srcH = Math.floor(bounds.height);
 
       tempCtx.drawImage(
-        atlasImage,
+        sourceAtlasImage,
         srcX, srcY,  // Source position in atlas
         srcW, srcH,  // Source dimensions
         0, 0,        // Dest position in temp canvas

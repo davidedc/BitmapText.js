@@ -36,8 +36,10 @@ FILES_TO_CHECK=(
   "$SRC_DIR/core/AtlasImage.js"
   "$SRC_DIR/core/AtlasData.js"
   "$SRC_DIR/minification/AtlasReconstructionUtils.js"
+  "$SRC_DIR/minification/AtlasCellDimensions.js"
   "$SRC_DIR/core/TightAtlasReconstructor.js"
   "$SRC_DIR/minification/AtlasDataExpander.js"
+  "$SRC_DIR/core/FontLoaderShared.js"
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
@@ -185,7 +187,15 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/minification/AtlasReconstructionUtils.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate TightAtlasReconstructor (PHASE 1: Runtime atlas reconstruction)
+# Concatenate AtlasCellDimensions
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// ATLAS CELL DIMENSIONS UTILITY" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/minification/AtlasCellDimensions.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate TightAtlasReconstructor (Runtime atlas reconstruction)
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// TIGHT ATLAS RECONSTRUCTOR" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
@@ -199,6 +209,14 @@ echo "// ATLAS EXPANDER UTILITY" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/minification/AtlasDataExpander.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate FontLoaderShared
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// FONT LOADER SHARED UTILITIES" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/FontLoaderShared.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate QOI decoder

@@ -45,14 +45,7 @@ class FontLoader {
   // Static method for atlas JS files to register packages
   // Only takes base64 data (NO positioning data)
   static registerAtlasPackage(IDString, base64Data) {
-    if (typeof IDString !== 'string' || typeof base64Data !== 'string') {
-      console.warn('FontLoader.registerAtlasPackage: Invalid arguments - IDString and base64Data must be strings');
-      return;
-    }
-
-    FontLoader._tempAtlasPackages[IDString] = {
-      base64Data: base64Data
-    };
+    FontLoaderShared.registerAtlasPackage(IDString, base64Data, FontLoader._tempAtlasPackages);
   }
 
   // Loads AtlasData from Atlas image and stores in AtlasDataStore
@@ -60,38 +53,13 @@ class FontLoader {
   // @param {string} IDString - Font ID string
   // @param {Image|Canvas} atlasImage - Loaded Atlas image (variable-width cells format)
   // @returns {boolean} - True if successful, false if metrics not available
-  createAndStoreAtlasDataFromPackage(IDString, atlasImage) {
-    const fontProperties = FontProperties.fromIDString(IDString);
-
-    // Clean up immediately
-    delete FontLoader._tempAtlasPackages[IDString];
-
-    // PHASE 1: Reconstruct tight atlas from Atlas image using TightAtlasReconstructor
-    // This requires FontMetrics to be loaded first (for cell dimensions)
-    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
-
-    if (!fontMetrics) {
-      console.warn(`FontLoader: Metrics not loaded for ${IDString} - cannot reconstruct tight atlas`);
-      console.warn('Make sure metrics are loaded before atlases');
-      return false;
-    }
-
-    // Check if TightAtlasReconstructor is available
-    if (typeof TightAtlasReconstructor === 'undefined') {
-      throw new Error(`TightAtlasReconstructor required for font loading - not available for ${IDString}`);
-    }
-
-    // Reconstruct tight atlas + positioning from Atlas image
-    const { atlasImage: tightAtlasImage, atlasPositioning } =
-      TightAtlasReconstructor.reconstructFromAtlas(atlasImage, fontMetrics, this.canvasFactory);
-
-    // Create AtlasData instance
-    const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);
-
-    // Store in atlas data store
-    this.atlasDataStore.setAtlasData(fontProperties, atlasData);
-
-    return true;
+  loadAtlasFromPackage(IDString, atlasImage) {
+    return FontLoaderShared.loadAtlasFromPackage(IDString, atlasImage, {
+      atlasDataStore: this.atlasDataStore,
+      fontMetricsStore: this.fontMetricsStore,
+      canvasFactory: this.canvasFactory,
+      tempPackagesMap: FontLoader._tempAtlasPackages
+    });
   }
 
   // Load font data for a single ID string
@@ -173,7 +141,7 @@ class FontLoader {
 
         img.onload = () => {
           // Complete flow: get package → expand → create AtlasData → store → cleanup
-          this.createAndStoreAtlasDataFromPackage(IDString, img);
+          this.loadAtlasFromPackage(IDString, img);
 
           imageScript.remove();
           this.incrementProgress();
@@ -209,7 +177,7 @@ class FontLoader {
       img.onload = () => {
         // PNG files are now Atlas format (variable-width cells)
         // Reconstruct tight atlas + positioning using TightAtlasReconstructor
-        const success = this.createAndStoreAtlasDataFromPackage(IDString, img);
+        const success = this.loadAtlasFromPackage(IDString, img);
 
         if (!success) {
           console.warn(`Failed to reconstruct atlas for ${IDString} - metrics not loaded yet`);
@@ -229,14 +197,11 @@ class FontLoader {
 
   // Increment progress counter and call callback
   incrementProgress() {
-    this.loadedCount++;
-    if (this.onProgress) {
-      this.onProgress(this.loadedCount, this.totalCount);
-    }
+    FontLoaderShared.incrementProgress(this);
   }
 
   // Check if loading is complete
   isComplete() {
-    return this.loadedCount >= this.totalCount;
+    return FontLoaderShared.isComplete(this.loadedCount, this.totalCount);
   }
 }

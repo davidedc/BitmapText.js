@@ -19,6 +19,12 @@
 // - MUST use glyph.canvas (standard cells), NOT glyph.tightCanvas
 // - Cell widths MUST match character metrics exactly
 // - Cell height MUST be constant across all characters in font
+//
+// PARAMETER ORDER NOTE:
+// The buildAtlas() method has parameters in this order: (glyphs, fontMetrics)
+// This differs from TightAtlasReconstructor methods where fontMetrics often comes
+// before other parameters. This inconsistency exists for historical reasons and
+// will be standardized in a future refactor to improve API consistency.
 
 class AtlasBuilder {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -51,10 +57,7 @@ class AtlasBuilder {
       throw new Error(`AtlasBuilder: No metrics found for character '${firstChar}'`);
     }
 
-    const cellHeight = Math.ceil(
-      firstMetrics.fontBoundingBoxAscent +
-      firstMetrics.fontBoundingBoxDescent
-    );
+    const cellHeight = AtlasCellDimensions.getHeight(firstMetrics);
 
     // Calculate cell widths (VARIABLE per character) and total atlas width
     const cellWidths = {};
@@ -70,10 +73,7 @@ class AtlasBuilder {
 
       // Cell width = actualBoundingBoxLeft + actualBoundingBoxRight
       // This matches the character canvas dimensions from GlyphFAB.js:153-156
-      const cellWidth = Math.ceil(
-        metrics.actualBoundingBoxLeft +
-        metrics.actualBoundingBoxRight
-      );
+      const cellWidth = AtlasCellDimensions.getWidth(metrics);
 
       cellWidths[char] = cellWidth;
       totalWidth += cellWidth;
@@ -99,14 +99,15 @@ class AtlasBuilder {
         const hasCanvasCopy = !!glyph.canvasCopy;
 
         if (hasInvalidDimensions && !hasCanvasCopy) {
-          console.error(`AtlasBuilder: Character '${char}' has invalid canvas (${glyph.canvas.width}x${glyph.canvas.height}) and no canvasCopy!`);
+          // Skip drawing entirely - cannot draw a 0x0 canvas
+          // This prevents InvalidStateError from attempting to draw invalid canvas
+          console.error(`AtlasBuilder: Character '${char}' has invalid canvas (${glyph.canvas.width}x${glyph.canvas.height}) and no canvasCopy! Skipping draw.`);
           console.error('Glyph object:', glyph);
-        }
-
-        if (hasInvalidDimensions && hasCanvasCopy) {
+        } else if (hasInvalidDimensions && hasCanvasCopy) {
           // Use the preserved canvas copy
           ctx.drawImage(glyph.canvasCopy, x, 0);
         } else {
+          // Normal case: use the standard glyph.canvas
           ctx.drawImage(glyph.canvas, x, 0);
         }
       } else {
@@ -117,7 +118,7 @@ class AtlasBuilder {
     }
 
     return {
-      canvas,           // Original-bounds atlas canvas
+      canvas,           // Atlas canvas
       cellWidths,       // Width of each character's cell (variable)
       cellHeight,       // Height of all cells (constant)
       characters,       // Sorted character list (for debugging)
