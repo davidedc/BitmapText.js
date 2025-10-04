@@ -264,8 +264,44 @@ class TightAtlasReconstructor {
       // Draw to tight atlas at sequential position
       ctx.drawImage(tempCanvas, xInTightAtlas, 0);
 
-      // ⚠️ CRITICAL: Calculate positioning using EXACT formulas from AtlasPositioningFAB.js:87-88
-      // These formulas must match exactly for pixel-perfect rendering
+      // ═══════════════════════════════════════════════════════════════════════
+      // POSITIONING CALCULATION
+      // ═══════════════════════════════════════════════════════════════════════
+      //
+      // We need to calculate dx/dy offsets for rendering the tight glyph.
+      // These formulas MUST match AtlasPositioningFAB.js:91-92 exactly.
+      //
+      // Coordinate System Overview:
+      //
+      //   Atlas Cell (variable-width):        Tight Bounds:
+      //   ┌──────────────────────────┐
+      //   │ actualBoundingBox        │        ┌──────────┐
+      //   │ ┌──────────────────┐     │        │  ████    │  ← Minimal box
+      //   │ │                  │     │   →    │  ████    │     around pixels
+      //   │ │    ████          │     │        └──────────┘
+      //   │ │    ████          │     │
+      //   │ └──────────────────┘     │        dx = horizontal offset to align
+      //   │ fontBoundingBox          │        dy = vertical offset from baseline
+      //   └──────────────────────────┘
+      //     ↑                    ↑
+      //     cellX             cellX + cellWidth
+      //
+      // dx: Horizontal offset from rendering position to tight glyph position
+      //     Components:
+      //     - actualBoundingBoxLeft: Distance from text baseline to left edge of actual glyph
+      //     - bounds.left: Left edge of tight bounds within cell
+      //     Formula: -actualBoundingBoxLeft * pixelDensity + bounds.left
+      //
+      // dy: Vertical offset from baseline to top of tight glyph
+      //     Components:
+      //     - bounds.height: Height of tight glyph
+      //     - distanceBetweenBottomAndBottomOfCanvas: Gap below glyph (accounts for descenders)
+      //     - pixelDensity: Scale factor for high-DPI displays
+      //     Formula: -bounds.height - distanceBetweenBottomAndBottomOfCanvas + pixelDensity
+      //
+      //     The distanceBetweenBottomAndBottomOfCanvas accounts for descenders (like 'g', 'y')
+      //     and ensures proper vertical alignment relative to the text baseline.
+      //
 
       const pixelDensity = charMetrics.pixelDensity || 1;
 
@@ -280,12 +316,12 @@ class TightAtlasReconstructor {
       positioning.tightHeight[char] = bounds.height;
       positioning.xInAtlas[char] = xInTightAtlas;
 
-      // EXACT dx formula from AtlasPositioningFAB.js:87
+      // EXACT dx formula from AtlasPositioningFAB.js:91
       positioning.dx[char] =
         - Math.round(charMetrics.actualBoundingBoxLeft) * pixelDensity
         + bounds.left;
 
-      // EXACT dy formula from AtlasPositioningFAB.js:88
+      // EXACT dy formula from AtlasPositioningFAB.js:92
       positioning.dy[char] =
         - bounds.height
         - distanceBetweenBottomAndBottomOfCanvas

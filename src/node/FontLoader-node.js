@@ -26,7 +26,7 @@ const fs = require('fs');
 // FontLoader class for Node.js environment
 class FontLoader {
   // Static storage for atlas packages (base64 only) from JS files
-  // PHASE 1: No positioning data - will be reconstructed at runtime
+  // No positioning data - will be reconstructed at runtime
   // Shared across all FontLoader instances (matches browser behavior)
   static _tempAtlasPackages = {};
 
@@ -42,7 +42,7 @@ class FontLoader {
   }
 
   // Static method for atlas JS files to register packages
-  // PHASE 1: Only takes base64 data (NO positioning data)
+  // Only takes base64 data (NO positioning data)
   // IDENTICAL API TO BROWSER VERSION
   static registerAtlasPackage(IDString, base64Data) {
     if (typeof IDString !== 'string' || typeof base64Data !== 'string') {

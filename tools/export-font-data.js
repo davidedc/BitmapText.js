@@ -65,7 +65,7 @@ function downloadFontAssets(options) {
           }
       }
 
-      // PHASE 1: Build Atlas (variable-width cells) instead of tight atlas
+      // Build Atlas (variable-width cells) instead of tight atlas
       // Use AtlasDataStoreFAB.buildAtlas() which properly wraps AtlasBuilder
       console.log(`Building Atlas for ${fontProperties.key}...`);
       const atlasResult = atlasDataStoreFAB.buildAtlas(fontProperties, fontMetricsStoreFAB);
@@ -116,7 +116,7 @@ function downloadFontAssets(options) {
       const currentDate = new Date(now.getTime() - (timezoneOffset * 60 * 1000));
       folder.file(`atlas-${IDString}.qoi`, qoiBase64, { base64: true, date: currentDate });
 
-      // PHASE 1: NO positioning data exported - will be reconstructed at runtime from Atlas image
+      // NO positioning data exported - will be reconstructed at runtime from Atlas image
       // The Atlas format (variable-width cells) allows runtime reconstruction of tight atlas + positioning
 
       // Get FontMetrics instance for this font configuration
@@ -196,7 +196,7 @@ if (typeof fontMetricsStore !== 'undefined' && typeof FontProperties !== 'undefi
           { date: currentDate }
       );
 
-      // PHASE 1: NO positioning JSON file - positioning will be reconstructed at runtime from Atlas image
+      // NO positioning JSON file - positioning will be reconstructed at runtime from Atlas image
       // This eliminates ~3.7KB per font (75% of previous serialized size)
   });
 

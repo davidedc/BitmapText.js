@@ -13,7 +13,7 @@ class GlyphFAB {
     this.canvas = canvas;
     this.tightCanvas = tightCanvas;
     this.tightCanvasBox = tightCanvasBox;
-    this.canvasCopy = canvasCopy; // PHASE 1: Preserve canvas copy for export
+    this.canvasCopy = canvasCopy; // Preserve canvas copy for export
 
     // characterMetrics actually belongs to the fontMetricsStore
     // which is separate from the AtlasDataStoreFAB class
@@ -192,7 +192,7 @@ class GlyphFAB {
       canvas.height / pixelDensity - 1
     );
 
-    // PHASE 1: Create a copy of the canvas BEFORE removing it from DOM
+    // Create a copy of the canvas BEFORE removing it from DOM
     // This preserves the image data for export, even after the original canvas is removed
     const canvasCopy = document.createElement('canvas');
     canvasCopy.width = canvas.width;
@@ -292,7 +292,7 @@ class GlyphFAB {
         tightCanvas: null,
         tightCanvasBox: null,
         charTextMetrics,
-        canvasCopy  // PHASE 1: Include canvasCopy even when no tight canvas
+        canvasCopy  // Include canvasCopy even when no tight canvas
       };
 
     const div = document.createElement("div");

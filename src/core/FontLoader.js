@@ -24,7 +24,7 @@
 // Shared utility for loading bitmap font data with error handling
 class FontLoader {
   // Static storage for atlas packages (base64 only) from JS files
-  // PHASE 1: No positioning data - will be reconstructed at runtime
+  // No positioning data - will be reconstructed at runtime
   static _tempAtlasPackages = {};
 
   constructor(atlasDataStore, fontMetricsStore, onProgress = null, canvasFactory = null) {
@@ -43,7 +43,7 @@ class FontLoader {
   }
 
   // Static method for atlas JS files to register packages
-  // PHASE 1: Only takes base64 data (NO positioning data)
+  // Only takes base64 data (NO positioning data)
   static registerAtlasPackage(IDString, base64Data) {
     if (typeof IDString !== 'string' || typeof base64Data !== 'string') {
       console.warn('FontLoader.registerAtlasPackage: Invalid arguments - IDString and base64Data must be strings');
@@ -55,8 +55,8 @@ class FontLoader {
     };
   }
 
-  // Creates AtlasData from loaded Atlas image, then stores in AtlasDataStore
-  // PHASE 1: Uses TightAtlasReconstructor to convert Atlas → Tight Atlas + positioning
+  // Loads AtlasData from Atlas image and stores in AtlasDataStore
+  // Uses TightAtlasReconstructor to convert Atlas → Tight Atlas + positioning
   // @param {string} IDString - Font ID string
   // @param {Image|Canvas} atlasImage - Loaded Atlas image (variable-width cells format)
   // @returns {boolean} - True if successful, false if metrics not available
@@ -207,7 +207,7 @@ class FontLoader {
       img.src = FontLoaderConfig.getPngPath(IDString);
 
       img.onload = () => {
-        // PHASE 1: PNG files are now Atlas format (variable-width cells)
+        // PNG files are now Atlas format (variable-width cells)
         // Reconstruct tight atlas + positioning using TightAtlasReconstructor
         const success = this.createAndStoreAtlasDataFromPackage(IDString, img);
 

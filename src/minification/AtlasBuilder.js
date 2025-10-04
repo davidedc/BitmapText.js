@@ -94,7 +94,7 @@ class AtlasBuilder {
       // glyph.canvas contains the character at its original position within
       // the actualBoundingBox × fontBoundingBox rectangle
       if (glyph && glyph.canvas) {
-        // PHASE 1: If canvas has invalid dimensions (0x0), use canvasCopy instead
+        // If canvas has invalid dimensions (0x0), use canvasCopy instead
         const hasInvalidDimensions = glyph.canvas.width === 0 || glyph.canvas.height === 0;
         const hasCanvasCopy = !!glyph.canvasCopy;
 
