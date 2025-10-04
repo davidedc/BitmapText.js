@@ -109,7 +109,9 @@ class TightAtlasReconstructor {
     const atlasWidth = imageData.width;
 
     // Helper to get alpha value at position
-    const getAlpha = (x, y) => pixels[(y * atlasWidth + x) * 4 + 3];
+    // Optimized: pre-calculate stride and use bit shift for x*4
+    const stride = atlasWidth * 4;
+    const getAlpha = (x, y) => pixels[y * stride + (x << 2) + 3];
 
     // STEP 1: Find bottom edge (scan UP from bottom) - early exit
     // This finds the bottommost row with any non-transparent pixel
