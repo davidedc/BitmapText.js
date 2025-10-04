@@ -38,7 +38,7 @@ class FontLoader {
       if (typeof document !== 'undefined') {
         return document.createElement('canvas');
       }
-      throw new Error('Canvas factory required in Node.js environment');
+      throw new Error('[FontLoader] Canvas factory required in Node.js environment');
     });
   }
 

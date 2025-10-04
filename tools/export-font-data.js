@@ -164,7 +164,7 @@ function downloadFontAssets(options) {
               expandedConstructor: expanded.constructor.name,
               hasGlyph: expanded.hasGlyph(firstChar)
           });
-          throw new Error(`Expanded glyph data is missing for character '${firstChar}'`);
+          throw new Error(`[export-font-data] Expanded glyph data is missing for character '${firstChar}' - font: ${fontProperties.key}`);
       }
       
       // Check that the essential named properties match
@@ -179,7 +179,7 @@ function downloadFontAssets(options) {
       }
       
       if (!allPropsMatch) {
-        throw new Error('Essential properties do not match after minification/expansion');
+        throw new Error(`[export-font-data] Essential properties do not match after minification/expansion - font: ${fontProperties.key}`);
       }
       
       console.log('✅ Minification/expansion test passed for essential properties');
