@@ -63,9 +63,6 @@ class FontLoader {
   createAndStoreAtlasDataFromPackage(IDString, atlasImage) {
     const fontProperties = FontProperties.fromIDString(IDString);
 
-    // Get temp package (may not exist)
-    const pkg = FontLoader._tempAtlasPackages[IDString];
-
     // Clean up immediately
     delete FontLoader._tempAtlasPackages[IDString];
 
