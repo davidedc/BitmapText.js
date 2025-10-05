@@ -114,6 +114,8 @@ npm run build-multi-size-demo
 - `src/node/canvas-mock.js` - Minimal Canvas implementation
 - `src/minification/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
+- `src/core/FontLoaderBase.js` - Abstract base class for font loading (shared logic)
+- `src/node/FontLoader-node.js` - Node.js font loader implementation
 - `src/core/AtlasDataStore.js`, `src/core/FontMetricsStore.js`, `src/core/BitmapText.js` - Core classes
 
 **Output:**

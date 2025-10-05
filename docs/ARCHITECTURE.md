@@ -18,7 +18,7 @@
   The system is architected with a **two-tier class hierarchy** where FAB classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
 
   **Distribution Strategy:**
-  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasDataStore, FontMetricsStore, FontProperties, TextProperties, FontLoader, FontLoaderConfig) for measuring and drawing pre-generated fonts
+  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasDataStore, FontMetricsStore, FontProperties, TextProperties, FontLoaderBase, FontLoader) for measuring and drawing pre-generated fonts
   - **Full Distribution** (~55KB+): Core + FAB classes for complete font assets building and rendering capabilities
   - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
 
@@ -76,8 +76,8 @@
   - `FontMetricsStore` - Font metrics, kerning, and glyph positioning data
   - `FontProperties` - Font configuration management
   - `TextProperties` - Text rendering configuration (kerning, alignment, color)
-  - `FontLoader` - Font loading utilities
-  - `FontLoaderConfig` - Font loading configuration
+  - `FontLoaderBase` - Abstract base class for font loading (shared logic)
+  - `FontLoader` - Browser-specific font loading implementation
   - `FontManifest` - Font registry for testing (optional)
   - **Bundle Size**: ~18-22KB + font assets
   - **Use Case**: Production applications displaying bitmap text
@@ -176,22 +176,63 @@
     - `textBaseline`, `textAlign`: Canvas text positioning
     - `textColor`: CSS color specification
 
-  **FontLoader**
-  - Purpose: Consolidated font loading utility (unified API across browser and Node.js)
+  **FontLoaderBase**
+  - Purpose: Abstract base class for font loading across JavaScript environments
   - Responsibilities:
-    - Instance-based font data loading with progress tracking
-    - Error handling for missing files
-    - Progress callbacks via constructor parameter
+    - Template Method Pattern for orchestrating font loading workflow
+    - Shared logic consolidation to avoid code duplication
+    - Static storage for temporary atlas packages (_tempAtlasPackages)
+    - Path building methods for font assets (metrics, PNG, QOI, JS)
+    - Progress tracking (incrementProgress, isComplete)
     - Atlas reconstruction via TightAtlasReconstructor integration
-    - Support for both PNG and JS atlases (Phase 1: Atlas format only)
-    - Protocol detection (file:// vs http://) for appropriate loading strategy
-    - Graceful degradation: missing atlases result in placeholder rectangles
-  - Browser Implementation: Promise-based, async, DOM script loading
-  - Node.js Implementation: Synchronous, fs.readFileSync, eval-based loading
-  - Shared Public API: Constructor(atlasDataStore, fontMetricsStore, onProgress, canvasFactory), loadFont(), loadFonts(), createAndStoreAtlasDataFromPackage(), isComplete()
+  - Abstract Methods (must be implemented by subclasses):
+    - getDefaultCanvasFactory(): Environment-specific canvas creation
+    - getDefaultDataDir(): Environment-specific asset path defaults
+    - loadMetrics(IDString): Environment-specific metrics loading
+    - loadAtlas(IDString, isFileProtocol): Environment-specific atlas loading
+  - Shared Methods:
+    - loadAtlasFromPackage(IDString, atlasImage): Atlas reconstruction and storage
+    - loadFont(IDString, isFileProtocol): Template method for single font loading
+    - loadFonts(IDStrings, isFileProtocol): Batch font loading
+    - Path builders: getMetricsPath(), getAtlasPngPath(), getAtlasQoiPath(), getAtlasJsPath()
   - Static Method: registerAtlasPackage(IDString, base64Data) for atlas JS files
-  - Loading Dependency: Metrics MUST be loaded before atlases (TightAtlasReconstructor requires FontMetrics for cell dimensions)
-  - Cross-platform: canvasFactory parameter enables browser (document.createElement) and Node.js (Canvas class) support
+  - Static Constants: METRICS_PREFIX, ATLAS_PREFIX, PNG_EXTENSION, QOI_EXTENSION, JS_EXTENSION
+  - Static Messages: Error/warning templates for consistent user feedback
+
+  **FontLoader (Browser)**
+  - Purpose: Browser-specific font loading implementation
+  - Architecture: Extends FontLoaderBase
+  - Responsibilities:
+    - Promise-based async font data loading with DOM APIs
+    - Script tag loading for metrics JS files
+    - Image element loading for PNG atlases (http://)
+    - Script tag + base64 decoding for JS-wrapped atlases (file://)
+    - Protocol detection (file:// vs http://) for appropriate loading strategy
+    - Error handling and progress reporting
+  - Implementation:
+    - loadMetrics(): Creates <script> tag, awaits load event
+    - loadAtlas(): Delegates to loadAtlasFromJS() or loadAtlasFromPNG()
+    - getDefaultCanvasFactory(): Returns () => document.createElement('canvas')
+    - getDefaultDataDir(): Returns '../font-assets/' (relative to public/)
+  - Loading Dependency: Metrics MUST be loaded before atlases (inherited from base)
+  - Graceful degradation: Missing atlases result in placeholder rectangles
+
+  **FontLoader (Node.js)**
+  - Purpose: Node.js-specific font loading implementation
+  - Architecture: Extends FontLoaderBase
+  - Responsibilities:
+    - Synchronous font data loading with fs.readFileSync
+    - Direct file system access for metrics and atlas files
+    - eval-based loading with proper scope injection
+    - QOI decoding for atlas image data
+    - Error handling with graceful degradation
+  - Implementation:
+    - loadMetrics(): Synchronous fs.readFileSync + eval with fontMetricsStore scope
+    - loadAtlas(): Synchronous fs.readFileSync + QOI decode + reconstruction
+    - getDefaultCanvasFactory(): Returns Canvas class constructor
+    - getDefaultDataDir(): Returns './font-assets/' (relative to script location)
+  - Loading Dependency: Metrics MUST be loaded before atlases (inherited from base)
+  - Cross-platform: Uses Canvas class for canvas creation
 
 ## Terminology
 
@@ -228,13 +269,6 @@ To support compound emojis would require:
 2. Updating data structures for multi-code-point keys
 3. Building atlas entries for compound characters
 
-  **FontLoaderConfig**
-  - Purpose: Font loading configuration management
-  - Responsibilities:
-    - Centralized path configuration for font assets
-    - Error message templates for consistent user feedback
-    - Path building methods for metrics and atlas files
-    - Support for multiple file formats (PNG, QOI, JS)
 
   **FontManifest**
   - Purpose: Font registry management for testing and development
@@ -504,23 +538,27 @@ To support compound emojis would require:
     8. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
   ```
 
-  ### Runtime Font Loading Workflow (Unified API)
+  ### Runtime Font Loading Workflow (Template Method Pattern)
   ```
   Browser:
-    User → FontLoader instance → loadFonts(IDStrings)
-      1. For each IDString: loadFont(IDString)
-      2. loadMetrics() → Create <script> tag → Await load → metrics file evals and populates store
-      3. loadAtlas() → Create <script> or <img> → Await load → createAndStoreAtlasDataFromPackage()
-      4. Progress callbacks fire for each file loaded
-      5. Return Promise when complete
+    User → FontLoader instance (extends FontLoaderBase) → loadFonts(IDStrings)
+      1. For each IDString: loadFont(IDString) [template method in base class]
+      2. loadMetrics() [browser implementation] → Create <script> tag → Await load → metrics file evals and populates store
+      3. loadAtlas() [browser implementation] → Delegates to loadAtlasFromJS() or loadAtlasFromPNG()
+         - loadAtlasFromPNG(): Create <img> → Await load → loadAtlasFromPackage() [base class]
+         - loadAtlasFromJS(): Create <script> → Await load → Decode base64 → loadAtlasFromPackage() [base class]
+      4. loadAtlasFromPackage() [base class] → TightAtlasReconstructor → AtlasData → Store
+      5. incrementProgress() [base class] → Progress callbacks fire for each file
+      6. Return Promise when complete
 
   Node.js:
-    User → FontLoader instance → loadFonts(IDStrings)
-      1. For each IDString: loadFont(IDString)
-      2. loadMetrics() → fs.readFileSync() → eval with fontMetricsStore in scope → Direct store population
-      3. loadAtlas() → fs.readFileSync() → eval → registerAtlasPackage() → QOI decode → createAndStoreAtlasDataFromPackage()
-      4. Progress callbacks fire synchronously for each file
-      5. Return immediately (synchronous)
+    User → FontLoader instance (extends FontLoaderBase) → loadFonts(IDStrings)
+      1. For each IDString: loadFont(IDString) [template method in base class]
+      2. loadMetrics() [Node.js implementation] → fs.readFileSync() → eval with fontMetricsStore in scope → Direct store population
+      3. loadAtlas() [Node.js implementation] → fs.readFileSync() → QOI decode → loadAtlasFromPackage() [base class]
+      4. loadAtlasFromPackage() [base class] → TightAtlasReconstructor → AtlasData → Store
+      5. incrementProgress() [base class] → Progress callbacks fire synchronously
+      6. Return immediately (synchronous)
   ```
 
   ### Runtime Text Rendering Workflow

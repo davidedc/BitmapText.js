@@ -13,7 +13,7 @@
 
   - **Core runtime**: src/core/BitmapText.js, src/core/AtlasDataStore.js, src/core/FontMetricsStore.js, src/core/FontProperties.js
   - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
-  - **Font utilities**: src/core/FontLoader.js, src/core/FontLoaderConfig.js
+  - **Font utilities**: src/core/FontLoaderBase.js, src/core/FontLoader.js, src/node/FontLoader-node.js
   - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
@@ -74,8 +74,8 @@
   - **Glyph rendering**: src/core/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
   - **Atlas validation**: src/core/AtlasDataStore.isValidAtlas:1
-  - **Font loading utilities**: src/core/FontLoader.js (browser), src/node/FontLoader-node.js (Node.js - unified API)
-  - **Loading configuration**: src/core/FontLoaderConfig.js
+  - **Font loading base class**: src/core/FontLoaderBase.js (abstract base with shared logic)
+  - **Font loading utilities**: src/core/FontLoader.js (browser), src/node/FontLoader-node.js (Node.js - both extend base class)
   - **Font registry management**: src/core/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/core/AtlasPositioning.getHash:149 (positioning data hash)
   - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
