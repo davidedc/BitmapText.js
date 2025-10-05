@@ -129,7 +129,7 @@
     - `_tightHeight`: Glyph height
     - `_dx`, `_dy`: Position offsets relative to text cursor
     - `_xInAtlas`: Horizontal positions in atlas
-  - Phase 1 Optimization:
+  - Current Export Format:
     - NO positioning data serialized (100% reconstruction at runtime)
     - All 5 properties reconstructed by TightAtlasReconstructor from Atlas image
     - Atlas format (variable-width cells) provides all information needed for reconstruction
@@ -300,9 +300,8 @@ To support compound emojis would require:
   - Optimizes glyph packing and atlas generation
   - Generates minified metadata and export formats
   - Extraction method to convert AtlasImageFAB to AtlasImage instances
-  - Supports building atlases for validation (buildAtlas - variable-width cells)
-  - Supports building tight atlases (buildTightAtlas - current system)
-  - Supports tight atlas reconstruction (reconstructTightAtlas)
+  - Supports building atlases (buildAtlas - variable-width cells format)
+  - Supports tight atlas reconstruction (reconstructTightAtlas - converts variable-width atlas to tight atlas via pixel scanning)
 
   **AtlasPositioningFAB extends AtlasPositioning**
   - Font assets building capabilities for atlas positioning data management
@@ -346,13 +345,13 @@ To support compound emojis would require:
   **AtlasReconstructionUtils**
   - Shared utilities for atlas reconstruction algorithms
   - Provides getImageData() for extracting pixel data from various image sources
-  - Used by both AtlasDataExpander (runtime) and TightAtlasReconstructor (validation)
+  - Used by both AtlasDataExpander (runtime) and TightAtlasReconstructor (atlas generation)
 
   **AtlasBuilder**
   - Builds atlases from glyph canvases (variable-width cells format)
   - Uses variable-width cells (actualBoundingBox) × constant height (fontBoundingBox)
   - Maintains sorted character order for determinism
-  - Used in Phase 0 validation harness to test atlas reconstruction
+  - Used by font-assets-builder.html to generate atlas source for reconstruction
 
   **TightAtlasReconstructor**
   - Runtime class for reconstructing tight atlases from Atlas format via pixel scanning
@@ -478,32 +477,18 @@ To support compound emojis would require:
   4. **Essential Property Validation**: Verifies key metrics are preserved during roundtrip
 
   **Atlas Reconstruction Utilities (src/minification/AtlasReconstructionUtils.js)**:
-  1. **Shared Reconstruction Algorithms**: Central utility used by both minifier (validation) and expander (runtime)
+  1. **Image Data Extraction**: Central utility used by TightAtlasReconstructor for atlas image processing
   2. **getImageData()**: Extracts ImageData from Canvas/Image/AtlasImage with environment detection (document.createElement in browser, Canvas class in Node.js)
-  3. **reconstructXInAtlas()**: Reconstructs horizontal positions by summing tightWidth values
-  4. **reconstructTightHeight()**: Reconstructs heights by scanning atlas image pixels bottom-upward
-  5. **Single Source of Truth**: Eliminates code duplication between build-time validation and runtime reconstruction
-  6. **Cross-Platform Support**: Works in both browser and Node.js environments
+  3. **Cross-Platform Support**: Works in both browser and Node.js environments
+  4. **Single Source of Truth**: Eliminates code duplication for image data access
 
-  **Phase 1: Atlas-Based Serialization**:
+  **Current Export Format: Atlas-Based Serialization**:
   1. **Export Format**: Atlas image (QOI/PNG) only - NO positioning data serialized
   2. **Atlas Format**: Variable-width cells (actualBoundingBox width × fontBoundingBox height)
   3. **File Size Reduction**: ~69% reduction (4.9KB → 1.5KB per font)
   4. **Runtime Reconstruction**: TightAtlasReconstructor converts Atlas → Tight Atlas + AtlasPositioning
   5. **Dependency**: Requires FontMetrics for cell dimension calculation
   6. **Reconstruction Cost**: ~10-15ms one-time cost per font at load time
-
-  **Legacy: Atlas Data Minification (src/minification/AtlasDataMinifier.js)** (Pre-Phase 1):
-  - Property key shortening (tightWidth → w, dx → dx, dy → dy)
-  - xInAtlas and tightHeight exclusion (reconstructed at runtime)
-  - 41% file size reduction via 3-property format
-  - No longer used in Phase 1 (entire positioning data eliminated)
-
-  **Legacy: Atlas Data Expansion (src/minification/AtlasDataExpander.js)** (Pre-Phase 1):
-  - Property key restoration (w → tightWidth)
-  - xInAtlas and tightHeight reconstruction from tight atlas image
-  - Backward compatibility maintained for old format
-  - No longer used in Phase 1 (TightAtlasReconstructor replaces this)
 
   ## Memory Management
 

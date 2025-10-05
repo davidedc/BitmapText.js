@@ -65,9 +65,7 @@
   - **Atlas positioning data**: src/core/AtlasPositioning.js (immutable positioning domain object)
   - **Atlas positioning building**: src/font-assets-builder-FAB/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
   - **Atlas data combination**: src/core/AtlasData.js (combines AtlasImage + AtlasPositioning)
-  - **Atlas reconstruction utilities**: src/minification/AtlasReconstructionUtils.js (shared reconstruction algorithms)
-  - **Atlas data minification**: src/minification/AtlasDataMinifier.js (legacy - pre-Phase 1)
-  - **Atlas data expansion**: src/minification/AtlasDataExpander.js (legacy - pre-Phase 1, backward compatible)
+  - **Atlas reconstruction utilities**: src/minification/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
   - **Atlas building**: src/minification/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
   - **Tight atlas reconstruction**: src/core/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
   - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
@@ -79,7 +77,7 @@
   - **Font registry management**: src/core/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/core/AtlasPositioning.getHash:149 (positioning data hash)
   - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
-  - **Validation harness**: public/font-assets-builder.html (Phase 0 validation comparing current vs reconstructed atlases)
+  - **Atlas generation & reconstruction**: public/font-assets-builder.html (displays Atlas source and reconstructed tight atlas side-by-side)
 
   ## Development Tips
 
