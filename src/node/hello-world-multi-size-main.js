@@ -1,8 +1,13 @@
 // MAIN EXECUTION - Node.js Hello World Multi-Size Demo
 
 // Node.js modules
-const fs = require('fs');
-const path = require('path');
+// Check if modules are already available (for bundle context) before requiring
+if (typeof fs === 'undefined') {
+  var fs = require('fs');
+}
+if (typeof path === 'undefined') {
+  var path = require('path');
+}
 
 // Font sizes to demonstrate
 const fontSizes = [18, 18.5, 19];
@@ -29,13 +34,15 @@ function createIDString(fontProperties) {
 function getStatusName(code) {
   const statusNames = {
     [StatusCode.SUCCESS]: 'SUCCESS',
-    [StatusCode.PARTIAL_SUCCESS]: 'PARTIAL_SUCCESS',
-    [StatusCode.FAILURE]: 'FAILURE'
+    [StatusCode.NO_METRICS]: 'NO_METRICS',
+    [StatusCode.PARTIAL_METRICS]: 'PARTIAL_METRICS',
+    [StatusCode.NO_ATLAS]: 'NO_ATLAS',
+    [StatusCode.PARTIAL_ATLAS]: 'PARTIAL_ATLAS'
   };
   return statusNames[code] || `UNKNOWN(${code})`;
 }
 
-function main() {
+async function main() {
   try {
     console.log('BitmapText.js Node.js Multi-Size Demo - Loading font data...');
 
@@ -60,8 +67,8 @@ function main() {
     // This loads BOTH metrics and atlases in one call
     console.log(`Loading ${fontSizes.length} fonts...`);
 
-    // Note: loadFonts in Node.js is synchronous but maintains same API signature
-    fontLoader.loadFonts(IDStrings, false);
+    // Wait for all fonts to load
+    await fontLoader.loadFonts(IDStrings, false);
 
     console.log('All fonts loaded successfully');
 

@@ -1,8 +1,13 @@
 // MAIN EXECUTION - Node.js Hello World Demo
 
 // Node.js modules
-const fs = require('fs');
-const path = require('path');
+// Check if modules are already available (for bundle context) before requiring
+if (typeof fs === 'undefined') {
+  var fs = require('fs');
+}
+if (typeof path === 'undefined') {
+  var path = require('path');
+}
 
 // Font properties for Arial normal normal 19 with pixel density 1
 const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
@@ -19,13 +24,15 @@ const textProperties = new TextProperties({
 function getStatusName(code) {
   const statusNames = {
     [StatusCode.SUCCESS]: 'SUCCESS',
-    [StatusCode.PARTIAL_SUCCESS]: 'PARTIAL_SUCCESS',
-    [StatusCode.FAILURE]: 'FAILURE'
+    [StatusCode.NO_METRICS]: 'NO_METRICS',
+    [StatusCode.PARTIAL_METRICS]: 'PARTIAL_METRICS',
+    [StatusCode.NO_ATLAS]: 'NO_ATLAS',
+    [StatusCode.PARTIAL_ATLAS]: 'PARTIAL_ATLAS'
   };
   return statusNames[code] || `UNKNOWN(${code})`;
 }
 
-function main() {
+async function main() {
   try {
     console.log('BitmapText.js Node.js Demo - Loading font data...');
 
@@ -46,8 +53,8 @@ function main() {
     const expectedIDString = fontProperties.idString;
     console.log(`Loading font: ${expectedIDString}...`);
 
-    // Note: loadFont in Node.js is synchronous but maintains same API signature
-    fontLoader.loadFont(expectedIDString, false);
+    // Wait for font loading to complete
+    await fontLoader.loadFont(expectedIDString, false);
 
     console.log('Font loaded successfully');
     

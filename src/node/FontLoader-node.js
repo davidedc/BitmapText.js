@@ -9,188 +9,162 @@
 //
 // SHARED PUBLIC API:
 // - Constructor: new FontLoader(atlasDataStore, fontMetricsStore, onProgress?, canvasFactory?)
-// - Static: FontLoader.registerAtlasPackage(IDString, base64Data, positioningData)
-// - Instance: loadAtlasFromPackage(IDString, image)
+// - Static: FontLoader.registerAtlasPackage(IDString, base64Data)
+// - Instance: loadAtlasFromPackage(IDString, atlasImage)
 // - Instance: loadFont(IDString, isFileProtocol?)
 // - Instance: loadFonts(IDStrings, isFileProtocol?)
 // - Instance: isComplete()
 //
 // ARCHITECTURE:
+// - Extends FontLoaderBase for shared functionality
+// - Implements Node.js-specific loading (fs module, synchronous eval)
+// - Synchronous implementation (no Promises for simplicity)
 // - Static storage for temporary atlas packages from JS files (shared between instances)
-// - Instance methods for font loading with progress tracking
-// - Synchronous implementation (no Promises in Node version for simplicity)
 
 // Node.js modules
-const fs = require('fs');
+// Check if fs is already available (for bundle context) before requiring
+if (typeof fs === 'undefined') {
+  var fs = require('fs');
+}
 
 // FontLoader class for Node.js environment
-class FontLoader {
-  // Static storage for atlas packages (base64 only) from JS files
-  // No positioning data - will be reconstructed at runtime
-  // Shared across all FontLoader instances (matches browser behavior)
-  static _tempAtlasPackages = {};
+class FontLoader extends FontLoaderBase {
+  // ============================================================================
+  // ENVIRONMENT-SPECIFIC IMPLEMENTATIONS (Abstract method overrides)
+  // ============================================================================
 
-  // Constructor matching browser API
-  constructor(atlasDataStore, fontMetricsStore, onProgress = null, canvasFactory = null) {
-    this.atlasDataStore = atlasDataStore;
-    this.fontMetricsStore = fontMetricsStore;
-    this.onProgress = onProgress;
-    this.loadedCount = 0;
-    this.totalCount = 0;
-    // Canvas factory for TightAtlasReconstructor (Node.js: default to Canvas creation if not provided)
-    this.canvasFactory = canvasFactory || (() => new Canvas(0, 0));
+  /**
+   * Get default canvas factory for Node.js environment
+   * @returns {Function} Factory that creates Canvas instances (from canvas-mock)
+   */
+  getDefaultCanvasFactory() {
+    return () => new Canvas(0, 0);
   }
 
-  // Static method for atlas JS files to register packages
-  // Only takes base64 data (NO positioning data)
-  // IDENTICAL API TO BROWSER VERSION
-  static registerAtlasPackage(IDString, base64Data) {
-    FontLoaderShared.registerAtlasPackage(IDString, base64Data, FontLoader._tempAtlasPackages);
+  /**
+   * Get default data directory for Node.js environment
+   * @returns {string} Default path to font assets (relative to project root)
+   */
+  getDefaultDataDir() {
+    return 'font-assets/';
   }
 
-  // Loads AtlasData from Atlas image and stores in AtlasDataStore
-  // Uses TightAtlasReconstructor to convert Atlas → Tight Atlas + positioning
-  // IDENTICAL API TO BROWSER VERSION
-  // @param {string} IDString - Font ID string
-  // @param {Canvas} atlasImage - Loaded Atlas image (variable-width cells format)
-  // @returns {boolean} - True if successful, false if metrics not available
-  loadAtlasFromPackage(IDString, atlasImage) {
-    return FontLoaderShared.loadAtlasFromPackage(IDString, atlasImage, {
-      atlasDataStore: this.atlasDataStore,
-      fontMetricsStore: this.fontMetricsStore,
-      canvasFactory: this.canvasFactory,
-      tempPackagesMap: FontLoader._tempAtlasPackages
+  /**
+   * Load metrics JS file (Node.js implementation - synchronous)
+   * @param {string} IDString - Font ID string
+   * @returns {Promise} Promise that resolves when metrics are loaded (synchronous execution)
+   */
+  loadMetrics(IDString) {
+    return new Promise((resolve, reject) => {
+      try {
+        const metricsPath = this.getMetricsPath(IDString);
+
+        if (!fs.existsSync(metricsPath)) {
+          console.warn(`Metrics file not found: ${metricsPath}`);
+          this.incrementProgress(); // Missing metrics
+          this.incrementProgress(); // Missing image (won't be loaded)
+          reject(new Error(`Metrics not found for ${IDString}`));
+          return;
+        }
+
+        // Execute the JS file (which populates FontMetricsStore)
+        // The metrics file expects global fontMetricsStore, FontProperties, and MetricsExpander
+        // Make them available temporarily for the eval
+        const jsCode = fs.readFileSync(metricsPath, 'utf8');
+        const fontMetricsStore = this.fontMetricsStore;  // Local ref for eval scope
+        eval(jsCode);
+
+        this.incrementProgress();
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
-  // Load font data for a single ID string
-  // IDENTICAL API TO BROWSER VERSION (but synchronous implementation)
-  // In Node.js, this is synchronous (no Promise) but maintains same call signature
-  loadFont(IDString, isFileProtocol = false) {
-    this.totalCount += 2; // Each font has 2 files (metrics + image)
-
-    try {
-      this.loadMetrics(IDString);
-      this.loadAtlas(IDString, isFileProtocol);
-    } catch (error) {
-      console.warn(`Font loading failed for ${IDString}:`, error.message);
-    }
-  }
-
-  // Load multiple fonts from an array of ID strings
-  // IDENTICAL API TO BROWSER VERSION (but synchronous implementation)
-  loadFonts(IDStrings, isFileProtocol = false) {
-    this.totalCount = IDStrings.length * 2;
-    this.loadedCount = 0;
-
-    for (const IDString of IDStrings) {
-      this.loadFont(IDString, isFileProtocol);
-    }
-  }
-
-  // Load metrics JS file (synchronous Node.js implementation)
-  loadMetrics(IDString) {
-    try {
-      // For Node.js, we need to construct the path
-      // This assumes metrics files are in font-assets/ directory
-      const metricsPath = `font-assets/metrics-${IDString}.js`;
-
-      if (!fs.existsSync(metricsPath)) {
-        console.warn(`Metrics file not found: ${metricsPath}`);
-        this.incrementProgress(); // Missing metrics
-        this.incrementProgress(); // Missing image (won't be loaded)
-        throw new Error(`Metrics not found for ${IDString}`);
-      }
-
-      // Execute the JS file (which populates FontMetricsStore)
-      // The metrics file expects global fontMetricsStore, FontProperties, and MetricsExpander
-      // Make them available temporarily for the eval
-      const jsCode = fs.readFileSync(metricsPath, 'utf8');
-      const fontMetricsStore = this.fontMetricsStore;  // Local ref for eval scope
-      eval(jsCode);
-
-      this.incrementProgress();
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Load atlas based on protocol (synchronous Node.js implementation)
+  /**
+   * Load atlas based on protocol (Node.js implementation)
+   * @param {string} IDString - Font ID string
+   * @param {boolean} isFileProtocol - Whether using file:// protocol (ignored in Node.js)
+   * @returns {Promise} Promise that resolves when atlas is loaded
+   */
   loadAtlas(IDString, isFileProtocol) {
     // In Node.js, we always load from JS files (isFileProtocol is ignored)
     // This parameter is kept for API compatibility with browser version
-    this.loadAtlasFromJS(IDString);
+    return this.loadAtlasFromJS(IDString);
   }
 
-  // Load atlas from JS file (synchronous Node.js implementation)
+  // ============================================================================
+  // NODE.JS-SPECIFIC HELPER METHODS
+  // ============================================================================
+
+  /**
+   * Load atlas from JS file (Node.js implementation - synchronous)
+   * @param {string} IDString - Font ID string
+   * @returns {Promise} Promise that resolves when atlas is loaded
+   */
   loadAtlasFromJS(IDString) {
-    try {
-      // For Node.js, we need to construct the path
-      const atlasJsPath = `font-assets/atlas-${IDString}-qoi.js`;
+    return new Promise((resolve, reject) => {
+      try {
+        const atlasJsPath = this.getAtlasJsPath(IDString, 'qoi');
 
-      if (!fs.existsSync(atlasJsPath)) {
-        console.warn(`Atlas JS file not found: ${atlasJsPath}`);
+        if (!fs.existsSync(atlasJsPath)) {
+          console.warn(`Atlas JS file not found: ${atlasJsPath}`);
+          this.incrementProgress();
+          resolve(); // Not a failure - will use placeholder rectangles
+          return;
+        }
+
+        // Execute the JS file (which calls registerAtlasPackage)
+        const jsCode = fs.readFileSync(atlasJsPath, 'utf8');
+        eval(jsCode);
+
+        const pkg = FontLoader._tempAtlasPackages[IDString];
+
+        if (!pkg || !pkg.base64Data) {
+          console.warn(`Atlas package data missing for ${IDString}`);
+          delete FontLoader._tempAtlasPackages[IDString]; // Clean up
+          this.incrementProgress();
+          resolve(); // Not a failure - will use placeholder rectangles
+          return;
+        }
+
+        // Convert base64 to Buffer
+        const qoiBuffer = Buffer.from(pkg.base64Data, 'base64');
+
+        // Decode QOI (assuming QOIDecode is available globally)
+        if (typeof QOIDecode === 'undefined') {
+          throw new Error('QOIDecode not available - required for Node.js font loading');
+        }
+
+        const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
+
+        if (qoiData.error) {
+          console.warn(`Failed to decode QOI data for ${IDString}`);
+          delete FontLoader._tempAtlasPackages[IDString]; // Clean up
+          this.incrementProgress();
+          resolve(); // Not a failure - will use placeholder rectangles
+          return;
+        }
+
+        // Create Image from QOI data (assuming Image class is available globally)
+        if (typeof Image === 'undefined') {
+          throw new Error('Image class not available - required for Node.js font loading');
+        }
+
+        const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
+
+        // Use inherited method to reconstruct and store atlas
+        this.loadAtlasFromPackage(IDString, atlasImage);
+
         this.incrementProgress();
-        return; // Not a failure - will use placeholder rectangles
-      }
-
-      // Execute the JS file (which calls registerAtlasPackage)
-      const jsCode = fs.readFileSync(atlasJsPath, 'utf8');
-      eval(jsCode);
-
-      const pkg = FontLoader._tempAtlasPackages[IDString];
-
-      if (!pkg || !pkg.base64Data) {
-        console.warn(`Atlas package data missing for ${IDString}`);
-        delete FontLoader._tempAtlasPackages[IDString]; // Clean up
+        resolve();
+      } catch (error) {
+        console.warn(`Atlas loading failed for ${IDString}:`, error.message);
         this.incrementProgress();
-        return; // Not a failure - will use placeholder rectangles
+        resolve(); // Not a failure - will use placeholder rectangles
       }
-
-      // Convert base64 to Buffer
-      const qoiBuffer = Buffer.from(pkg.base64Data, 'base64');
-
-      // Decode QOI (assuming QOIDecode is available globally)
-      if (typeof QOIDecode === 'undefined') {
-        throw new Error('QOIDecode not available - required for Node.js font loading');
-      }
-
-      const qoiData = QOIDecode(qoiBuffer.buffer, 0, null, 4); // Force RGBA output
-
-      if (qoiData.error) {
-        console.warn(`Failed to decode QOI data for ${IDString}`);
-        delete FontLoader._tempAtlasPackages[IDString]; // Clean up
-        this.incrementProgress();
-        return; // Not a failure - will use placeholder rectangles
-      }
-
-      // Create Image from QOI data (assuming Image class is available globally)
-      if (typeof Image === 'undefined') {
-        throw new Error('Image class not available - required for Node.js font loading');
-      }
-
-      const atlasImage = new Image(qoiData.width, qoiData.height, new Uint8ClampedArray(qoiData.data));
-
-      // Use the shared loadAtlasFromPackage method
-      this.loadAtlasFromPackage(IDString, atlasImage);
-
-      this.incrementProgress();
-    } catch (error) {
-      console.warn(`Atlas loading failed for ${IDString}:`, error.message);
-      this.incrementProgress();
-    }
-  }
-
-  // Increment progress counter and call callback
-  // IDENTICAL TO BROWSER VERSION
-  incrementProgress() {
-    FontLoaderShared.incrementProgress(this);
-  }
-
-  // Check if loading is complete
-  // IDENTICAL TO BROWSER VERSION
-  isComplete() {
-    return FontLoaderShared.isComplete(this.loadedCount, this.totalCount);
+    });
   }
 }
 

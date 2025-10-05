@@ -39,7 +39,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/minification/AtlasCellDimensions.js"
   "$SRC_DIR/core/TightAtlasReconstructor.js"
   "$SRC_DIR/minification/AtlasDataExpander.js"
-  "$SRC_DIR/core/FontLoaderShared.js"
+  "$SRC_DIR/core/FontLoaderBase.js"
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
@@ -100,6 +100,14 @@ echo "// MINIMAL CANVAS MOCK - Only what BitmapText.js needs" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 tail -n +2 "$SRC_DIR/node/canvas-mock.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate FontLoaderBase (MUST come before FontLoader-node since it's the parent class)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// FONT LOADER BASE CLASS" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/core/FontLoaderBase.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontLoader for Node.js (skip header comments and fs require to avoid duplicates)
@@ -206,13 +214,7 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/minification/AtlasDataExpander.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate FontLoaderShared
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// FONT LOADER SHARED UTILITIES" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/FontLoaderShared.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
+# FontLoaderBase already concatenated earlier (before FontLoader-node)
 
 # Concatenate QOI decoder
 echo "// ============================================================================" >> "$OUTPUT_FILE"

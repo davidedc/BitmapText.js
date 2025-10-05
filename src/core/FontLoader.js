@@ -1,4 +1,4 @@
-// FontLoader - Core Runtime Class
+// FontLoader - Core Runtime Class (Browser Implementation)
 //
 // This is a CORE RUNTIME class designed for minimal bundle size (~4-5KB).
 // It provides essential font loading capabilities for consuming pre-built bitmap fonts.
@@ -10,85 +10,54 @@
 // - Provides error handling and progress reporting for font loading
 //
 // ARCHITECTURE:
+// - Extends FontLoaderBase for shared functionality
+// - Implements browser-specific loading (DOM script tags, Image elements)
 // - Promise-based font loading with error recovery
-// - Static storage for temporary atlas data from JS files
 // - Protocol detection (file:// vs http://) for appropriate loading strategy
 // - Graceful degradation: missing atlases result in placeholder rectangles
 //
 // DEPENDENCIES:
-// - FontLoaderConfig: For path building and error messages
+// - FontLoaderBase: Base class with shared logic, path building, and error messages
 // - FontProperties: For ID string parsing and font identification
 // - AtlasDataStore: For storing loaded atlas images
 // - FontMetricsStore: For receiving metrics data from loaded JS files
 
 // Shared utility for loading bitmap font data with error handling
-class FontLoader {
-  // Static storage for atlas packages (base64 only) from JS files
-  // No positioning data - will be reconstructed at runtime
-  static _tempAtlasPackages = {};
+class FontLoader extends FontLoaderBase {
+  // ============================================================================
+  // ENVIRONMENT-SPECIFIC IMPLEMENTATIONS (Abstract method overrides)
+  // ============================================================================
 
-  constructor(atlasDataStore, fontMetricsStore, onProgress = null, canvasFactory = null) {
-    this.atlasDataStore = atlasDataStore;
-    this.fontMetricsStore = fontMetricsStore;
-    this.onProgress = onProgress;
-    this.loadedCount = 0;
-    this.totalCount = 0;
-    // Canvas factory for TightAtlasReconstructor (browser: createElement, Node.js: Canvas class)
-    this.canvasFactory = canvasFactory || (() => {
+  /**
+   * Get default canvas factory for browser environment
+   * @returns {Function} Factory that creates canvas elements via document.createElement
+   */
+  getDefaultCanvasFactory() {
+    return () => {
       if (typeof document !== 'undefined') {
         return document.createElement('canvas');
       }
       throw new Error('[FontLoader] Canvas factory required in Node.js environment');
-    });
+    };
   }
 
-  // Static method for atlas JS files to register packages
-  // Only takes base64 data (NO positioning data)
-  static registerAtlasPackage(IDString, base64Data) {
-    FontLoaderShared.registerAtlasPackage(IDString, base64Data, FontLoader._tempAtlasPackages);
+  /**
+   * Get default data directory for browser environment
+   * @returns {string} Default path to font assets (relative to HTML files in public/)
+   */
+  getDefaultDataDir() {
+    return '../font-assets/';
   }
 
-  // Loads AtlasData from Atlas image and stores in AtlasDataStore
-  // Uses TightAtlasReconstructor to convert Atlas → Tight Atlas + positioning
-  // @param {string} IDString - Font ID string
-  // @param {Image|Canvas} atlasImage - Loaded Atlas image (variable-width cells format)
-  // @returns {boolean} - True if successful, false if metrics not available
-  loadAtlasFromPackage(IDString, atlasImage) {
-    return FontLoaderShared.loadAtlasFromPackage(IDString, atlasImage, {
-      atlasDataStore: this.atlasDataStore,
-      fontMetricsStore: this.fontMetricsStore,
-      canvasFactory: this.canvasFactory,
-      tempPackagesMap: FontLoader._tempAtlasPackages
-    });
-  }
-
-  // Load font data for a single ID string
-  loadFont(IDString, isFileProtocol = false) {
-    this.totalCount += 2; // Each font has 2 files (metrics + image)
-
-    return this.loadMetrics(IDString)
-      .then(() => this.loadAtlas(IDString, isFileProtocol))
-      .catch(error => {
-        // Even if loading fails, we still count it as processed to prevent hanging
-        console.warn(`Font loading failed for ${IDString}:`, error.message);
-      });
-  }
-
-  // Load multiple fonts from an array of ID strings
-  loadFonts(IDStrings, isFileProtocol = false) {
-    this.totalCount = IDStrings.length * 2;
-    this.loadedCount = 0;
-
-    const promises = IDStrings.map(IDString => this.loadFont(IDString, isFileProtocol));
-
-    return Promise.all(promises);
-  }
-
-  // Load metrics JS file
+  /**
+   * Load metrics JS file (browser implementation)
+   * @param {string} IDString - Font ID string
+   * @returns {Promise} Promise that resolves when metrics are loaded
+   */
   loadMetrics(IDString) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = FontLoaderConfig.getMetricsPath(IDString);
+      script.src = this.getMetricsPath(IDString);
 
       script.onload = () => {
         this.incrementProgress();
@@ -97,7 +66,7 @@ class FontLoader {
 
       script.onerror = () => {
         script.remove();
-        console.warn(FontLoaderConfig.messages.metricsNotFound(IDString));
+        console.warn(FontLoaderBase.messages.metricsNotFound(IDString));
 
         // Count both missing files to maintain expected count
         this.incrementProgress(); // Missing metrics
@@ -110,7 +79,12 @@ class FontLoader {
     });
   }
 
-  // Load atlas based on protocol
+  /**
+   * Load atlas based on protocol (browser implementation)
+   * @param {string} IDString - Font ID string
+   * @param {boolean} isFileProtocol - Whether using file:// protocol
+   * @returns {Promise} Promise that resolves when atlas is loaded
+   */
   loadAtlas(IDString, isFileProtocol) {
     if (isFileProtocol) {
       return this.loadAtlasFromJS(IDString);
@@ -119,17 +93,25 @@ class FontLoader {
     }
   }
 
-  // Load atlas from JS file (for file:// protocol)
+  // ============================================================================
+  // BROWSER-SPECIFIC HELPER METHODS
+  // ============================================================================
+
+  /**
+   * Load atlas from JS file (for file:// protocol)
+   * @param {string} IDString - Font ID string
+   * @returns {Promise} Promise that resolves when atlas is loaded
+   */
   loadAtlasFromJS(IDString) {
     return new Promise((resolve, reject) => {
       const imageScript = document.createElement('script');
-      imageScript.src = FontLoaderConfig.getImageJsPath(IDString);
+      imageScript.src = this.getAtlasJsPath(IDString, 'png');
 
       imageScript.onload = () => {
         const pkg = FontLoader._tempAtlasPackages[IDString];
 
         if (!pkg || !pkg.base64Data) {
-          console.warn(FontLoaderConfig.messages.imageDataMissing(IDString));
+          console.warn(FontLoaderBase.messages.imageDataMissing(IDString));
           imageScript.remove();
           this.incrementProgress();
           resolve(); // Not a failure - will use placeholder rectangles
@@ -140,7 +122,7 @@ class FontLoader {
         img.src = `data:image/png;base64,${pkg.base64Data}`;
 
         img.onload = () => {
-          // Complete flow: get package → expand → create AtlasData → store → cleanup
+          // Use inherited method to reconstruct and store atlas
           this.loadAtlasFromPackage(IDString, img);
 
           imageScript.remove();
@@ -149,7 +131,7 @@ class FontLoader {
         };
 
         img.onerror = () => {
-          console.warn(FontLoaderConfig.messages.base64DecodeFailed(IDString));
+          console.warn(FontLoaderBase.messages.base64DecodeFailed(IDString));
           imageScript.remove();
           delete FontLoader._tempAtlasPackages[IDString]; // Clean up package
           this.incrementProgress();
@@ -158,7 +140,7 @@ class FontLoader {
       };
 
       imageScript.onerror = () => {
-        console.warn(FontLoaderConfig.messages.jsImageNotFound(IDString));
+        console.warn(FontLoaderBase.messages.jsImageNotFound(IDString, 'png'));
         imageScript.remove();
         this.incrementProgress();
         resolve(); // Not a failure - will use placeholder rectangles
@@ -168,15 +150,19 @@ class FontLoader {
     });
   }
 
-  // Load atlas from PNG file (for http:// protocol)
+  /**
+   * Load atlas from PNG file (for http:// protocol)
+   * @param {string} IDString - Font ID string
+   * @returns {Promise} Promise that resolves when atlas is loaded
+   */
   loadAtlasFromPNG(IDString) {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.src = FontLoaderConfig.getPngPath(IDString);
+      img.src = this.getAtlasPngPath(IDString);
 
       img.onload = () => {
         // PNG files are now Atlas format (variable-width cells)
-        // Reconstruct tight atlas + positioning using TightAtlasReconstructor
+        // Use inherited method to reconstruct and store tight atlas + positioning
         const success = this.loadAtlasFromPackage(IDString, img);
 
         if (!success) {
@@ -188,20 +174,10 @@ class FontLoader {
       };
 
       img.onerror = () => {
-        console.warn(FontLoaderConfig.messages.pngImageNotFound(IDString));
+        console.warn(FontLoaderBase.messages.pngImageNotFound(IDString));
         this.incrementProgress();
         resolve(); // Not a failure - will use placeholder rectangles
       };
     });
-  }
-
-  // Increment progress counter and call callback
-  incrementProgress() {
-    FontLoaderShared.incrementProgress(this);
-  }
-
-  // Check if loading is complete
-  isComplete() {
-    return FontLoaderShared.isComplete(this.loadedCount, this.totalCount);
   }
 }
