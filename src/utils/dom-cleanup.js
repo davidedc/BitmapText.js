@@ -1,10 +1,11 @@
 function removeAllCanvasesAndDivs() {
 
-  // remove all the canvases EXCEPT validation harness canvases
+  // remove all the canvases EXCEPT atlas section canvases
+  const atlasSection = document.getElementById('atlas-section');
   const canvases = document.querySelectorAll('canvas');
   for (const element of canvases) {
-    // Skip validation harness canvases (identified by data-validation attribute)
-    if (element.hasAttribute('data-validation')) {
+    // Skip atlas section canvases (inside atlas-section div)
+    if (atlasSection && atlasSection.contains(element)) {
       continue;
     }
     // do this special sort of cleanup so to hopefully hand-hold the garbage collector
@@ -21,20 +22,20 @@ function removeAllCanvasesAndDivs() {
     testCopyCanvases.removeChild(testCopyCanvases.firstChild);
   }
 
-  // remove all other divs apart from a couple (including validation-section and its children)
+  // remove all other divs apart from a couple (including atlas-section and its children)
   const divs = document.querySelectorAll('div');
-  const validationSection = document.getElementById('validation-section');
+  // atlasSection already declared above
 
   for (const element of divs) {
     // Skip protected divs and their descendants
     const isProtectedDiv = element.id === 'selectors' ||
                           element.id === 'testCopyCanvases' ||
                           element.id === 'hoverButtons' ||
-                          element.id === 'validation-section';
+                          element.id === 'atlas-section';
 
-    const isInsideValidationSection = validationSection && validationSection.contains(element);
+    const isInsideAtlasSection = atlasSection && atlasSection.contains(element);
 
-    if (!isProtectedDiv && !isInsideValidationSection) {
+    if (!isProtectedDiv && !isInsideAtlasSection) {
       element.remove();
     }
   }

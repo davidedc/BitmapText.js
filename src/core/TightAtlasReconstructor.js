@@ -52,6 +52,8 @@ class TightAtlasReconstructor {
       throw new Error('TightAtlasReconstructor: No characters found in FontMetrics');
     }
 
+    console.debug(`TightAtlasReconstructor: Processing ${characters.length} characters`);
+
     // 3. Calculate cell dimensions from font metrics
     // Cell height is constant across all characters in this font
     const firstChar = characters[0];
@@ -331,6 +333,8 @@ class TightAtlasReconstructor {
     // Create domain objects
     const tightAtlasImage = new AtlasImage(tightCanvas);
     const atlasPositioning = new AtlasPositioning(positioning);
+
+    console.debug(`TightAtlasReconstructor: Packed ${Object.keys(positioning.xInAtlas).length} glyphs into ${totalWidth}×${maxHeight} atlas`);
 
     return { atlasImage: tightAtlasImage, atlasPositioning };
   }

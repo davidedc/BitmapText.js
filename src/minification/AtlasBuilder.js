@@ -117,6 +117,8 @@ class AtlasBuilder {
       x += cellWidths[char];
     }
 
+    console.debug(`AtlasBuilder: Built atlas ${totalWidth}×${cellHeight} with ${characters.length} characters`);
+
     return {
       canvas,           // Atlas canvas
       cellWidths,       // Width of each character's cell (variable)

@@ -44,7 +44,7 @@ function measureMultilineText(lines, measureTextFn) {
     // (which would measure the actual text) but instead, just take the fontBoundingBoxAscent and fontBoundingBoxDescent
     // This is all the lines are equally spaced vertically and have all the space needed for particularly ascending and descending
     // characters such as "À", "Ç", "ç".
-    console.log(`linesMeasures_CSS_Px.fontBoundingBoxAscent: ${fontBoundingBoxAscent} linesMeasures_CSS_Px.fontBoundingBoxDescent: ${fontBoundingBoxDescent}`);
+    // console.log(`linesMeasures_CSS_Px.fontBoundingBoxAscent: ${fontBoundingBoxAscent} linesMeasures_CSS_Px.fontBoundingBoxDescent: ${fontBoundingBoxDescent}`);
     linesMeasures_CSS_Px.height += (fontBoundingBoxAscent || 0) + Math.abs(fontBoundingBoxDescent || 0);
   }
   return linesMeasures_CSS_Px;
@@ -128,8 +128,8 @@ function drawTestText(fontProperties) {
   // note how this one doesn't need a canvas
   const measureTextCrispBitmapFAB = text => bitmapTextFAB.measureText(text, fontProperties, textProperties);
   const linesMeasures_CSS_PxFAB = measureMultilineText(testCopyLines, measureTextCrispBitmapFAB);
-  // generating the atlas with the full class is necessary to then being able to draw the text with the "normal" class
-  buildAndDisplayAtlas(atlasDataStoreFAB, fontProperties);
+  // generating the atlases (source + tight reconstructed) with the full class is necessary to then being able to draw the text with the "normal" class
+  buildAndDisplayAtlases(fontProperties);
   // note that this one doesn't use the atlas, it uses the canvas stored in each glyph
   drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures_CSS_PxFAB, testCopyLines, bitmapTextFAB, fontProperties, testCopyChoiceNumber, textProperties);
 }
@@ -379,21 +379,40 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
   addElementToDOM(document.createElement('br'));
 }
 
-function buildAndDisplayAtlas(atlasDataStore, fontProperties) {
-  addElementToDOM(createDivWithText("Atlas:"));
-  const atlasImageFAB = atlasDataStore.buildTightAtlas(fontProperties, fontMetricsStoreFAB);
+function buildAndDisplayAtlases(fontProperties) {
+  // Build Atlas (variable-width cells)
+  addElementToDOM(createDivWithText("Atlas Source (variable-width cells):"));
+  const atlasResult = atlasDataStoreFAB.buildAtlas(fontProperties, fontMetricsStoreFAB);
 
-  // Create a display copy of the canvas to prevent DOM cleanup from affecting stored data
-  const originalCanvas = atlasImageFAB.image;
-  const displayCanvas = document.createElement('canvas');
-  displayCanvas.width = originalCanvas.width;
-  displayCanvas.height = originalCanvas.height;
-  const displayCtx = displayCanvas.getContext('2d');
-  displayCtx.drawImage(originalCanvas, 0, 0);
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = atlasResult.canvas.width;
+  sourceCanvas.height = atlasResult.canvas.height;
+  const sourceCtx = sourceCanvas.getContext('2d');
+  sourceCtx.drawImage(atlasResult.canvas, 0, 0);
 
-  addElementToDOM(displayCanvas);
+  addElementToDOM(sourceCanvas);
+  addCanvasInfoToDOM(sourceCanvas, getHashMatchInfo(sourceCtx, fontProperties, 'atlas source'));
 
-  addCanvasInfoToDOM(displayCanvas, getHashMatchInfo(displayCtx, fontProperties, 'atlas'));
+  // Reconstruct Tight Atlas from Atlas
+  addElementToDOM(createDivWithText("Tight Atlas (reconstructed from source):"));
+  const reconstructedData = atlasDataStoreFAB.reconstructTightAtlas(
+    atlasResult.canvas,
+    fontProperties,
+    fontMetricsStoreFAB
+  );
+
+  // CRITICAL: Store the reconstructed tight atlas in atlasDataStoreFAB
+  // This is needed for rendering to work (replaces old buildTightAtlas behavior)
+  atlasDataStoreFAB.setAtlasData(fontProperties, reconstructedData);
+
+  const tightCanvas = document.createElement('canvas');
+  tightCanvas.width = reconstructedData.atlasImage.width;
+  tightCanvas.height = reconstructedData.atlasImage.height;
+  const tightCtx = tightCanvas.getContext('2d');
+  tightCtx.drawImage(reconstructedData.atlasImage.image, 0, 0);
+
+  addElementToDOM(tightCanvas);
+  addCanvasInfoToDOM(tightCanvas, getHashMatchInfo(tightCtx, fontProperties, 'tight atlas'));
   addElementToDOM(document.createElement('br'));
 }
 
