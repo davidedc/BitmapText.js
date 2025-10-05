@@ -38,7 +38,6 @@ FILES_TO_CHECK=(
   "$SRC_DIR/minification/AtlasReconstructionUtils.js"
   "$SRC_DIR/minification/AtlasCellDimensions.js"
   "$SRC_DIR/core/TightAtlasReconstructor.js"
-  "$SRC_DIR/minification/AtlasDataExpander.js"
   "$SRC_DIR/core/FontLoaderBase.js"
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
@@ -204,14 +203,6 @@ echo "// TIGHT ATLAS RECONSTRUCTOR" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/core/TightAtlasReconstructor.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Concatenate AtlasDataExpander
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// ATLAS EXPANDER UTILITY" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/minification/AtlasDataExpander.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # FontLoaderBase already concatenated earlier (before FontLoader-node)

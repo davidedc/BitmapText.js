@@ -38,7 +38,7 @@ class AtlasPositioning {
     this._dy = data.dy || {};
     // NOTE: xInAtlas is reconstructed from tightWidth during deserialization (not serialized to reduce file size)
     // At build time: populated by AtlasPositioningFAB during atlas packing
-    // At runtime: reconstructed by AtlasDataExpander during atlas loading
+    // At runtime: reconstructed by TightAtlasReconstructor during atlas loading
     this._xInAtlas = data.xInAtlas || {};
 
     // Freeze for immutability (safe to use as value object)

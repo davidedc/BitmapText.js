@@ -85,7 +85,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   }
 
   /**
-   * Build atlas for validation/export (NEW METHOD for Phase 0)
+   * Build atlas for export
    * Uses glyph.canvas (variable-width cells) instead of glyph.tightCanvas
    *
    * @param {FontProperties} fontProperties - Font configuration
@@ -104,7 +104,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   }
 
   /**
-   * Reconstruct tight atlas from standard atlas (NEW METHOD for Phase 0 validation)
+   * Reconstruct tight atlas from standard atlas
    * Reconstructs tight atlas by scanning atlas pixels
    *
    * @param {Canvas|Image} atlasCanvas - Atlas image (variable-width cells)

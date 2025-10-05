@@ -62,12 +62,4 @@ class FontManifest {
   static allFontIDsSorted() {
     return [...this.#fontIDs].sort();
   }
-
-  // Add multiple font IDs from a manifest-style object
-  // Supports legacy format: { IDs: [...] }
-  static addFromManifest(manifest) {
-    if (manifest && Array.isArray(manifest.IDs)) {
-      this.addFontIDs(manifest.IDs);
-    }
-  }
 }

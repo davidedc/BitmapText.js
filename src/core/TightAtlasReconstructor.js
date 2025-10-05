@@ -4,8 +4,8 @@
 // standard atlases via pixel scanning.
 //
 // DISTRIBUTION ROLE:
-// - Part of validation harness (Phase 0) in font-assets-builder.html
-// - Will be part of runtime distribution after Phase 1
+// - Used by font-assets-builder.html and also by the runtime to reconstruct tight
+//   atlases for display and storage
 // - Reconstructs tight atlas + positioning data from atlas image
 //
 // ARCHITECTURE:

@@ -5,7 +5,7 @@
 // fontBoundingBox height, creating variable-width cells at a constant height.
 //
 // DISTRIBUTION ROLE:
-// - Part of validation harness (Phase 0) in font-assets-builder.html
+// - Used by font-assets-builder.html to generate atlas source for reconstruction
 // - Used for building atlases that will be reconstructed at runtime into tight atlases
 // - NOT part of runtime distribution (only needed during font generation)
 //
