@@ -1,7 +1,7 @@
 // FontLoader - Node.js Implementation
 //
 // This is a Node.js-compatible implementation of FontLoader that provides
-// the SAME PUBLIC API as the browser version (src/core/FontLoader.js).
+// the SAME PUBLIC API as the browser version (src/platform/FontLoader-browser.js).
 //
 // ENVIRONMENT-SPECIFIC IMPLEMENTATION:
 // - Browser: Promise-based, async, DOM script tags, Image elements

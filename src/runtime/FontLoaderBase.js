@@ -9,8 +9,8 @@
 // - Shared Logic: Common functionality lives here to avoid duplication
 //
 // SUBCLASSES:
-// - FontLoader (browser): src/core/FontLoader.js
-// - FontLoader (Node.js): src/node/FontLoader-node.js
+// - FontLoader (browser): src/platform/FontLoader-browser.js
+// - FontLoader (Node.js): src/platform/FontLoader-node.js
 //
 // EXTENSION POINTS:
 // - getDefaultCanvasFactory(): Returns environment-specific canvas factory
