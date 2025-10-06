@@ -268,7 +268,7 @@
       console.warn('Canvas element not found for renderTestText');
       return;
     }
-    canvas.width = 800;
+    canvas.width = 1600;
     canvas.height = 200;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
@@ -287,7 +287,7 @@
 
     const tempBitmapText = new BitmapText(tempAtlasStore, tempMetricsStore);
 
-    const testText = "Hello World! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const testText = "Hello World!" + " █abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ß!\"#$%&€'’()*+,-./:;<=>?@[\\]^_`{|}~—£°²·ÀÇàç•";
     const textProps = new TextProperties();
     tempBitmapText.drawTextFromAtlas(ctx, testText, 10, 50, fontProperties, textProps);
   }
