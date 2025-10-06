@@ -466,19 +466,19 @@ To support compound emojis would require:
 
   Font data is minified for efficient storage and network transfer:
 
-  **Font Metrics Minification (src/minification/MetricsMinifier.js)**:
+  **Font Metrics Minification (src/builder/MetricsMinifier.js)**:
   1. **Dynamic Base Metrics**: Uses first available character for base font metrics extraction
   2. **Nested Structure Flattening**: Converts multi-level font property objects to flat arrays
   3. **Data Deduplication**: Removes redundant entries across similar font configurations
   4. **Property Name Shortening**: Optimizes repeated font family/style/weight combinations
 
-  **Font Metrics Expansion (src/minification/MetricsExpander.js)**:
+  **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
   1. **Array to Object Mapping**: Rebuilds nested property structures
   2. **Property Reconstruction**: Restores font property hierarchies
   3. **Metrics Expansion**: Reconstructs full glyph metrics from minified data
   4. **Essential Property Validation**: Verifies key metrics are preserved during roundtrip
 
-  **Atlas Reconstruction Utilities (src/minification/AtlasReconstructionUtils.js)**:
+  **Atlas Reconstruction Utilities (src/builder/AtlasReconstructionUtils.js)**:
   1. **Image Data Extraction**: Central utility used by TightAtlasReconstructor for atlas image processing
   2. **getImageData()**: Extracts ImageData from Canvas/Image/AtlasImage with environment detection (document.createElement in browser, Canvas class in Node.js)
   3. **Cross-Platform Support**: Works in both browser and Node.js environments
@@ -550,21 +550,21 @@ To support compound emojis would require:
 
   ### Runtime Text Rendering Workflow
   ```
-  User → src/core/BitmapText.drawTextFromAtlas → src/core/AtlasDataStore + src/core/FontMetricsStore
+  User → src/runtime/BitmapText.drawTextFromAtlas → src/runtime/AtlasDataStore + src/runtime/FontMetricsStore
     1. Convert text to code point array ([...text])
-    2. Measure text (src/core/BitmapText.measureText)
+    2. Measure text (src/runtime/BitmapText.measureText)
     3. For each character:
-       a. Get glyph metrics (src/core/FontMetricsStore.getFontMetrics)
-       b. Create colored glyph (src/core/BitmapText.createColoredGlyph)
-       c. Render to main canvas (src/core/BitmapText.renderGlyphToMainCanvas)
-       d. Calculate advancement with kerning (src/core/BitmapText.calculateAdvancement_CSS_Px:78)
+       a. Get glyph metrics (src/runtime/FontMetricsStore.getFontMetrics)
+       b. Create colored glyph (src/runtime/BitmapText.createColoredGlyph)
+       c. Render to main canvas (src/runtime/BitmapText.renderGlyphToMainCanvas)
+       d. Calculate advancement with kerning (src/runtime/BitmapText.calculateAdvancement_CSS_Px:78)
     4. Return final rendered text
   ```
 
   ## Extension Points
 
   ### Custom Glyph Sources
-  Override `src/font-assets-builder-FAB/GlyphFAB.createCanvasesAndCharacterMetrics()`
+  Override `src/builder/GlyphFAB.createCanvasesAndCharacterMetrics()`
 
   ### Custom Kerning Rules
   Extend `Specs` class or modify specs DSL

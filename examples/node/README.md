@@ -67,14 +67,14 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the single-size demo:
 1. **Main logic**: `src/node/hello-world-main.js`
-2. **Font loading**: `src/node/FontLoader-node.js` (Node.js FontLoader implementation)
-3. **Core rendering**: `src/core/BitmapText.js`, `src/core/AtlasDataStore.js`, `src/core/FontMetricsStore.js`
-4. **Canvas implementation**: `src/node/canvas-mock.js`
+2. **Font loading**: `src/platform/FontLoader-node.js` (Node.js FontLoader implementation)
+3. **Core rendering**: `src/runtime/BitmapText.js`, `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js`
+4. **Canvas implementation**: `src/platform/canvas-mock.js`
 5. **Image libraries**: `lib/QOIDecode.js`, `lib/PngEncoder.js`
 
 ### For the multi-size demo:
 1. **Main logic**: `src/node/hello-world-multi-size-main.js`
-2. **Font loading**: `src/node/FontLoader-node.js` (same FontLoader API as browser)
+2. **Font loading**: `src/platform/FontLoader-node.js` (same FontLoader API as browser)
 3. **Core rendering**: Same as above
 4. **Other components**: Same as above
 

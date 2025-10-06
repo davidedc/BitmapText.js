@@ -11,9 +11,9 @@
 
   ## Project Structure at a Glance
 
-  - **Core runtime**: src/core/BitmapText.js, src/core/AtlasDataStore.js, src/core/FontMetricsStore.js, src/core/FontProperties.js
-  - **Font assets building tools**: src/font-assets-builder-FAB/*FAB.js files (includes FontPropertiesFAB.js)
-  - **Font utilities**: src/core/FontLoaderBase.js, src/core/FontLoader.js, src/node/FontLoader-node.js
+  - **Core runtime**: src/runtime/BitmapText.js, src/runtime/AtlasDataStore.js, src/runtime/FontMetricsStore.js, src/runtime/FontProperties.js
+  - **Font assets building tools**: src/builder/*FAB.js files (includes FontPropertiesFAB.js)
+  - **Font utilities**: src/runtime/FontLoaderBase.js, src/platform/FontLoader-browser.js, src/platform/FontLoader-node.js
   - **Font data**: font-assets/
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
@@ -57,25 +57,25 @@
 
   ## Where to Find Things
 
-  - **Font configuration**: src/core/FontProperties.js (immutable font config class)
-  - **Text rendering configuration**: src/core/TextProperties.js (immutable text config class - kerning, color, alignment)
-  - **Font assets building utilities**: src/font-assets-builder-FAB/FontPropertiesFAB.js (extends FontProperties)
-  - **Atlas image management**: src/core/AtlasImage.js (immutable atlas image domain object)
-  - **Atlas image building**: src/font-assets-builder-FAB/AtlasImageFAB.js (extends AtlasImage with building capabilities)
-  - **Atlas positioning data**: src/core/AtlasPositioning.js (immutable positioning domain object)
-  - **Atlas positioning building**: src/font-assets-builder-FAB/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
-  - **Atlas data combination**: src/core/AtlasData.js (combines AtlasImage + AtlasPositioning)
-  - **Atlas reconstruction utilities**: src/minification/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
-  - **Atlas building**: src/minification/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
-  - **Tight atlas reconstruction**: src/core/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
-  - **Kerning logic**: src/core/BitmapText.calculateAdvancement_CSS_Px:78
-  - **Glyph rendering**: src/core/BitmapText.drawLetter:158
-  - **Placeholder rectangles**: src/core/BitmapText.drawPlaceholderRectangle:1
-  - **Atlas validation**: src/core/AtlasDataStore.isValidAtlas:1
-  - **Font loading base class**: src/core/FontLoaderBase.js (abstract base with shared logic)
-  - **Font loading utilities**: src/core/FontLoader.js (browser), src/node/FontLoader-node.js (Node.js - both extend base class)
-  - **Font registry management**: src/core/FontManifest.js (replaces global bitmapTextManifest)
-  - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/core/AtlasPositioning.getHash:149 (positioning data hash)
+  - **Font configuration**: src/runtime/FontProperties.js (immutable font config class)
+  - **Text rendering configuration**: src/runtime/TextProperties.js (immutable text config class - kerning, color, alignment)
+  - **Font assets building utilities**: src/builder/FontPropertiesFAB.js (extends FontProperties)
+  - **Atlas image management**: src/runtime/AtlasImage.js (immutable atlas image domain object)
+  - **Atlas image building**: src/builder/AtlasImageFAB.js (extends AtlasImage with building capabilities)
+  - **Atlas positioning data**: src/runtime/AtlasPositioning.js (immutable positioning domain object)
+  - **Atlas positioning building**: src/builder/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
+  - **Atlas data combination**: src/runtime/AtlasData.js (combines AtlasImage + AtlasPositioning)
+  - **Atlas reconstruction utilities**: src/builder/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
+  - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
+  - **Tight atlas reconstruction**: src/runtime/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
+  - **Kerning logic**: src/runtime/BitmapText.calculateAdvancement_CSS_Px:78
+  - **Glyph rendering**: src/runtime/BitmapText.drawLetter:158
+  - **Placeholder rectangles**: src/runtime/BitmapText.drawPlaceholderRectangle:1
+  - **Atlas validation**: src/runtime/AtlasDataStore.isValidAtlas:1
+  - **Font loading base class**: src/runtime/FontLoaderBase.js (abstract base with shared logic)
+  - **Font loading utilities**: src/platform/FontLoader-browser.js (browser), src/platform/FontLoader-node.js (Node.js - both extend base class)
+  - **Font registry management**: src/runtime/FontManifest.js (replaces global bitmapTextManifest)
+  - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/runtime/AtlasPositioning.getHash:149 (positioning data hash)
   - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
   - **Atlas generation & reconstruction**: public/font-assets-builder.html (displays Atlas source and reconstructed tight atlas side-by-side)
 
