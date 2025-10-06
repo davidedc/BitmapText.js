@@ -319,10 +319,9 @@ class BitmapText {
       return;
     }
 
-    const atlasPositioning = atlasData.atlasPositioning.getPositioning(char);
+    if (!atlasData.hasPositioning(char)) return;
 
-    // For normal glyph rendering, we need xInAtlas
-    if (!atlasPositioning || !atlasPositioning.xInAtlas) return;
+    const atlasPositioning = atlasData.atlasPositioning.getPositioning(char);
 
     // Get the atlasData image for rendering
     const atlasImage = atlasData.atlasImage.image;
