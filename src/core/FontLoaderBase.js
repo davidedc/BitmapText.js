@@ -205,7 +205,7 @@ class FontLoaderBase {
 
     // Reconstruct tight atlas + positioning from Atlas image
     const { atlasImage: tightAtlasImage, atlasPositioning } =
-      TightAtlasReconstructor.reconstructFromAtlas(atlasImage, fontMetrics, this.canvasFactory);
+      TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage, this.canvasFactory);
 
     // Create AtlasData instance
     const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);

@@ -352,6 +352,7 @@ To support compound emojis would require:
   - Uses variable-width cells (actualBoundingBox) × constant height (fontBoundingBox)
   - Maintains sorted character order for determinism
   - Used by font-assets-builder.html to generate atlas source for reconstruction
+  - API: `buildAtlas(fontMetrics, glyphs)` - fontMetrics first for consistency
 
   **TightAtlasReconstructor**
   - Runtime class for reconstructing tight atlases from Atlas format via pixel scanning
@@ -360,6 +361,7 @@ To support compound emojis would require:
   - Integrated into FontLoader for automatic Atlas → Tight Atlas conversion at load time
   - Cross-platform canvas creation via canvasFactory parameter (browser: document.createElement, Node.js: Canvas class)
   - Part of core runtime distribution (~18-22KB)
+  - API: `reconstructFromAtlas(fontMetrics, atlasImage, canvasFactory)` - fontMetrics first for consistency
 
   ## Data Flow
 

@@ -100,7 +100,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
       throw new Error(`No FontMetrics found for ${fontProperties.key}`);
     }
 
-    return AtlasBuilder.buildAtlas(glyphs, fontMetrics);
+    return AtlasBuilder.buildAtlas(fontMetrics, glyphs);
   }
 
   /**
@@ -121,8 +121,8 @@ class AtlasDataStoreFAB extends AtlasDataStore {
 
     const { atlasImage, atlasPositioning } =
       TightAtlasReconstructor.reconstructFromAtlas(
-        atlasCanvas,
         fontMetrics,
+        atlasCanvas,
         () => document.createElement('canvas')
       );
 

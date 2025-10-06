@@ -20,12 +20,6 @@
 // - Cell widths MUST match character metrics exactly
 // - Cell height MUST be constant across all characters in font
 //
-// PARAMETER ORDER NOTE:
-// The buildAtlas() method has parameters in this order: (glyphs, fontMetrics)
-// This differs from TightAtlasReconstructor methods where fontMetrics often comes
-// before other parameters. This inconsistency exists for historical reasons and
-// will be standardized in a future refactor to improve API consistency.
-
 class AtlasBuilder {
   // Private constructor - prevent instantiation following Effective Java patterns
   constructor() {
@@ -34,11 +28,14 @@ class AtlasBuilder {
 
   /**
    * Build atlas from glyphs (variable-width cells format)
-   * @param {Object} glyphs - Map of char → GlyphFAB instances
+   *
+   * PARAMETER ORDER: Standardized to (fontMetrics, data) for API consistency
+   *
    * @param {FontMetrics} fontMetrics - Font metrics for dimensions
+   * @param {Object} glyphs - Map of char → GlyphFAB instances
    * @returns {{canvas, cellWidths, cellHeight, characters, totalWidth}}
    */
-  static buildAtlas(glyphs, fontMetrics) {
+  static buildAtlas(fontMetrics, glyphs) {
     // ⚠️ CRITICAL: Use SORTED characters for determinism
     // JavaScript object iteration order is not guaranteed to be stable across
     // build and runtime environments. Explicit sorting ensures consistency.

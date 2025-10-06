@@ -20,13 +20,6 @@
 // - MUST handle multi-part glyphs (i, j with dots) correctly
 // - MUST use 4-step optimized tight bounds detection algorithm
 //
-// PARAMETER ORDER NOTE:
-// The packTightAtlas() method has parameters in this order:
-// (tightBounds, characters, cachedMetrics, sourceAtlasImage, canvasFactory)
-// This differs from AtlasBuilder.buildAtlas() which uses (glyphs, fontMetrics).
-// This inconsistency exists for historical reasons and will be standardized
-// in a future refactor to improve API consistency.
-
 class TightAtlasReconstructor {
   // Private constructor - prevent instantiation following Effective Java patterns
   constructor() {
@@ -35,12 +28,15 @@ class TightAtlasReconstructor {
 
   /**
    * Main entry point - reconstructs tight atlas from standard atlas
-   * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells)
+   *
+   * PARAMETER ORDER: Standardized to (fontMetrics, data, options) for API consistency
+   *
    * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions and positioning
+   * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells)
    * @param {Function} canvasFactory - Factory for creating canvases (e.g., () => document.createElement('canvas'))
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static reconstructFromAtlas(atlasImage, fontMetrics, canvasFactory) {
+  static reconstructFromAtlas(fontMetrics, atlasImage, canvasFactory) {
     // 1. Get ImageData from atlas for pixel scanning
     const imageData = AtlasReconstructionUtils.getImageData(atlasImage);
 
@@ -88,9 +84,9 @@ class TightAtlasReconstructor {
 
     // 5. Repack into tight atlas with positioning data
     return this.packTightAtlas(
+      fontMetrics,
       tightBounds,
       characters,
-      fontMetrics,
       atlasImage,
       canvasFactory
     );
@@ -187,14 +183,16 @@ class TightAtlasReconstructor {
   /**
    * Pack tight glyphs and calculate positioning data
    *
+   * PARAMETER ORDER: Standardized to (fontMetrics, data, options) for API consistency
+   *
+   * @param {FontMetrics} fontMetrics - Font metrics for positioning calculations
    * @param {Object} tightBounds - Map of char → {left, top, width, height} within cells
    * @param {Array<string>} characters - Sorted array of characters
-   * @param {FontMetrics} fontMetrics - Font metrics for positioning calculations
    * @param {Image|Canvas} sourceAtlasImage - Source Atlas image for extraction
    * @param {Function} canvasFactory - Factory for creating canvases
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static packTightAtlas(tightBounds, characters, fontMetrics, sourceAtlasImage, canvasFactory) {
+  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, canvasFactory) {
     // Calculate tight atlas dimensions
     let totalWidth = 0;
     let maxHeight = 0;
