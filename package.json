@@ -2,22 +2,23 @@
   "name": "bitmaptext-js",
   "version": "1.0.0",
   "description": "A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.",
-  "main": "src/core/BitmapText.js",
+  "main": "src/runtime/BitmapText.js",
   "exports": {
-    ".": "./src/core/BitmapText.js",
-    "./core/*": "./src/core/*",
-    "./font-assets-builder-FAB/*": "./src/font-assets-builder-FAB/*",
+    ".": "./src/runtime/BitmapText.js",
+    "./runtime/*": "./src/runtime/*",
+    "./builder/*": "./src/builder/*",
+    "./platform/*": "./src/platform/*",
     "./utils/*": "./src/utils/*",
     "./runtime": {
-      "import": "./src/core/BitmapText.js",
-      "require": "./src/core/BitmapText.js"
+      "import": "./src/runtime/BitmapText.js",
+      "require": "./src/runtime/BitmapText.js"
     },
-    "./core/BitmapText": "./src/core/BitmapText.js",
-    "./core/AtlasDataStore": "./src/core/AtlasDataStore.js",
-    "./core/FontProperties": "./src/core/FontProperties.js",
-    "./font-assets-builder-FAB/BitmapTextFAB": "./src/font-assets-builder-FAB/BitmapTextFAB.js",
-    "./font-assets-builder-FAB/AtlasDataStoreFAB": "./src/font-assets-builder-FAB/AtlasDataStoreFAB.js",
-    "./font-assets-builder-FAB/FontPropertiesFAB": "./src/font-assets-builder-FAB/FontPropertiesFAB.js"
+    "./runtime/BitmapText": "./src/runtime/BitmapText.js",
+    "./runtime/AtlasDataStore": "./src/runtime/AtlasDataStore.js",
+    "./runtime/FontProperties": "./src/runtime/FontProperties.js",
+    "./builder/BitmapTextFAB": "./src/builder/BitmapTextFAB.js",
+    "./builder/AtlasDataStoreFAB": "./src/builder/AtlasDataStoreFAB.js",
+    "./builder/FontPropertiesFAB": "./src/builder/FontPropertiesFAB.js"
   },
   "directories": {
     "lib": "lib",

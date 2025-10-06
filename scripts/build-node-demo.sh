@@ -25,26 +25,26 @@ mkdir -p "$OUTPUT_DIR"
 
 # Verify all source files exist
 FILES_TO_CHECK=(
-  "$SRC_DIR/node/canvas-mock.js"
-  "$SRC_DIR/node/FontLoader-node.js"
-  "$SRC_DIR/core/StatusCode.js"
-  "$SRC_DIR/core/FontProperties.js"
-  "$SRC_DIR/core/TextProperties.js"
-  "$SRC_DIR/core/FontMetrics.js"
-  "$SRC_DIR/minification/MetricsExpander.js"
-  "$SRC_DIR/core/AtlasPositioning.js"
-  "$SRC_DIR/core/AtlasImage.js"
-  "$SRC_DIR/core/AtlasData.js"
-  "$SRC_DIR/minification/AtlasReconstructionUtils.js"
-  "$SRC_DIR/minification/AtlasCellDimensions.js"
-  "$SRC_DIR/core/TightAtlasReconstructor.js"
-  "$SRC_DIR/core/FontLoaderBase.js"
+  "$SRC_DIR/platform/canvas-mock.js"
+  "$SRC_DIR/platform/FontLoader-node.js"
+  "$SRC_DIR/runtime/StatusCode.js"
+  "$SRC_DIR/runtime/FontProperties.js"
+  "$SRC_DIR/runtime/TextProperties.js"
+  "$SRC_DIR/runtime/FontMetrics.js"
+  "$SRC_DIR/builder/MetricsExpander.js"
+  "$SRC_DIR/runtime/AtlasPositioning.js"
+  "$SRC_DIR/runtime/AtlasImage.js"
+  "$SRC_DIR/runtime/AtlasData.js"
+  "$SRC_DIR/builder/AtlasReconstructionUtils.js"
+  "$SRC_DIR/utils/AtlasCellDimensions.js"
+  "$SRC_DIR/runtime/TightAtlasReconstructor.js"
+  "$SRC_DIR/runtime/FontLoaderBase.js"
   "$LIB_DIR/QOIDecode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
-  "$SRC_DIR/core/AtlasDataStore.js"
-  "$SRC_DIR/core/FontMetricsStore.js"
-  "$SRC_DIR/core/BitmapText.js"
+  "$SRC_DIR/runtime/AtlasDataStore.js"
+  "$SRC_DIR/runtime/FontMetricsStore.js"
+  "$SRC_DIR/runtime/BitmapText.js"
   "$SRC_DIR/node/hello-world-main.js"
 )
 
@@ -72,13 +72,13 @@ cat > "$OUTPUT_FILE" << 'EOF'
  * 
  * Source files:
  *   - src/node/hello-world-main.js (main demo logic)
- *   - src/core/BitmapText.js (core rendering)
- *   - src/core/AtlasDataStore.js (atlas data storage)
- *   - src/node/canvas-mock.js (Canvas implementation)
+ *   - src/runtime/BitmapText.js (core rendering)
+ *   - src/runtime/AtlasDataStore.js (atlas data storage)
+ *   - src/platform/canvas-mock.js (Canvas implementation)
  *   - lib/QOIDecode.js, lib/PngEncoder.js (image handling)
- * 
+ *
  * To modify this demo:
- *   1. Edit source files in src/node/ and related directories
+ *   1. Edit source files in src/node/, src/runtime/, src/platform/
  *   2. Run: ./scripts/build-node-demo.sh
  * 
  * Usage:
@@ -98,7 +98,7 @@ EOF
 echo "// MINIMAL CANVAS MOCK - Only what BitmapText.js needs" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-tail -n +2 "$SRC_DIR/node/canvas-mock.js" >> "$OUTPUT_FILE"
+tail -n +2 "$SRC_DIR/platform/canvas-mock.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontLoaderBase (MUST come before FontLoader-node since it's the parent class)
@@ -106,7 +106,7 @@ echo "// =======================================================================
 echo "// FONT LOADER BASE CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/FontLoaderBase.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/FontLoaderBase.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontLoader for Node.js (skip header comments and fs require to avoid duplicates)
@@ -114,7 +114,7 @@ echo "// =======================================================================
 echo "// FONTLOADER NODE.JS IMPLEMENTATION" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-tail -n +25 "$SRC_DIR/node/FontLoader-node.js" >> "$OUTPUT_FILE"
+tail -n +25 "$SRC_DIR/platform/FontLoader-node.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate StatusCode class (MUST BE FIRST before BitmapText)
@@ -122,7 +122,7 @@ echo "// =======================================================================
 echo "// STATUS CODE CONSTANTS AND HELPERS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/StatusCode.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/StatusCode.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontProperties class
@@ -130,7 +130,7 @@ echo "// =======================================================================
 echo "// FONT PROPERTIES CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/FontProperties.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/FontProperties.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate TextProperties class
@@ -138,7 +138,7 @@ echo "// =======================================================================
 echo "// TEXT PROPERTIES CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/TextProperties.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/TextProperties.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontMetrics class
@@ -146,7 +146,7 @@ echo "// =======================================================================
 echo "// FONT METRICS CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/FontMetrics.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/FontMetrics.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate expansion utility
@@ -154,7 +154,7 @@ echo "// =======================================================================
 echo "// EXPANSION UTILITY - MetricsExpander.js" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/minification/MetricsExpander.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/builder/MetricsExpander.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate AtlasPositioning class
@@ -162,7 +162,7 @@ echo "// =======================================================================
 echo "// ATLAS POSITIONING CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/AtlasPositioning.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/AtlasPositioning.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate AtlasImage class (BEFORE AtlasData since AtlasData depends on AtlasImage)
@@ -170,7 +170,7 @@ echo "// =======================================================================
 echo "// ATLAS IMAGE CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/AtlasImage.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/AtlasImage.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate AtlasData class
@@ -178,7 +178,7 @@ echo "// =======================================================================
 echo "// ATLAS DATA CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/AtlasData.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/AtlasData.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate AtlasReconstructionUtils
@@ -186,7 +186,7 @@ echo "// =======================================================================
 echo "// ATLAS RECONSTRUCTION UTILITIES" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/minification/AtlasReconstructionUtils.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/builder/AtlasReconstructionUtils.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate AtlasCellDimensions
@@ -194,7 +194,7 @@ echo "// =======================================================================
 echo "// ATLAS CELL DIMENSIONS UTILITY" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/minification/AtlasCellDimensions.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/utils/AtlasCellDimensions.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate TightAtlasReconstructor (Runtime atlas reconstruction)
@@ -202,7 +202,7 @@ echo "// =======================================================================
 echo "// TIGHT ATLAS RECONSTRUCTOR" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/TightAtlasReconstructor.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/TightAtlasReconstructor.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # FontLoaderBase already concatenated earlier (before FontLoader-node)
@@ -236,7 +236,7 @@ echo "// =======================================================================
 echo "// ATLAS DATA STORE" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/AtlasDataStore.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/AtlasDataStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontMetricsStore
@@ -244,7 +244,7 @@ echo "// =======================================================================
 echo "// FONT METRICS STORE" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/FontMetricsStore.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/FontMetricsStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate BitmapText
@@ -252,7 +252,7 @@ echo "// =======================================================================
 echo "// BITMAP TEXT RENDERER" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/core/BitmapText.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/BitmapText.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate main execution

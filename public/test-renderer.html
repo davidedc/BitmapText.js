@@ -49,22 +49,22 @@ and then open the page from the browser at:
   }
 </script>
 
-<script src="../src/core/StatusCode.js"></script>
-<script src="../src/core/FontProperties.js"></script>
-<script src="../src/core/TextProperties.js"></script>
-<script src="../src/core/FontMetrics.js"></script>
-<script src="../src/core/AtlasPositioning.js"></script>
-<script src="../src/core/AtlasImage.js"></script>
-<script src="../src/core/AtlasData.js"></script>
-<script src="../src/minification/AtlasReconstructionUtils.js"></script>
-<script src="../src/minification/AtlasCellDimensions.js"></script>
-<script src="../src/core/TightAtlasReconstructor.js"></script>
+<script src="../src/runtime/StatusCode.js"></script>
+<script src="../src/runtime/FontProperties.js"></script>
+<script src="../src/runtime/TextProperties.js"></script>
+<script src="../src/runtime/FontMetrics.js"></script>
+<script src="../src/runtime/AtlasPositioning.js"></script>
+<script src="../src/runtime/AtlasImage.js"></script>
+<script src="../src/runtime/AtlasData.js"></script>
+<script src="../src/builder/AtlasReconstructionUtils.js"></script>
+<script src="../src/utils/AtlasCellDimensions.js"></script>
+<script src="../src/runtime/TightAtlasReconstructor.js"></script>
 <script src="../src/utils/HashStore.js"></script>
 <script src="../test/data/reference-hashes.js"></script>
 <script src="../src/utils/canvas-extensions.js"></script>
-<script src="../src/core/AtlasDataStore.js"></script>
-<script src="../src/core/FontMetricsStore.js"></script>
-<script src="../src/core/BitmapText.js"></script>
+<script src="../src/runtime/AtlasDataStore.js"></script>
+<script src="../src/runtime/FontMetricsStore.js"></script>
+<script src="../src/runtime/BitmapText.js"></script>
 <script src="../test/utils/test-copy.js"></script>
 <script src="../test/utils/draw-test-text.js"></script>
 <script src="../src/utils/dom-cleanup.js"></script>
@@ -77,17 +77,17 @@ and then open the page from the browser at:
 <script src="../src/ui/components/font-weight-dropdown.js"></script>
 <script src="../src/ui/components/size-buttons.js"></script>
 <script src="../src/ui/base-ui.js"></script>
-<script src="../src/minification/MetricsExpander.js"></script>
+<script src="../src/builder/MetricsExpander.js"></script>
 
 <script >
   const atlasDataStore = new AtlasDataStore();
   const fontMetricsStore = new FontMetricsStore();
 </script>
 
-<script src="../src/core/FontManifest.js"></script>
+<script src="../src/runtime/FontManifest.js"></script>
 <script src="../font-assets/font-registry.js"></script>
-<script src="../src/core/FontLoaderBase.js"></script>
-<script src="../src/core/FontLoader.js"></script>
+<script src="../src/runtime/FontLoaderBase.js"></script>
+<script src="../src/platform/FontLoader-browser.js"></script>
 
 <script>
   // Ensure everything is loaded before starting

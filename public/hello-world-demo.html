@@ -32,36 +32,36 @@
 
   <!-- Essential dependencies -->
   <!-- Status reporting constants and helpers (must load first) -->
-  <script src="../src/core/StatusCode.js"></script>
+  <script src="../src/runtime/StatusCode.js"></script>
   <!-- FontProperties class for font configuration -->
-  <script src="../src/core/FontProperties.js"></script>
+  <script src="../src/runtime/FontProperties.js"></script>
   <!-- TextProperties class for text rendering configuration -->
-  <script src="../src/core/TextProperties.js"></script>
+  <script src="../src/runtime/TextProperties.js"></script>
   <!-- FontMetrics domain object for encapsulating font metrics data -->
-  <script src="../src/core/FontMetrics.js"></script>
+  <script src="../src/runtime/FontMetrics.js"></script>
   <!-- Expander utility to unpack minified font metrics data (depends on FontMetrics) -->
-  <script src="../src/minification/MetricsExpander.js"></script>
+  <script src="../src/builder/MetricsExpander.js"></script>
   <!-- Atlas positioning domain object for encapsulating atlas positioning data -->
-  <script src="../src/core/AtlasPositioning.js"></script>
+  <script src="../src/runtime/AtlasPositioning.js"></script>
   <!-- Atlas image domain object for encapsulating atlas images -->
-  <script src="../src/core/AtlasImage.js"></script>
+  <script src="../src/runtime/AtlasImage.js"></script>
   <!-- Atlas data object combining image and positioning -->
-  <script src="../src/core/AtlasData.js"></script>
+  <script src="../src/runtime/AtlasData.js"></script>
   <!-- Atlas reconstruction utilities for image data extraction -->
-  <script src="../src/minification/AtlasReconstructionUtils.js"></script>
+  <script src="../src/builder/AtlasReconstructionUtils.js"></script>
   <!-- Atlas cell dimensions utility for calculating atlas cell dimensions -->
-  <script src="../src/minification/AtlasCellDimensions.js"></script>
+  <script src="../src/utils/AtlasCellDimensions.js"></script>
   <!-- Tight atlas reconstructor for converting Atlas → Tight Atlas at runtime -->
-  <script src="../src/core/TightAtlasReconstructor.js"></script>
+  <script src="../src/runtime/TightAtlasReconstructor.js"></script>
   <!-- Data store for atlas images -->
-  <script src="../src/core/AtlasDataStore.js"></script>
+  <script src="../src/runtime/AtlasDataStore.js"></script>
   <!-- Data store for font metrics, kerning, and positioning -->
-  <script src="../src/core/FontMetricsStore.js"></script>
+  <script src="../src/runtime/FontMetricsStore.js"></script>
   <!-- Main bitmap text rendering engine -->
-  <script src="../src/core/BitmapText.js"></script>
+  <script src="../src/runtime/BitmapText.js"></script>
   <!-- Font loading utilities -->
-  <script src="../src/core/FontLoaderBase.js"></script>
-  <script src="../src/core/FontLoader.js"></script>
+  <script src="../src/runtime/FontLoaderBase.js"></script>
+  <script src="../src/platform/FontLoader-browser.js"></script>
 
   <script>
     // Font properties for Arial normal normal 19 with pixel density 1
