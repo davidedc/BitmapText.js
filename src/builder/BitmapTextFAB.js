@@ -31,42 +31,12 @@ class BitmapTextFAB extends BitmapText {
     this.fontMetricsStoreFAB = fontMetricsStoreFAB;
   }
 
-  hasLotsOfSpaceAtBottomRight(char) {
-    return ['V', '7', '/', 'T', 'Y'].indexOf(char) !== -1;
-  }
-
-  hasLotsOfSpaceAtBottomLeft(char) {
-    return ['V', '\\', 'T', 'Y'].indexOf(char) !== -1;
-  }
-
-  hasSomeSpaceAtBottomLeft(char) {
-    return ['W', '7'].indexOf(char) !== -1;
-  }
-
-
-  hasSomeSpaceAtBottomRight(char) {
-    return ['W', 'f', 'P'].indexOf(char) !== -1;
-  }
-
-  hasSpaceAtTopRight(char) {
-    return ['A', '\\', 'L', 'h'].indexOf(char) !== -1;
-  }
-
-  protrudesBottomLeft(char) {
-    return ['A', '/'].indexOf(char) !== -1;
-  }
-
-  protrudesBottomRight(char) {
-    return ['A', '\\', 'L'].indexOf(char) !== -1;
-  }
-
-  protrudesTopLeft(char) {
-    return ['V', 'W', '\\', 'T', 'Y'].indexOf(char) !== -1;
-  }
-
-  isShortCharacter(char) {
-    return ['a', 'c', 'e', 'g', 'i', 'j', 'm', 'n', 'o', 'p', 'q', 'r', 's', 'u', 'v', 'w', 'x', 'y', 'z', '.', ',', ':', ';', '—', '·', 'Ç', 'à', 'ç', '•'].indexOf(char) !== -1;
-  }
+  // Historical note: Character classification methods (hasLotsOfSpaceAtBottomRight,
+  // hasLotsOfSpaceAtBottomLeft, hasSomeSpaceAtBottomLeft, hasSomeSpaceAtBottomRight,
+  // hasSpaceAtTopRight, protrudesBottomLeft, protrudesBottomRight, protrudesTopLeft,
+  // isShortCharacter) were DELETED as dead code - they were part of the old kerning
+  // algorithm removed in commit 5bf84de (Sept 2023) when the system moved to spec-based
+  // kerning. These methods had zero callers and are recoverable from git history if needed.
 
   getKerningCorrectionFromSpec(fontProperties, char, nextChar) {
     const { fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
