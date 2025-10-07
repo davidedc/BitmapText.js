@@ -20,7 +20,7 @@
 // - Both stores work together during the font assets building process
 class BitmapTextFAB extends BitmapText {
 
-  constructor(atlasDataStoreFAB, fontMetricsStoreFAB, canvasFactory) {
+  constructor(atlasDataStoreFAB, fontMetricsStoreFAB, canvasFactory, specs = null) {
     // Pass both stores to parent BitmapText constructor
     // Parent expects (atlasDataStore, fontMetricsStore, canvasFactory)
     super(atlasDataStoreFAB, fontMetricsStoreFAB, canvasFactory);
@@ -29,6 +29,37 @@ class BitmapTextFAB extends BitmapText {
     // Note: this.atlasDataStore and this.fontMetricsStore are already set by parent
     this.atlasDataStoreFAB = atlasDataStoreFAB;
     this.fontMetricsStoreFAB = fontMetricsStoreFAB;
+
+    // Initialize kerning calculator if specs provided
+    // If null, must call setSpecs() before using kerning methods
+    // This allows backward compatibility and lazy initialization
+    this._kerningCalculator = specs ? new KerningCalculator(specs) : null;
+  }
+
+  /**
+   * Set specs and initialize kerning calculator
+   * Called when specs are parsed or updated
+   * @param {Specs} specs - Font specifications instance
+   */
+  setSpecs(specs) {
+    if (!specs) {
+      throw new Error('setSpecs() requires non-null Specs instance');
+    }
+    this._kerningCalculator = new KerningCalculator(specs);
+  }
+
+  /**
+   * Ensure kerning calculator is initialized
+   * @private
+   * @throws {Error} If kerning calculator not initialized
+   */
+  _ensureKerningCalculator() {
+    if (!this._kerningCalculator) {
+      throw new Error(
+        'Kerning calculator not initialized. ' +
+        'Call setSpecs() or pass specs to constructor.'
+      );
+    }
   }
 
   // Historical note: Character classification methods (hasLotsOfSpaceAtBottomRight,
@@ -38,76 +69,54 @@ class BitmapTextFAB extends BitmapText {
   // algorithm removed in commit 5bf84de (Sept 2023) when the system moved to spec-based
   // kerning. These methods had zero callers and are recoverable from git history if needed.
 
+  /**
+   * Get kerning correction from spec
+   * @deprecated Use kerningCalculator.calculateCorrection() for direct access
+   * @private Internal method - prefer buildKerningTableIfDoesntExist()
+   */
   getKerningCorrectionFromSpec(fontProperties, char, nextChar) {
-    const { fontFamily, fontStyle, fontWeight, fontSize } = fontProperties;
-
-    if (specs.specCombinationExists(fontProperties, "Kerning cutoff")) {
-      if (fontSize <= specs.kerningCutoff(fontProperties)) {
-        return 0;
-      }
-    }
-
-    if (specs.specCombinationExists(fontProperties, "Kerning")) {
-      // for all entries in the Kerning array with a sizeRange that includes the current font size
-      //   get the kerning array and for each one:
-      //     if charmatches any of the characters in the "left" object or the "left" object is "*any*" and the nextChar matches any of the characters in the "right" object or the "right" object is "*any*"
-      //       return the value of the "adjustment" property
-      for (const kerningEntry of specs.kerning(fontProperties)) {
-        if (
-          kerningEntry.sizeRange.from <= fontSize &&
-          kerningEntry.sizeRange.to >= fontSize
-        ) {
-          for (const kerning of kerningEntry.kerning) {
-            if (
-              (kerning.left.includes(char) ||
-                kerning.left.includes("*any*")) &&
-              (kerning.right.includes(nextChar) ||
-                kerning.right.includes("*any*"))
-            ) {
-              return kerning.adjustment;
-            }
-          }
-        }
-      }
-      return 0;
-    }
-    return 0;
+    this._ensureKerningCalculator();
+    return this._kerningCalculator.calculateCorrection(fontProperties, char, nextChar);
   }
 
+  /**
+   * Build kerning table if it doesn't exist
+   * Delegates calculation to KerningCalculator, handles storage orchestration
+   */
   buildKerningTableIfDoesntExist(fontProperties) {
-    if (this.fontMetricsStoreFAB.kerningTableExists(fontProperties))
+    this._ensureKerningCalculator();
+
+    // Early return if table already exists (idempotent operation)
+    if (this.fontMetricsStoreFAB.kerningTableExists(fontProperties)) {
       return;
-
-    // go through all the characters and for each character, go through all the other characters
-    // and calculate the kerning correction between the two characters
-    // and store it in the kerningTable
-    const kerningTable = {};
-    for (const char of characterSet) {
-      kerningTable[char] = {};
-      for (const nextChar of characterSet) {
-        const kerningCorrection = this.getKerningCorrectionFromSpec(
-          fontProperties,
-          char,
-          nextChar
-        );
-        if (kerningCorrection !== 0) {
-          kerningTable[char][nextChar] = kerningCorrection;
-        }
-      }
     }
 
-    // prune the characters that don't have any kerning corrections
-    for (const char in kerningTable) {
-      if (Object.keys(kerningTable[char]).length === 0) {
-        delete kerningTable[char];
-      }
+    // TECHNICAL DEBT: characterSet is a global variable
+    // TODO: Future refactoring - inject characterSet as parameter
+    if (typeof characterSet === 'undefined') {
+      throw new Error(
+        'Global characterSet not defined. ' +
+        'Ensure characterSet is loaded before calling this method.'
+      );
     }
 
+    // Build kerning table using calculator (pure calculation, no side effects)
+    const kerningTable = this._kerningCalculator.buildTable(
+      fontProperties,
+      characterSet
+    );
+
+    // Store kerning table (orchestration responsibility of FAB class)
     this.fontMetricsStoreFAB.setKerningTable(fontProperties, kerningTable);
 
-    const spaceAdvancementOverrideForSmallSizesInPx =
-      specs.getSingleFloatCorrection(fontProperties, "Space advancement override for small sizes in px");
-    this.fontMetricsStoreFAB.setSpaceAdvancementOverrideForSmallSizesInPx(fontProperties, spaceAdvancementOverrideForSmallSizesInPx);
+    // Store space advancement override (separate concern, but stored together)
+    const spaceAdvancementOverride = this._kerningCalculator.getSpaceAdvancementOverride(
+      fontProperties
+    );
+    this.fontMetricsStoreFAB.setSpaceAdvancementOverrideForSmallSizesInPx(
+      fontProperties,
+      spaceAdvancementOverride
+    );
   }
 
   // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string

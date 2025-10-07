@@ -68,7 +68,8 @@
   - **Atlas reconstruction utilities**: src/builder/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
   - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
   - **Tight atlas reconstruction**: src/runtime/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
-  - **Kerning logic**: src/runtime/BitmapText.calculateAdvancement_CSS_Px:78
+  - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)
+  - **Kerning application**: src/runtime/BitmapText.calculateAdvancement_CSS_Px:78
   - **Glyph rendering**: src/runtime/BitmapText.drawLetter:158
   - **Placeholder rectangles**: src/runtime/BitmapText.drawPlaceholderRectangle:1
   - **Atlas validation**: src/runtime/AtlasDataStore.isValidAtlas:1

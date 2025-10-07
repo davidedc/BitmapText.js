@@ -287,6 +287,8 @@ To support compound emojis would require:
   - Additional capabilities for font assets building
   - Creates individual glyph canvases
   - Calculates precise bounding boxes
+  - Delegates kerning calculations to KerningCalculator service
+  - Orchestrates kerning table storage in FontMetricsStoreFAB
 
   **AtlasImageFAB extends AtlasImage**
   - Font assets building capabilities for atlas image management
@@ -325,10 +327,22 @@ To support compound emojis would require:
 
   ### Supporting Classes
 
+  **KerningCalculator**
+  - Service class for kerning calculation and table generation (build-time only)
+  - Encapsulates kerning logic extracted from BitmapTextFAB
+  - Depends on Specs instance for accessing kerning rules
+  - Methods:
+    - `calculateCorrection()`: Calculate kerning adjustment for character pair
+    - `buildTable()`: Generate complete kerning table for character set
+    - `getSpaceAdvancementOverride()`: Get space override for small font sizes
+  - Benefits: Improved testability, reusability, Single Responsibility Principle
+  - Distribution: Part of "full toolkit" for font assets building (not in runtime)
+
   **Specs**
   - Parses and manages font correction specifications
   - Handles size-dependent adjustments
   - Manages kerning rules
+  - Provides query methods for accessing specification data
 
   **SpecsParser**
   - DSL parser for font specifications

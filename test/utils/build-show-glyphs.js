@@ -11,6 +11,10 @@ function buildAndShowGlyphs() {
   // If the contents have not changed, check if the kerning table for the current size exists and if not, build it.
   specs = specsParser.parseSpecsIfChanged(settingsTextarea.value);
 
+  // Update BitmapTextFAB with latest specs for kerning calculation
+  // This initializes/updates the internal KerningCalculator instance
+  bitmapTextFAB.setSpecs(specs);
+
   if (isNaN(fontProperties.fontSize)) return;
 
   // Clear the DOM
