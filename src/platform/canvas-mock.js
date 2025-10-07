@@ -61,12 +61,12 @@ class Context2D {
     const canvasWidth = this.canvas.width;
     const [r, g, b] = this._parseColor(this.fillStyle);
 
-    // Floor coordinates to integers (canvas uses integer pixel coordinates)
-    // This is critical for placeholder rectangles which pass floating-point coordinates
-    const x0 = Math.floor(Math.max(0, x));
-    const y0 = Math.floor(Math.max(0, y));
-    const x1 = Math.floor(Math.min(canvasWidth, x + w));
-    const y1 = Math.floor(Math.min(this.canvas.height, y + h));
+    // Canvas coordinates must be integers (callers should round before calling)
+    // Clamp to canvas bounds
+    const x0 = Math.max(0, x);
+    const y0 = Math.max(0, y);
+    const x1 = Math.min(canvasWidth, x + w);
+    const y1 = Math.min(this.canvas.height, y + h);
 
     for (let py = y0; py < y1; py++) {
       for (let px = x0; px < x1; px++) {

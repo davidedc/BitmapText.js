@@ -359,13 +359,16 @@ class BitmapText {
   renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning) {
     const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
 
+    // Round coordinates at draw stage for crisp, pixel-aligned rendering
+    // Position tracking uses floats to avoid accumulation errors, but final
+    // draw coordinates must be integers to prevent subpixel antialiasing
     // see https://stackoverflow.com/a/6061102
     ctx.drawImage(
       coloredGlyphCanvas,
       0, 0,
       tightWidth, tightHeight,
-      position_PhysPx.x + dx,
-      position_PhysPx.y + dy,
+      Math.round(position_PhysPx.x + dx),
+      Math.round(position_PhysPx.y + dy),
       tightWidth, tightHeight
     );
   }
@@ -419,9 +422,17 @@ class BitmapText {
     // Default to black if textColor is null or undefined
     const actualColor = textColor || 'black';
 
-    // Draw character-specific rectangle (all values in physical pixels)
+    // Draw character-specific rectangle
+    // Round coordinates at draw stage for crisp, pixel-aligned rendering
+    // Position tracking uses floats to avoid accumulation errors, but final
+    // draw coordinates must be integers to prevent subpixel antialiasing
     ctx.fillStyle = actualColor;
-    ctx.fillRect(rectX_PhysPx, rectY_PhysPx, width_PhysPx, height_PhysPx);
+    ctx.fillRect(
+      Math.round(rectX_PhysPx),
+      Math.round(rectY_PhysPx),
+      Math.round(width_PhysPx),
+      Math.round(height_PhysPx)
+    );
   }
 
   calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties) {
