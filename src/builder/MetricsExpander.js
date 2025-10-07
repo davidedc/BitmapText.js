@@ -17,13 +17,18 @@ class MetricsExpander {
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
     }
-    
+
     const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k),
       characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
-    
+
+    // Verify pixelDensity was preserved
+    const firstChar = Object.keys(expandedData.characterMetrics)[0];
+    const pixelDensity = expandedData.characterMetrics[firstChar]?.pixelDensity;
+    console.debug(`🔍 MetricsExpander: Restored pixelDensity=${pixelDensity} for ${Object.keys(expandedData.characterMetrics).length} characters`);
+
     return new FontMetrics(expandedData);
   }
   
@@ -50,7 +55,7 @@ class MetricsExpander {
         actualBoundingBoxRight: metrics[2],
         actualBoundingBoxAscent: metrics[3],
         actualBoundingBoxDescent: metrics[4],
-        
+
         // Copy over the metrics common to all characters.
         // This is a bit of a waste of memory, however this object needs to
         // look as much as possible like a TextMetrics object, and this
@@ -61,7 +66,8 @@ class MetricsExpander {
         emHeightDescent: metricsCommonToAllCharacters.fbd,         // Same as fontBoundingBoxDescent
         hangingBaseline: metricsCommonToAllCharacters.hb,
         alphabeticBaseline: metricsCommonToAllCharacters.ab,
-        ideographicBaseline: metricsCommonToAllCharacters.ib
+        ideographicBaseline: metricsCommonToAllCharacters.ib,
+        pixelDensity: metricsCommonToAllCharacters.pd              // pixelDensity (CRITICAL for atlas reconstruction)
       };
     });
     return expanded;

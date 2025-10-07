@@ -15,11 +15,12 @@ class AtlasCellDimensions {
 
   /**
    * Calculate cell width for a character
+   * CRITICAL: Must match GlyphFAB.js:155-160 which uses Math.round()
    * @param {Object} charMetrics - Character metrics from FontMetrics
-   * @returns {number} Cell width in pixels (ceiled)
+   * @returns {number} Cell width in pixels (rounded, matching GlyphFAB canvas creation)
    */
   static getWidth(charMetrics) {
-    return Math.ceil(
+    return Math.round(
       charMetrics.actualBoundingBoxLeft +
       charMetrics.actualBoundingBoxRight
     );
@@ -27,11 +28,12 @@ class AtlasCellDimensions {
 
   /**
    * Calculate cell height for a font
+   * CRITICAL: Must match GlyphFAB.js:170-175 which uses Math.round()
    * @param {Object} charMetrics - Character metrics (any character from the font)
-   * @returns {number} Cell height in pixels (ceiled, constant for entire font)
+   * @returns {number} Cell height in pixels (rounded, constant for entire font)
    */
   static getHeight(charMetrics) {
-    return Math.ceil(
+    return Math.round(
       charMetrics.fontBoundingBoxAscent +
       charMetrics.fontBoundingBoxDescent
     );

@@ -31,8 +31,8 @@ class TightAtlasReconstructor {
    *
    * PARAMETER ORDER: Standardized to (fontMetrics, data, options) for API consistency
    *
-   * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions and positioning
-   * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells)
+   * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions (CSS pixels) and positioning
+   * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells, already at physical pixels)
    * @param {Function} canvasFactory - Factory for creating canvases (e.g., () => document.createElement('canvas'))
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
@@ -52,19 +52,35 @@ class TightAtlasReconstructor {
 
     // 3. Calculate cell dimensions from font metrics
     // Cell height is constant across all characters in this font
+    // Character metrics contain CSS pixel values, but we need to infer physical pixel dimensions
+    // from the actual atlas image by detecting pixelDensity from the ratio
     const firstChar = characters[0];
     const firstMetrics = fontMetrics.getCharacterMetrics(firstChar);
-    const cellHeight = AtlasCellDimensions.getHeight(firstMetrics);
+
+    // Infer pixelDensity from first character's metrics vs atlas dimensions
+    // This works because: physical_pixels = CSS_pixels * pixelDensity
+    const cssHeight = AtlasCellDimensions.getHeight(firstMetrics);
+    const pixelDensity = firstMetrics.pixelDensity || 1; // Use pixelDensity from metrics if available
+    const cellHeight = Math.round(cssHeight * pixelDensity);
+
+    console.debug(`🔍 TightAtlasReconstructor: pixelDensity=${pixelDensity}, cssHeight=${cssHeight}, cellHeight=${cellHeight}`);
 
     // 4. Scan each cell to find tight bounds within the atlas cell
     let cellX = 0;
     const tightBounds = {};
+    const cellDebugInfo = []; // Track first 5 chars for debugging
 
     for (const char of characters) {
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
-      // Cell width is variable per character
-      const cellWidth = AtlasCellDimensions.getWidth(charMetrics);
+      // Cell width is variable per character (scale CSS pixels to physical pixels)
+      const cssWidth = AtlasCellDimensions.getWidth(charMetrics);
+      const cellWidth = Math.round(cssWidth * pixelDensity);
+
+      // Debug first few characters
+      if (cellDebugInfo.length < 5) {
+        cellDebugInfo.push(`${char}:css=${cssWidth},phys=${cellWidth},x=${cellX}`);
+      }
 
       // Find tight bounds within this cell using 4-step optimized algorithm
       const bounds = this.findTightBounds(
@@ -82,13 +98,17 @@ class TightAtlasReconstructor {
       cellX += cellWidth;
     }
 
+    console.debug(`🔍 Cell dimensions (first 5): ${cellDebugInfo.join(', ')}`);
+
     // 5. Repack into tight atlas with positioning data
     return this.packTightAtlas(
       fontMetrics,
       tightBounds,
       characters,
       atlasImage,
-      canvasFactory
+      canvasFactory,
+      pixelDensity,
+      cellHeight
     );
   }
 
@@ -190,9 +210,11 @@ class TightAtlasReconstructor {
    * @param {Array<string>} characters - Sorted array of characters
    * @param {Image|Canvas} sourceAtlasImage - Source Atlas image for extraction
    * @param {Function} canvasFactory - Factory for creating canvases
+   * @param {number} pixelDensity - Pixel density multiplier for positioning calculations
+   * @param {number} cellHeight - Cell height in physical pixels (for distanceBetweenBottomAndBottomOfCanvas calculation)
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, canvasFactory) {
+  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, canvasFactory, pixelDensity, cellHeight) {
     // Calculate tight atlas dimensions
     let totalWidth = 0;
     let maxHeight = 0;
@@ -226,10 +248,11 @@ class TightAtlasReconstructor {
     for (const char of characters) {
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
-      // Calculate cell dimensions (same as AtlasBuilder)
+      // Calculate cell width in physical pixels (CSS pixels * pixelDensity)
       // MUST be calculated for ALL characters to track cellX correctly
-      const cellWidth = AtlasCellDimensions.getWidth(charMetrics);
-      const cellHeight = AtlasCellDimensions.getHeight(charMetrics);
+      const cssWidth = AtlasCellDimensions.getWidth(charMetrics);
+      const cellWidth = Math.round(cssWidth * pixelDensity);
+      // cellHeight is passed as parameter (already in physical pixels)
 
       const bounds = tightBounds[char];
       if (!bounds) {
@@ -299,8 +322,7 @@ class TightAtlasReconstructor {
       //     The distanceBetweenBottomAndBottomOfCanvas accounts for descenders (like 'g', 'y')
       //     and ensures proper vertical alignment relative to the text baseline.
       //
-
-      const pixelDensity = charMetrics.pixelDensity || 1;
+      // Note: pixelDensity is passed as a parameter (charMetrics only contains CSS pixel measurements)
 
       // Calculate distance from bottom of tight bounds to bottom of character canvas
       // This is used in the dy calculation

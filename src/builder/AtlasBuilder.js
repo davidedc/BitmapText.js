@@ -31,8 +31,8 @@ class AtlasBuilder {
    *
    * PARAMETER ORDER: Standardized to (fontMetrics, data) for API consistency
    *
-   * @param {FontMetrics} fontMetrics - Font metrics for dimensions
-   * @param {Object} glyphs - Map of char → GlyphFAB instances
+   * @param {FontMetrics} fontMetrics - Font metrics for dimensions (CSS pixels)
+   * @param {Object} glyphs - Map of char → GlyphFAB instances (canvases already at physical pixels)
    * @returns {{canvas, cellWidths, cellHeight, characters, totalWidth}}
    */
   static buildAtlas(fontMetrics, glyphs) {
@@ -45,36 +45,66 @@ class AtlasBuilder {
       throw new Error('AtlasBuilder: No glyphs provided for atlas building');
     }
 
-    // Get first character's metrics for cell height calculation
+    // Get first character's glyph for cell height calculation
     // Cell height is CONSTANT across all characters in this font
+    // Use actual canvas.height (already at physical pixels), not CSS dimensions
+    // Fall back to canvasCopy if canvas has invalid dimensions (removed from DOM)
     const firstChar = characters[0];
-    const firstMetrics = fontMetrics.getCharacterMetrics(firstChar);
+    const firstGlyph = glyphs[firstChar];
 
-    if (!firstMetrics) {
-      throw new Error(`AtlasBuilder: No metrics found for character '${firstChar}'`);
+    if (!firstGlyph) {
+      throw new Error(`AtlasBuilder: No glyph found for character '${firstChar}'`);
     }
 
-    const cellHeight = AtlasCellDimensions.getHeight(firstMetrics);
+    // Get canvas height, preferring canvasCopy if main canvas is invalid
+    const firstCanvas = (firstGlyph.canvas && firstGlyph.canvas.height > 0)
+      ? firstGlyph.canvas
+      : firstGlyph.canvasCopy;
+
+    if (!firstCanvas || firstCanvas.height === 0) {
+      throw new Error(`AtlasBuilder: No valid canvas found for character '${firstChar}'`);
+    }
+
+    const cellHeight = firstCanvas.height;
 
     // Calculate cell widths (VARIABLE per character) and total atlas width
+    // Use actual canvas.width (already at physical pixels), not CSS dimensions
     const cellWidths = {};
     let totalWidth = 0;
+    const cellDebugInfo = []; // Track first 5 chars for debugging
 
     for (const char of characters) {
-      const metrics = fontMetrics.getCharacterMetrics(char);
+      const glyph = glyphs[char];
 
-      if (!metrics) {
-        console.warn(`AtlasBuilder: No metrics found for character '${char}', skipping`);
+      if (!glyph) {
+        console.warn(`AtlasBuilder: No glyph found for character '${char}', skipping`);
         continue;
       }
 
-      // Cell width = actualBoundingBoxLeft + actualBoundingBoxRight
-      // This matches the character canvas dimensions from GlyphFAB.js:153-156
-      const cellWidth = AtlasCellDimensions.getWidth(metrics);
+      // Get canvas, preferring canvasCopy if main canvas is invalid (removed from DOM)
+      // This happens when glyphs are created for non-displayed font sizes
+      const glyphCanvas = (glyph.canvas && glyph.canvas.width > 0)
+        ? glyph.canvas
+        : glyph.canvasCopy;
+
+      if (!glyphCanvas || glyphCanvas.width === 0) {
+        console.warn(`AtlasBuilder: No valid canvas found for character '${char}', skipping`);
+        continue;
+      }
+
+      // Cell width = actual canvas width (already scaled to physical pixels)
+      const cellWidth = glyphCanvas.width;
+
+      // Debug first few characters
+      if (cellDebugInfo.length < 5) {
+        cellDebugInfo.push(`${char}:w=${cellWidth},x=${totalWidth}`);
+      }
 
       cellWidths[char] = cellWidth;
       totalWidth += cellWidth;
     }
+
+    console.debug(`🔍 AtlasBuilder: Built cells (first 5): ${cellDebugInfo.join(', ')}`);
 
     // Create canvas for atlas (variable-width cells)
     const canvas = document.createElement('canvas');
@@ -87,29 +117,24 @@ class AtlasBuilder {
     for (const char of characters) {
       const glyph = glyphs[char];
 
-      // ⚠️ CRITICAL: Use glyph.canvas (standard cells), NOT glyph.tightCanvas
-      // glyph.canvas contains the character at its original position within
-      // the actualBoundingBox × fontBoundingBox rectangle
-      if (glyph && glyph.canvas) {
-        // If canvas has invalid dimensions (0x0), use canvasCopy instead
-        const hasInvalidDimensions = glyph.canvas.width === 0 || glyph.canvas.height === 0;
-        const hasCanvasCopy = !!glyph.canvasCopy;
-
-        if (hasInvalidDimensions && !hasCanvasCopy) {
-          // Skip drawing entirely - cannot draw a 0x0 canvas
-          // This prevents InvalidStateError from attempting to draw invalid canvas
-          console.error(`AtlasBuilder: Character '${char}' has invalid canvas (${glyph.canvas.width}x${glyph.canvas.height}) and no canvasCopy! Skipping draw.`);
-          console.error('Glyph object:', glyph);
-        } else if (hasInvalidDimensions && hasCanvasCopy) {
-          // Use the preserved canvas copy
-          ctx.drawImage(glyph.canvasCopy, x, 0);
-        } else {
-          // Normal case: use the standard glyph.canvas
-          ctx.drawImage(glyph.canvas, x, 0);
-        }
-      } else {
-        console.warn(`AtlasBuilder: Character '${char}' has no character canvas`);
+      if (!glyph) {
+        console.warn(`AtlasBuilder: No glyph for character '${char}'`);
+        continue;
       }
+
+      // Get canvas, preferring canvasCopy if main canvas is invalid (same logic as above)
+      const glyphCanvas = (glyph.canvas && glyph.canvas.width > 0)
+        ? glyph.canvas
+        : glyph.canvasCopy;
+
+      if (!glyphCanvas || glyphCanvas.width === 0) {
+        console.error(`AtlasBuilder: Character '${char}' has no valid canvas for drawing! Skipping.`);
+        x += cellWidths[char] || 0;
+        continue;
+      }
+
+      // Draw the glyph canvas to the atlas
+      ctx.drawImage(glyphCanvas, x, 0);
 
       x += cellWidths[char];
     }

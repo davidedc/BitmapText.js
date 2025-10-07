@@ -29,13 +29,14 @@ class MetricsMinifier {
   static #extractMetricsCommonToAllCharacters(characterMetrics) {
     const firstChar = Object.keys(characterMetrics)[0];
     const firstGlyph = characterMetrics[firstChar];
-    
+
     return {
       fba: firstGlyph.fontBoundingBoxAscent,     // fontBoundingBoxAscent
       fbd: firstGlyph.fontBoundingBoxDescent,    // fontBoundingBoxDescent
       hb: firstGlyph.hangingBaseline,            // hangingBaseline
       ab: firstGlyph.alphabeticBaseline,         // alphabeticBaseline
-      ib: firstGlyph.ideographicBaseline         // ideographicBaseline
+      ib: firstGlyph.ideographicBaseline,        // ideographicBaseline
+      pd: firstGlyph.pixelDensity                // pixelDensity (CRITICAL for atlas reconstruction)
     };
   }
   

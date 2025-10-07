@@ -140,6 +140,10 @@ class GlyphFAB {
       }
     }
 
+    // Store pixelDensity in charTextMetrics for later use in atlas reconstruction
+    // This is needed because the atlas image is at physical pixels but metrics are in CSS pixels
+    charTextMetrics.pixelDensity = this.fontProperties.pixelDensity;
+
     // END OF CHARACTER-LEVEL RENDERING CORRECTIONS
     /////////////////////////////////////////////
 
