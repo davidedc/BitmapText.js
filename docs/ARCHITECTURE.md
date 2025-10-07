@@ -439,8 +439,12 @@ To support compound emojis would require:
   When atlases are missing but metrics are available:
   1. Validate atlas using `isValidAtlas()`
   2. Fall back to placeholder rectangle mode
-  3. Draw simplified rectangle using character metrics (width × fontBoundingBoxAscent + actualBoundingBoxDescent)
+  3. Draw character-specific rectangle using actualBoundingBox (not font-wide fontBoundingBox):
+     - Width: actualBoundingBoxLeft + actualBoundingBoxRight (scaled by pixelDensity)
+     - Height: actualBoundingBoxAscent + actualBoundingBoxDescent (scaled by pixelDensity)
+     - Makes 'a' shorter than 'A', shows descenders on 'g', etc.
   4. Position at baseline using character metrics positioning
+  5. Skip space characters (invisible placeholders)
 
   ## QOI Image Format
 
@@ -500,14 +504,15 @@ To support compound emojis would require:
   - **Lazy Loading**: Glyph atlases loaded on-demand when first accessed
   - **Automatic Cleanup**: Font assets building-time data structures cleared after font building
   - **Canvas Reuse**: BitmapText instances reuse coloredGlyphCanvas for all glyphs
-  - **Integer Coordinates**: All positions rounded to prevent floating-point accumulation
+  - **Float Position Tracking**: Position coordinates tracked as floats to avoid rounding error accumulation
+  - **Integer Draw Coordinates**: Coordinates rounded to integers only at final draw stage (drawImage/fillRect) for crisp, pixel-aligned rendering
   - **Minimal DOM**: Only necessary canvases attached to document during rendering
 
   ## Performance Optimizations
 
   1. **Pre-computed Metrics**: All measurements calculated at font assets building time
   2. **Batch Rendering**: Multiple glyphs drawn from single atlas
-  3. **Integer Coordinates**: Rounding for pixel alignment
+  3. **Pixel-Aligned Rendering**: Coordinates rounded at draw stage for crisp rendering without subpixel antialiasing
   4. **Minimal DOM Operations**: Reuses canvases
 
   ## Sequence Diagrams

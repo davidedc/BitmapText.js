@@ -51,7 +51,7 @@
 
   ## Key Invariants
 
-  1. Glyph positions must be integer values (pixel-aligned)
+  1. Position tracking uses floats (avoids rounding error accumulation), but final draw coordinates are integers (crisp, pixel-aligned rendering)
   2. Temporary canvases must be cleared between operations
   3. Kerning values are in 1/1000 em units
 
