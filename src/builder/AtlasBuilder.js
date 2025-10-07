@@ -65,12 +65,12 @@ class AtlasBuilder {
       throw new Error(`AtlasBuilder: No valid canvas found for character '${firstChar}'`);
     }
 
-    const cellHeight = firstCanvas.height;
+    const cellHeight_PhysPx = firstCanvas.height;
 
     // Calculate cell widths (VARIABLE per character) and total atlas width
     // Use actual canvas.width (already at physical pixels), not CSS dimensions
-    const cellWidths = {};
-    let totalWidth = 0;
+    const cellWidths_PhysPx = {};
+    let totalWidth_PhysPx = 0;
     const cellDebugInfo = []; // Track first 5 chars for debugging
 
     for (const char of characters) {
@@ -93,27 +93,27 @@ class AtlasBuilder {
       }
 
       // Cell width = actual canvas width (already scaled to physical pixels)
-      const cellWidth = glyphCanvas.width;
+      const cellWidth_PhysPx = glyphCanvas.width;
 
       // Debug first few characters
       if (cellDebugInfo.length < 5) {
-        cellDebugInfo.push(`${char}:w=${cellWidth},x=${totalWidth}`);
+        cellDebugInfo.push(`${char}:w=${cellWidth_PhysPx},x=${totalWidth_PhysPx}`);
       }
 
-      cellWidths[char] = cellWidth;
-      totalWidth += cellWidth;
+      cellWidths_PhysPx[char] = cellWidth_PhysPx;
+      totalWidth_PhysPx += cellWidth_PhysPx;
     }
 
     console.debug(`🔍 AtlasBuilder: Built cells (first 5): ${cellDebugInfo.join(', ')}`);
 
     // Create canvas for atlas (variable-width cells)
     const canvas = document.createElement('canvas');
-    canvas.width = totalWidth;
-    canvas.height = cellHeight;
+    canvas.width = totalWidth_PhysPx;
+    canvas.height = cellHeight_PhysPx;
     const ctx = canvas.getContext('2d');
 
     // Draw each glyph's character canvas (NOT tight!) in sequence
-    let x = 0;
+    let x_PhysPx = 0;
     for (const char of characters) {
       const glyph = glyphs[char];
 
@@ -129,24 +129,24 @@ class AtlasBuilder {
 
       if (!glyphCanvas || glyphCanvas.width === 0) {
         console.error(`AtlasBuilder: Character '${char}' has no valid canvas for drawing! Skipping.`);
-        x += cellWidths[char] || 0;
+        x_PhysPx += cellWidths_PhysPx[char] || 0;
         continue;
       }
 
       // Draw the glyph canvas to the atlas
-      ctx.drawImage(glyphCanvas, x, 0);
+      ctx.drawImage(glyphCanvas, x_PhysPx, 0);
 
-      x += cellWidths[char];
+      x_PhysPx += cellWidths_PhysPx[char];
     }
 
-    console.debug(`AtlasBuilder: Built atlas ${totalWidth}×${cellHeight} with ${characters.length} characters`);
+    console.debug(`AtlasBuilder: Built atlas ${totalWidth_PhysPx}×${cellHeight_PhysPx} with ${characters.length} characters`);
 
     return {
-      canvas,           // Atlas canvas
-      cellWidths,       // Width of each character's cell (variable)
-      cellHeight,       // Height of all cells (constant)
-      characters,       // Sorted character list (for debugging)
-      totalWidth        // Total atlas width (sum of all cell widths)
+      canvas,                      // Atlas canvas
+      cellWidths: cellWidths_PhysPx,   // Width of each character's cell (variable, physical pixels)
+      cellHeight: cellHeight_PhysPx,   // Height of all cells (constant, physical pixels)
+      characters,                  // Sorted character list (for debugging)
+      totalWidth: totalWidth_PhysPx    // Total atlas width (sum of all cell widths, physical pixels)
     };
   }
 }

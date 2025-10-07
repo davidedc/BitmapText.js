@@ -150,18 +150,18 @@ class GlyphFAB {
     // Happens at small sizes due to a browser rendering defect.
     // This correction will simply paint the character
     // n pixel more to the right in the mini canvas
-    const cropLeftCorrection_CSS_Px = specs.getSingleFloatCorrectionForChar(
+    const cropLeftCorrection_CssPx = specs.getSingleFloatCorrectionForChar(
       this.fontProperties,
       this.char,
       "CropLeft correction px",
     );
 
-    const canvasPixelsWidth = Math.round(
+    const canvasWidth_CssPx = Math.round(
       charTextMetrics.actualBoundingBoxLeft +
         charTextMetrics.actualBoundingBoxRight
     );
-    canvas.style.width = canvasPixelsWidth + "px";
-    canvas.width = canvasPixelsWidth * pixelDensity;
+    canvas.style.width = canvasWidth_CssPx + "px";
+    canvas.width = canvasWidth_CssPx * pixelDensity;
 
     const div = document.createElement("div");
     div.textContent = `${this.char} bbox left: ${charTextMetrics.actualBoundingBoxLeft} bbox right: ${charTextMetrics.actualBoundingBoxRight}`;
@@ -171,12 +171,12 @@ class GlyphFAB {
     }
     document.body.appendChild(div);
 
-    const canvasPixelsHeight = Math.round(
+    const canvasHeight_CssPx = Math.round(
       charTextMetrics.fontBoundingBoxAscent +
         charTextMetrics.fontBoundingBoxDescent
     );
-    canvas.style.height = canvasPixelsHeight + "px";
-    canvas.height = canvasPixelsHeight * pixelDensity;
+    canvas.style.height = canvasHeight_CssPx + "px";
+    canvas.height = canvasHeight_CssPx * pixelDensity;
 
     ctx.scale(pixelDensity, pixelDensity);
     // make the background white
@@ -192,7 +192,7 @@ class GlyphFAB {
     ctx.fillText(
       this.char,
       Math.round(charTextMetrics.actualBoundingBoxLeft) +
-        cropLeftCorrection_CSS_Px,
+        cropLeftCorrection_CssPx,
       canvas.height / pixelDensity - 1
     );
 
@@ -245,28 +245,28 @@ class GlyphFAB {
     // Example: if the canvas right has an x of 15 (i.e. SIXTEENTH pixel from left) and the left is 5 (i.e. SIXTH pixel from left),
     // then the width of the tight canvas is 15 - 5 + 1 = 11
 
-    const tightCanvasPixelsWidth =
+    const tightCanvasWidth_PhysPx =
       tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x +
       1;
     tightCanvas.style.width =
-      tightCanvasPixelsWidth / this.fontProperties.pixelDensity + "px";
-    tightCanvas.width = tightCanvasPixelsWidth;
+      tightCanvasWidth_PhysPx / this.fontProperties.pixelDensity + "px";
+    tightCanvas.width = tightCanvasWidth_PhysPx;
 
     // Always add one to these coordinatest subtractions!
     // Example: if the canvas bottom has a y of 15 (i.e. SIXTEENTH pixel from top) and the top is 5 (i.e. SIXTH pixel from top),
     // then the height of the tight canvas is 15 - 5 + 1 = 11
-    const tightCanvasPixelsHeight =
+    const tightCanvasHeight_PhysPx =
       tightCanvasBox.bottomRightCorner.y - tightCanvasBox.topLeftCorner.y +
       1;
     tightCanvas.style.height =
-      tightCanvasPixelsHeight / this.fontProperties.pixelDensity + "px";
-    tightCanvas.height = tightCanvasPixelsHeight;
+      tightCanvasHeight_PhysPx / this.fontProperties.pixelDensity + "px";
+    tightCanvas.height = tightCanvasHeight_PhysPx;
 
     // This one is a distance so you have to subtract 1
     // Example: if the canvas is 15 tall and the bottomRightCorner.y (i.e. the bottom of the tight canvas)
     // is 5 (which means it's on the SIXTH pixel down from the top), then
     // the distance between the bottom of the canvas and the bottom of the tight canvas box is 15 - 5 - 1 = 9
-    tightCanvas.distanceBetweenBottomAndBottomOfCanvas =
+    tightCanvas.distanceBetweenBottomAndBottomOfCanvas_PhysPx =
       canvas.height - tightCanvasBox.bottomRightCorner.y - 1;
 
     const tightCanvasBoxCtx = tightCanvas.getContext("2d");
@@ -300,12 +300,9 @@ class GlyphFAB {
       };
 
     const div = document.createElement("div");
-    div.textContent = `tightCanvasBox width in px, phys: ${
-      tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x
-    } css: ${
-      (tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x) /
-      this.fontProperties.pixelDensity
-    }`;
+    const tightBoxWidth_PhysPx = tightCanvasBox.bottomRightCorner.x - tightCanvasBox.topLeftCorner.x;
+    const tightBoxWidth_CssPx = tightBoxWidth_PhysPx / this.fontProperties.pixelDensity;
+    div.textContent = `tightCanvasBox width in px, phys: ${tightBoxWidth_PhysPx} css: ${tightBoxWidth_CssPx}`;
     document.body.appendChild(div);
 
     return { canvas, tightCanvas, tightCanvasBox, charTextMetrics, canvasCopy };

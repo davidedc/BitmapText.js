@@ -59,14 +59,14 @@ class TightAtlasReconstructor {
 
     // Infer pixelDensity from first character's metrics vs atlas dimensions
     // This works because: physical_pixels = CSS_pixels * pixelDensity
-    const cssHeight = AtlasCellDimensions.getHeight(firstMetrics);
+    const height_CssPx = AtlasCellDimensions.getHeight(firstMetrics);
     const pixelDensity = firstMetrics.pixelDensity || 1; // Use pixelDensity from metrics if available
-    const cellHeight = Math.round(cssHeight * pixelDensity);
+    const cellHeight_PhysPx = Math.round(height_CssPx * pixelDensity);
 
-    console.debug(`🔍 TightAtlasReconstructor: pixelDensity=${pixelDensity}, cssHeight=${cssHeight}, cellHeight=${cellHeight}`);
+    console.debug(`🔍 TightAtlasReconstructor: pixelDensity=${pixelDensity}, height_CssPx=${height_CssPx}, cellHeight_PhysPx=${cellHeight_PhysPx}`);
 
     // 4. Scan each cell to find tight bounds within the atlas cell
-    let cellX = 0;
+    let cellX_PhysPx = 0;
     const tightBounds = {};
     const cellDebugInfo = []; // Track first 5 chars for debugging
 
@@ -74,28 +74,28 @@ class TightAtlasReconstructor {
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
       // Cell width is variable per character (scale CSS pixels to physical pixels)
-      const cssWidth = AtlasCellDimensions.getWidth(charMetrics);
-      const cellWidth = Math.round(cssWidth * pixelDensity);
+      const width_CssPx = AtlasCellDimensions.getWidth(charMetrics);
+      const cellWidth_PhysPx = Math.round(width_CssPx * pixelDensity);
 
       // Debug first few characters
       if (cellDebugInfo.length < 5) {
-        cellDebugInfo.push(`${char}:css=${cssWidth},phys=${cellWidth},x=${cellX}`);
+        cellDebugInfo.push(`${char}:css=${width_CssPx},phys=${cellWidth_PhysPx},x=${cellX_PhysPx}`);
       }
 
       // Find tight bounds within this cell using 4-step optimized algorithm
       const bounds = this.findTightBounds(
         imageData,
-        cellX,
+        cellX_PhysPx,
         0,
-        cellWidth,
-        cellHeight
+        cellWidth_PhysPx,
+        cellHeight_PhysPx
       );
 
       if (bounds) {
         tightBounds[char] = bounds;
       }
 
-      cellX += cellWidth;
+      cellX_PhysPx += cellWidth_PhysPx;
     }
 
     console.debug(`🔍 Cell dimensions (first 5): ${cellDebugInfo.join(', ')}`);
@@ -108,7 +108,7 @@ class TightAtlasReconstructor {
       atlasImage,
       canvasFactory,
       pixelDensity,
-      cellHeight
+      cellHeight_PhysPx
     );
   }
 
@@ -117,43 +117,43 @@ class TightAtlasReconstructor {
    * This scans for the minimal bounding box of non-transparent pixels
    *
    * @param {ImageData} imageData - Image data from original atlas
-   * @param {number} cellX - X position of cell in atlas
-   * @param {number} cellY - Y position of cell in atlas (always 0)
-   * @param {number} cellWidth - Width of this character's cell
-   * @param {number} cellHeight - Height of cell (constant for font)
+   * @param {number} cellX_PhysPx - X position of cell in atlas (physical pixels)
+   * @param {number} cellY_PhysPx - Y position of cell in atlas (physical pixels, always 0)
+   * @param {number} cellWidth_PhysPx - Width of this character's cell (physical pixels)
+   * @param {number} cellHeight_PhysPx - Height of cell (physical pixels, constant for font)
    * @returns {{left, top, width, height} | null} - Tight bounds relative to cell origin, or null if empty
    */
-  static findTightBounds(imageData, cellX, cellY, cellWidth, cellHeight) {
+  static findTightBounds(imageData, cellX_PhysPx, cellY_PhysPx, cellWidth_PhysPx, cellHeight_PhysPx) {
     const pixels = imageData.data;
-    const atlasWidth = imageData.width;
+    const atlasWidth_PhysPx = imageData.width;
 
     // Helper to get alpha value at position
     // Optimized: pre-calculate stride and use bit shift for x*4
-    const stride = atlasWidth * 4;
+    const stride = atlasWidth_PhysPx * 4;
     const getAlpha = (x, y) => pixels[y * stride + (x << 2) + 3];
 
     // STEP 1: Find bottom edge (scan UP from bottom) - early exit
     // This finds the bottommost row with any non-transparent pixel
-    let bottom = -1;
-    for (let y = cellY + cellHeight - 1; y >= cellY && bottom === -1; y--) {
-      for (let x = cellX; x < cellX + cellWidth && bottom === -1; x++) {
+    let bottom_PhysPx = -1;
+    for (let y = cellY_PhysPx + cellHeight_PhysPx - 1; y >= cellY_PhysPx && bottom_PhysPx === -1; y--) {
+      for (let x = cellX_PhysPx; x < cellX_PhysPx + cellWidth_PhysPx && bottom_PhysPx === -1; x++) {
         if (getAlpha(x, y) > 0) {
-          bottom = y;
+          bottom_PhysPx = y;
         }
       }
     }
 
     // Empty cell (no visible pixels)
-    if (bottom === -1) return null;
+    if (bottom_PhysPx === -1) return null;
 
     // STEP 2: Find top edge (scan DOWN, only to bottom) - early exit
     // This finds the topmost row with any non-transparent pixel
-    let top = cellY;
-    for (let y = cellY; y <= bottom; y++) {
+    let top_PhysPx = cellY_PhysPx;
+    for (let y = cellY_PhysPx; y <= bottom_PhysPx; y++) {
       let found = false;
-      for (let x = cellX; x < cellX + cellWidth; x++) {
+      for (let x = cellX_PhysPx; x < cellX_PhysPx + cellWidth_PhysPx; x++) {
         if (getAlpha(x, y) > 0) {
-          top = y;
+          top_PhysPx = y;
           found = true;
           break;
         }
@@ -163,12 +163,12 @@ class TightAtlasReconstructor {
 
     // STEP 3: Find left edge (scan columns, only vertical range found above) - early exit
     // This finds the leftmost column with any non-transparent pixel
-    let left = cellX;
-    for (let x = cellX; x < cellX + cellWidth; x++) {
+    let left_PhysPx = cellX_PhysPx;
+    for (let x = cellX_PhysPx; x < cellX_PhysPx + cellWidth_PhysPx; x++) {
       let found = false;
-      for (let y = top; y <= bottom; y++) {
+      for (let y = top_PhysPx; y <= bottom_PhysPx; y++) {
         if (getAlpha(x, y) > 0) {
-          left = x;
+          left_PhysPx = x;
           found = true;
           break;
         }
@@ -178,12 +178,12 @@ class TightAtlasReconstructor {
 
     // STEP 4: Find right edge (scan right→left, only vertical range) - early exit
     // This finds the rightmost column with any non-transparent pixel
-    let right = cellX + cellWidth - 1;
-    for (let x = cellX + cellWidth - 1; x >= cellX; x--) {
+    let right_PhysPx = cellX_PhysPx + cellWidth_PhysPx - 1;
+    for (let x = cellX_PhysPx + cellWidth_PhysPx - 1; x >= cellX_PhysPx; x--) {
       let found = false;
-      for (let y = top; y <= bottom; y++) {
+      for (let y = top_PhysPx; y <= bottom_PhysPx; y++) {
         if (getAlpha(x, y) > 0) {
-          right = x;
+          right_PhysPx = x;
           found = true;
           break;
         }
@@ -193,10 +193,10 @@ class TightAtlasReconstructor {
 
     // Return bounds relative to cell origin (not absolute atlas coordinates)
     return {
-      left: left - cellX,      // Relative to cell left edge
-      top: top - cellY,        // Relative to cell top edge
-      width: right - left + 1, // Inclusive width
-      height: bottom - top + 1 // Inclusive height
+      left: left_PhysPx - cellX_PhysPx,        // Relative to cell left edge (physical pixels)
+      top: top_PhysPx - cellY_PhysPx,          // Relative to cell top edge (physical pixels)
+      width: right_PhysPx - left_PhysPx + 1,   // Inclusive width (physical pixels)
+      height: bottom_PhysPx - top_PhysPx + 1   // Inclusive height (physical pixels)
     };
   }
 
@@ -211,29 +211,29 @@ class TightAtlasReconstructor {
    * @param {Image|Canvas} sourceAtlasImage - Source Atlas image for extraction
    * @param {Function} canvasFactory - Factory for creating canvases
    * @param {number} pixelDensity - Pixel density multiplier for positioning calculations
-   * @param {number} cellHeight - Cell height in physical pixels (for distanceBetweenBottomAndBottomOfCanvas calculation)
+   * @param {number} cellHeight_PhysPx - Cell height in physical pixels (for distanceBetweenBottomAndBottomOfCanvas calculation)
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, canvasFactory, pixelDensity, cellHeight) {
-    // Calculate tight atlas dimensions
-    let totalWidth = 0;
-    let maxHeight = 0;
+  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, canvasFactory, pixelDensity, cellHeight_PhysPx) {
+    // Calculate tight atlas dimensions (all in physical pixels)
+    let totalWidth_PhysPx = 0;
+    let maxHeight_PhysPx = 0;
 
     for (const char of characters) {
       if (tightBounds[char]) {
-        totalWidth += tightBounds[char].width;
-        maxHeight = Math.max(maxHeight, tightBounds[char].height);
+        totalWidth_PhysPx += tightBounds[char].width;
+        maxHeight_PhysPx = Math.max(maxHeight_PhysPx, tightBounds[char].height);
       }
     }
 
     // Create tight atlas canvas
     const tightCanvas = canvasFactory();
-    tightCanvas.width = totalWidth;
-    tightCanvas.height = maxHeight;
+    tightCanvas.width = totalWidth_PhysPx;
+    tightCanvas.height = maxHeight_PhysPx;
     const ctx = tightCanvas.getContext('2d');
 
     // Initialize positioning data structure
-    let xInTightAtlas = 0;
+    let xInTightAtlas_PhysPx = 0;
     const positioning = {
       tightWidth: {},
       tightHeight: {},
@@ -243,21 +243,21 @@ class TightAtlasReconstructor {
     };
 
     // Extract and pack each tight glyph
-    let cellX = 0;
+    let cellX_PhysPx = 0;
 
     for (const char of characters) {
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
       // Calculate cell width in physical pixels (CSS pixels * pixelDensity)
-      // MUST be calculated for ALL characters to track cellX correctly
-      const cssWidth = AtlasCellDimensions.getWidth(charMetrics);
-      const cellWidth = Math.round(cssWidth * pixelDensity);
-      // cellHeight is passed as parameter (already in physical pixels)
+      // MUST be calculated for ALL characters to track cellX_PhysPx correctly
+      const width_CssPx = AtlasCellDimensions.getWidth(charMetrics);
+      const cellWidth_PhysPx = Math.round(width_CssPx * pixelDensity);
+      // cellHeight_PhysPx is passed as parameter (already in physical pixels)
 
       const bounds = tightBounds[char];
       if (!bounds) {
-        // No visible pixels, but still need to advance cellX for next character
-        cellX += cellWidth;
+        // No visible pixels, but still need to advance cellX_PhysPx for next character
+        cellX_PhysPx += cellWidth_PhysPx;
         continue;
       }
 
@@ -268,21 +268,21 @@ class TightAtlasReconstructor {
       const tempCtx = tempCanvas.getContext('2d');
 
       // Copy tight region from atlas to temp canvas
-      const srcX = Math.floor(cellX + bounds.left);
-      const srcY = Math.floor(bounds.top);
-      const srcW = Math.floor(bounds.width);
-      const srcH = Math.floor(bounds.height);
+      const srcX_PhysPx = Math.floor(cellX_PhysPx + bounds.left);
+      const srcY_PhysPx = Math.floor(bounds.top);
+      const srcWidth_PhysPx = Math.floor(bounds.width);
+      const srcHeight_PhysPx = Math.floor(bounds.height);
 
       tempCtx.drawImage(
         sourceAtlasImage,
-        srcX, srcY,  // Source position in atlas
-        srcW, srcH,  // Source dimensions
-        0, 0,        // Dest position in temp canvas
-        srcW, srcH   // Dest dimensions
+        srcX_PhysPx, srcY_PhysPx,      // Source position in atlas (physical pixels)
+        srcWidth_PhysPx, srcHeight_PhysPx,  // Source dimensions (physical pixels)
+        0, 0,                           // Dest position in temp canvas
+        srcWidth_PhysPx, srcHeight_PhysPx   // Dest dimensions (physical pixels)
       );
 
       // Draw to tight atlas at sequential position
-      ctx.drawImage(tempCanvas, xInTightAtlas, 0);
+      ctx.drawImage(tempCanvas, xInTightAtlas_PhysPx, 0);
 
       // ═══════════════════════════════════════════════════════════════════════
       // POSITIONING CALCULATION
@@ -303,8 +303,8 @@ class TightAtlasReconstructor {
       //   │ └──────────────────┘     │        dx = horizontal offset to align
       //   │ fontBoundingBox          │        dy = vertical offset from baseline
       //   └──────────────────────────┘
-      //     ↑                    ↑
-      //     cellX             cellX + cellWidth
+      //     ↑                          ↑
+      //     cellX_PhysPx             cellX_PhysPx + cellWidth_PhysPx
       //
       // dx: Horizontal offset from rendering position to tight glyph position
       //     Components:
@@ -327,34 +327,34 @@ class TightAtlasReconstructor {
       // Calculate distance from bottom of tight bounds to bottom of character canvas
       // This is used in the dy calculation
       // Note: bounds.top + bounds.height - 1 gives the Y coordinate of the bottom pixel (like bottomRightCorner.y)
-      const distanceBetweenBottomAndBottomOfCanvas =
-        cellHeight - (bounds.top + bounds.height - 1) - 1;
+      const distanceBetweenBottomAndBottomOfCanvas_PhysPx =
+        cellHeight_PhysPx - (bounds.top + bounds.height - 1) - 1;
 
-      // Store positioning data
-      positioning.tightWidth[char] = bounds.width;
-      positioning.tightHeight[char] = bounds.height;
-      positioning.xInAtlas[char] = xInTightAtlas;
+      // Store positioning data (all in physical pixels)
+      positioning.tightWidth[char] = bounds.width;    // Physical pixels
+      positioning.tightHeight[char] = bounds.height;  // Physical pixels
+      positioning.xInAtlas[char] = xInTightAtlas_PhysPx;  // Physical pixels
 
-      // EXACT dx formula from AtlasPositioningFAB.js:91
+      // EXACT dx formula from AtlasPositioningFAB.js:91 (physical pixels)
       positioning.dx[char] =
         - Math.round(charMetrics.actualBoundingBoxLeft) * pixelDensity
         + bounds.left;
 
-      // EXACT dy formula from AtlasPositioningFAB.js:92
+      // EXACT dy formula from AtlasPositioningFAB.js:92 (physical pixels)
       positioning.dy[char] =
         - bounds.height
-        - distanceBetweenBottomAndBottomOfCanvas
+        - distanceBetweenBottomAndBottomOfCanvas_PhysPx
         + 1 * pixelDensity;
 
-      xInTightAtlas += bounds.width;
-      cellX += cellWidth;
+      xInTightAtlas_PhysPx += bounds.width;
+      cellX_PhysPx += cellWidth_PhysPx;
     }
 
     // Create domain objects
     const tightAtlasImage = new AtlasImage(tightCanvas);
     const atlasPositioning = new AtlasPositioning(positioning);
 
-    console.debug(`TightAtlasReconstructor: Packed ${Object.keys(positioning.xInAtlas).length} glyphs into ${totalWidth}×${maxHeight} atlas`);
+    console.debug(`TightAtlasReconstructor: Packed ${Object.keys(positioning.xInAtlas).length} glyphs into ${totalWidth_PhysPx}×${maxHeight_PhysPx} atlas`);
 
     return { atlasImage: tightAtlasImage, atlasPositioning };
   }

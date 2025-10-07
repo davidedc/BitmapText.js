@@ -77,35 +77,36 @@ class AtlasPositioningFAB extends AtlasPositioning {
         continue;
       }
 
-      // Calculate tight dimensions from glyph bounds
-      const tightWidth =
+      // Calculate tight dimensions from glyph bounds (all in physical pixels)
+      const tightWidth_PhysPx =
         glyph.tightCanvasBox.bottomRightCorner.x -
         glyph.tightCanvasBox.topLeftCorner.x +
         1;
-      const tightHeight =
+      const tightHeight_PhysPx =
         glyph.tightCanvasBox.bottomRightCorner.y -
         glyph.tightCanvasBox.topLeftCorner.y +
         1;
 
-      // Calculate positioning offsets for atlas rendering
-      const dx = - Math.round(characterMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
-      const dy = - tightHeight - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas + 1 * fontProperties.pixelDensity;
+      // Calculate positioning offsets for atlas rendering (all in physical pixels)
+      // EXACT formula - MUST match TightAtlasReconstructor.js:339-347
+      const dx_PhysPx = - Math.round(characterMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
+      const dy_PhysPx = - tightHeight_PhysPx - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas_PhysPx + 1 * fontProperties.pixelDensity;
 
-      // Set the calculated metrics
-      this._tightWidth[char] = tightWidth;
-      this._tightHeight[char] = tightHeight;
-      this._dx[char] = dx;
-      this._dy[char] = dy;
+      // Set the calculated metrics (stored in physical pixels)
+      this._tightWidth[char] = tightWidth_PhysPx;
+      this._tightHeight[char] = tightHeight_PhysPx;
+      this._dx[char] = dx_PhysPx;
+      this._dy[char] = dy_PhysPx;
     }
   }
 
   /**
    * Set glyph position in atlas after atlas is built
    * @param {string} char - Character to set position for
-   * @param {number} xPosition - X position in atlas
+   * @param {number} xPosition_PhysPx - X position in atlas (physical pixels)
    */
-  setGlyphPositionInAtlas(char, xPosition) {
-    this._xInAtlas[char] = xPosition;
+  setGlyphPositionInAtlas(char, xPosition_PhysPx) {
+    this._xInAtlas[char] = xPosition_PhysPx;
   }
 
   /**

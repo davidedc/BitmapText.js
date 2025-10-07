@@ -99,13 +99,13 @@ class BitmapText {
     // SUCCESS PATH: Calculate metrics normally
     // Convert to array of code points for proper Unicode handling
     const chars = [...text];
-    let width_CSS_Px = 0;
+    let width_CssPx = 0;
     let characterMetrics = fontMetrics.getCharacterMetrics(chars[0]);
-    const actualBoundingBoxLeft_CSS_Px = characterMetrics.actualBoundingBoxLeft;
+    const actualBoundingBoxLeft_CssPx = characterMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
-    let actualBoundingBoxRight_CSS_Px;
-    let advancement_CSS_Px = 0;
+    let actualBoundingBoxRight_CssPx;
+    let advancement_CssPx = 0;
 
     for (let i = 0; i < chars.length; i++) {
       const char = chars[i];
@@ -116,23 +116,23 @@ class BitmapText {
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, characterMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, characterMetrics.actualBoundingBoxDescent);
 
-      advancement_CSS_Px = this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, char, nextChar, textProperties);
-      width_CSS_Px += advancement_CSS_Px;
+      advancement_CssPx = this.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties);
+      width_CssPx += advancement_CssPx;
     }
 
-    // the actualBoundingBoxRight_CSS_Px is the sum of all the advancements (detracting kerning) up to the last character...
-    actualBoundingBoxRight_CSS_Px = width_CSS_Px - advancement_CSS_Px;
-    // ... plus the actualBoundingBoxRight_CSS_Px of the last character
-    // (this is in place of adding its advancement_CSS_Px)
-    actualBoundingBoxRight_CSS_Px += characterMetrics.actualBoundingBoxRight;
+    // the actualBoundingBoxRight_CssPx is the sum of all the advancements (detracting kerning) up to the last character...
+    actualBoundingBoxRight_CssPx = width_CssPx - advancement_CssPx;
+    // ... plus the actualBoundingBoxRight_CssPx of the last character
+    // (this is in place of adding its advancement_CssPx)
+    actualBoundingBoxRight_CssPx += characterMetrics.actualBoundingBoxRight;
 
     return {
       metrics: {
-        width: width_CSS_Px,
+        width: width_CssPx,
         // note that standard measureText returns a TextMetrics object
         // which has no height, so let's make things uniform and resist the temptation to provide it.
-        actualBoundingBoxLeft: actualBoundingBoxLeft_CSS_Px,
-        actualBoundingBoxRight: actualBoundingBoxRight_CSS_Px,
+        actualBoundingBoxLeft: actualBoundingBoxLeft_CssPx,
+        actualBoundingBoxRight: actualBoundingBoxRight_CssPx,
         actualBoundingBoxAscent,
         actualBoundingBoxDescent,
         fontBoundingBoxAscent: characterMetrics.fontBoundingBoxAscent,
@@ -146,12 +146,12 @@ class BitmapText {
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement_CSS_Px(fontMetrics, fontProperties, char, nextChar, textProperties) {
+  calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) {
     if (!textProperties) {
       textProperties = new TextProperties();
     }
     const characterMetrics = fontMetrics.getCharacterMetrics(char);
-    let x_CSS_Px = 0;
+    let x_CssPx = 0;
 
     // TODO this "space" section should handle all characters without a glyph
     //      as there are many kinds of space-like characters.
@@ -165,17 +165,17 @@ class BitmapText {
     // console.log(characterMetrics.width + " " + x_CSS_Px);
     // deal with the size of the " " character
     if (char === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CSS_Px = fontMetrics.getSpaceAdvancementOverride();
-      if (spaceAdvancementOverrideForSmallSizesInPx_CSS_Px !== null) {
-        x_CSS_Px += spaceAdvancementOverrideForSmallSizesInPx_CSS_Px;
+      const spaceAdvancementOverrideForSmallSizesInPx_CssPx = fontMetrics.getSpaceAdvancementOverride();
+      if (spaceAdvancementOverrideForSmallSizesInPx_CssPx !== null) {
+        x_CssPx += spaceAdvancementOverrideForSmallSizesInPx_CssPx;
       }
       else {
-        x_CSS_Px += characterMetrics.width;
+        x_CssPx += characterMetrics.width;
       }
     }
     // Non-space characters ------------------------------------------
     else {
-      x_CSS_Px += characterMetrics.width;
+      x_CssPx += characterMetrics.width;
     }
 
     // Next, apply the kerning correction ----------------------------
@@ -185,12 +185,12 @@ class BitmapText {
     // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
     // We don't use ems, rather we use pxs, however we still want to keep Kerning as strictly proportional to the current type size,
     // and also to keep it as a measure "in thousands".
-    x_CSS_Px -= fontProperties.fontSize * kerningCorrection / 1000;
+    x_CssPx -= fontProperties.fontSize * kerningCorrection / 1000;
 
     // since we might want to actually _place_ a glyph,
     // following this measurement, we want to return an
     // integer coordinate here
-    return Math.round(x_CSS_Px);
+    return Math.round(x_CssPx);
   }
 
   getKerningCorrection(fontMetrics, char, nextChar, textProperties) {
@@ -210,7 +210,7 @@ class BitmapText {
   //   rendered: boolean (whether any rendering occurred),
   //   status: { code: StatusCode, missingChars?: Set, missingAtlasChars?: Set, placeholdersUsed?: boolean }
   // }
-  drawTextFromAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textProperties = null) {
+  drawTextFromAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
     textProperties = textProperties || new TextProperties();
 
     // Check FontMetrics availability first
@@ -251,9 +251,9 @@ class BitmapText {
     // Convert to array of code points for proper Unicode handling
     const chars = [...text];
     const textColor = textProperties.textColor;
-    const position = {
-      x: x_CSS_Px * fontProperties.pixelDensity,
-      y: y_CSS_Px * fontProperties.pixelDensity
+    const position_PhysPx = {
+      x: x_CssPx * fontProperties.pixelDensity,
+      y: y_CssPx * fontProperties.pixelDensity
     };
 
     for (let i = 0; i < chars.length; i++) {
@@ -271,13 +271,13 @@ class BitmapText {
       // Draw (either real glyph or placeholder)
       this.drawCharacter(ctx,
         currentChar,
-        position,
+        position_PhysPx,
         atlasData,
         fontMetrics,
         textColor
       );
 
-      position.x += this.calculateCharacterAdvancement(fontMetrics, fontProperties, currentChar, nextChar, textProperties);
+      position_PhysPx.x += this.calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties);
     }
 
     // Determine status code
@@ -304,7 +304,7 @@ class BitmapText {
     };
   }
 
-  drawCharacter(ctx, char, position, atlasData, fontMetrics, textColor) {
+  drawCharacter(ctx, char, position_PhysPx, atlasData, fontMetrics, textColor) {
     // There are several optimisations possible here:
     // 1. We could make a special case when the color is black
     // 2. We could cache the colored atlases in a small LRU cache
@@ -314,7 +314,7 @@ class BitmapText {
       // Use character metrics for simplified placeholder (no atlasData positioning needed)
       const characterMetrics = fontMetrics.getCharacterMetrics(char);
       if (characterMetrics) {
-        this.drawPlaceholderRectangle(ctx, position, characterMetrics, textColor);
+        this.drawPlaceholderRectangle(ctx, position_PhysPx, characterMetrics, textColor);
       }
       return;
     }
@@ -326,7 +326,7 @@ class BitmapText {
     // Get the atlasData image for rendering
     const atlasImage = atlasData.atlasImage.image;
     const coloredGlyphCanvas = this.createColoredGlyph(atlasImage, atlasPositioning, textColor);
-    this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning);
+    this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning);
   }
 
   createColoredGlyph(atlasImage, atlasPositioning, textColor) {
@@ -356,39 +356,39 @@ class BitmapText {
     return this.coloredGlyphCanvas;
   }
 
-  renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position, atlasPositioning) {
+  renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning) {
     const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
-    
+
     // see https://stackoverflow.com/a/6061102
     ctx.drawImage(
       coloredGlyphCanvas,
       0, 0,
       tightWidth, tightHeight,
-      position.x + dx,
-      position.y + dy,
+      position_PhysPx.x + dx,
+      position_PhysPx.y + dy,
       tightWidth, tightHeight
     );
   }
 
-  drawPlaceholderRectangle(ctx, position, characterMetrics, textColor) {
+  drawPlaceholderRectangle(ctx, position_PhysPx, characterMetrics, textColor) {
     // Use simplified rectangle based on character metrics instead of tight bounding box
     const width = characterMetrics.width;
     const height = characterMetrics.fontBoundingBoxAscent + characterMetrics.actualBoundingBoxDescent;
 
     // Position at baseline (no dx/dy offsets needed for simplified placeholder)
-    const rectX = position.x;
-    const rectY = position.y - characterMetrics.fontBoundingBoxAscent - characterMetrics.fontBoundingBoxDescent - characterMetrics.alphabeticBaseline;
+    const rectX_PhysPx = position_PhysPx.x;
+    const rectY_PhysPx = position_PhysPx.y - characterMetrics.fontBoundingBoxAscent - characterMetrics.fontBoundingBoxDescent - characterMetrics.alphabeticBaseline;
 
     // Default to black if textColor is null or undefined
     const actualColor = textColor || 'black';
 
     // Draw a simplified rectangle using character width and ascent height
     ctx.fillStyle = actualColor;
-    ctx.fillRect(rectX, rectY, width, height);
+    ctx.fillRect(rectX_PhysPx, rectY_PhysPx, width, height);
   }
 
-  calculateCharacterAdvancement(fontMetrics, fontProperties, currentChar, nextChar, textProperties) {
-    return this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, currentChar, nextChar, textProperties)
+  calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties) {
+    return this.calculateAdvancement_CssPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties)
       * fontProperties.pixelDensity;
   }
 }

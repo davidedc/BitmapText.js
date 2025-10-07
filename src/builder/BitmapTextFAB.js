@@ -146,9 +146,9 @@ class BitmapTextFAB extends BitmapText {
   // and see if it's bold or not. This is not a good idea because it's slow.
   // So, the best way is to keep track of the font-family, font-size and
   // font-style that you use in your own code and pass as params.
-  drawTextViaIndividualCanvasesNotViaAtlas(ctx, text, x_CSS_Px, y_CSS_Px, fontProperties, textProperties = null) {
-    let x_Phys_Px = x_CSS_Px * fontProperties.pixelDensity;
-    const y_Phys_Px = y_CSS_Px * fontProperties.pixelDensity;
+  drawTextViaIndividualCanvasesNotViaAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
+    let x_PhysPx = x_CssPx * fontProperties.pixelDensity;
+    const y_PhysPx = y_CssPx * fontProperties.pixelDensity;
 
     // Get FontMetrics instance once for this font
     const fontMetrics = this.fontMetricsStoreFAB.getFontMetrics(fontProperties);
@@ -173,7 +173,7 @@ class BitmapTextFAB extends BitmapText {
       const characterMetrics = fontMetrics.getCharacterMetrics(char);
 
       if (glyph && glyph.tightCanvas) {
-        // Some glyphs protrude to the left of the x_Phys_Px that you specify, i.e. their
+        // Some glyphs protrude to the left of the x_PhysPx that you specify, i.e. their
         // actualBoundingBoxLeft > 0, for example it's quite large for the
         // italic f in Times New Roman. The other glyphs that don't protrude to the left
         // simply have actualBoundingBoxLeft = 0.
@@ -182,7 +182,7 @@ class BitmapTextFAB extends BitmapText {
         // it's not inferred from looking at how the canvas paints the glyph.)
         //
         // Hence, to render all glyphs correctly, you need to blit the glyph at
-        //    x_Phys_Px - actualBoundingBoxLeft
+        //    x_PhysPx - actualBoundingBoxLeft
         // so the part that should protrude to the left is actually partially blitted to
         // the left of x, as it should be.
         //
@@ -190,19 +190,19 @@ class BitmapTextFAB extends BitmapText {
         // at x = 0 on a canvas, the left part of the glyph will be cropped. This is same as
         // it happens with a standard Canvas - one should just position the text
         // carefully to avoid this (although it's rare that people actually take care of this).
-        const actualBoundingBoxLeftPull_CSS_Px = Math.round(
+        const actualBoundingBoxLeftPull_CssPx = Math.round(
           characterMetrics.actualBoundingBoxLeft
         );
 
-        const yPos_Phys_Px =
-          y_Phys_Px -
+        const yPos_PhysPx =
+          y_PhysPx -
           glyph.tightCanvas.height -
-          glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas +
+          glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas_PhysPx +
           fontProperties.pixelDensity;
-        const xPos_Phys_Px =
-          x_Phys_Px - actualBoundingBoxLeftPull_CSS_Px * fontProperties.pixelDensity;
+        const xPos_PhysPx =
+          x_PhysPx - actualBoundingBoxLeftPull_CssPx * fontProperties.pixelDensity;
 
-        const leftSpacing_Phys_Px = glyph.tightCanvasBox.topLeftCorner.x;
+        const leftSpacing_PhysPx = glyph.tightCanvasBox.topLeftCorner.x;
 
         // Example: the user asks to draw the potential bottom of the text (i.e. including the most descending parts
         // that might or might not be painted on that last row of pixels, depending on the character, typically
@@ -224,13 +224,13 @@ class BitmapTextFAB extends BitmapText {
         // See https://www.w3schools.com/jsref/canvas_drawimage.asp
         ctx.drawImage(
           glyph.tightCanvas,
-          xPos_Phys_Px + leftSpacing_Phys_Px,
-          yPos_Phys_Px
+          xPos_PhysPx + leftSpacing_PhysPx,
+          yPos_PhysPx
         );
       }
 
-      x_Phys_Px +=
-        this.calculateAdvancement_CSS_Px(fontMetrics, fontProperties, char, nextChar, textProperties) *
+      x_PhysPx +=
+        this.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) *
         fontProperties.pixelDensity;
     }
   }
