@@ -314,7 +314,7 @@ class BitmapText {
       // Use character metrics for simplified placeholder (no atlasData positioning needed)
       const characterMetrics = fontMetrics.getCharacterMetrics(char);
       if (characterMetrics) {
-        this.drawPlaceholderRectangle(ctx, position_PhysPx, characterMetrics, textColor);
+        this.drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor);
       }
       return;
     }
@@ -370,21 +370,58 @@ class BitmapText {
     );
   }
 
-  drawPlaceholderRectangle(ctx, position_PhysPx, characterMetrics, textColor) {
-    // Use simplified rectangle based on character metrics instead of tight bounding box
-    const width = characterMetrics.width;
-    const height = characterMetrics.fontBoundingBoxAscent + characterMetrics.actualBoundingBoxDescent;
+  drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor) {
+    // Skip drawing for space characters (invisible)
+    if (char === ' ') return;
 
-    // Position at baseline (no dx/dy offsets needed for simplified placeholder)
-    const rectX_PhysPx = position_PhysPx.x;
-    const rectY_PhysPx = position_PhysPx.y - characterMetrics.fontBoundingBoxAscent - characterMetrics.fontBoundingBoxDescent - characterMetrics.alphabeticBaseline;
+    // Verify we have actual bounding box data (defensive coding)
+    if (characterMetrics.actualBoundingBoxLeft === undefined ||
+        characterMetrics.actualBoundingBoxRight === undefined ||
+        characterMetrics.actualBoundingBoxAscent === undefined ||
+        characterMetrics.actualBoundingBoxDescent === undefined) {
+      console.warn(`Missing bounding box metrics for character '${char}'`);
+      return;
+    }
+
+    // Get pixel density from character metrics (stored during metrics generation in GlyphFAB.js:145)
+    const pixelDensity = characterMetrics.pixelDensity || 1;
+
+    // Use CHARACTER-SPECIFIC actual bounding box (not font-wide fontBoundingBox)
+    // This makes:
+    // - 'a' shorter than 'A' (x-height vs cap-height)
+    // - 'g' extends below baseline (shows descender)
+    // - '.' very short (near baseline only)
+    // Width: actualBoundingBoxLeft + actualBoundingBoxRight (CSS px) * pixelDensity → physical px
+    // Height: actualBoundingBoxAscent + actualBoundingBoxDescent (CSS px) * pixelDensity → physical px
+    const width_PhysPx = Math.round(
+      characterMetrics.actualBoundingBoxLeft + characterMetrics.actualBoundingBoxRight
+    ) * pixelDensity;
+
+    const height_PhysPx = Math.round(
+      characterMetrics.actualBoundingBoxAscent + characterMetrics.actualBoundingBoxDescent
+    ) * pixelDensity;
+
+    // X position: Account for actualBoundingBoxLeft (glyphs may protrude left, e.g., italic 'f')
+    // This matches the dx offset calculation in atlas rendering (AtlasPositioningFAB.js:92)
+    const rectX_PhysPx = position_PhysPx.x
+      - Math.round(characterMetrics.actualBoundingBoxLeft) * pixelDensity;
+
+    // Y position calculation:
+    // - position_PhysPx.y is at em square BOTTOM (textBaseline='bottom')
+    // - Em square bottom is fontBoundingBoxDescent below the alphabetic baseline
+    // - So: alphabetic_baseline_y = position_PhysPx.y - fontBoundingBoxDescent * pixelDensity
+    // - Character top = alphabetic_baseline_y - actualBoundingBoxAscent * pixelDensity
+    // Result: rectY = position_PhysPx.y - fontBoundingBoxDescent * pixelDensity - actualBoundingBoxAscent * pixelDensity
+    const rectY_PhysPx = position_PhysPx.y
+      - characterMetrics.fontBoundingBoxDescent * pixelDensity
+      - characterMetrics.actualBoundingBoxAscent * pixelDensity;
 
     // Default to black if textColor is null or undefined
     const actualColor = textColor || 'black';
 
-    // Draw a simplified rectangle using character width and ascent height
+    // Draw character-specific rectangle (all values in physical pixels)
     ctx.fillStyle = actualColor;
-    ctx.fillRect(rectX_PhysPx, rectY_PhysPx, width, height);
+    ctx.fillRect(rectX_PhysPx, rectY_PhysPx, width_PhysPx, height_PhysPx);
   }
 
   calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties) {

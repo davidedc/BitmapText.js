@@ -56,15 +56,22 @@ class Context2D {
   
   fillRect(x, y, w, h) {
     if (!this.canvas.data) return;
-    
+
     const data = this.canvas.data;
     const canvasWidth = this.canvas.width;
     const [r, g, b] = this._parseColor(this.fillStyle);
-    
-    for (let py = Math.max(0, y); py < Math.min(this.canvas.height, y + h); py++) {
-      for (let px = Math.max(0, x); px < Math.min(canvasWidth, x + w); px++) {
+
+    // Floor coordinates to integers (canvas uses integer pixel coordinates)
+    // This is critical for placeholder rectangles which pass floating-point coordinates
+    const x0 = Math.floor(Math.max(0, x));
+    const y0 = Math.floor(Math.max(0, y));
+    const x1 = Math.floor(Math.min(canvasWidth, x + w));
+    const y1 = Math.floor(Math.min(this.canvas.height, y + h));
+
+    for (let py = y0; py < y1; py++) {
+      for (let px = x0; px < x1; px++) {
         const i = (py * canvasWidth + px) * 4;
-        
+
         if (this.globalCompositeOperation === 'source-in') {
           // Only fill where alpha > 0 (preserve alpha, change color)
           if (data[i+3] > 0) {
