@@ -32,38 +32,58 @@ class GlyphFAB {
     }
   }
 
-  createCanvasWithCharacterAndGetItsMetricss() {
-    const { pixelDensity, fontFamily, fontStyle, fontWeight, fontSize } = this.fontProperties;
+  /**
+   * Creates and configures canvas element for glyph rendering
+   *
+   * SIDE EFFECTS:
+   * - Appends canvas to DOM if drawCrisply is true (for CSS font-smoothing)
+   *
+   * @returns {{canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D}}
+   * @private
+   */
+  createAndConfigureCanvas() {
+    const { fontStyle, fontWeight, fontSize, fontFamily } = this.fontProperties;
     const canvas = document.createElement("canvas");
 
     if (drawCrisply) {
-      // add the canvas to the page otherwise the
-      // CSS font smoorhing properties are not applied
-      // I tried setting the properties via javascript
-      // like this:
+      // Canvas must be in DOM for CSS font-smoothing properties to apply
+      // Setting via JavaScript doesn't work:
       //   canvas.style["-webkit-font-smoothing"] = "none";
       //   canvas.style["-moz-osx-font-smoothing"] = "none";
       //   canvas.style["font-smooth"] = "never";
-      // but it didn't work
       document.body.appendChild(canvas);
     }
 
     const ctx = canvas.getContext("2d");
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
 
-    // size the canvas so it fits the this.char
+    return { canvas, ctx };
+  }
+
+  /**
+   * Measures character using Canvas API and creates mutable copy
+   *
+   * EDGE CASE HANDLED:
+   * - Space character: Chrome reports actualBoundingBoxLeft/Right = 0 even when width > 0
+   *   Fix: Set actualBoundingBoxRight = width for spaces
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas context with font already set
+   * @returns {Object} Mutable TextMetrics object
+   * @private
+   */
+  measureAndCopyCharacterMetrics(ctx) {
+    // Measure character using Canvas API
     const charTextMetricsOrig = ctx.measureText(this.char);
 
-    // let's make a copy of charTextMetricsOrig into charTextMetrics
-    // so we can modify it
-    let charTextMetrics = {};
+    // Create mutable copy (original TextMetrics is read-only)
+    const charTextMetrics = {};
     for (let key in charTextMetricsOrig) {
       charTextMetrics[key] = charTextMetricsOrig[key];
     }
 
-    // for the space character, Chrome gives actualBoundingBoxLeft == actualBoundingBoxRight == 0
-    // even if the width is not 0. Since we are going to use the actualBoundingBoxLeft and actualBoundingBoxRight
-    // to size the canvas, we need to fix that.
+    // Fix space character edge case
+    // Chrome gives actualBoundingBoxLeft == actualBoundingBoxRight == 0 for spaces
+    // even when width is not 0. We use bounding boxes to size canvas, so we need to fix this.
     if (
       charTextMetrics.actualBoundingBoxLeft === 0 &&
       charTextMetrics.actualBoundingBoxRight === 0
@@ -71,29 +91,49 @@ class GlyphFAB {
       charTextMetrics.actualBoundingBoxRight = charTextMetrics.width;
     }
 
+    return charTextMetrics;
+  }
+
+  /**
+   * Applies font-specific rendering corrections from Specs
+   *
+   * CORRECTIONS APPLIED (in order):
+   * 1. ActualBoundingBoxLeft - pixel correction
+   * 2. ActualBoundingBoxRight - pixel correction
+   * 3. ActualBoundingBoxLeft - proportional correction (fontSize-based)
+   * 4. ActualBoundingBoxRight - proportional correction (fontSize-based)
+   * 5. Width/Advancement - proportional correction (fontSize-based)
+   * 6. Optional metric truncation (if truncateMetrics global is true)
+   * 7. PixelDensity storage (for atlas reconstruction)
+   *
+   * RATIONALE:
+   * These corrections fix browser-specific rendering defects visible at small sizes (12px).
+   * Defects include: characters touching, missing pixels, inconsistent spacing.
+   * Once baked into bitmaps, these corrections apply uniformly across all OSs/browsers.
+   *
+   * GLOBAL DEPENDENCIES:
+   * - specs: Specs instance with correction values
+   * - truncateMetrics: boolean flag for metric truncation
+   *
+   * @param {Object} charTextMetrics - Mutable TextMetrics object (modified in place)
+   * @private
+   */
+  applySpecsCorrections(charTextMetrics) {
+    const { fontSize } = this.fontProperties;
+
     //////////////////////////////////////////////
     // START OF CHARACTER-LEVEL RENDERING CORRECTIONS
     //////////////////////////////////////////////
-    // These defects we are fixing are visible at small sizes (12px or so), however
-    // that's a crucial use case for a crisp text renderer.
-    // The defects to be corrected can be spotted by disabling all the kerning corrections and
-    // rendering at size 12 (pretty much the smallest legible size) and looking
-    // for problems like characters that touch, characters that miss a pixel, character that
-    // are systematically too far/close to the previous/next, etc.
-    // These corrections are specific to the font, and also
-    // likely specific to the OS, browser and possibly
-    // depend on other factors like the screen resolution, etc.
-    // HOWEVER once we fix them, we bake the characters and their sizes and
-    // the kerning info into a format that we re-use pixel-identically in all
-    // OSs and browsers, so these corrections only need to be done in
-    // one place to get a good rendering everywhere.
-    // for the character "W" Arial 80px let's add 2 pixels to the actualBoundingBoxRight...
-    // ...don't understand why, but the actualBoundingBoxLeft + actualBoundingBoxRight
-    // is not enough to fit the character in the canvas and the top-right gets ever so slightly clipped...
+    // These defects are visible at small sizes (12px), a crucial use case for crisp rendering.
+    // Spot defects by: disable kerning corrections, render at size 12, look for:
+    // - Characters that touch
+    // - Characters missing pixels
+    // - Systematically incorrect spacing
+    //
+    // Corrections are font/OS/browser specific, but once baked into bitmaps,
+    // they ensure pixel-identical rendering everywhere.
 
-    // get the specs for "ActualBoundingBoxLeft correction px" of this
-    // font family and style and weight and size
-
+    // 1. Pixel-based corrections (absolute)
     charTextMetrics.actualBoundingBoxLeft += specs.getSingleFloatCorrectionForChar(
       this.fontProperties,
       this.char,
@@ -106,6 +146,7 @@ class GlyphFAB {
       "ActualBoundingBoxRight correction px"
     );
 
+    // 2. Proportional corrections (fontSize-relative)
     charTextMetrics.actualBoundingBoxLeft += Math.floor(
       fontSize *
         specs.getSingleFloatCorrectionForChar(
@@ -124,6 +165,7 @@ class GlyphFAB {
         )
     );
 
+    // 3. Advancement/width correction
     charTextMetrics.width += Math.floor(
       fontSize *
         specs.getSingleFloatCorrectionForChar(
@@ -133,29 +175,51 @@ class GlyphFAB {
         )
     );
 
+    // 4. Optional truncation to reduce floating point precision
     if (truncateMetrics) {
-      // go through all charTextMetrics values and truncate them to fewer decimal places
       for (let key in charTextMetrics) {
         charTextMetrics[key] = Math.round(charTextMetrics[key] * 10000) / 10000;
       }
     }
 
-    // Store pixelDensity in charTextMetrics for later use in atlas reconstruction
-    // This is needed because the atlas image is at physical pixels but metrics are in CSS pixels
+    // 5. Store pixelDensity for atlas reconstruction
+    // Needed because atlas image is in physical pixels but metrics are in CSS pixels
     charTextMetrics.pixelDensity = this.fontProperties.pixelDensity;
 
     // END OF CHARACTER-LEVEL RENDERING CORRECTIONS
     /////////////////////////////////////////////
+  }
 
-    // Happens at small sizes due to a browser rendering defect.
-    // This correction will simply paint the character
-    // n pixel more to the right in the mini canvas
+  /**
+   * Configures canvas dimensions based on character metrics
+   *
+   * CALCULATIONS:
+   * - Width: actualBoundingBoxLeft + actualBoundingBoxRight
+   * - Height: fontBoundingBoxAscent + fontBoundingBoxDescent
+   * - Both scaled by pixelDensity for physical pixels
+   *
+   * SIDE EFFECTS:
+   * - Sets canvas.width/height (physical pixels)
+   * - Sets canvas.style.width/height (CSS pixels)
+   * - Appends debug div to document.body
+   *
+   * @param {HTMLCanvasElement} canvas - Canvas to configure
+   * @param {Object} charTextMetrics - Character metrics
+   * @returns {number} cropLeftCorrection_CssPx for rendering
+   * @private
+   */
+  configureCanvasDimensions(canvas, charTextMetrics) {
+    const { pixelDensity } = this.fontProperties;
+
+    // Get crop correction for rendering (browser rendering defect at small sizes)
+    // This will paint the character n pixels more to the right in the canvas
     const cropLeftCorrection_CssPx = specs.getSingleFloatCorrectionForChar(
       this.fontProperties,
       this.char,
-      "CropLeft correction px",
+      "CropLeft correction px"
     );
 
+    // Calculate and set WIDTH
     const canvasWidth_CssPx = Math.round(
       charTextMetrics.actualBoundingBoxLeft +
         charTextMetrics.actualBoundingBoxRight
@@ -163,14 +227,15 @@ class GlyphFAB {
     canvas.style.width = canvasWidth_CssPx + "px";
     canvas.width = canvasWidth_CssPx * pixelDensity;
 
+    // Debug div for bounding box visualization
     const div = document.createElement("div");
     div.textContent = `${this.char} bbox left: ${charTextMetrics.actualBoundingBoxLeft} bbox right: ${charTextMetrics.actualBoundingBoxRight}`;
-    // add to the textcontent the actualBoundingBoxLeft in red if it's not 0
     if (charTextMetrics.actualBoundingBoxLeft !== 0) {
-      div.style.color = "red";
+      div.style.color = "red";  // Highlight non-zero left bbox
     }
     document.body.appendChild(div);
 
+    // Calculate and set HEIGHT
     const canvasHeight_CssPx = Math.round(
       charTextMetrics.fontBoundingBoxAscent +
         charTextMetrics.fontBoundingBoxDescent
@@ -178,41 +243,111 @@ class GlyphFAB {
     canvas.style.height = canvasHeight_CssPx + "px";
     canvas.height = canvasHeight_CssPx * pixelDensity;
 
+    return cropLeftCorrection_CssPx;
+  }
+
+  /**
+   * Renders character to canvas with proper scaling and positioning
+   *
+   * RENDERING DETAILS:
+   * - Scale by pixelDensity for physical pixels
+   * - Use textBaseline='bottom' for consistent positioning
+   * - X position: actualBoundingBoxLeft + cropLeftCorrection
+   * - Y position: canvas.height / pixelDensity - 1 (bottom alignment)
+   *
+   * @param {HTMLCanvasElement} canvas - Target canvas
+   * @param {Object} charTextMetrics - Character metrics
+   * @param {number} cropLeftCorrection_CssPx - Left crop correction from specs
+   * @private
+   */
+  renderCharacterToCanvas(canvas, charTextMetrics, cropLeftCorrection_CssPx) {
+    const { pixelDensity, fontStyle, fontWeight, fontSize, fontFamily } = this.fontProperties;
+    const ctx = canvas.getContext("2d");
+
+    // Scale for physical pixels
     ctx.scale(pixelDensity, pixelDensity);
-    // make the background white
-    // ctx.fillStyle = 'white';
-    // ctx.fillRect(0, 0, canvas.width / pixelDensity, canvas.height / pixelDensity);
-    // draw the text so that it fits in the canvas.
-    // The chosen x,y is at the crossing of the first column and last row
-    // of where any pixel can be drawn.
-    // see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
+
+    // Configure text rendering
     ctx.textBaseline = "bottom";
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
 
+    // Draw character at calculated position
+    // X: Left bounding box + correction
+    // Y: Bottom of canvas - 1 (textBaseline='bottom' reference point)
     ctx.fillText(
       this.char,
-      Math.round(charTextMetrics.actualBoundingBoxLeft) +
-        cropLeftCorrection_CssPx,
+      Math.round(charTextMetrics.actualBoundingBoxLeft) + cropLeftCorrection_CssPx,
       canvas.height / pixelDensity - 1
     );
+  }
 
-    // Create a copy of the canvas BEFORE removing it from DOM
-    // This preserves the image data for export, even after the original canvas is removed
+  /**
+   * Creates a copy of canvas for export BEFORE removing from DOM
+   *
+   * CRITICAL:
+   * - Must copy BEFORE canvas.remove() to preserve image data
+   * - Copy survives DOM removal, ensuring export works correctly
+   *
+   * SIDE EFFECTS:
+   * - Removes original canvas from DOM if drawCrisply is true
+   * - Debug logging for space characters (10% sample rate)
+   *
+   * @param {HTMLCanvasElement} canvas - Source canvas to copy
+   * @returns {HTMLCanvasElement} Canvas copy with preserved image data
+   * @private
+   */
+  createCanvasCopyForExport(canvas) {
+    // Create copy BEFORE removing from DOM
     const canvasCopy = document.createElement('canvas');
     canvasCopy.width = canvas.width;
     canvasCopy.height = canvas.height;
     const copyCtx = canvasCopy.getContext('2d');
     copyCtx.drawImage(canvas, 0, 0);
 
-    // Debug log to verify this code is running
+    // Debug log for space characters (sampled at 10%)
     if (this.char === ' ' && Math.random() < 0.1) {
       console.log(`[GlyphFAB] Created canvasCopy for space character: ${canvasCopy.width}x${canvasCopy.height}`);
     }
 
+    // Remove original canvas from DOM if needed for crisp rendering
     if (drawCrisply) {
-      // now can remove the canvas from the page
       canvas.remove();
     }
+
+    return canvasCopy;
+  }
+
+  /**
+   * Creates canvas with rendered character and measures its metrics
+   *
+   * This is the main orchestration method that coordinates 6 specialized steps:
+   * 1. Canvas creation and configuration
+   * 2. Character metrics measurement
+   * 3. Specs corrections application
+   * 4. Canvas dimension configuration
+   * 5. Character rendering
+   * 6. Canvas preservation for export
+   *
+   * @returns {{canvas: HTMLCanvasElement, charTextMetrics: Object, canvasCopy: HTMLCanvasElement}}
+   */
+  createCanvasWithCharacterAndGetItsMetricss() {
+    // Step 1: Create and configure canvas
+    const { canvas, ctx } = this.createAndConfigureCanvas();
+
+    // Step 2: Measure character metrics
+    const charTextMetrics = this.measureAndCopyCharacterMetrics(ctx);
+
+    // Step 3: Apply font-specific corrections
+    this.applySpecsCorrections(charTextMetrics);
+
+    // Step 4: Configure canvas dimensions
+    const cropLeftCorrection_CssPx = this.configureCanvasDimensions(canvas, charTextMetrics);
+
+    // Step 5: Render character to canvas
+    this.renderCharacterToCanvas(canvas, charTextMetrics, cropLeftCorrection_CssPx);
+
+    // Step 6: Create canvas copy for export
+    const canvasCopy = this.createCanvasCopyForExport(canvas);
 
     return { canvas, charTextMetrics, canvasCopy };
   }
