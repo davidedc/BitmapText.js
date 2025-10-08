@@ -19,10 +19,7 @@
 // - Building-specific metrics calculation and validation methods
 // - Integration with font assets building pipeline
 class FontMetricsStoreFAB extends FontMetricsStore {
-  constructor() {
-    super();
-  }
-  
+
   /**
    * Extract a clean FontMetricsStore instance for runtime distribution
    * This removes FAB-specific functionality and provides only runtime data
