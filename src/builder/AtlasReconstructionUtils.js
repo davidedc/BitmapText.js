@@ -28,7 +28,7 @@ class AtlasReconstructionUtils {
    */
   static getImageData(image) {
     // Unwrap AtlasImage if needed
-    const actualImage = (image && image.image) ? image.image : image;
+    const actualImage = image?.image ? image.image : image;
 
     if (!actualImage) {
       throw new Error('getImageData: Invalid image source (null or undefined)');

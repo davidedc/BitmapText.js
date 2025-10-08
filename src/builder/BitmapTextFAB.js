@@ -151,7 +151,7 @@ class BitmapTextFAB extends BitmapText {
       );
       const characterMetrics = fontMetrics.getCharacterMetrics(char);
 
-      if (glyph && glyph.tightCanvas) {
+      if (glyph?.tightCanvas) {
         // Some glyphs protrude to the left of the x_PhysPx that you specify, i.e. their
         // actualBoundingBoxLeft > 0, for example it's quite large for the
         // italic f in Times New Roman. The other glyphs that don't protrude to the left

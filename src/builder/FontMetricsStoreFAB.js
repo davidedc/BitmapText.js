@@ -30,7 +30,7 @@ class FontMetricsStoreFAB extends FontMetricsStore {
     
     // Extract clean FontMetrics instances from FontMetricsFAB instances
     for (const [fontKey, fontMetricsFAB] of this._fontMetrics.entries()) {
-      if (fontMetricsFAB && fontMetricsFAB.extractFontMetricsInstance) {
+      if (fontMetricsFAB?.extractFontMetricsInstance) {
         // Convert FontMetricsFAB to clean FontMetrics
         const cleanFontMetrics = fontMetricsFAB.extractFontMetricsInstance();
         instance._fontMetrics.set(fontKey, cleanFontMetrics);
@@ -88,7 +88,7 @@ class FontMetricsStoreFAB extends FontMetricsStore {
    */
   kerningTableExists(fontProperties) {
     const fontMetrics = this.getFontMetrics(fontProperties);
-    return fontMetrics && fontMetrics.hasKerningTable && fontMetrics.hasKerningTable();
+    return fontMetrics?.hasKerningTable?.();
   }
   
   /**
@@ -142,7 +142,7 @@ class FontMetricsStoreFAB extends FontMetricsStore {
    */
   validateFontMetrics(fontProperties, expectedChars) {
     const fontMetrics = this.getFontMetrics(fontProperties);
-    if (fontMetrics && fontMetrics.validateFontMetrics) {
+    if (fontMetrics?.validateFontMetrics) {
       return fontMetrics.validateFontMetrics(expectedChars);
     }
     return [];

@@ -5,7 +5,7 @@ function removeAllCanvasesAndDivs() {
   const canvases = document.querySelectorAll('canvas');
   for (const element of canvases) {
     // Skip atlas section canvases (inside atlas-section div)
-    if (atlasSection && atlasSection.contains(element)) {
+    if (atlasSection?.contains(element)) {
       continue;
     }
     // do this special sort of cleanup so to hopefully hand-hold the garbage collector
@@ -33,7 +33,7 @@ function removeAllCanvasesAndDivs() {
                           element.id === 'hoverButtons' ||
                           element.id === 'atlas-section';
 
-    const isInsideAtlasSection = atlasSection && atlasSection.contains(element);
+    const isInsideAtlasSection = atlasSection?.contains(element);
 
     if (!isProtectedDiv && !isInsideAtlasSection) {
       element.remove();

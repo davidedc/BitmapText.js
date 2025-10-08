@@ -52,7 +52,7 @@ function createErrorStatus(code, details = {}) {
  * @returns {boolean} True if status indicates success
  */
 function isSuccess(status) {
-  return status && status.code === StatusCode.SUCCESS;
+  return status?.code === StatusCode.SUCCESS;
 }
 
 /**

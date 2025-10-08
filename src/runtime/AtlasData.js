@@ -61,7 +61,7 @@ class AtlasData {
    * @returns {boolean} True if atlas has valid image and dimensions
    */
   isValid() {
-    return this.atlasImage && this.atlasImage.isValid();
+    return this.atlasImage?.isValid();
   }
 
   /**
@@ -96,7 +96,7 @@ class AtlasData {
    * @returns {boolean} True if atlas is ready for rendering operations
    */
   canRender() {
-    return this.atlasImage && this.atlasImage.canRender();
+    return this.atlasImage?.canRender();
   }
 
   /**

@@ -57,7 +57,7 @@ class AtlasBuilder {
     }
 
     // Get canvas height, preferring canvasCopy if main canvas is invalid
-    const firstCanvas = (firstGlyph.canvas && firstGlyph.canvas.height > 0)
+    const firstCanvas = (firstGlyph.canvas?.height > 0)
       ? firstGlyph.canvas
       : firstGlyph.canvasCopy;
 
@@ -83,7 +83,7 @@ class AtlasBuilder {
 
       // Get canvas, preferring canvasCopy if main canvas is invalid (removed from DOM)
       // This happens when glyphs are created for non-displayed font sizes
-      const glyphCanvas = (glyph.canvas && glyph.canvas.width > 0)
+      const glyphCanvas = (glyph.canvas?.width > 0)
         ? glyph.canvas
         : glyph.canvasCopy;
 
@@ -123,7 +123,7 @@ class AtlasBuilder {
       }
 
       // Get canvas, preferring canvasCopy if main canvas is invalid (same logic as above)
-      const glyphCanvas = (glyph.canvas && glyph.canvas.width > 0)
+      const glyphCanvas = (glyph.canvas?.width > 0)
         ? glyph.canvas
         : glyph.canvasCopy;
 
