@@ -325,6 +325,22 @@ To support compound emojis would require:
   - Provides extraction methods to create clean runtime FontMetricsStore instances
   - Focuses solely on font metrics (positioning handled separately by AtlasPositioningFAB)
 
+  **GlyphFAB**
+  - Individual glyph creation and rendering for font assets building
+  - No base class (standalone FAB utility class)
+  - Orchestrates 6-step glyph creation pipeline:
+    1. Canvas creation and configuration (DOM attachment for crisp rendering)
+    2. Character metrics measurement (handles browser edge cases)
+    3. Specs corrections application (pixel + proportional adjustments)
+    4. Canvas dimension configuration (width/height calculation)
+    5. Character rendering (precise positioning with corrections)
+    6. Canvas preservation (export-ready copy before DOM removal)
+  - Calculates tight bounding boxes via pixel scanning
+  - Stores character metrics in FontMetricsStoreFAB
+  - Produces two canvas formats: standard (for atlas packing) + tight (for verification)
+  - Key architectural pattern: Extract Method decomposition for maintainability
+  - Public API: `createCanvasesAndCharacterMetrics()` orchestrates all steps
+
   ### Supporting Classes
 
   **KerningCalculator**
@@ -536,11 +552,17 @@ To support compound emojis would require:
   User → public/font-assets-builder.html → BitmapTextFAB → AtlasDataStoreFAB
     1. Load font specifications (src/specs/default-specs.js)
     2. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
-    3. Create individual glyph canvases
-    4. Apply tight bounding box detection
-    5. Calculate kerning tables
-    6. Build optimized atlases
-    7. Generate minified metadata
+    3. Create individual glyph canvases (GlyphFAB 6-step pipeline per character):
+       a. Canvas creation + configuration
+       b. Character measurement
+       c. Specs corrections application
+       d. Dimension configuration
+       e. Character rendering
+       f. Canvas preservation
+    4. Apply tight bounding box detection (GlyphFAB pixel scanning)
+    5. Calculate kerning tables (KerningCalculator)
+    6. Build optimized atlases (AtlasBuilder → variable-width cells)
+    7. Generate minified metadata (MetricsMinifier)
     8. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
   ```
 
