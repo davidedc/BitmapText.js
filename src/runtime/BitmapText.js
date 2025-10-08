@@ -23,6 +23,9 @@ if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' |
 //
 // For font assets building capabilities, use BitmapTextFAB which extends this class.
 class BitmapText {
+  // Kerning unit divisor (kerning measured in 1/1000 em units)
+  static KERNING_UNIT_DIVISOR = 1000;
+
   constructor(atlasDataStore, fontMetricsStore, canvasFactory) {
     this.atlasDataStore = atlasDataStore;
     this.fontMetricsStore = fontMetricsStore;
@@ -185,7 +188,7 @@ class BitmapText {
     // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
     // We don't use ems, rather we use pxs, however we still want to keep Kerning as strictly proportional to the current type size,
     // and also to keep it as a measure "in thousands".
-    x_CssPx -= fontProperties.fontSize * kerningCorrection / 1000;
+    x_CssPx -= fontProperties.fontSize * kerningCorrection / BitmapText.KERNING_UNIT_DIVISOR;
 
     // since we might want to actually _place_ a glyph,
     // following this measurement, we want to return an

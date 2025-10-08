@@ -1,4 +1,10 @@
 class GlyphFAB {
+  // Precision for metric truncation (rounds to 4 decimal places)
+  static METRIC_TRUNCATION_PRECISION = 10000;
+
+  // Debug sampling rate (10% of space characters)
+  static DEBUG_SAMPLE_RATE = 0.1;
+
   constructor(char, fontProperties) {
     this.char = char;
     this.fontProperties = fontProperties;
@@ -178,7 +184,7 @@ class GlyphFAB {
     // 4. Optional truncation to reduce floating point precision
     if (truncateMetrics) {
       for (let key in charTextMetrics) {
-        charTextMetrics[key] = Math.round(charTextMetrics[key] * 10000) / 10000;
+        charTextMetrics[key] = Math.round(charTextMetrics[key] * GlyphFAB.METRIC_TRUNCATION_PRECISION) / GlyphFAB.METRIC_TRUNCATION_PRECISION;
       }
     }
 
@@ -305,7 +311,7 @@ class GlyphFAB {
     copyCtx.drawImage(canvas, 0, 0);
 
     // Debug log for space characters (sampled at 10%)
-    if (this.char === ' ' && Math.random() < 0.1) {
+    if (this.char === ' ' && Math.random() < GlyphFAB.DEBUG_SAMPLE_RATE) {
       console.log(`[GlyphFAB] Created canvasCopy for space character: ${canvasCopy.width}x${canvasCopy.height}`);
     }
 
