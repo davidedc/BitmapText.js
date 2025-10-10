@@ -58,23 +58,36 @@ function showGlyphs() {
   removeAllCanvasesAndDivs();
   clearErrors();  // Also explicitly clear any lingering error messages
   
-  // Check availability levels
-  const hasMetrics = isFontMetricsAvailable(fontProperties, fontMetricsStore);
-  const hasAtlases = isAtlasAvailable(fontProperties, atlasDataStore);
-  
+  // Check availability levels - detect context (builder vs runtime)
+  let hasMetrics, hasAtlases;
+  if (typeof fontMetricsStore !== 'undefined' && typeof atlasDataStore !== 'undefined') {
+    // Font-assets-builder context
+    hasMetrics = isFontMetricsAvailable(fontProperties, fontMetricsStore);
+    hasAtlases = isAtlasAvailable(fontProperties, atlasDataStore);
+  } else {
+    // Runtime context (test-renderer) - use static API
+    hasMetrics = BitmapText.hasMetrics(fontProperties.idString);
+    hasAtlases = BitmapText.hasAtlas(fontProperties.idString);
+  }
+
   if (!hasMetrics) {
     showFontError(`Font metrics not available for ${fontProperties.fontSize}px ${fontProperties.fontFamily} ${fontProperties.fontStyle} ${fontProperties.fontWeight}. Available sizes may be limited.`);
     return;
   }
-  
+
   // If metrics are available but atlases are not, show warning about placeholder mode
   if (hasMetrics && !hasAtlases) {
     showFontWarning(`Atlases not loaded for ${fontProperties.fontSize}px ${fontProperties.fontFamily} ${fontProperties.fontStyle} ${fontProperties.fontWeight}. Rendering placeholder rectangles with correct dimensions and spacing.`);
   }
-  
+
   try {
     // Render using standard classes - will automatically use placeholder mode if atlases missing
-    drawTestText_withStandardClass(fontProperties, atlasDataStore, fontMetricsStore);
+    // Pass stores if available (builder context), otherwise omitted (runtime context)
+    if (typeof fontMetricsStore !== 'undefined' && typeof atlasDataStore !== 'undefined') {
+      drawTestText_withStandardClass(fontProperties, atlasDataStore, fontMetricsStore);
+    } else {
+      drawTestText_withStandardClass(fontProperties);
+    }
   } catch (error) {
     showFontError(`Error rendering text: ${error.message}`);
     console.error('Error in showGlyphs:', error);

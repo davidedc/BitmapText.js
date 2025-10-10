@@ -46,29 +46,25 @@ async function main() {
   try {
     console.log('BitmapText.js Node.js Multi-Size Demo - Loading font data...');
 
-    // Setup BitmapText system FIRST (so stores are available)
-    console.log('Setting up BitmapText system...');
-    const atlasDataStore = new AtlasDataStore();
-    const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore, () => new Canvas());
+    // Configure BitmapText for Node.js environment
+    console.log('Configuring BitmapText for Node.js...');
+    BitmapText.configure({
+      dataDir: './font-assets/',
+      canvasFactory: () => new Canvas()
+    });
 
     // Create IDStrings for all font configurations
     const IDStrings = fontPropertiesArray.map(createIDString);
     console.log('Font sizes:', fontSizes);
     console.log('IDStrings:', IDStrings);
 
-    // Create FontLoader instance with progress tracking
-    console.log('Initializing FontLoader...');
-    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
-      console.log(`Loading progress: ${loaded}/${total}`);
-    });
-
-    // Load all fonts using unified API (same as browser version)
-    // This loads BOTH metrics and atlases in one call
+    // Load all fonts using static API
     console.log(`Loading ${fontSizes.length} fonts...`);
 
     // Wait for all fonts to load
-    await fontLoader.loadFonts(IDStrings, false);
+    await BitmapText.loadFonts(IDStrings, {
+      onProgress: (loaded, total) => console.log(`Loading progress: ${loaded}/${total}`)
+    });
 
     console.log('All fonts loaded successfully');
 
@@ -76,10 +72,10 @@ async function main() {
     console.log('\nFont loading summary:');
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
-      const fontProperties = fontPropertiesArray[i];
+      const idString = IDStrings[i];
 
-      const hasMetrics = fontMetricsStore.hasFontMetrics(fontProperties);
-      const hasAtlas = atlasDataStore.hasAtlas(fontProperties);
+      const hasMetrics = BitmapText.hasMetrics(idString);
+      const hasAtlas = BitmapText.hasAtlas(idString);
 
       if (hasMetrics && hasAtlas) {
         console.log(`  ✓ Font size ${fontSize}: ready with full atlas`);
@@ -111,7 +107,7 @@ async function main() {
 
       console.log(`Rendering "${text}" at y=${yPosition}`);
 
-      const result = bitmapText.drawTextFromAtlas(
+      const result = BitmapText.drawTextFromAtlas(
         ctx,
         text,
         20,  // x position

@@ -53,15 +53,14 @@
   <script src="../src/utils/AtlasCellDimensions.js"></script>
   <!-- Tight atlas reconstructor for converting Atlas → Tight Atlas at runtime -->
   <script src="../src/runtime/TightAtlasReconstructor.js"></script>
-  <!-- Data store for atlas images -->
+  <!-- Storage classes for atlas and metrics data -->
   <script src="../src/runtime/AtlasDataStore.js"></script>
-  <!-- Data store for font metrics, kerning, and positioning -->
   <script src="../src/runtime/FontMetricsStore.js"></script>
-  <!-- Main bitmap text rendering engine -->
-  <script src="../src/runtime/BitmapText.js"></script>
-  <!-- Font loading utilities -->
+  <!-- Font loader classes for loading font assets -->
   <script src="../src/runtime/FontLoaderBase.js"></script>
   <script src="../src/platform/FontLoader-browser.js"></script>
+  <!-- Main bitmap text rendering engine (static class) -->
+  <script src="../src/runtime/BitmapText.js"></script>
 
   <script>
     // Font properties for Arial normal normal 19 with pixel density 1
@@ -75,26 +74,20 @@
       textColor: '#000000'         // Black color
     });
 
-    // Initialize bitmap text system
-    const atlasDataStore = new AtlasDataStore();
-    const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
-
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
 
-    // Load font using FontLoader (elegant single-font approach)
+    // Load font using static BitmapText API (zero configuration)
     const isFileProtocol = window.location.href.includes("file://");
-    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
-      console.log(`Loaded ${loaded} of ${total} files`);
-    });
 
     // Load font and render when ready
-    fontLoader.loadFont(fontProperties.idString, isFileProtocol)
-      .then(() => {
-        renderHelloWorld();
-      });
+    BitmapText.loadFont(fontProperties.idString, {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`Loaded ${loaded} of ${total} files`)
+    }).then(() => {
+      renderHelloWorld();
+    });
 
     function renderHelloWorld() {
       // Clear canvas with white background
@@ -102,7 +95,7 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw "Hello World" using bitmap text - API returns status info
-      const result = bitmapText.drawTextFromAtlas(
+      const result = BitmapText.drawTextFromAtlas(
         ctx,
         "Hello World",
         10,  // x position

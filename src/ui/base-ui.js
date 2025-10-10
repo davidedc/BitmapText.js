@@ -55,13 +55,13 @@ function getFontPropertiesFromUI() {
 // UI wrapper for kerning table building - ensures kerning table exists for current font
 function ensureKerningTable() {
     // Guard against missing FAB class in text-render-tests.html
-    if (typeof bitmapTextFAB === 'undefined') {
+    if (typeof BitmapTextFAB === 'undefined') {
         return;
     }
-    
+
     // Get current font properties and build kerning table if needed
     const properties = getFontPropertiesFromUI();
-    bitmapTextFAB.buildKerningTableIfDoesntExist(properties);
+    BitmapTextFAB.buildKerningTableIfDoesntExist(properties);
 }
 
 // Helper function to create and append elements

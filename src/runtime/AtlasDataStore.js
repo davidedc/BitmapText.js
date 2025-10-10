@@ -1,6 +1,6 @@
-// AtlasDataStore - Core Runtime Class
+// AtlasDataStore - Core Runtime Static Class
 //
-// This is a CORE RUNTIME class designed for minimal bundle size (~2-3KB).
+// This is a CORE RUNTIME static class designed for minimal bundle size (~2-3KB).
 // It provides essential atlas data storage and retrieval for text rendering.
 //
 // DISTRIBUTION ROLE:
@@ -10,7 +10,7 @@
 // - No font generation, validation, or optimization code
 //
 // ARCHITECTURE:
-// - Stores AtlasData objects containing both images and positioning data
+// - Static class with private storage for AtlasData objects
 // - Uses Map-based storage for O(1) atlas lookups by font properties
 // - Provides the minimal atlas interface needed by BitmapText for glyph rendering
 // - Optimized for fast atlas access during text drawing
@@ -24,27 +24,24 @@
 //
 // For font assets building and generation capabilities, use AtlasDataStoreFAB.
 class AtlasDataStore {
-  constructor() {
-    // Keys are FontProperties.key strings for O(1) lookup
+  // Private static storage
+  // Keys are FontProperties.key strings for O(1) lookup
+  static #atlases = new Map(); // fontProperties.key → AtlasData
 
-    // Atlas data (AtlasData objects) containing images and positioning needed for rendering glyphs
-    this.atlases = new Map(); // fontProperties.key → AtlasData
+  static getAtlasData(fontProperties) {
+    return AtlasDataStore.#atlases.get(fontProperties.key);
   }
 
-  getAtlasData(fontProperties) {
-    return this.atlases.get(fontProperties.key);
-  }
-
-  setAtlasData(fontProperties, atlasData) {
+  static setAtlasData(fontProperties, atlasData) {
     // Only accept AtlasData instances
     if (!(atlasData instanceof AtlasData)) {
       throw new Error('AtlasDataStore.setAtlasData requires AtlasData instance (not raw images)');
     }
-    this.atlases.set(fontProperties.key, atlasData);
+    AtlasDataStore.#atlases.set(fontProperties.key, atlasData);
   }
 
   // Helper method to check if an atlas is valid for rendering
-  isValidAtlas(atlas) {
+  static isValidAtlas(atlas) {
     // Only work with AtlasData instances
     if (!(atlas instanceof AtlasData)) {
       return false;
@@ -53,27 +50,27 @@ class AtlasDataStore {
   }
 
   // Get all available font properties keys
-  getAvailableFonts() {
-    return Array.from(this.atlases.keys());
+  static getAvailableFonts() {
+    return Array.from(AtlasDataStore.#atlases.keys());
   }
 
   // Check if atlas exists for font properties
-  hasAtlas(fontProperties) {
-    return this.atlases.has(fontProperties.key);
+  static hasAtlas(fontProperties) {
+    return AtlasDataStore.#atlases.has(fontProperties.key);
   }
 
   // Remove atlas for font properties
-  deleteAtlas(fontProperties) {
-    return this.atlases.delete(fontProperties.key);
+  static deleteAtlas(fontProperties) {
+    return AtlasDataStore.#atlases.delete(fontProperties.key);
   }
 
   // Clear all atlases
-  clear() {
-    this.atlases.clear();
+  static clear() {
+    AtlasDataStore.#atlases.clear();
   }
 
   // Get count of stored atlases
-  size() {
-    return this.atlases.size;
+  static size() {
+    return AtlasDataStore.#atlases.size;
   }
 }

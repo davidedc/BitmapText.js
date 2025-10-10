@@ -136,6 +136,42 @@ class Context2D {
     }
   }
   
+  createImageData(w, h) {
+    return {
+      width: w,
+      height: h,
+      data: new Uint8ClampedArray(w * h * 4)
+    };
+  }
+
+  putImageData(imageData, dx, dy) {
+    if (!this.canvas.data) return;
+
+    const canvasData = this.canvas.data;
+    const canvasWidth = this.canvas.width;
+    const canvasHeight = this.canvas.height;
+    const srcData = imageData.data;
+    const srcWidth = imageData.width;
+    const srcHeight = imageData.height;
+
+    for (let y = 0; y < srcHeight; y++) {
+      for (let x = 0; x < srcWidth; x++) {
+        const destX = dx + x;
+        const destY = dy + y;
+
+        if (destX >= 0 && destX < canvasWidth && destY >= 0 && destY < canvasHeight) {
+          const srcI = (y * srcWidth + x) * 4;
+          const destI = (destY * canvasWidth + destX) * 4;
+
+          canvasData[destI] = srcData[srcI];
+          canvasData[destI + 1] = srcData[srcI + 1];
+          canvasData[destI + 2] = srcData[srcI + 2];
+          canvasData[destI + 3] = srcData[srcI + 3];
+        }
+      }
+    }
+  }
+
   getImageData(x, y, w, h) {
     if (!this.canvas.data) {
       return {

@@ -36,25 +36,21 @@ async function main() {
   try {
     console.log('BitmapText.js Node.js Demo - Loading font data...');
 
-    // Setup BitmapText system FIRST (so stores are available)
-    console.log('Setting up BitmapText system...');
-    const atlasDataStore = new AtlasDataStore();
-    const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore, () => new Canvas());
-
-    // Create FontLoader instance with progress tracking
-    console.log('Initializing FontLoader...');
-    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
-      console.log(`Loading progress: ${loaded}/${total}`);
+    // Configure BitmapText for Node.js environment
+    console.log('Configuring BitmapText for Node.js...');
+    BitmapText.configure({
+      dataDir: './font-assets/',
+      canvasFactory: () => new Canvas()
     });
 
-    // Load font using unified API (same as browser version)
-    // This loads BOTH metrics and atlas in one call
+    // Load font using static API
     const expectedIDString = fontProperties.idString;
     console.log(`Loading font: ${expectedIDString}...`);
 
     // Wait for font loading to complete
-    await fontLoader.loadFont(expectedIDString, false);
+    await BitmapText.loadFont(expectedIDString, {
+      onProgress: (loaded, total) => console.log(`Loading progress: ${loaded}/${total}`)
+    });
 
     console.log('Font loaded successfully');
     
@@ -70,7 +66,7 @@ async function main() {
     ctx.fillRect(0, 0, 300, 100);
     
     // Render "Hello World" using bitmap text - API returns status info
-    const result = bitmapText.drawTextFromAtlas(
+    const result = BitmapText.drawTextFromAtlas(
       ctx,
       "Hello World",
       10,  // x position

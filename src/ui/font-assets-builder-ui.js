@@ -9,12 +9,10 @@ function setupGlyphUIFAB() {
     const downloadAllAtlasesButton = createElement('button', 'download-all-atlases-button', 'Download font assets', selectorsDiv);
     downloadAllAtlasesButton.addEventListener('click', function() {
         const pixelDensity = document.getElementById('pixel-density-2-radio-button').checked ? 2 : 1;
-        
-        // Pass individual properties to downloadFontAssets
-        // (The function will create FontPropertiesFAB instances internally for each size)
+
+        // Static classes - no instances needed
+        // downloadFontAssets uses static AtlasDataStoreFAB and FontMetricsStoreFAB methods
         downloadFontAssets({
-            atlasDataStoreFAB,
-            fontMetricsStoreFAB,
             pixelDensity,
             fontFamily: fontFamilySelect.value,
             fontStyle: fontStyleSelect.value,

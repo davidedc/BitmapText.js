@@ -1,78 +1,78 @@
-// FontLoader - Core Runtime Class (Browser Implementation)
+// FontLoader - Browser-Specific Font Loader
 //
-// This is a CORE RUNTIME class designed for minimal bundle size (~4-5KB).
-// It provides essential font loading capabilities for consuming pre-built bitmap fonts.
+// This static class extends FontLoaderBase to provide browser-specific
+// font loading implementation using DOM APIs (script tags, Image objects).
 //
 // DISTRIBUTION ROLE:
-// - Part of "runtime-only" distribution for production applications
-// - Manages loading of font metrics (JS files) and atlases (PNG or JS files)
-// - Handles both HTTP and file:// protocol loading scenarios
-// - Provides error handling and progress reporting for font loading
+// - Only included in browser distributions
+// - Excluded from Node.js bundles via build scripts
+// - Uses browser-specific APIs (document, Image, script tags)
 //
 // ARCHITECTURE:
-// - Extends FontLoaderBase for shared functionality
-// - Implements browser-specific loading (DOM script tags, Image elements)
-// - Promise-based font loading with error recovery
-// - Protocol detection (file:// vs http://) for appropriate loading strategy
-// - Graceful degradation: missing atlases result in placeholder rectangles
+// - Static class extending FontLoaderBase
+// - Implements abstract methods for browser environment
+// - Uses DOM script injection for metrics loading
+// - Uses Image objects or script tags for atlas loading
 //
-// DEPENDENCIES:
-// - FontLoaderBase: Base class with shared logic, path building, and error messages
-// - FontProperties: For ID string parsing and font identification
-// - AtlasDataStore: For storing loaded atlas images
-// - FontMetricsStore: For receiving metrics data from loaded JS files
+// LOADING STRATEGIES:
+// - Metrics: Always via script tag injection
+// - Atlas (file:// protocol): Via script tag with base64 PNG data
+// - Atlas (http/https): Via Image object loading PNG directly
 
-// Shared utility for loading bitmap font data with error handling
 class FontLoader extends FontLoaderBase {
-  // ============================================================================
-  // ENVIRONMENT-SPECIFIC IMPLEMENTATIONS (Abstract method overrides)
-  // ============================================================================
+  // ============================================
+  // Platform Configuration
+  // ============================================
 
   /**
-   * Get default canvas factory for browser environment
-   * @returns {Function} Factory that creates canvas elements via document.createElement
+   * Get default canvas factory for browser
+   * @returns {Function} Canvas factory function
    */
-  getDefaultCanvasFactory() {
-    return () => {
-      if (typeof document !== 'undefined') {
-        return document.createElement('canvas');
-      }
-      throw new Error('[FontLoader] Canvas factory required in Node.js environment');
-    };
+  static getDefaultCanvasFactory() {
+    return () => document.createElement('canvas');
   }
 
   /**
-   * Get default data directory for browser environment
-   * @returns {string} Default path to font assets (relative to HTML files in public/)
+   * Get default data directory for browser
+   * @returns {string} Data directory path
    */
-  getDefaultDataDir() {
-    return '../font-assets/';
+  static getDefaultDataDir() {
+    return 'font-assets/';
   }
 
+  // ============================================
+  // File Name Constants (from BitmapText)
+  // ============================================
+
+  static METRICS_PREFIX = 'metrics-';
+  static ATLAS_PREFIX = 'atlas-';
+  static JS_EXTENSION = '.js';
+  static PNG_EXTENSION = '.png';
+
+  // ============================================
+  // Browser-Specific Loading Implementation
+  // ============================================
+
   /**
-   * Load metrics JS file (browser implementation)
-   * @param {string} IDString - Font ID string
-   * @returns {Promise} Promise that resolves when metrics are loaded
+   * Load metrics file via script tag injection
+   * @param {string} idString - Font ID string
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when metrics are loaded
    */
-  loadMetrics(IDString) {
+  static async loadMetricsFile(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = this.getMetricsPath(IDString);
+      const dataDir = bitmapTextClass.getDataDir();
+      script.src = `${dataDir}${FontLoader.METRICS_PREFIX}${idString}${FontLoader.JS_EXTENSION}`;
 
       script.onload = () => {
-        this.incrementProgress();
         resolve();
       };
 
       script.onerror = () => {
         script.remove();
-        console.warn(FontLoaderBase.messages.metricsNotFound(IDString));
-
-        // Count both missing files to maintain expected count
-        this.incrementProgress(); // Missing metrics
-        this.incrementProgress(); // Missing image (won't be loaded)
-
-        reject(new Error(`Metrics not found for ${IDString}`));
+        console.warn(`Metrics JS not found: metrics-${idString}.js - font will not be available`);
+        reject(new Error(`Metrics not found for ${idString}`));
       };
 
       document.head.appendChild(script);
@@ -80,41 +80,45 @@ class FontLoader extends FontLoaderBase {
   }
 
   /**
-   * Load atlas based on protocol (browser implementation)
-   * @param {string} IDString - Font ID string
+   * Load atlas file (chooses strategy based on protocol)
+   * @param {string} idString - Font ID string
    * @param {boolean} isFileProtocol - Whether using file:// protocol
-   * @returns {Promise} Promise that resolves when atlas is loaded
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when atlas is loaded
    */
-  loadAtlas(IDString, isFileProtocol) {
+  static async loadAtlasFile(idString, isFileProtocol, bitmapTextClass) {
     if (isFileProtocol) {
-      return this.loadAtlasFromJS(IDString);
+      return FontLoader._loadAtlasFromJS(idString, bitmapTextClass);
     } else {
-      return this.loadAtlasFromPNG(IDString);
+      return FontLoader._loadAtlasFromPNG(idString, bitmapTextClass);
     }
   }
 
-  // ============================================================================
-  // BROWSER-SPECIFIC HELPER METHODS
-  // ============================================================================
+  // ============================================
+  // Browser-Specific Atlas Loading Strategies
+  // ============================================
 
   /**
    * Load atlas from JS file (for file:// protocol)
-   * @param {string} IDString - Font ID string
-   * @returns {Promise} Promise that resolves when atlas is loaded
+   * JS file contains base64-encoded PNG data
+   * @private
+   * @param {string} idString - Font ID string
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when atlas is loaded
    */
-  loadAtlasFromJS(IDString) {
+  static _loadAtlasFromJS(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
       const imageScript = document.createElement('script');
-      imageScript.src = this.getAtlasJsPath(IDString, 'png');
+      const dataDir = bitmapTextClass.getDataDir();
+      imageScript.src = `${dataDir}${FontLoader.ATLAS_PREFIX}${idString}-png${FontLoader.JS_EXTENSION}`;
 
       imageScript.onload = () => {
-        const pkg = FontLoader._tempAtlasPackages[IDString];
+        const pkg = FontLoaderBase._tempAtlasPackages[idString];
 
         if (!pkg || !pkg.base64Data) {
-          console.warn(FontLoaderBase.messages.imageDataMissing(IDString));
+          console.warn(`Image data not found in JS file for ${idString} - will use placeholder rectangles`);
           imageScript.remove();
-          this.incrementProgress();
-          resolve(); // Not a failure - will use placeholder rectangles
+          resolve();
           return;
         }
 
@@ -122,28 +126,24 @@ class FontLoader extends FontLoaderBase {
         img.src = `data:image/png;base64,${pkg.base64Data}`;
 
         img.onload = () => {
-          // Use inherited method to reconstruct and store atlas
-          this.loadAtlasFromPackage(IDString, img);
-
+          // Atlas will be reconstructed now or later when metrics are available
+          FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
           imageScript.remove();
-          this.incrementProgress();
           resolve();
         };
 
         img.onerror = () => {
-          console.warn(FontLoaderBase.messages.base64DecodeFailed(IDString));
+          console.warn(`Failed to decode base64 image data for ${idString} - will use placeholder rectangles`);
           imageScript.remove();
-          delete FontLoader._tempAtlasPackages[IDString]; // Clean up package
-          this.incrementProgress();
-          resolve(); // Not a failure - will use placeholder rectangles
+          delete FontLoaderBase._tempAtlasPackages[idString];
+          resolve();
         };
       };
 
       imageScript.onerror = () => {
-        console.warn(FontLoaderBase.messages.jsImageNotFound(IDString, 'png'));
+        console.warn(`Atlas JS not found: atlas-${idString}-png.js - will use placeholder rectangles`);
         imageScript.remove();
-        this.incrementProgress();
-        resolve(); // Not a failure - will use placeholder rectangles
+        resolve();
       };
 
       document.head.appendChild(imageScript);
@@ -151,32 +151,27 @@ class FontLoader extends FontLoaderBase {
   }
 
   /**
-   * Load atlas from PNG file (for http:// protocol)
-   * @param {string} IDString - Font ID string
-   * @returns {Promise} Promise that resolves when atlas is loaded
+   * Load atlas from PNG file directly (for http/https protocols)
+   * @private
+   * @param {string} idString - Font ID string
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when atlas is loaded
    */
-  loadAtlasFromPNG(IDString) {
+  static _loadAtlasFromPNG(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.src = this.getAtlasPngPath(IDString);
+      const dataDir = bitmapTextClass.getDataDir();
+      img.src = `${dataDir}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.PNG_EXTENSION}`;
 
       img.onload = () => {
-        // PNG files are now Atlas format (variable-width cells)
-        // Use inherited method to reconstruct and store tight atlas + positioning
-        const success = this.loadAtlasFromPackage(IDString, img);
-
-        if (!success) {
-          console.warn(`Failed to reconstruct atlas for ${IDString} - metrics not loaded yet`);
-        }
-
-        this.incrementProgress();
+        // Atlas will be reconstructed now or later when metrics are available
+        FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
         resolve();
       };
 
       img.onerror = () => {
-        console.warn(FontLoaderBase.messages.pngImageNotFound(IDString));
-        this.incrementProgress();
-        resolve(); // Not a failure - will use placeholder rectangles
+        console.warn(`Atlas image not found: atlas-${idString}.png - will use placeholder rectangles`);
+        resolve();
       };
     });
   }

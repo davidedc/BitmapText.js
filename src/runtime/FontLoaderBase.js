@@ -1,269 +1,299 @@
-// FontLoaderBase - Abstract Base Class for Font Loading
+// FontLoaderBase - Abstract Static Base Class for Font Loading
 //
-// This is an ABSTRACT BASE CLASS that provides shared functionality for
-// loading bitmap fonts across different JavaScript environments.
+// This abstract static class provides the core font loading infrastructure
+// for BitmapText. It defines the public API and shared logic for font loading,
+// while platform-specific implementations (browser, Node.js) extend this class.
+//
+// DISTRIBUTION ROLE:
+// - Used by both browser and Node.js distributions
+// - Defines abstract methods implemented by platform-specific loaders
+// - Contains shared loading orchestration and atlas reconstruction logic
 //
 // ARCHITECTURE:
-// - Template Method Pattern: loadFont() orchestrates the loading process
-// - Abstract Methods: Subclasses must implement environment-specific methods
-// - Shared Logic: Common functionality lives here to avoid duplication
+// - Abstract static class (not instantiated)
+// - Extended by FontLoaderBrowser and FontLoaderNode
+// - Works with BitmapText's internal stores (#fontMetrics, #atlasData)
+// - Uses Template Method Pattern for platform-specific operations
 //
-// SUBCLASSES:
-// - FontLoader (browser): src/platform/FontLoader-browser.js
-// - FontLoader (Node.js): src/platform/FontLoader-node.js
-//
-// EXTENSION POINTS:
-// - getDefaultCanvasFactory(): Returns environment-specific canvas factory
-// - loadMetrics(IDString): Environment-specific metrics loading
-// - loadAtlas(IDString, isFileProtocol): Environment-specific atlas loading
-//
-// SHARED FUNCTIONALITY:
-// - Static _tempAtlasPackages storage
-// - registerAtlasPackage() for JS file registration
-// - loadAtlasFromPackage() for atlas reconstruction
-// - Progress tracking (incrementProgress, isComplete)
-// - loadFont() / loadFonts() orchestration
+// LOADING FLOW:
+// 1. loadFonts() orchestrates loading of multiple fonts
+// 2. loadMetricsFile() loads metrics (platform-specific)
+// 3. loadAtlasFile() loads atlas image (platform-specific)
+// 4. loadAtlasFromPackage() reconstructs atlas from image (shared)
+// 5. processPendingAtlas() handles async atlas/metrics loading (shared)
 
 class FontLoaderBase {
-  // Static storage for atlas packages (base64 only) from JS files
-  // No positioning data - will be reconstructed at runtime
-  // Shared across all instances and subclasses
+  // ============================================
+  // Shared Static Storage
+  // ============================================
+
+  // Temporary storage for atlas packages before reconstruction
   static _tempAtlasPackages = {};
 
-  // ============================================================================
-  // STATIC CONSTANTS - Font Asset Naming Conventions
-  // ============================================================================
+  // Pending atlases waiting for metrics
+  static _pendingAtlases = new Map();
 
-  static METRICS_PREFIX = 'metrics-';
-  static ATLAS_PREFIX = 'atlas-';
-  static PNG_EXTENSION = '.png';
-  static QOI_EXTENSION = '.qoi';
-  static JS_EXTENSION = '.js';
+  // Loading promises to prevent duplicate loads
+  static _loadingPromises = new Map();
 
-  // ============================================================================
-  // STATIC MESSAGES - Error and Warning Templates
-  // ============================================================================
-
-  static messages = {
-    metricsNotFound: (IDString) => `Metrics JS not found: metrics-${IDString}.js - font will not be available`,
-    pngImageNotFound: (IDString) => `Atlas image not found: atlas-${IDString}.png - will use placeholder rectangles`,
-    jsImageNotFound: (IDString, format) => `Atlas JS not found: atlas-${IDString}-${format}.js - will use placeholder rectangles`,
-    imageDataMissing: (IDString) => `Image data not found in JS file for ${IDString} - will use placeholder rectangles`,
-    base64DecodeFailed: (IDString) => `Failed to decode base64 image data for ${IDString} - will use placeholder rectangles`
-  };
-
-  constructor(atlasDataStore, fontMetricsStore, onProgress = null, canvasFactory = null, dataDir = null) {
-    this.atlasDataStore = atlasDataStore;
-    this.fontMetricsStore = fontMetricsStore;
-    this.onProgress = onProgress;
-    this.loadedCount = 0;
-    this.totalCount = 0;
-    // Canvas factory for TightAtlasReconstructor
-    // Use provided factory or get default from subclass
-    this.canvasFactory = canvasFactory || this.getDefaultCanvasFactory();
-    // Data directory for font assets
-    // Use provided directory or get default from subclass
-    this.dataDir = dataDir !== null ? dataDir : this.getDefaultDataDir();
-  }
-
-  // ============================================================================
-  // ABSTRACT METHODS - Must be implemented by subclasses
-  // ============================================================================
+  // ============================================
+  // Configuration
+  // ============================================
 
   /**
-   * Get the default canvas factory for this environment
-   * @returns {Function} Factory function that creates canvas elements
-   * @abstract
+   * Get default canvas factory for this platform
+   * @abstract Must be implemented by derived classes
+   * @returns {Function} Canvas factory function
    */
-  getDefaultCanvasFactory() {
-    throw new Error('[FontLoaderBase] getDefaultCanvasFactory() must be implemented by subclass');
+  static getDefaultCanvasFactory() {
+    throw new Error('FontLoaderBase.getDefaultCanvasFactory() must be implemented by derived class');
   }
 
   /**
-   * Get the default data directory for font assets in this environment
-   * @returns {string} Default path to font assets directory
-   * @abstract
+   * Get default data directory for this platform
+   * @abstract Must be implemented by derived classes
+   * @returns {string} Data directory path
    */
-  getDefaultDataDir() {
-    throw new Error('[FontLoaderBase] getDefaultDataDir() must be implemented by subclass');
+  static getDefaultDataDir() {
+    throw new Error('FontLoaderBase.getDefaultDataDir() must be implemented by derived class');
   }
+
+  // ============================================
+  // Registration API (called by asset files)
+  // ============================================
+
+  /**
+   * Register font metrics from metrics-*.js file
+   * Called by self-registering metrics files
+   * @param {string} idString - Font ID string
+   * @param {Object} compactedData - Compacted metrics data
+   * @param {Object} bitmapTextClass - BitmapText class reference (for backward compatibility)
+   */
+  static registerMetrics(idString, compactedData, bitmapTextClass) {
+    if (typeof idString !== 'string') {
+      console.warn('FontLoader.registerMetrics: Invalid idString - must be string');
+      return;
+    }
+
+    if (typeof MetricsExpander === 'undefined') {
+      console.warn('FontLoader.registerMetrics: MetricsExpander not available');
+      return;
+    }
+
+    if (typeof FontProperties === 'undefined') {
+      console.warn('FontLoader.registerMetrics: FontProperties not available');
+      return;
+    }
+
+    const fontProperties = FontProperties.fromIDString(idString);
+    const fontMetrics = MetricsExpander.expand(compactedData);
+
+    // Store metrics directly in FontMetricsStore
+    FontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
+
+    // Process any pending atlases that were waiting for these metrics
+    FontLoaderBase._processPendingAtlas(idString);
+  }
+
+  /**
+   * Register atlas from atlas-*.js file (base64 only, positioning reconstructed later)
+   * Called by self-registering atlas files
+   * @param {string} idString - Font ID string
+   * @param {string} base64Data - Base64-encoded atlas data
+   */
+  static registerAtlas(idString, base64Data) {
+    if (typeof idString !== 'string' || typeof base64Data !== 'string') {
+      console.warn('FontLoader.registerAtlas: Invalid arguments - idString and base64Data must be strings');
+      return;
+    }
+
+    FontLoaderBase._tempAtlasPackages[idString] = { base64Data };
+  }
+
+  // ============================================
+  // Public Loading API
+  // ============================================
+
+  /**
+   * Load a single font
+   * @param {string} idString - Font ID string
+   * @param {Object} options - Loading options
+   * @param {Function} [options.onProgress] - Progress callback (loaded, total)
+   * @param {boolean} [options.isFileProtocol] - Whether using file:// protocol
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when font is loaded
+   */
+  static async loadFont(idString, options, bitmapTextClass) {
+    return this.loadFonts([idString], options, bitmapTextClass);
+  }
+
+  /**
+   * Load multiple fonts
+   * @param {Array<string>} idStrings - Array of font ID strings
+   * @param {Object} options - Loading options
+   * @param {Function} [options.onProgress] - Progress callback (loaded, total)
+   * @param {boolean} [options.isFileProtocol] - Whether using file:// protocol
+   * @param {boolean} [options.loadMetrics] - Load metrics (default: true)
+   * @param {boolean} [options.loadAtlases] - Load atlases (default: true)
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when all fonts are loaded
+   */
+  static async loadFonts(idStrings, options = {}, bitmapTextClass) {
+    const {
+      onProgress = null,
+      isFileProtocol = false,
+      loadMetrics = true,
+      loadAtlases = true
+    } = options;
+
+    const filesPerFont = (loadMetrics ? 1 : 0) + (loadAtlases ? 1 : 0);
+    const totalFiles = idStrings.length * filesPerFont;
+    let loadedFiles = 0;
+
+    const reportProgress = () => {
+      if (onProgress) onProgress(loadedFiles, totalFiles);
+    };
+
+    for (const idString of idStrings) {
+      // Check if already loading
+      if (FontLoaderBase._loadingPromises.has(idString)) {
+        await FontLoaderBase._loadingPromises.get(idString);
+        continue;
+      }
+
+      const loadPromise = (async () => {
+        try {
+          if (loadMetrics) {
+            await this.loadMetricsFile(idString, bitmapTextClass);
+            loadedFiles++;
+            reportProgress();
+          }
+
+          if (loadAtlases) {
+            await this.loadAtlasFile(idString, isFileProtocol, bitmapTextClass);
+            loadedFiles++;
+            reportProgress();
+          }
+        } finally {
+          FontLoaderBase._loadingPromises.delete(idString);
+        }
+      })();
+
+      FontLoaderBase._loadingPromises.set(idString, loadPromise);
+      await loadPromise;
+    }
+  }
+
+  /**
+   * Load only metrics for fonts
+   * @param {Array<string>} idStrings - Array of font ID strings
+   * @param {Object} options - Loading options
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when metrics are loaded
+   */
+  static async loadMetrics(idStrings, options, bitmapTextClass) {
+    return this.loadFonts(idStrings, { ...options, loadAtlases: false }, bitmapTextClass);
+  }
+
+  /**
+   * Load only atlases for fonts (metrics must be loaded first)
+   * @param {Array<string>} idStrings - Array of font ID strings
+   * @param {Object} options - Loading options
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when atlases are loaded
+   */
+  static async loadAtlases(idStrings, options, bitmapTextClass) {
+    return this.loadFonts(idStrings, { ...options, loadMetrics: false }, bitmapTextClass);
+  }
+
+  // ============================================
+  // Platform-Specific Loading (Abstract Methods)
+  // ============================================
 
   /**
    * Load metrics file for a font
-   * @param {string} IDString - Font ID string
-   * @returns {Promise} Promise that resolves when metrics are loaded
-   * @abstract
+   * @abstract Must be implemented by derived classes
+   * @param {string} idString - Font ID string
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when metrics are loaded
    */
-  loadMetrics(IDString) {
-    throw new Error('[FontLoaderBase] loadMetrics() must be implemented by subclass');
+  static async loadMetricsFile(idString, bitmapTextClass) {
+    throw new Error('FontLoaderBase.loadMetricsFile() must be implemented by derived class');
   }
 
   /**
    * Load atlas file for a font
-   * @param {string} IDString - Font ID string
+   * @abstract Must be implemented by derived classes
+   * @param {string} idString - Font ID string
    * @param {boolean} isFileProtocol - Whether using file:// protocol
-   * @returns {Promise} Promise that resolves when atlas is loaded
-   * @abstract
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {Promise} Resolves when atlas is loaded
    */
-  loadAtlas(IDString, isFileProtocol) {
-    throw new Error('[FontLoaderBase] loadAtlas() must be implemented by subclass');
+  static async loadAtlasFile(idString, isFileProtocol, bitmapTextClass) {
+    throw new Error('FontLoaderBase.loadAtlasFile() must be implemented by derived class');
   }
 
-  // ============================================================================
-  // SHARED STATIC METHODS
-  // ============================================================================
+  // ============================================
+  // Shared Atlas Reconstruction Logic
+  // ============================================
 
   /**
-   * Static method for atlas JS files to register packages
-   * Only takes base64 data (NO positioning data)
-   * @param {string} IDString - Font ID string
-   * @param {string} base64Data - Base64-encoded atlas data
+   * Load atlas from package (image + metrics) and reconstruct positioning
+   * @param {string} idString - Font ID string
+   * @param {HTMLImageElement|HTMLCanvasElement} atlasImage - Atlas source image
+   * @param {Object} bitmapTextClass - BitmapText class reference
+   * @returns {boolean} True if atlas was reconstructed, false if pending metrics
    */
-  static registerAtlasPackage(IDString, base64Data) {
-    if (typeof IDString !== 'string' || typeof base64Data !== 'string') {
-      console.warn('FontLoader.registerAtlasPackage: Invalid arguments - IDString and base64Data must be strings');
-      return;
-    }
-
-    FontLoaderBase._tempAtlasPackages[IDString] = {
-      base64Data: base64Data
-    };
-  }
-
-  // ============================================================================
-  // SHARED INSTANCE METHODS - Path Building
-  // ============================================================================
-
-  /**
-   * Build path to metrics JS file
-   * @param {string} IDString - Font ID string
-   * @returns {string} Full path to metrics file
-   */
-  getMetricsPath(IDString) {
-    return `${this.dataDir}${FontLoaderBase.METRICS_PREFIX}${IDString}${FontLoaderBase.JS_EXTENSION}`;
-  }
-
-  /**
-   * Build path to atlas PNG file
-   * @param {string} IDString - Font ID string
-   * @returns {string} Full path to atlas PNG file
-   */
-  getAtlasPngPath(IDString) {
-    return `${this.dataDir}${FontLoaderBase.ATLAS_PREFIX}${IDString}${FontLoaderBase.PNG_EXTENSION}`;
-  }
-
-  /**
-   * Build path to atlas QOI file
-   * @param {string} IDString - Font ID string
-   * @returns {string} Full path to atlas QOI file
-   */
-  getAtlasQoiPath(IDString) {
-    return `${this.dataDir}${FontLoaderBase.ATLAS_PREFIX}${IDString}${FontLoaderBase.QOI_EXTENSION}`;
-  }
-
-  /**
-   * Build path to atlas JS file (contains base64-encoded atlas data)
-   * @param {string} IDString - Font ID string
-   * @param {string} format - Image format ('png' or 'qoi')
-   * @returns {string} Full path to atlas JS file
-   */
-  getAtlasJsPath(IDString, format) {
-    return `${this.dataDir}${FontLoaderBase.ATLAS_PREFIX}${IDString}-${format}${FontLoaderBase.JS_EXTENSION}`;
-  }
-
-  // ============================================================================
-  // SHARED INSTANCE METHODS - Atlas Loading
-  // ============================================================================
-
-  /**
-   * Loads AtlasData from Atlas image and stores in AtlasDataStore
-   * Uses TightAtlasReconstructor to convert Atlas → Tight Atlas + positioning
-   * @param {string} IDString - Font ID string
-   * @param {Image|Canvas} atlasImage - Loaded Atlas image (variable-width cells format)
-   * @returns {boolean} - True if successful, false if metrics not available
-   */
-  loadAtlasFromPackage(IDString, atlasImage) {
-    const fontProperties = FontProperties.fromIDString(IDString);
+  static _loadAtlasFromPackage(idString, atlasImage, bitmapTextClass) {
+    const fontProperties = FontProperties.fromIDString(idString);
 
     // Clean up temporary package storage
-    delete FontLoaderBase._tempAtlasPackages[IDString];
+    delete FontLoaderBase._tempAtlasPackages[idString];
 
-    // Reconstruct tight atlas from Atlas image using TightAtlasReconstructor
-    // This requires FontMetrics to be loaded first (for cell dimensions)
-    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
+    // Get font metrics (required for reconstruction)
+    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
 
     if (!fontMetrics) {
-      console.warn(`FontLoader: Metrics not loaded for ${IDString} - cannot reconstruct tight atlas`);
-      console.warn('Make sure metrics are loaded before atlases');
+      // Store atlas for later reconstruction when metrics become available
+      FontLoaderBase._pendingAtlases.set(idString, {atlasImage, bitmapTextClass});
       return false;
     }
 
     // Check if TightAtlasReconstructor is available
     if (typeof TightAtlasReconstructor === 'undefined') {
-      throw new Error(`[FontLoader] TightAtlasReconstructor required for font loading - not available for ${IDString}`);
+      throw new Error(`FontLoader: TightAtlasReconstructor required for font loading - not available for ${idString}`);
     }
+
+    // Get canvas factory from BitmapText
+    const canvasFactory = bitmapTextClass.getCanvasFactory();
 
     // Reconstruct tight atlas + positioning from Atlas image
     const { atlasImage: tightAtlasImage, atlasPositioning } =
-      TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage, this.canvasFactory);
+      TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage, canvasFactory);
 
     // Create AtlasData instance
     const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);
 
-    // Store in atlas data store
-    this.atlasDataStore.setAtlasData(fontProperties, atlasData);
+    // Store directly in AtlasDataStore
+    AtlasDataStore.setAtlasData(fontProperties, atlasData);
 
     return true;
   }
 
   /**
-   * Load font data for a single ID string
-   * Template Method: Orchestrates metrics and atlas loading via abstract methods
-   * @param {string} IDString - Font ID string
-   * @param {boolean} isFileProtocol - Whether using file:// protocol
-   * @returns {Promise} Promise that resolves when font is loaded
+   * Process pending atlas that was waiting for metrics
+   * @param {string} idString - Font ID string
    */
-  loadFont(IDString, isFileProtocol = false) {
-    this.totalCount += 2; // Each font has 2 files (metrics + image)
-
-    return this.loadMetrics(IDString)
-      .then(() => this.loadAtlas(IDString, isFileProtocol))
-      .catch(error => {
-        // Even if loading fails, we still count it as processed to prevent hanging
-        console.warn(`Font loading failed for ${IDString}:`, error.message);
-      });
-  }
-
-  /**
-   * Load multiple fonts from an array of ID strings
-   * @param {Array<string>} IDStrings - Array of font ID strings
-   * @param {boolean} isFileProtocol - Whether using file:// protocol
-   * @returns {Promise} Promise that resolves when all fonts are loaded
-   */
-  loadFonts(IDStrings, isFileProtocol = false) {
-    this.totalCount = IDStrings.length * 2;
-    this.loadedCount = 0;
-
-    const promises = IDStrings.map(IDString => this.loadFont(IDString, isFileProtocol));
-
-    return Promise.all(promises);
-  }
-
-  /**
-   * Increment progress counter and call callback
-   */
-  incrementProgress() {
-    this.loadedCount++;
-    if (this.onProgress) {
-      this.onProgress(this.loadedCount, this.totalCount);
+  static _processPendingAtlas(idString) {
+    // Check if there's a pending atlas waiting for these metrics
+    if (!FontLoaderBase._pendingAtlases.has(idString)) {
+      return;
     }
-  }
 
-  /**
-   * Check if loading is complete
-   * @returns {boolean} True if all fonts have been loaded
-   */
-  isComplete() {
-    return this.loadedCount >= this.totalCount;
+    const {atlasImage, bitmapTextClass} = FontLoaderBase._pendingAtlases.get(idString);
+    FontLoaderBase._pendingAtlases.delete(idString);
+
+    // Try to load the atlas now that metrics are available
+    FontLoaderBase._loadAtlasFromPackage(idString, atlasImage, bitmapTextClass);
   }
 }

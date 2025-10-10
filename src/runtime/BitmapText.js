@@ -1,57 +1,210 @@
-// BitmapText - Core Runtime Class
-
+// BitmapText - Static Core Runtime Class
+//
 // Status constants are loaded as global variables by StatusCode.js (loaded before this file)
 // In Node.js bundles, StatusCode.js is concatenated before this file
 if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' || typeof createErrorStatus === 'undefined') {
   throw new Error('StatusCode.js must be loaded before BitmapText.js');
 }
-// 
-// This is a CORE RUNTIME class designed for minimal bundle size (~5-7KB).
+//
+// This is a STATIC CORE RUNTIME class designed for minimal bundle size and zero-ceremony usage.
 // It provides essential text rendering capabilities for consuming pre-built bitmap fonts.
-// 
+//
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications
-// - Extended by BitmapTextFAB for font assets building capabilities
+// - All methods are static - no instantiation needed
 // - Contains no font generation code to keep bundle size minimal
-// 
+//
 // ARCHITECTURE:
-// - Constructed with an AtlasDataStore (atlas images) and FontMetricsStore (metrics data)
+// - Static storage for font data (metrics + atlases)
+// - Auto-detects environment (browser vs Node.js) for canvas creation
 // - Draws text by looking up glyphs from atlases and positioning them with metrics/kerning
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
 // - Supports placeholder rectangles when atlases are missing but metrics are available
-// - Separates image assets (AtlasDataStore) from positioning data (FontMetricsStore) for flexible loading
 //
-// For font assets building capabilities, use BitmapTextFAB which extends this class.
+// USAGE:
+// - Zero configuration for browser: Just call BitmapText.drawTextFromAtlas()
+// - Node.js: Optionally set canvas factory: BitmapText.setCanvasFactory(() => new Canvas())
+// - Loading: BitmapText.loadFont(idString) or BitmapText.loadFonts([idStrings])
+// - Query: BitmapText.hasFont(idString), BitmapText.getLoadedFonts()
+//
 class BitmapText {
+  // ============================================
+  // Static Constants
+  // ============================================
+
   // Kerning unit divisor (kerning measured in 1/1000 em units)
   static KERNING_UNIT_DIVISOR = 1000;
 
-  constructor(atlasDataStore, fontMetricsStore, canvasFactory) {
-    this.atlasDataStore = atlasDataStore;
-    this.fontMetricsStore = fontMetricsStore;
-    // we keep one canvas and a context for coloring all the glyphs
-    if (canvasFactory) {
-      this.coloredGlyphCanvas = canvasFactory();
-    } else if (typeof document !== 'undefined') {
-      this.coloredGlyphCanvas = document.createElement('canvas');
-    } else {
-      throw new Error('Canvas factory required in Node.js environment');
-    }
-    this.coloredGlyphCtx = this.coloredGlyphCanvas.getContext('2d');
+  // Font asset naming conventions
+  static METRICS_PREFIX = 'metrics-';
+  static ATLAS_PREFIX = 'atlas-';
+  static PNG_EXTENSION = '.png';
+  static QOI_EXTENSION = '.qoi';
+  static JS_EXTENSION = '.js';
+
+  // ============================================
+  // Static Storage & Configuration
+  // ============================================
+
+  // Font data storage delegated to AtlasDataStore and FontMetricsStore
+  // (no private maps - stores are the single source of truth)
+
+  // Configuration (sensible defaults, can override)
+  static #dataDir = '../font-assets/';  // Default relative path
+  static #canvasFactory = null;         // Optional user override
+
+  // Rendering resources (lazy-initialized on first render)
+  static #coloredGlyphCanvas = null;    // Shared scratch canvas for coloring
+  static #coloredGlyphCtx = null;       // 2D context for scratch canvas
+
+  // Font loader (platform-specific, set at runtime)
+  static #fontLoader = null;            // FontLoaderBrowser or FontLoaderNode
+
+  // ============================================
+  // Configuration API (Optional)
+  // ============================================
+
+  /**
+   * Override default font assets directory
+   * @param {string} dir - Path to font assets directory
+   */
+  static setDataDir(dir) {
+    BitmapText.#dataDir = dir;
   }
 
-  // This returns an object with metrics and status information:
-  // {
-  //   metrics: TextMetrics-compatible object (or null if measurement failed),
-  //   status: { code: StatusCode, missingChars?: Set }
-  // }
-  //
-  // The metrics object has the same shape and meaning as the TextMetrics object (see
-  // https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ) i.e.:
-  //  * the width should be the sum of the advancements (detracting kerning)
-  //  * actualBoundingBoxLeft = the actualBoundingBoxLeft of the first character
-  //  * actualBoundingBoxRight = the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
-  measureText(text, fontProperties, textProperties) {
+  /**
+   * Get current data directory
+   * @returns {string} Current data directory path
+   */
+  static getDataDir() {
+    return BitmapText.#dataDir;
+  }
+
+  /**
+   * Override canvas factory (for testing or custom environments)
+   * @param {Function} factory - Function that returns a canvas instance
+   */
+  static setCanvasFactory(factory) {
+    BitmapText.#canvasFactory = factory;
+    // Reset canvas to use new factory on next render
+    BitmapText.#coloredGlyphCanvas = null;
+    BitmapText.#coloredGlyphCtx = null;
+  }
+
+  /**
+   * Get canvas factory (with fallback to platform default)
+   * @returns {Function} Canvas factory function
+   */
+  static getCanvasFactory() {
+    if (BitmapText.#canvasFactory) {
+      return BitmapText.#canvasFactory;
+    }
+    // Delegate to FontLoader for platform-specific default
+    BitmapText.#ensureFontLoader();
+    return BitmapText.#fontLoader.getDefaultCanvasFactory();
+  }
+
+  /**
+   * Configure multiple options at once
+   * @param {Object} options - Configuration options
+   * @param {string} [options.dataDir] - Font assets directory
+   * @param {Function} [options.canvasFactory] - Canvas factory function
+   */
+  static configure(options = {}) {
+    if (options.dataDir !== undefined) {
+      BitmapText.setDataDir(options.dataDir);
+    }
+    if (options.canvasFactory !== undefined) {
+      BitmapText.setCanvasFactory(options.canvasFactory);
+    }
+  }
+
+  /**
+   * Ensure font loader is initialized
+   * @private
+   */
+  static #ensureFontLoader() {
+    if (BitmapText.#fontLoader) {
+      return;
+    }
+
+    // Check if platform-specific FontLoader is available
+    if (typeof FontLoader === 'undefined') {
+      throw new Error(
+        'BitmapText: FontLoader not loaded.\n' +
+        'Ensure platform-specific FontLoader is included before BitmapText.js:\n' +
+        '  - Browser: <script src="src/platform/FontLoader-browser.js"></script>\n' +
+        '  - Node.js: Include src/platform/FontLoader-node.js in bundle'
+      );
+    }
+
+    BitmapText.#fontLoader = FontLoader;
+  }
+
+  // ============================================
+  // Registration API (called by asset files)
+  // ============================================
+
+  /**
+   * Register font metrics from metrics-*.js file
+   * Delegates to FontLoader which handles platform-specific details
+   * @param {string} idString - Font ID string
+   * @param {Object} compactedData - Compacted metrics data
+   */
+  static registerMetrics(idString, compactedData) {
+    BitmapText.#ensureFontLoader();
+    FontLoaderBase.registerMetrics(idString, compactedData, BitmapText);
+  }
+
+  /**
+   * Register atlas from atlas-*.js file (base64 only, positioning reconstructed later)
+   * Delegates to FontLoader which handles platform-specific details
+   * @param {string} idString - Font ID string
+   * @param {string} base64Data - Base64-encoded atlas data
+   */
+  static registerAtlas(idString, base64Data) {
+    BitmapText.#ensureFontLoader();
+    FontLoaderBase.registerAtlas(idString, base64Data);
+  }
+
+  // ============================================
+  // Internal Canvas Creation
+  // ============================================
+
+  /**
+   * Create canvas using configured or platform-default factory
+   * @private
+   */
+  static #createCanvas() {
+    const factory = BitmapText.getCanvasFactory();
+    return factory();
+  }
+
+  // ============================================
+  // Rendering API
+  // ============================================
+
+  /**
+   * Measure text dimensions
+   * Returns object with metrics and status information
+   * This returns an object with metrics and status information:
+   *   {
+   *     metrics: TextMetrics-compatible object (or null if measurement failed),
+   *     status: { code: StatusCode, missingChars?: Set }
+   *   }
+   * 
+   * The metrics object has the same shape and meaning as the TextMetrics object (see
+   * https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ) i.e.:
+   * the width should be the sum of the advancements (detracting kerning)
+   * actualBoundingBoxLeft = the actualBoundingBoxLeft of the first character
+   * actualBoundingBoxRight = the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
+   * 
+   * @param {string} text - Text to measure
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {TextProperties} textProperties - Text rendering configuration
+   * @returns {Object} { metrics: TextMetrics | null, status: { code, missingChars? } }
+   */
+  static measureText(text, fontProperties, textProperties) {
     if (!textProperties) {
       textProperties = new TextProperties();
     }
@@ -68,12 +221,12 @@ class BitmapText {
           fontBoundingBoxAscent: 0,
           fontBoundingBoxDescent: 0
         },
-        status: SUCCESS_STATUS  // Reuse immutable object for performance
+        status: SUCCESS_STATUS
       };
     }
 
     // Check if FontMetrics exists at all
-    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
+    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
     if (!fontMetrics) {
       return {
         metrics: null,
@@ -92,7 +245,7 @@ class BitmapText {
     // If any glyphs missing, can't calculate accurate metrics
     if (missingChars.size > 0) {
       return {
-        metrics: null,  // Can't provide partial metrics reliably
+        metrics: null,
         status: createErrorStatus(StatusCode.PARTIAL_METRICS, {
           missingChars: missingChars
         })
@@ -100,7 +253,6 @@ class BitmapText {
     }
 
     // SUCCESS PATH: Calculate metrics normally
-    // Convert to array of code points for proper Unicode handling
     const chars = [...text];
     let width_CssPx = 0;
     let characterMetrics = fontMetrics.getCharacterMetrics(chars[0]);
@@ -123,17 +275,12 @@ class BitmapText {
       width_CssPx += advancement_CssPx;
     }
 
-    // the actualBoundingBoxRight_CssPx is the sum of all the advancements (detracting kerning) up to the last character...
     actualBoundingBoxRight_CssPx = width_CssPx - advancement_CssPx;
-    // ... plus the actualBoundingBoxRight_CssPx of the last character
-    // (this is in place of adding its advancement_CssPx)
     actualBoundingBoxRight_CssPx += characterMetrics.actualBoundingBoxRight;
 
     return {
       metrics: {
         width: width_CssPx,
-        // note that standard measureText returns a TextMetrics object
-        // which has no height, so let's make things uniform and resist the temptation to provide it.
         actualBoundingBoxLeft: actualBoundingBoxLeft_CssPx,
         actualBoundingBoxRight: actualBoundingBoxRight_CssPx,
         actualBoundingBoxAscent,
@@ -141,15 +288,133 @@ class BitmapText {
         fontBoundingBoxAscent: characterMetrics.fontBoundingBoxAscent,
         fontBoundingBoxDescent: characterMetrics.fontBoundingBoxDescent
       },
-      status: SUCCESS_STATUS  // Reuse immutable object for performance
+      status: SUCCESS_STATUS
     };
   }
 
+  /**
+   * Draw text using pre-rendered glyphs
+   * Returns status information about rendering
+   *   {
+   *     rendered: boolean (whether any rendering occurred),
+   *     status: { code: StatusCode, missingChars?: Set, missingAtlasChars?: Set, placeholdersUsed?: boolean }
+   *   }
+   * @param {CanvasRenderingContext2D} ctx - Canvas 2D context
+   * @param {string} text - Text to render
+   * @param {number} x_CssPx - X position in CSS pixels
+   * @param {number} y_CssPx - Y position in CSS pixels (bottom baseline)
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {TextProperties} textProperties - Text rendering configuration
+   * @returns {Object} { rendered: boolean, status: { code, missingChars?, missingAtlasChars?, placeholdersUsed? } }
+   */
+  static drawTextFromAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
+    textProperties = textProperties || new TextProperties();
+
+    // Lazy-initialize canvas on first render
+    if (!BitmapText.#coloredGlyphCanvas) {
+      BitmapText.#coloredGlyphCanvas = BitmapText.#createCanvas();
+      BitmapText.#coloredGlyphCtx = BitmapText.#coloredGlyphCanvas.getContext('2d');
+    }
+
+    // Check FontMetrics availability first
+    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
+    if (!fontMetrics) {
+      return {
+        rendered: false,
+        status: createErrorStatus(StatusCode.NO_METRICS)
+      };
+    }
+
+    // Scan for missing metrics (can't render without metrics)
+    const missingMetricsChars = new Set();
+    for (const char of text) {
+      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
+        missingMetricsChars.add(char);
+      }
+    }
+
+    if (missingMetricsChars.size > 0) {
+      return {
+        rendered: false,
+        status: createErrorStatus(StatusCode.PARTIAL_METRICS, {
+          missingChars: missingMetricsChars
+        })
+      };
+    }
+
+    // Check atlas data availability
+    const atlasData = AtlasDataStore.getAtlasData(fontProperties);
+    const atlasValid = BitmapText.#isValidAtlas(atlasData);
+
+    // Track which glyphs are missing from atlas (for partial atlas status)
+    const missingAtlasChars = new Set();
+    let placeholdersUsed = false;
+
+    // Render text
+    const chars = [...text];
+    const textColor = textProperties.textColor;
+    const position_PhysPx = {
+      x: x_CssPx * fontProperties.pixelDensity,
+      y: y_CssPx * fontProperties.pixelDensity
+    };
+
+    for (let i = 0; i < chars.length; i++) {
+      const currentChar = chars[i];
+      const nextChar = chars[i + 1];
+
+      // Check if atlas has a glyph for this character (excluding spaces)
+      if (currentChar !== ' ') {
+        if (!atlasValid || !atlasData.hasPositioning(currentChar)) {
+          missingAtlasChars.add(currentChar);
+          placeholdersUsed = true;
+        }
+      }
+
+      // Draw (either real glyph or placeholder)
+      BitmapText.#drawCharacter(ctx,
+        currentChar,
+        position_PhysPx,
+        atlasData,
+        fontMetrics,
+        textColor
+      );
+
+      position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties);
+    }
+
+    // Determine status code
+    let statusCode;
+    if (!atlasValid) {
+      statusCode = StatusCode.NO_ATLAS;
+    } else if (missingAtlasChars.size > 0) {
+      statusCode = StatusCode.PARTIAL_ATLAS;
+    } else {
+      // Complete success
+      return {
+        rendered: true,
+        status: SUCCESS_STATUS
+      };
+    }
+
+    // Return detailed status for non-success cases
+    return {
+      rendered: true,
+      status: createErrorStatus(statusCode, {
+        missingAtlasChars: missingAtlasChars.size > 0 ? missingAtlasChars : undefined,
+        placeholdersUsed: placeholdersUsed
+      })
+    };
+  }
+
+  // ============================================
+  // Internal Rendering Helpers
+  // ============================================
   // Get the advancement of the i-th character i.e. needed AFTER the i-th character
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
-  calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) {
+
+  static calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) {
     if (!textProperties) {
       textProperties = new TextProperties();
     }
@@ -176,13 +441,13 @@ class BitmapText {
         x_CssPx += characterMetrics.width;
       }
     }
-    // Non-space characters ------------------------------------------
+    // Non-space characters
     else {
       x_CssPx += characterMetrics.width;
     }
 
-    // Next, apply the kerning correction ----------------------------
-    let kerningCorrection = this.getKerningCorrection(fontMetrics, char, nextChar, textProperties);
+    // Apply kerning correction
+    let kerningCorrection = BitmapText.#getKerningCorrection(fontMetrics, char, nextChar, textProperties);
 
     // We multiply the advancement of the character by the kerning
     // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
@@ -196,7 +461,7 @@ class BitmapText {
     return Math.round(x_CssPx);
   }
 
-  getKerningCorrection(fontMetrics, char, nextChar, textProperties) {
+  static #getKerningCorrection(fontMetrics, char, nextChar, textProperties) {
     if (!textProperties) {
       textProperties = new TextProperties();
     }
@@ -208,116 +473,16 @@ class BitmapText {
     return 0;
   }
 
-  // This draws text from atlas and returns status information:
-  // {
-  //   rendered: boolean (whether any rendering occurred),
-  //   status: { code: StatusCode, missingChars?: Set, missingAtlasChars?: Set, placeholdersUsed?: boolean }
-  // }
-  drawTextFromAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
-    textProperties = textProperties || new TextProperties();
-
-    // Check FontMetrics availability first
-    const fontMetrics = this.fontMetricsStore.getFontMetrics(fontProperties);
-    if (!fontMetrics) {
-      return {
-        rendered: false,
-        status: createErrorStatus(StatusCode.NO_METRICS)
-      };
-    }
-
-    // Scan for missing metrics (can't render without metrics)
-    const missingMetricsChars = new Set();
-    for (const char of text) {
-      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
-        missingMetricsChars.add(char);
-      }
-    }
-
-    if (missingMetricsChars.size > 0) {
-      return {
-        rendered: false,
-        status: createErrorStatus(StatusCode.PARTIAL_METRICS, {
-          missingChars: missingMetricsChars
-        })
-      };
-    }
-
-    // Check atlas data availability
-    const atlasData = this.atlasDataStore.getAtlasData(fontProperties);
-    const atlasValid = this.atlasDataStore.isValidAtlas(atlasData);
-
-    // Track which glyphs are missing from atlas (for partial atlas status)
-    const missingAtlasChars = new Set();
-    let placeholdersUsed = false;
-
-    // Render text
-    // Convert to array of code points for proper Unicode handling
-    const chars = [...text];
-    const textColor = textProperties.textColor;
-    const position_PhysPx = {
-      x: x_CssPx * fontProperties.pixelDensity,
-      y: y_CssPx * fontProperties.pixelDensity
-    };
-
-    for (let i = 0; i < chars.length; i++) {
-      const currentChar = chars[i];
-      const nextChar = chars[i + 1];
-
-      // Check if atlas has a glyph for this character (excluding spaces)
-      if (currentChar !== ' ') {
-        if (!atlasValid || !atlasData.hasPositioning(currentChar)) {
-          missingAtlasChars.add(currentChar);
-          placeholdersUsed = true;
-        }
-      }
-
-      // Draw (either real glyph or placeholder)
-      this.drawCharacter(ctx,
-        currentChar,
-        position_PhysPx,
-        atlasData,
-        fontMetrics,
-        textColor
-      );
-
-      position_PhysPx.x += this.calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties);
-    }
-
-    // Determine status code
-    let statusCode;
-    if (!atlasValid) {
-      statusCode = StatusCode.NO_ATLAS;
-    } else if (missingAtlasChars.size > 0) {
-      statusCode = StatusCode.PARTIAL_ATLAS;
-    } else {
-      // Complete success
-      return {
-        rendered: true,
-        status: SUCCESS_STATUS  // Reuse immutable object for performance
-      };
-    }
-
-    // Return detailed status for non-success cases
-    return {
-      rendered: true,  // We did render something (placeholders or partial)
-      status: createErrorStatus(statusCode, {
-        missingAtlasChars: missingAtlasChars.size > 0 ? missingAtlasChars : undefined,
-        placeholdersUsed: placeholdersUsed
-      })
-    };
-  }
-
-  drawCharacter(ctx, char, position_PhysPx, atlasData, fontMetrics, textColor) {
-    // There are several optimisations possible here:
-    // 1. We could make a special case when the color is black
-    // 2. We could cache the colored atlases in a small LRU cache
-
+  // There are several optimisations possible here:
+  // 1. We could make a special case when the color is black
+  // 2. We could cache the colored atlases in a small LRU cache
+  // 3. We could batch first the coloring and then the characters blitting
+  static #drawCharacter(ctx, char, position_PhysPx, atlasData, fontMetrics, textColor) {
     // If atlasData is missing but metrics exist, draw simplified placeholder rectangle
-    if (!this.atlasDataStore.isValidAtlas(atlasData)) {
-      // Use character metrics for simplified placeholder (no atlasData positioning needed)
+    if (!BitmapText.#isValidAtlas(atlasData)) {
       const characterMetrics = fontMetrics.getCharacterMetrics(char);
       if (characterMetrics) {
-        this.drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor);
+        BitmapText.#drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor);
       }
       return;
     }
@@ -325,25 +490,22 @@ class BitmapText {
     if (!atlasData.hasPositioning(char)) return;
 
     const atlasPositioning = atlasData.atlasPositioning.getPositioning(char);
-
-    // Get the atlasData image for rendering
     const atlasImage = atlasData.atlasImage.image;
-    const coloredGlyphCanvas = this.createColoredGlyph(atlasImage, atlasPositioning, textColor);
-    this.renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning);
+    const coloredGlyphCanvas = BitmapText.#createColoredGlyph(atlasImage, atlasPositioning, textColor);
+    BitmapText.#renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning);
   }
 
-  createColoredGlyph(atlasImage, atlasPositioning, textColor) {
+  static #createColoredGlyph(atlasImage, atlasPositioning, textColor) {
     const { xInAtlas, tightWidth, tightHeight } = atlasPositioning;
-    
+
     // Setup temporary canvas, same size as the glyph
-    this.coloredGlyphCanvas.width = tightWidth;
-    this.coloredGlyphCanvas.height = tightHeight;
-    this.coloredGlyphCtx.clearRect(0, 0, tightWidth, tightHeight);
+    BitmapText.#coloredGlyphCanvas.width = tightWidth;
+    BitmapText.#coloredGlyphCanvas.height = tightHeight;
+    BitmapText.#coloredGlyphCtx.clearRect(0, 0, tightWidth, tightHeight);
 
     // Draw original glyph
-    this.coloredGlyphCtx.globalCompositeOperation = 'source-over'; // reset the composite operation
-    // see https://stackoverflow.com/a/6061102
-    this.coloredGlyphCtx.drawImage(
+    BitmapText.#coloredGlyphCtx.globalCompositeOperation = 'source-over';
+    BitmapText.#coloredGlyphCtx.drawImage(
       atlasImage,
       xInAtlas, 0,
       tightWidth, tightHeight,
@@ -352,14 +514,14 @@ class BitmapText {
     );
 
     // Apply color
-    this.coloredGlyphCtx.globalCompositeOperation = 'source-in';
-    this.coloredGlyphCtx.fillStyle = textColor;
-    this.coloredGlyphCtx.fillRect(0, 0, tightWidth, tightHeight);
+    BitmapText.#coloredGlyphCtx.globalCompositeOperation = 'source-in';
+    BitmapText.#coloredGlyphCtx.fillStyle = textColor;
+    BitmapText.#coloredGlyphCtx.fillRect(0, 0, tightWidth, tightHeight);
 
-    return this.coloredGlyphCanvas;
+    return BitmapText.#coloredGlyphCanvas;
   }
 
-  renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning) {
+  static #renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning) {
     const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
 
     // Round coordinates at draw stage for crisp, pixel-aligned rendering
@@ -376,11 +538,9 @@ class BitmapText {
     );
   }
 
-  drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor) {
-    // Skip drawing for space characters (invisible)
+  static #drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor) {
     if (char === ' ') return;
 
-    // Verify we have actual bounding box data (defensive coding)
     if (characterMetrics.actualBoundingBoxLeft === undefined ||
         characterMetrics.actualBoundingBoxRight === undefined ||
         characterMetrics.actualBoundingBoxAscent === undefined ||
@@ -389,7 +549,6 @@ class BitmapText {
       return;
     }
 
-    // Get pixel density from character metrics (stored during metrics generation in GlyphFAB.js:145)
     const pixelDensity = characterMetrics.pixelDensity || 1;
 
     // Use CHARACTER-SPECIFIC actual bounding box (not font-wide fontBoundingBox)
@@ -402,6 +561,7 @@ class BitmapText {
     const width_PhysPx = Math.round(
       characterMetrics.actualBoundingBoxLeft + characterMetrics.actualBoundingBoxRight
     ) * pixelDensity;
+
 
     const height_PhysPx = Math.round(
       characterMetrics.actualBoundingBoxAscent + characterMetrics.actualBoundingBoxDescent
@@ -422,7 +582,6 @@ class BitmapText {
       - characterMetrics.fontBoundingBoxDescent * pixelDensity
       - characterMetrics.actualBoundingBoxAscent * pixelDensity;
 
-    // Default to black if textColor is null or undefined
     const actualColor = textColor || 'black';
 
     // Draw character-specific rectangle
@@ -438,8 +597,292 @@ class BitmapText {
     );
   }
 
-  calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties) {
+  static #calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties) {
     return this.calculateAdvancement_CssPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties)
       * fontProperties.pixelDensity;
+  }
+
+  static #isValidAtlas(atlasData) {
+    if (!(atlasData instanceof AtlasData)) {
+      return false;
+    }
+    return atlasData.isValid();
+  }
+
+  // ============================================
+  // Loading API (Delegates to FontLoader)
+  // ============================================
+
+  /**
+   * Load a single font
+   * @param {string} idString - Font ID string
+   * @param {Object} options - Loading options
+   * @param {Function} [options.onProgress] - Progress callback (loaded, total)
+   * @param {boolean} [options.isFileProtocol] - Whether using file:// protocol
+   * @returns {Promise} Resolves when font is loaded
+   */
+  static async loadFont(idString, options = {}) {
+    BitmapText.#ensureFontLoader();
+    return BitmapText.#fontLoader.loadFont(idString, options, BitmapText);
+  }
+
+  /**
+   * Load multiple fonts
+   * @param {Array<string>} idStrings - Array of font ID strings
+   * @param {Object} options - Loading options
+   * @param {Function} [options.onProgress] - Progress callback (loaded, total)
+   * @param {boolean} [options.isFileProtocol] - Whether using file:// protocol
+   * @param {boolean} [options.loadMetrics] - Load metrics (default: true)
+   * @param {boolean} [options.loadAtlases] - Load atlases (default: true)
+   * @returns {Promise} Resolves when all fonts are loaded
+   */
+  static async loadFonts(idStrings, options = {}) {
+    BitmapText.#ensureFontLoader();
+    return BitmapText.#fontLoader.loadFonts(idStrings, options, BitmapText);
+  }
+
+  /**
+   * Load only metrics for fonts
+   * @param {Array<string>} idStrings - Array of font ID strings
+   * @param {Object} options - Loading options
+   * @returns {Promise} Resolves when metrics are loaded
+   */
+  static async loadMetrics(idStrings, options = {}) {
+    BitmapText.#ensureFontLoader();
+    return BitmapText.#fontLoader.loadMetrics(idStrings, options, BitmapText);
+  }
+
+  /**
+   * Load only atlases for fonts (metrics must be loaded first)
+   * @param {Array<string>} idStrings - Array of font ID strings
+   * @param {Object} options - Loading options
+   * @returns {Promise} Resolves when atlases are loaded
+   */
+  static async loadAtlases(idStrings, options = {}) {
+    BitmapText.#ensureFontLoader();
+    return BitmapText.#fontLoader.loadAtlases(idStrings, options, BitmapText);
+  }
+
+  // ============================================
+  // Builder/Testing Tool API
+  // ============================================
+
+  /**
+   * Set atlas data for a font (for builder/testing tools)
+   * Public API - delegates to AtlasDataStore
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {AtlasData} atlasData - Atlas data to store
+   */
+  static setAtlasData(fontProperties, atlasData) {
+    AtlasDataStore.setAtlasData(fontProperties, atlasData);
+  }
+
+  /**
+   * Get atlas data for a font
+   * Public API - delegates to AtlasDataStore
+   * @param {FontProperties} fontProperties - Font configuration
+   * @returns {AtlasData|undefined} Atlas data or undefined if not found
+   */
+  static getAtlasData(fontProperties) {
+    return AtlasDataStore.getAtlasData(fontProperties);
+  }
+
+  /**
+   * Delete atlas data for a font
+   * Public API - delegates to AtlasDataStore
+   * @param {FontProperties} fontProperties - Font configuration
+   * @returns {boolean} True if atlas was deleted
+   */
+  static deleteAtlas(fontProperties) {
+    return AtlasDataStore.deleteAtlas(fontProperties);
+  }
+
+  /**
+   * Set font metrics for a font (for builder/testing tools)
+   * Public API - delegates to FontMetricsStore
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {FontMetrics} fontMetrics - Font metrics to store
+   */
+  static setFontMetrics(fontProperties, fontMetrics) {
+    FontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
+  }
+
+  /**
+   * Get font metrics for a font
+   * Public API - delegates to FontMetricsStore
+   * @param {FontProperties} fontProperties - Font configuration
+   * @returns {FontMetrics|undefined} Font metrics or undefined if not found
+   */
+  static getFontMetrics(fontProperties) {
+    return FontMetricsStore.getFontMetrics(fontProperties);
+  }
+
+  /**
+   * Unload both metrics and atlas for a font
+   * @param {string} idString - Font ID string
+   */
+  static unloadFont(idString) {
+    const fontProperties = FontProperties.fromIDString(idString);
+    FontMetricsStore.deleteFontMetrics(fontProperties);
+    AtlasDataStore.deleteAtlas(fontProperties);
+  }
+
+  /**
+   * Unload multiple fonts
+   * @param {Array<string>} idStrings - Array of font ID strings
+   */
+  static unloadFonts(idStrings) {
+    idStrings.forEach(id => this.unloadFont(id));
+  }
+
+  /**
+   * Unload metrics (cascades to unload atlas)
+   * @param {string} idString - Font ID string
+   */
+  static unloadMetrics(idString) {
+    const fontProperties = FontProperties.fromIDString(idString);
+    FontMetricsStore.deleteFontMetrics(fontProperties);
+    AtlasDataStore.deleteAtlas(fontProperties); // Cascade: no metrics = no atlas
+  }
+
+  /**
+   * Unload atlas only (keeps metrics)
+   * @param {string} idString - Font ID string
+   */
+  static unloadAtlas(idString) {
+    const fontProperties = FontProperties.fromIDString(idString);
+    AtlasDataStore.deleteAtlas(fontProperties);
+  }
+
+  /**
+   * Unload all fonts (both metrics and atlases)
+   */
+  static unloadAllFonts() {
+    FontMetricsStore.clear();
+    AtlasDataStore.clear();
+  }
+
+  /**
+   * Unload all atlases (keep metrics)
+   */
+  static unloadAllAtlases() {
+    AtlasDataStore.clear();
+  }
+
+  // ============================================
+  // Query API
+  // ============================================
+
+  /**
+   * Check if font is fully loaded (both metrics and atlas)
+   * @param {string} idString - Font ID string
+   * @returns {boolean} True if both metrics and atlas are loaded
+   */
+  static hasFont(idString) {
+    return this.hasMetrics(idString) && this.hasAtlas(idString);
+  }
+
+  /**
+   * Check if metrics are loaded for a font
+   * @param {string} idString - Font ID string
+   * @returns {boolean} True if metrics are loaded
+   */
+  static hasMetrics(idString) {
+    const fontProperties = FontProperties.fromIDString(idString);
+    return FontMetricsStore.hasFontMetrics(fontProperties);
+  }
+
+  /**
+   * Check if atlas is loaded for a font
+   * @param {string} idString - Font ID string
+   * @returns {boolean} True if atlas is loaded
+   */
+  static hasAtlas(idString) {
+    const fontProperties = FontProperties.fromIDString(idString);
+    const atlasData = AtlasDataStore.getAtlasData(fontProperties);
+    return atlasData && BitmapText.#isValidAtlas(atlasData);
+  }
+
+  /**
+   * Get list of fully loaded fonts (both metrics and atlas)
+   * @returns {Array<string>} Array of font ID strings
+   */
+  static getLoadedFonts() {
+    const loaded = [];
+    for (const key of FontMetricsStore.getAvailableFonts()) {
+      const fontProperties = FontProperties.fromKey(key);
+      const atlasData = AtlasDataStore.getAtlasData(fontProperties);
+      if (atlasData && BitmapText.#isValidAtlas(atlasData)) {
+        // Reconstruct ID string from key
+        // Key format: "1:Arial:normal:normal:19"
+        const [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize] = key.split(':');
+        const formatNum = (num) => num.includes('.') ? num.replace('.', '-') : `${num}-0`;
+        const idString = `density-${formatNum(pixelDensity)}-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${formatNum(fontSize)}`;
+        loaded.push(idString);
+      }
+    }
+    return loaded;
+  }
+
+  /**
+   * Get list of fonts with loaded metrics
+   * @returns {Array<string>} Array of font ID strings
+   */
+  static getLoadedMetrics() {
+    const loaded = [];
+    for (const key of FontMetricsStore.getAvailableFonts()) {
+      const [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize] = key.split(':');
+      const formatNum = (num) => num.includes('.') ? num.replace('.', '-') : `${num}-0`;
+      const idString = `density-${formatNum(pixelDensity)}-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${formatNum(fontSize)}`;
+      loaded.push(idString);
+    }
+    return loaded;
+  }
+
+  /**
+   * Get list of fonts with loaded atlases
+   * @returns {Array<string>} Array of font ID strings
+   */
+  static getLoadedAtlases() {
+    const loaded = [];
+    for (const key of AtlasDataStore.getAvailableFonts()) {
+      const fontProperties = FontProperties.fromKey(key);
+      const atlasData = AtlasDataStore.getAtlasData(fontProperties);
+      if (BitmapText.#isValidAtlas(atlasData)) {
+        const [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize] = key.split(':');
+        const formatNum = (num) => num.includes('.') ? num.replace('.', '-') : `${num}-0`;
+        const idString = `density-${formatNum(pixelDensity)}-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${formatNum(fontSize)}`;
+        loaded.push(idString);
+      }
+    }
+    return loaded;
+  }
+
+  // ============================================
+  // Testing Helpers
+  // ============================================
+
+  /**
+   * Reset all state for testing
+   * @private
+   */
+  static __resetForTesting() {
+    FontMetricsStore.clear();
+    AtlasDataStore.clear();
+    // Clear FontLoader state
+    if (FontLoaderBase._loadingPromises) {
+      FontLoaderBase._loadingPromises.clear();
+    }
+    if (FontLoaderBase._tempAtlasPackages) {
+      FontLoaderBase._tempAtlasPackages = {};
+    }
+    if (FontLoaderBase._pendingAtlases) {
+      FontLoaderBase._pendingAtlases.clear();
+    }
+    BitmapText.#coloredGlyphCanvas = null;
+    BitmapText.#coloredGlyphCtx = null;
+    BitmapText.#canvasFactory = null;
+    BitmapText.#dataDir = '../font-assets/';
+    BitmapText.#fontLoader = null;
   }
 }

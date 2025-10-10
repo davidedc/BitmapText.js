@@ -63,15 +63,14 @@
   <script src="../src/utils/AtlasCellDimensions.js"></script>
   <!-- Tight atlas reconstructor for converting Atlas → Tight Atlas at runtime -->
   <script src="../src/runtime/TightAtlasReconstructor.js"></script>
-  <!-- Data store for atlas images -->
+  <!-- Storage classes for atlas and metrics data -->
   <script src="../src/runtime/AtlasDataStore.js"></script>
-  <!-- Data store for font metrics, kerning, and positioning -->
   <script src="../src/runtime/FontMetricsStore.js"></script>
-  <!-- Main bitmap text rendering engine -->
-  <script src="../src/runtime/BitmapText.js"></script>
-  <!-- Font loading utilities -->
+  <!-- Font loader classes for loading font assets -->
   <script src="../src/runtime/FontLoaderBase.js"></script>
   <script src="../src/platform/FontLoader-browser.js"></script>
+  <!-- Main static BitmapText class with all functionality -->
+  <script src="../src/runtime/BitmapText.js"></script>
 
   <script>
     // Font properties for each size - Arial normal normal with pixel density 1
@@ -88,11 +87,6 @@
       textColor: '#000000'         // Black color
     });
 
-    // Initialize bitmap text system
-    const atlasDataStore = new AtlasDataStore();
-    const fontMetricsStore = new FontMetricsStore();
-    const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
-
     // Canvas setup
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
@@ -108,19 +102,17 @@
 
     // Create IDStrings for all font sizes
     const IDStrings = fontSizes.map(createIDString);
-    
-    // Create FontLoader to (later) load all the font data
-    const isFileProtocol = window.location.href.includes("file://");
-    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
-      console.log(`Loaded ${loaded} of ${total} files`);
-    });
 
-    // Load fonts and handle completion
-    fontLoader.loadFonts(IDStrings, isFileProtocol)
-      .then(() => {
-        // Metrics are auto-installed via direct store access
-        renderMultiSizeHelloWorld();
-      });
+    // Detect if running on file:// protocol
+    const isFileProtocol = window.location.href.includes("file://");
+
+    // Load all fonts using static API
+    BitmapText.loadFonts(IDStrings, {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`Loaded ${loaded} of ${total} files`)
+    }).then(() => {
+      renderMultiSizeHelloWorld();
+    });
 
     function renderMultiSizeHelloWorld() {
       // Clear canvas with white background
@@ -137,7 +129,7 @@
         const yPosition = 50 + (index * 50); // Space lines 50px apart
         const text = `Hello World (size ${fontProperties.fontSize})`;
 
-        const result = bitmapText.drawTextFromAtlas(
+        const result = BitmapText.drawTextFromAtlas(
           ctx,
           text,
           20,  // x position

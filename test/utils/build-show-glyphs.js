@@ -13,25 +13,27 @@ function buildAndShowGlyphs() {
 
   // Update BitmapTextFAB with latest specs for kerning calculation
   // This initializes/updates the internal KerningCalculator instance
-  bitmapTextFAB.setSpecs(specs);
+  BitmapTextFAB.setSpecs(specs);
 
   if (isNaN(fontProperties.fontSize)) return;
 
   // Clear the DOM
   removeAllCanvasesAndDivs();
-  
+
   // Reset FontMetricsFAB for fresh building
-  fontMetricsStoreFAB.resetFontMetricsFAB(fontProperties);
-  
+  FontMetricsStoreFAB.resetFontMetricsFAB(fontProperties);
+
+  // Clear glyphs for this font to start fresh
+  AtlasDataStoreFAB.clearGlyphsForFont(fontProperties);
+
   // Build kerning table AFTER reset, not before
   ensureKerningTable();
-  
+
   // BUILD operations - generate glyphs
   createGlyphsAndAddToFullStore(fontProperties);
-  
+
   // SHOW operations - display the built glyphs
   drawTestText(fontProperties);
-  const atlasDataStore = atlasDataStoreFAB.extractAtlasDataStoreInstance();
-  const fontMetricsStore = fontMetricsStoreFAB.extractFontMetricsStoreInstance();
-  drawTestText_withStandardClass(fontProperties, atlasDataStore, fontMetricsStore);
+  // Static classes are already accessible globally, no need to extract instances
+  drawTestText_withStandardClass(fontProperties);
 }

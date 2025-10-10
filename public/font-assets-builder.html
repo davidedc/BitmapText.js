@@ -108,6 +108,8 @@
 <script src="../src/builder/AtlasImageFAB.js"></script>
 <script src="../src/builder/AtlasDataStoreFAB.js"></script>
 <script src="../src/builder/FontMetricsStoreFAB.js"></script>
+<script src="../src/runtime/FontLoaderBase.js"></script>
+<script src="../src/platform/FontLoader-browser.js"></script>
 <script src="../src/runtime/BitmapText.js"></script>
 <script src="../src/specs/Specs.js"></script>
 <script src="../src/builder/KerningCalculator.js"></script>
@@ -135,9 +137,7 @@
 <script src="../src/utils/deep-equal.js"></script>
 
 <script >
-  const atlasDataStoreFAB = new AtlasDataStoreFAB();
-  const fontMetricsStoreFAB = new FontMetricsStoreFAB();
-  const bitmapTextFAB = new BitmapTextFAB(atlasDataStoreFAB, fontMetricsStoreFAB);
+  // All stores and BitmapTextFAB are now static classes - no instance creation needed
 
   updatePageContent();
 </script>
@@ -156,16 +156,15 @@
 
       // Build Atlas (variable-width cells)
       console.time('  ├─ Atlas build');
-      const atlasResult = atlasDataStoreFAB.buildAtlas(currentFontProperties, fontMetricsStoreFAB);
+      const atlasResult = AtlasDataStoreFAB.buildAtlas(currentFontProperties);
       console.timeEnd('  ├─ Atlas build');
       console.log(`  │  Atlas: ${atlasResult.canvas.width}×${atlasResult.canvas.height}`);
 
       // Reconstruct Tight Atlas from Atlas
       console.time('  └─ Tight atlas reconstruction');
-      const reconstructedAtlasData = atlasDataStoreFAB.reconstructTightAtlas(
+      const reconstructedAtlasData = AtlasDataStoreFAB.reconstructTightAtlas(
         atlasResult.canvas,
-        currentFontProperties,
-        fontMetricsStoreFAB
+        currentFontProperties
       );
       console.timeEnd('  └─ Tight atlas reconstruction');
 
@@ -275,22 +274,32 @@
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Create temporary atlas store for this specific test
-    const tempAtlasStore = new AtlasDataStore();
-    tempAtlasStore.setAtlasData(fontProperties, atlasData);
+    // Temporarily store atlas and metrics in static BitmapText for rendering test
+    const previousAtlas = BitmapText.getAtlasData(fontProperties);
+    const previousMetrics = BitmapText.getFontMetrics(fontProperties);
 
-    // Create temporary metrics store (use existing metrics)
-    const tempMetricsStore = new FontMetricsStore();
-    const fontMetrics = fontMetricsStoreFAB.getFontMetrics(fontProperties);
+    BitmapText.setAtlasData(fontProperties, atlasData);
+
+    // Also store metrics from FontMetricsStore (needed for rendering)
+    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
     if (fontMetrics) {
-      tempMetricsStore.setFontMetrics(fontProperties, fontMetrics);
+      BitmapText.setFontMetrics(fontProperties, fontMetrics);
     }
 
-    const tempBitmapText = new BitmapText(tempAtlasStore, tempMetricsStore);
-
-    const testText = "Hello World!" + " █abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ß!\"#$%&€'’()*+,-./:;<=>?@[\\]^_`{|}~—£°²·ÀÇàç•";
+    const testText = "Hello World!" + " █abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ß!\"#$%&€''()*+,-./:;<=>?@[\\]^_`{|}~—£°²·ÀÇàç•";
     const textProps = new TextProperties();
-    tempBitmapText.drawTextFromAtlas(ctx, testText, 10, 50, fontProperties, textProps);
+    BitmapText.drawTextFromAtlas(ctx, testText, 10, 50, fontProperties, textProps);
+
+    // Restore previous atlas and metrics if they existed
+    if (previousAtlas) {
+      BitmapText.setAtlasData(fontProperties, previousAtlas);
+    } else {
+      BitmapText.deleteAtlas(fontProperties);
+    }
+    if (previousMetrics) {
+      BitmapText.setFontMetrics(fontProperties, previousMetrics);
+    }
+    // Note: We don't delete metrics if there were none before - they may be needed elsewhere
   }
 
   // Run atlas generation on initial page load

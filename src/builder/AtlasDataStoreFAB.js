@@ -1,17 +1,16 @@
-// AtlasDataStoreFAB - Font Assets Building Class for storage of Atlas Data (which
-// includes atlas positioning data and atlas images)
+// AtlasDataStoreFAB - Font Assets Building Static Class for storage of Atlas Data
 //
-// This class extends AtlasDataStore to provide font assets building capabilities
+// This static class extends AtlasDataStore to provide font assets building capabilities
 // for atlas image generation and management.
 //
 // DISTRIBUTION ROLE:
 // - Part of "full toolkit" distribution for font assets building applications
 // - Extends AtlasDataStore with atlas building, optimization, and generation features
 // - Works in conjunction with FontMetricsStoreFAB for complete font assets building
-// - Provides extraction methods to create clean runtime AtlasDataStore instances
 //
 // ARCHITECTURE:
-// - Inherits atlas storage functionality from AtlasDataStore
+// - Static class extending static AtlasDataStore
+// - Inherits atlas storage functionality from parent
 // - Adds glyph storage and atlas building pipeline
 // - Focuses solely on image atlas generation (metrics handled by FontMetricsStoreFAB)
 // - Integrates with FontMetricsStoreFAB during the building process
@@ -21,61 +20,28 @@
 // - FontMetricsStoreFAB: Handles metrics calculation and positioning data
 // - Both work together during font assets building but can be used independently
 class AtlasDataStoreFAB extends AtlasDataStore {
-  constructor() {
-    super();
-    // FAB-specific glyph storage using Map for O(1) lookups
-    // Key format: fontProperties.key + ":" + char
-    this.glyphs = new Map();
-  }
+  // Private static storage for glyphs (FAB-specific)
+  // Key format: fontProperties.key + ":" + char
+  static #glyphs = new Map();
 
-  // Extract a clean AtlasDataStore instance for runtime distribution
-  // This removes FAB-specific functionality and provides only runtime atlas data
-  // Converts AtlasImageFAB instances to AtlasImage instances
-  extractAtlasDataStoreInstance() {
-    const instance = new AtlasDataStore();
-
-    // Convert AtlasData containing AtlasImageFAB to AtlasData containing AtlasImage
-    for (const [fontKey, atlasData] of this.atlases) {
-      if (atlasData instanceof AtlasData) {
-        // Check if the atlasData contains AtlasImageFAB
-        if (atlasData.atlasImage instanceof AtlasImageFAB) {
-          // Extract clean AtlasImage instance
-          const cleanAtlasImage = atlasData.atlasImage.extractAtlasImageInstance();
-          const cleanAtlasData = new AtlasData(cleanAtlasImage, atlasData.atlasPositioning);
-          instance.atlases.set(fontKey, cleanAtlasData);
-        } else {
-          // Already contains AtlasImage, copy as-is
-          instance.atlases.set(fontKey, atlasData);
-        }
-      } else {
-        console.warn(`Unexpected atlas data type for ${fontKey} - skipping`);
-      }
-    }
-
-    return instance;
-  }
-
-
-
-  addGlyph(glyph) {
+  static addGlyph(glyph) {
     const glyphKey = `${glyph.fontProperties.key}:${glyph.char}`;
-    this.glyphs.set(glyphKey, glyph);
+    AtlasDataStoreFAB.#glyphs.set(glyphKey, glyph);
   }
 
-  getGlyph(fontProperties, char) {
+  static getGlyph(fontProperties, char) {
     const glyphKey = `${fontProperties.key}:${char}`;
-    return this.glyphs.get(glyphKey);
+    return AtlasDataStoreFAB.#glyphs.get(glyphKey);
   }
-
 
   /**
    * Get glyphs for a specific font configuration (helper method)
    * @param {FontProperties} fontProperties - Font configuration
    * @returns {Object} Map of char → GlyphFAB
    */
-  getGlyphsForFont(fontProperties) {
+  static getGlyphsForFont(fontProperties) {
     const glyphs = {};
-    for (const [glyphKey, glyph] of this.glyphs) {
+    for (const [glyphKey, glyph] of AtlasDataStoreFAB.#glyphs) {
       if (glyphKey.startsWith(fontProperties.key + ':')) {
         const char = glyphKey.substring(fontProperties.key.length + 1);
         glyphs[char] = glyph;
@@ -85,16 +51,31 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   }
 
   /**
+   * Clear all glyphs for a specific font configuration
+   * @param {FontProperties} fontProperties - Font configuration
+   */
+  static clearGlyphsForFont(fontProperties) {
+    const keysToDelete = [];
+    for (const glyphKey of AtlasDataStoreFAB.#glyphs.keys()) {
+      if (glyphKey.startsWith(fontProperties.key + ':')) {
+        keysToDelete.push(glyphKey);
+      }
+    }
+    for (const key of keysToDelete) {
+      AtlasDataStoreFAB.#glyphs.delete(key);
+    }
+  }
+
+  /**
    * Build atlas for export
    * Uses glyph.canvas (variable-width cells) instead of glyph.tightCanvas
    *
    * @param {FontProperties} fontProperties - Font configuration
-   * @param {FontMetricsStore} fontMetricsStore - Font metrics store
    * @returns {{canvas, cellWidths, cellHeight, characters, totalWidth}}
    */
-  buildAtlas(fontProperties, fontMetricsStore) {
-    const glyphs = this.getGlyphsForFont(fontProperties);
-    const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
+  static buildAtlas(fontProperties) {
+    const glyphs = AtlasDataStoreFAB.getGlyphsForFont(fontProperties);
+    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
 
     if (!fontMetrics) {
       throw new Error(`No FontMetrics found for ${fontProperties.key}`);
@@ -109,11 +90,10 @@ class AtlasDataStoreFAB extends AtlasDataStore {
    *
    * @param {Canvas|Image} atlasCanvas - Atlas image (variable-width cells)
    * @param {FontProperties} fontProperties - Font configuration
-   * @param {FontMetricsStore} fontMetricsStore - Font metrics store
    * @returns {AtlasData} AtlasData containing reconstructed tight atlas and positioning
    */
-  reconstructTightAtlas(atlasCanvas, fontProperties, fontMetricsStore) {
-    const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
+  static reconstructTightAtlas(atlasCanvas, fontProperties) {
+    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
 
     if (!fontMetrics) {
       throw new Error(`No FontMetrics found for ${fontProperties.key}`);

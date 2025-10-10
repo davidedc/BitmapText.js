@@ -126,12 +126,20 @@ function drawTestText(fontProperties) {
   // Measurements with BitmapTextFAB
   // now do the measurements, font assets building of atlas and rendering of text with the BitmapTextFAB class
   // note how this one doesn't need a canvas
-  const measureTextCrispBitmapFAB = text => bitmapTextFAB.measureText(text, fontProperties, textProperties);
+
+  // CRITICAL: Copy metrics to BitmapText for measureText to work
+  // Metrics are in FontMetricsStore (populated by GlyphFAB constructors)
+  const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
+  if (fontMetrics) {
+    BitmapText.setFontMetrics(fontProperties, fontMetrics);
+  }
+
+  const measureTextCrispBitmapFAB = text => BitmapTextFAB.measureText(text, fontProperties, textProperties);
   const linesMeasures_CSS_PxFAB = measureMultilineText(testCopyLines, measureTextCrispBitmapFAB);
   // generating the atlases (source + tight reconstructed) with the full class is necessary to then being able to draw the text with the "normal" class
   buildAndDisplayAtlases(fontProperties);
   // note that this one doesn't use the atlas, it uses the canvas stored in each glyph
-  drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures_CSS_PxFAB, testCopyLines, bitmapTextFAB, fontProperties, testCopyChoiceNumber, textProperties);
+  drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures_CSS_PxFAB, testCopyLines, fontProperties, testCopyChoiceNumber, textProperties);
 }
 
 function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, fontMetricsStore) {
@@ -141,16 +149,22 @@ function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, 
   const { testCopy, testCopyChoiceNumber } = getTestCopyChoiceAndText();
   const testCopyLines = testCopy.split("\n");
 
-  // this is going to be the class that is going to be used to render the text
-  // outside of the editor.
-  const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
-
   // Get TextProperties from UI state (respects kerning checkbox)
   const textProperties = getTextPropertiesFromUI();
 
   let fontProperties = originalFontProperties;
 
-  let measureTextCrispBitmap = text => bitmapText.measureText(text, originalFontProperties, textProperties);
+  // Choose measurement method based on context
+  // If stores provided (font-assets-builder), use instance; otherwise use static API
+  let measureTextCrispBitmap;
+  if (atlasDataStore && fontMetricsStore) {
+    // Font-assets-builder context - create instance
+    const bitmapText = new BitmapTextRuntime(atlasDataStore, fontMetricsStore);
+    measureTextCrispBitmap = text => bitmapText.measureText(text, originalFontProperties, textProperties);
+  } else {
+    // Runtime context (test-renderer) - use static API
+    measureTextCrispBitmap = text => BitmapText.measureText(text, originalFontProperties, textProperties);
+  }
   let originalLinesMeasures_CSS_Px = measureMultilineText(testCopyLines, measureTextCrispBitmap);
   let linesMeasures_CSS_Px = originalLinesMeasures_CSS_Px;
 
@@ -171,7 +185,12 @@ function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, 
       originalFontProperties.fontSize * 2
     );
 
-    measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesForcedPixelDensity1, textProperties);
+    if (atlasDataStore && fontMetricsStore) {
+      const bitmapText = new BitmapTextRuntime(atlasDataStore, fontMetricsStore);
+      measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesForcedPixelDensity1, textProperties);
+    } else {
+      measureTextCrispBitmap = text => BitmapText.measureText(text, fontPropertiesForcedPixelDensity1, textProperties);
+    }
     linesMeasures_CSS_PxForcedPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);
 
     fontProperties = fontPropertiesForcedPixelDensity1;
@@ -181,7 +200,7 @@ function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, 
   }
 
 
-  bitmapAtlasDrawCrispText(linesMeasures_CSS_Px, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, null, null, null, null, null, textProperties);
+  bitmapAtlasDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontProperties, testCopyChoiceNumber, null, null, null, null, null, textProperties, atlasDataStore, fontMetricsStore);
 
   if (originalFontProperties.pixelDensity === 2) {
     // Create new FontProperties with pixelDensity=1 (same fontSize)
@@ -193,20 +212,25 @@ function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, 
       originalFontProperties.fontSize
     );
 
-    measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesPixelDensity1, textProperties);
+    if (atlasDataStore && fontMetricsStore) {
+      const bitmapText = new BitmapTextRuntime(atlasDataStore, fontMetricsStore);
+      measureTextCrispBitmap = text => bitmapText.measureText(text, fontPropertiesPixelDensity1, textProperties);
+    } else {
+      measureTextCrispBitmap = text => BitmapText.measureText(text, fontPropertiesPixelDensity1, textProperties);
+    }
     const linesMeasures_CSS_PxPixelDensity1 = measureMultilineText(testCopyLines, measureTextCrispBitmap);
 
     const redTextProperties = textProperties.withTextColor('red');
-    const canvas = bitmapAtlasDrawCrispText(linesMeasures_CSS_PxPixelDensity1, testCopyLines, bitmapText, fontPropertiesPixelDensity1, testCopyChoiceNumber, null, 2, false, null, "Comparison pixel density 2 (red) and pixel density 1 scaled (black, should be blurred)", textProperties);
-    bitmapAtlasDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red', redTextProperties);
+    const canvas = bitmapAtlasDrawCrispText(linesMeasures_CSS_PxPixelDensity1, testCopyLines, fontPropertiesPixelDensity1, testCopyChoiceNumber, null, 2, false, null, "Comparison pixel density 2 (red) and pixel density 1 scaled (black, should be blurred)", textProperties, atlasDataStore, fontMetricsStore);
+    bitmapAtlasDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red', redTextProperties, atlasDataStore, fontMetricsStore);
   }
-  
+
   // If we did the pixel-density-1-forcing, let's
   // compare the text rendering done normally with the text rendering done with the pixel-density-1-forcing
   if (didPixelDensity1Forcing) {
     const redTextProperties = textProperties.withTextColor('red');
-    const canvas = bitmapAtlasDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, bitmapText, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, null, null, "Comparison crisp bitmap text drawing from atlas original pixel density (red) and forced pixel density 1 (black)", textProperties);
-    bitmapAtlasDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, bitmapText, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red', redTextProperties);
+    const canvas = bitmapAtlasDrawCrispText(linesMeasures_CSS_PxForcedPixelDensity1, testCopyLines, fontPropertiesForcedPixelDensity1, testCopyChoiceNumber, null, null, null, null, "Comparison crisp bitmap text drawing from atlas original pixel density (red) and forced pixel density 1 (black)", textProperties, atlasDataStore, fontMetricsStore);
+    bitmapAtlasDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties, testCopyChoiceNumber, canvas, null, null, 'multiply', null, 'red', redTextProperties, atlasDataStore, fontMetricsStore);
   }
 
   stdDrawCrispText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
@@ -214,9 +238,14 @@ function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, 
   stdDrawSmoothText(originalLinesMeasures_CSS_Px, testCopyLines, originalFontProperties);
 }
 
-function drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, textProperties) {
+function drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures, testCopyLines, fontProperties, testCopyChoiceNumber, textProperties) {
+  // Debug: Check if glyphs exist
+  const testGlyph = AtlasDataStoreFAB.getGlyph(fontProperties, 'A');
+  console.log(`[DEBUG] drawTestTextViaIndividualCanvasesNotViaAtlas - fontProperties.key: ${fontProperties.key}, test glyph 'A' exists: ${!!testGlyph}, has tightCanvas: ${!!testGlyph?.tightCanvas}`);
+
   addElementToDOM(createDivWithText('Crisp Bitmap Text Drawing with individual canvases (not using atlas):'));
   const canvas = createCanvas(linesMeasures.width, linesMeasures.height, fontProperties.pixelDensity);
+  console.log(`[DEBUG] Created canvas: ${canvas.width}x${canvas.height}, measures: ${linesMeasures.width}x${linesMeasures.height}, pixelDensity: ${fontProperties.pixelDensity}`);
   addElementToDOM(canvas);
   const ctx = canvas.getContext('2d');
   createCheckerboardBackground(ctx);
@@ -227,7 +256,7 @@ function drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures, testCopyLin
   // https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/textBaseline
   testCopyLines.forEach((line, i) => {
     const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    bitmapText.drawTextViaIndividualCanvasesNotViaAtlas(ctx, line, 0, yPosition, fontProperties, textProperties);
+    BitmapTextFAB.drawTextViaIndividualCanvasesNotViaAtlas(ctx, line, 0, yPosition, fontProperties, textProperties);
   });
 
   let hashMatchInfo = '';
@@ -264,7 +293,7 @@ function createCheckerboardBackground(ctx) {
   }
 }
 
-function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing (using atlas):', textProperties = null) {
+function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, fontProperties, testCopyChoiceNumber, canvas = null, scale, checkTheHashes = true, blendingMode = null, sectionLabel = 'Crisp Bitmap Text Drawing (using atlas):', textProperties = null, atlasDataStore = null, fontMetricsStore = null) {
   // Handle null/falsy sectionLabel by using default
   if (!sectionLabel) {
     sectionLabel = 'Crisp Bitmap Text Drawing (using atlas):';
@@ -272,7 +301,7 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
 
   textProperties = textProperties || getTextPropertiesFromUI();
   const textColor = textProperties.textColor;
-  
+
   let drawOverExistingCanvas = false;
 
   if (canvas)
@@ -282,10 +311,14 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
   if (!scale) scale = 1;
 
   // Check if we're in placeholder mode (metrics available but atlasData missing)
-  let isPlaceholderMode = false;
-  if (bitmapText && bitmapText.atlasDataStore) {
-    const atlasData = bitmapText.atlasDataStore.getAtlasData(fontProperties);
-    isPlaceholderMode = !bitmapText.atlasDataStore.isValidAtlas(atlasData);
+  let isPlaceholderMode;
+  if (atlasDataStore && fontMetricsStore) {
+    // Font-assets-builder context
+    const atlasData = atlasDataStore.getAtlasData(fontProperties);
+    isPlaceholderMode = !atlasDataStore.isValidAtlas(atlasData);
+  } else {
+    // Runtime context
+    isPlaceholderMode = !BitmapText.hasAtlas(fontProperties.idString);
   }
 
   // Update section label if in placeholder mode
@@ -323,10 +356,20 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, bitmapText, font
 
 
   startTiming('drawTestText via atlas');
-  testCopyLines.forEach((line, i) => {
-    const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
-    bitmapText.drawTextFromAtlas(ctx, line, 0, yPosition, fontProperties, textProperties);
-  });
+  if (atlasDataStore && fontMetricsStore) {
+    // Font-assets-builder context
+    const bitmapText = new BitmapTextRuntime(atlasDataStore, fontMetricsStore);
+    testCopyLines.forEach((line, i) => {
+      const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
+      bitmapText.drawTextFromAtlas(ctx, line, 0, yPosition, fontProperties, textProperties);
+    });
+  } else {
+    // Runtime context
+    testCopyLines.forEach((line, i) => {
+      const yPosition = Math.round((i + 1) * linesMeasures.height / testCopyLines.length);
+      BitmapText.drawTextFromAtlas(ctx, line, 0, yPosition, fontProperties, textProperties);
+    });
+  }
   console.log(`⏱️ drawTestText via atlas ${stopTiming('drawTestText via atlas')} milliseconds`);
 
   if (!drawOverExistingCanvas) {
@@ -382,7 +425,7 @@ function stdDrawCrispText(measures, testCopyLines, fontProperties) {
 function buildAndDisplayAtlases(fontProperties) {
   // Build Atlas (variable-width cells)
   addElementToDOM(createDivWithText("Atlas Source (variable-width cells):"));
-  const atlasResult = atlasDataStoreFAB.buildAtlas(fontProperties, fontMetricsStoreFAB);
+  const atlasResult = AtlasDataStoreFAB.buildAtlas(fontProperties);
 
   const sourceCanvas = document.createElement('canvas');
   sourceCanvas.width = atlasResult.canvas.width;
@@ -395,15 +438,21 @@ function buildAndDisplayAtlases(fontProperties) {
 
   // Reconstruct Tight Atlas from Atlas
   addElementToDOM(createDivWithText("Tight Atlas (reconstructed from source):"));
-  const reconstructedData = atlasDataStoreFAB.reconstructTightAtlas(
+  const reconstructedData = AtlasDataStoreFAB.reconstructTightAtlas(
     atlasResult.canvas,
-    fontProperties,
-    fontMetricsStoreFAB
+    fontProperties
   );
 
-  // CRITICAL: Store the reconstructed tight atlas in atlasDataStoreFAB
-  // This is needed for rendering to work (replaces old buildTightAtlas behavior)
-  atlasDataStoreFAB.setAtlasData(fontProperties, reconstructedData);
+  // CRITICAL: Store the reconstructed tight atlas in both stores
+  // AtlasDataStoreFAB for building pipeline, BitmapText for rendering
+  AtlasDataStoreFAB.setAtlasData(fontProperties, reconstructedData);
+  BitmapText.setAtlasData(fontProperties, reconstructedData);
+
+  // Also store metrics in BitmapText for rendering
+  const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
+  if (fontMetrics) {
+    BitmapText.setFontMetrics(fontProperties, fontMetrics);
+  }
 
   const tightCanvas = document.createElement('canvas');
   tightCanvas.width = reconstructedData.atlasImage.width;

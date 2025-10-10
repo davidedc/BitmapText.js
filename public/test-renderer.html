@@ -64,6 +64,8 @@ and then open the page from the browser at:
 <script src="../src/utils/canvas-extensions.js"></script>
 <script src="../src/runtime/AtlasDataStore.js"></script>
 <script src="../src/runtime/FontMetricsStore.js"></script>
+<script src="../src/runtime/FontLoaderBase.js"></script>
+<script src="../src/platform/FontLoader-browser.js"></script>
 <script src="../src/runtime/BitmapText.js"></script>
 <script src="../test/utils/test-copy.js"></script>
 <script src="../test/utils/draw-test-text.js"></script>
@@ -79,23 +81,16 @@ and then open the page from the browser at:
 <script src="../src/ui/base-ui.js"></script>
 <script src="../src/builder/MetricsExpander.js"></script>
 
-<script >
-  const atlasDataStore = new AtlasDataStore();
-  const fontMetricsStore = new FontMetricsStore();
-</script>
-
 <script src="../src/runtime/FontManifest.js"></script>
 <script src="../font-assets/font-registry.js"></script>
-<script src="../src/runtime/FontLoaderBase.js"></script>
-<script src="../src/platform/FontLoader-browser.js"></script>
 
 <script>
   // Ensure everything is loaded before starting
-  console.log("FontLoader available:", typeof FontLoader !== 'undefined');
+  console.log("BitmapText available:", typeof BitmapText !== 'undefined');
   console.log("FontManifest available:", typeof FontManifest !== 'undefined' && FontManifest.count() > 0);
 
-  if (typeof FontLoader === 'undefined') {
-    console.error("FontLoader is not defined. Check that FontLoader.js loaded properly.");
+  if (typeof BitmapText === 'undefined') {
+    console.error("BitmapText is not defined. Check that BitmapText.js loaded properly.");
   } else if (typeof FontManifest === 'undefined' || FontManifest.count() === 0) {
     console.error("FontManifest is not available or contains no fonts. Check that FontManifest.js and font-registry.js loaded properly.");
   } else {
@@ -105,26 +100,23 @@ and then open the page from the browser at:
     // Determine protocol for image loading
     const isFileProtocol = window.location.href.includes("file://");
 
-    // Load all fonts using FontLoader
+    // Load all fonts using static API
     console.log("Using font registry IDs:", FontManifest.allFontIDs());
 
-    const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, (loaded, total) => {
-      console.log(`loadedScripts: ${loaded} out of ${total}`);
+    BitmapText.loadFonts(FontManifest.allFontIDs(), {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`loadedScripts: ${loaded} out of ${total}`)
+    }).then(() => {
+      console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
+      console.log("All metrics loaded to BitmapText");
+
+      startTiming('drawTestText');
+      const fontProperties = getFontPropertiesFromUI();
+      drawTestText_withStandardClass(fontProperties);
+      console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
+    }).catch(error => {
+      console.error("Font loading failed:", error);
     });
-
-    fontLoader.loadFonts(FontManifest.allFontIDs(), isFileProtocol)
-      .then(() => {
-        console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
-        console.log("All metrics loaded directly to store");
-
-        startTiming('drawTestText');
-        const fontProperties = getFontPropertiesFromUI();
-        drawTestText_withStandardClass(fontProperties, atlasDataStore, fontMetricsStore);
-        console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
-      })
-      .catch(error => {
-        console.error("Font loading failed:", error);
-      });
   }
 </script>
 

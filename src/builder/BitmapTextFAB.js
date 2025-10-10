@@ -1,6 +1,6 @@
-// BitmapTextFAB - Font Assets Building Class
-// 
-// This class extends BitmapText to provide font assets building capabilities
+// BitmapTextFAB - Font Assets Building Static Class
+//
+// This static class extends BitmapText to provide font assets building capabilities
 // for bitmap text rendering with atlas and metrics generation.
 //
 // DISTRIBUTION ROLE:
@@ -9,9 +9,10 @@
 // - Works with AtlasDataStoreFAB and FontMetricsStoreFAB for complete font assets building
 //
 // ARCHITECTURE:
-// - Constructed with AtlasDataStoreFAB (glyph and atlas building) and FontMetricsStoreFAB (metrics)
+// - Static class extending static BitmapText
 // - Inherits all runtime text rendering from BitmapText
 // - Adds glyph creation, kerning calculation, and font assets building methods
+// - Uses static AtlasDataStoreFAB and FontMetricsStoreFAB stores
 // - Integrates with font assets building pipeline and specifications
 //
 // SEPARATION OF CONCERNS:
@@ -19,33 +20,19 @@
 // - Uses FontMetricsStoreFAB for metrics calculation and kerning management
 // - Both stores work together during the font assets building process
 class BitmapTextFAB extends BitmapText {
-
-  constructor(atlasDataStoreFAB, fontMetricsStoreFAB, canvasFactory, specs = null) {
-    // Pass both stores to parent BitmapText constructor
-    // Parent expects (atlasDataStore, fontMetricsStore, canvasFactory)
-    super(atlasDataStoreFAB, fontMetricsStoreFAB, canvasFactory);
-
-    // Store references to FAB-specific stores for building operations
-    // Note: this.atlasDataStore and this.fontMetricsStore are already set by parent
-    this.atlasDataStoreFAB = atlasDataStoreFAB;
-    this.fontMetricsStoreFAB = fontMetricsStoreFAB;
-
-    // Initialize kerning calculator if specs provided
-    // If null, must call setSpecs() before using kerning methods
-    // This allows backward compatibility and lazy initialization
-    this._kerningCalculator = specs ? new KerningCalculator(specs) : null;
-  }
+  // Static kerning calculator (initialized via setSpecs)
+  static #kerningCalculator = null;
 
   /**
    * Set specs and initialize kerning calculator
    * Called when specs are parsed or updated
    * @param {Specs} specs - Font specifications instance
    */
-  setSpecs(specs) {
+  static setSpecs(specs) {
     if (!specs) {
       throw new Error('setSpecs() requires non-null Specs instance');
     }
-    this._kerningCalculator = new KerningCalculator(specs);
+    this.#kerningCalculator = new KerningCalculator(specs);
   }
 
   /**
@@ -53,11 +40,11 @@ class BitmapTextFAB extends BitmapText {
    * @private
    * @throws {Error} If kerning calculator not initialized
    */
-  _ensureKerningCalculator() {
-    if (!this._kerningCalculator) {
+  static #ensureKerningCalculator() {
+    if (!this.#kerningCalculator) {
       throw new Error(
         'Kerning calculator not initialized. ' +
-        'Call setSpecs() or pass specs to constructor.'
+        'Call setSpecs() before using kerning methods.'
       );
     }
   }
@@ -74,20 +61,20 @@ class BitmapTextFAB extends BitmapText {
    * @deprecated Use kerningCalculator.calculateCorrection() for direct access
    * @private Internal method - prefer buildKerningTableIfDoesntExist()
    */
-  getKerningCorrectionFromSpec(fontProperties, char, nextChar) {
-    this._ensureKerningCalculator();
-    return this._kerningCalculator.calculateCorrection(fontProperties, char, nextChar);
+  static getKerningCorrectionFromSpec(fontProperties, char, nextChar) {
+    this.#ensureKerningCalculator();
+    return this.#kerningCalculator.calculateCorrection(fontProperties, char, nextChar);
   }
 
   /**
    * Build kerning table if it doesn't exist
    * Delegates calculation to KerningCalculator, handles storage orchestration
    */
-  buildKerningTableIfDoesntExist(fontProperties) {
-    this._ensureKerningCalculator();
+  static buildKerningTableIfDoesntExist(fontProperties) {
+    this.#ensureKerningCalculator();
 
     // Early return if table already exists (idempotent operation)
-    if (this.fontMetricsStoreFAB.kerningTableExists(fontProperties)) {
+    if (FontMetricsStoreFAB.kerningTableExists(fontProperties)) {
       return;
     }
 
@@ -101,19 +88,19 @@ class BitmapTextFAB extends BitmapText {
     }
 
     // Build kerning table using calculator (pure calculation, no side effects)
-    const kerningTable = this._kerningCalculator.buildTable(
+    const kerningTable = this.#kerningCalculator.buildTable(
       fontProperties,
       characterSet
     );
 
     // Store kerning table (orchestration responsibility of FAB class)
-    this.fontMetricsStoreFAB.setKerningTable(fontProperties, kerningTable);
+    FontMetricsStoreFAB.setKerningTable(fontProperties, kerningTable);
 
     // Store space advancement override (separate concern, but stored together)
-    const spaceAdvancementOverride = this._kerningCalculator.getSpaceAdvancementOverride(
+    const spaceAdvancementOverride = this.#kerningCalculator.getSpaceAdvancementOverride(
       fontProperties
     );
-    this.fontMetricsStoreFAB.setSpaceAdvancementOverrideForSmallSizesInPx(
+    FontMetricsStoreFAB.setSpaceAdvancementOverrideForSmallSizesInPx(
       fontProperties,
       spaceAdvancementOverride
     );
@@ -125,12 +112,12 @@ class BitmapTextFAB extends BitmapText {
   // and see if it's bold or not. This is not a good idea because it's slow.
   // So, the best way is to keep track of the font-family, font-size and
   // font-style that you use in your own code and pass as params.
-  drawTextViaIndividualCanvasesNotViaAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
+  static drawTextViaIndividualCanvasesNotViaAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
     let x_PhysPx = x_CssPx * fontProperties.pixelDensity;
     const y_PhysPx = y_CssPx * fontProperties.pixelDensity;
 
     // Get FontMetrics instance once for this font
-    const fontMetrics = this.fontMetricsStoreFAB.getFontMetrics(fontProperties);
+    const fontMetrics = FontMetricsStoreFAB.getFontMetrics(fontProperties);
     if (!fontMetrics) {
       throw new Error(`No metrics found for font: ${fontProperties.key}`);
     }
@@ -142,16 +129,18 @@ class BitmapTextFAB extends BitmapText {
 
     // Convert to array of code points for proper Unicode handling
     const chars = [...text];
+    let drawnCount = 0;
     for (let i = 0; i < chars.length; i++) {
       const char = chars[i];
       const nextChar = chars[i + 1];
-      const glyph = this.atlasDataStoreFAB.getGlyph(
+      const glyph = AtlasDataStoreFAB.getGlyph(
         fontProperties,
         char
       );
       const characterMetrics = fontMetrics.getCharacterMetrics(char);
 
       if (glyph?.tightCanvas) {
+        drawnCount++;
         // Some glyphs protrude to the left of the x_PhysPx that you specify, i.e. their
         // actualBoundingBoxLeft > 0, for example it's quite large for the
         // italic f in Times New Roman. The other glyphs that don't protrude to the left
@@ -201,16 +190,25 @@ class BitmapTextFAB extends BitmapText {
         // (inclusive), and addind the distance of 5 pixels (5 empty rows), we get that the bottom of the canvas will be at row 16 + 5 = 21 i.e. y = 20
         // (which is what we wanted).
         // See https://www.w3schools.com/jsref/canvas_drawimage.asp
+        const drawX = xPos_PhysPx + leftSpacing_PhysPx;
+        const drawY = yPos_PhysPx;
+
+        // Debug first character of first call
+        if (i === 0 && drawnCount === 1) {
+          console.log(`[DEBUG] First drawImage call: char="${char}", canvas=${glyph.tightCanvas.width}x${glyph.tightCanvas.height}, x=${drawX}, y=${drawY}, y_PhysPx=${y_PhysPx}, tightCanvas.height=${glyph.tightCanvas.height}`);
+        }
+
         ctx.drawImage(
           glyph.tightCanvas,
-          xPos_PhysPx + leftSpacing_PhysPx,
-          yPos_PhysPx
+          drawX,
+          drawY
         );
       }
 
       x_PhysPx +=
-        this.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) *
+        BitmapText.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) *
         fontProperties.pixelDensity;
     }
+    console.log(`[DEBUG] drawTextViaIndividualCanvasesNotViaAtlas drew ${drawnCount} glyphs for text: "${text.substring(0, 20)}..."`);
   }
 }

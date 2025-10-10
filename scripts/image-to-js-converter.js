@@ -112,19 +112,14 @@ function generateJSContent(idString, base64Data, imageType, originalFilename) {
 // Format: Variable-width cells (Atlas format)
 // Positioning data will be reconstructed at runtime using TightAtlasReconstructor
 
-// Register atlas package (base64 only - no positioning data)
-if (typeof FontLoader !== 'undefined' && FontLoader.registerAtlasPackage) {
-    FontLoader.registerAtlasPackage(
-        '${idString}',
-        '${base64Data}'
-    );
-} else if (typeof FontLoaderBase !== 'undefined' && FontLoaderBase.registerAtlasPackage) {
-    FontLoaderBase.registerAtlasPackage(
+// Register atlas with BitmapText (base64 only - no positioning data)
+if (typeof BitmapText !== 'undefined' && BitmapText.registerAtlas) {
+    BitmapText.registerAtlas(
         '${idString}',
         '${base64Data}'
     );
 } else {
-    console.warn('FontLoader/FontLoaderBase.registerAtlasPackage not available - atlas data for ${idString} not registered');
+    console.warn('BitmapText.registerAtlas not available - atlas data for ${idString} not registered');
 }
 `;
 }

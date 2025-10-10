@@ -26,7 +26,6 @@ mkdir -p "$OUTPUT_DIR"
 # Verify all source files exist
 FILES_TO_CHECK=(
   "$SRC_DIR/platform/canvas-mock.js"
-  "$SRC_DIR/platform/FontLoader-node.js"
   "$SRC_DIR/runtime/StatusCode.js"
   "$SRC_DIR/runtime/FontProperties.js"
   "$SRC_DIR/runtime/TextProperties.js"
@@ -38,12 +37,13 @@ FILES_TO_CHECK=(
   "$SRC_DIR/builder/AtlasReconstructionUtils.js"
   "$SRC_DIR/utils/AtlasCellDimensions.js"
   "$SRC_DIR/runtime/TightAtlasReconstructor.js"
-  "$SRC_DIR/runtime/FontLoaderBase.js"
   "$LIB_DIR/QOIDecode.js"
-  "$LIB_DIR/PngEncodingOptions.js"
-  "$LIB_DIR/PngEncoder.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
+  "$SRC_DIR/runtime/FontLoaderBase.js"
+  "$SRC_DIR/platform/FontLoader-node.js"
+  "$LIB_DIR/PngEncodingOptions.js"
+  "$LIB_DIR/PngEncoder.js"
   "$SRC_DIR/runtime/BitmapText.js"
   "$SRC_DIR/node/hello-world-multi-size-main.js"
 )
@@ -104,22 +104,6 @@ echo "// MINIMAL CANVAS MOCK - Only what BitmapText.js needs" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 tail -n +2 "$SRC_DIR/platform/canvas-mock.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Concatenate FontLoaderBase (MUST come before FontLoader-node since it's the parent class)
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// FONT LOADER BASE CLASS" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/runtime/FontLoaderBase.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Concatenate FontLoader for Node.js (skip require statements to avoid duplicates)
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// FONTLOADER NODE.JS IMPLEMENTATION" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-tail -n +25 "$SRC_DIR/platform/FontLoader-node.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate StatusCode class (MUST BE FIRST before BitmapText)
@@ -210,14 +194,44 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/TightAtlasReconstructor.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# FontLoaderBase already concatenated earlier (before FontLoader-node)
-
 # Concatenate QOI decoder
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// QOI DECODER LIBRARY" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$LIB_DIR/QOIDecode.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate AtlasDataStore (before BitmapText)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// ATLAS DATA STORE" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/AtlasDataStore.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate FontMetricsStore (before BitmapText)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// FONT METRICS STORE" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/FontMetricsStore.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate FontLoaderBase (before BitmapText)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// FONT LOADER BASE CLASS" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/FontLoaderBase.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate FontLoader Node.js implementation (before BitmapText)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// FONT LOADER - NODE.JS PLATFORM IMPLEMENTATION" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/platform/FontLoader-node.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate PNG encoding options
@@ -236,25 +250,9 @@ echo "" >> "$OUTPUT_FILE"
 cat "$LIB_DIR/PngEncoder.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate AtlasDataStore
+# Concatenate BitmapTextStatic (includes all functionality)
 echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// ATLAS DATA STORE" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/runtime/AtlasDataStore.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Concatenate FontMetricsStore
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// FONT METRICS STORE" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/runtime/FontMetricsStore.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Concatenate BitmapText
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// BITMAP TEXT RENDERER" >> "$OUTPUT_FILE"
+echo "// BITMAP TEXT STATIC CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/BitmapText.js" >> "$OUTPUT_FILE"
