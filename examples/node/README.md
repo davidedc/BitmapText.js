@@ -67,14 +67,16 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the single-size demo:
 1. **Main logic**: `src/node/hello-world-main.js`
-2. **Font loading**: `src/platform/FontLoader-node.js` (Node.js FontLoader implementation)
-3. **Core rendering**: `src/runtime/BitmapText.js`, `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js`
-4. **Canvas implementation**: `src/platform/canvas-mock.js`
-5. **Image libraries**: `lib/QOIDecode.js`, `lib/PngEncoder.js`
+2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (Node.js implementation, class name: `FontLoader`)
+3. **Font loading base**: `src/runtime/FontLoaderBase.js` (shared logic for both platforms)
+4. **Core rendering**: `src/runtime/BitmapText.js` (delegates to stores)
+5. **Storage**: `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js` (single source of truth)
+6. **Canvas implementation**: `src/platform/canvas-mock.js`
+7. **Image libraries**: `lib/QOIDecode.js`, `lib/PngEncoder.js`
 
 ### For the multi-size demo:
 1. **Main logic**: `src/node/hello-world-multi-size-main.js`
-2. **Font loading**: `src/platform/FontLoader-node.js` (same FontLoader API as browser)
+2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (unified API, works same as browser)
 3. **Core rendering**: Same as above
 4. **Other components**: Same as above
 
@@ -108,12 +110,18 @@ npm run build-multi-size-demo
 Each bundled file contains these sections in order:
 1. **Header**: Usage instructions and warnings
 2. **Canvas Mock**: Minimal Canvas API implementation for Node.js
-3. **FontLoader**: Node.js implementation with unified API (instance-based, matches browser version)
-4. **Utility Functions**: Nested property helpers, metrics expansion
-5. **Image Libraries**: QOI decoder, PNG encoder
-6. **Core Classes**: AtlasDataStore, FontMetricsStore, BitmapText
-7. **Demo Logic**: The actual demo code from src/node/
-8. **Font Assets**: External font-assets/ directory (not inlined)
+3. **Status Code**: StatusCode constants and helper functions
+4. **Configuration Classes**: FontProperties, TextProperties
+5. **Font Metrics**: FontMetrics class
+6. **Utility Functions**: MetricsExpander for font data expansion
+7. **Atlas Classes**: AtlasPositioning, AtlasImage, AtlasData
+8. **Reconstruction Utilities**: AtlasReconstructionUtils, TightAtlasReconstructor
+9. **Image Libraries**: QOI decoder, PNG encoder
+10. **Storage Classes**: AtlasDataStore, FontMetricsStore (single source of truth)
+11. **Font Loading**: FontLoaderBase, FontLoader (platform-specific, from src/platform/FontLoader-node.js)
+12. **Core Rendering**: BitmapText (delegates to stores)
+13. **Demo Logic**: The actual demo code from src/node/
+14. **Font Assets**: External font-assets/ directory (not inlined)
 
 ## Why Bundled Files?
 

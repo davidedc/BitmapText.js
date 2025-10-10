@@ -13,27 +13,56 @@
   3. **Separation of Concerns**: Clear boundary between font assets building (FAB classes) and rendering (runtime classes)
   4. **Hash Verification**: verification of rendering consistency
 
-  ### Architectural Rationale: Core/FAB Layering
+  ### Architectural Rationale: Static Class Design
 
-  The system is architected with a **two-tier class hierarchy** where FAB classes extend Core classes. This design enables **modular distribution** and **optimized bundle sizes** for different use cases:
+  The system uses a **static class architecture** for the runtime API, providing zero-configuration usage while maintaining a separate instance-based architecture for font-assets-builder.
+
+  **Why Static Architecture?**
+
+  The static architecture was chosen after evaluating an instance-based approach. The key insight: **font data is application-wide state, not instance-specific state**. There's no meaningful use case for maintaining separate font data per instance.
+
+  **Comparison: Instance-based vs Static**
+
+  *Instance-based approach (rejected):*
+  ```javascript
+  // User must manually create and wire stores
+  const atlasDataStore = new AtlasDataStore();
+  const fontMetricsStore = new FontMetricsStore();
+  const bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
+  const fontLoader = new FontLoader(atlasDataStore, fontMetricsStore, ...);
+
+  // Problems: Unnecessary plumbing, exposed complexity, larger bundle
+  ```
+
+  *Static approach (implemented):*
+  ```javascript
+  // Zero configuration - just use it
+  BitmapText.drawTextFromAtlas(ctx, text, x, y, fontProperties);
+
+  // All stores are internal, managed automatically
+  ```
+
+  The classes that became static (BitmapText, AtlasDataStore, FontMetricsStore) revealed themselves to be singletons - they maintain application-wide state that doesn't benefit from multiple instances. Making them static eliminates unnecessary instantiation and wiring.
 
   **Distribution Strategy:**
-  - **Runtime Distribution** (~18-22KB): Only core classes (BitmapText, AtlasDataStore, FontMetricsStore, FontProperties, TextProperties, FontLoaderBase, FontLoader) for measuring and drawing pre-generated fonts
-  - **Full Distribution** (~55KB+): Core + FAB classes for complete font assets building and rendering capabilities
-  - **Typical Use Case**: Most applications only need the lightweight runtime to consume pre-built bitmap fonts
+  - **Static Runtime** (~15-18KB): BitmapText static class with internal stores - zero configuration in browsers, minimal configuration in Node.js
+  - **Instance Runtime** (~18-22KB): BitmapTextRuntime + AtlasDataStore + FontMetricsStore - used by font-assets-builder FAB classes
+  - **Full Distribution** (~55KB+): Instance runtime + FAB classes for complete font assets building capabilities
 
   **Benefits:**
-  1. **Bundle Size Optimization**: End users importing only runtime classes get significantly smaller bundles
-  2. **Clear Separation of Concerns**: Build-time font assets building vs runtime text rendering
-  3. **Deployment Flexibility**: Runtime-only distribution can be used in production without font assets building dependencies
-  4. **Development Efficiency**: Font assets building can happen in development/build pipeline, not in user browsers
+  1. **Zero Configuration**: Browser users load BitmapText.js and font assets - no setup required
+  2. **Simplified API**: All methods static - `BitmapText.drawTextFromAtlas()` instead of manual wiring
+  3. **Smaller Bundle**: Single class instead of multiple instances and stores
+  4. **Self-Registering Assets**: Font files call `BitmapText.registerMetrics/Atlas()` when loaded
+  5. **Cross-Platform**: Same API works in browser and Node.js with minimal configuration
+  6. **No Plumbing**: Stores are internal, no manual wiring required
 
-  **Implementation Pattern:**
-  - **Core Classes**: Minimal, performance-optimized runtime functionality
-  - **FAB Classes**: Extend core classes with font assets building capabilities (validation, font building, metrics calculation)
-  - **Extraction Methods**: FAB instances can extract clean runtime instances (e.g., `extractAtlasDataStoreInstance()`, `extractFontMetricsStoreInstance()`)
+  **Dual Architecture:**
+  - **BitmapText (static)**: Production runtime - static methods, delegates to internal stores
+  - **BitmapTextRuntime (instance)**: Font-assets-builder - extends old instance-based architecture for FAB classes
+  - **FAB Classes**: Extend BitmapTextRuntime, AtlasDataStore, FontMetricsStore for font building capabilities
 
-  This architecture allows developers to choose between a lightweight consumer library or a full font assets building toolkit based on their needs.
+  This architecture provides a simple static API for end users while preserving the instance-based architecture for the font-assets-builder tool.
 
   ### Component Organization
 ```
@@ -70,47 +99,69 @@
 
   **Distribution Requirements by Use Case:**
 
-  **Runtime-Only Applications** (consuming pre-built fonts):
-  - `BitmapText` - Text rendering and measurement
-  - `AtlasDataStore` - Atlas data storage and retrieval
-  - `FontMetricsStore` - Font metrics, kerning, and glyph positioning data
-  - `FontProperties` - Font configuration management
-  - `TextProperties` - Text rendering configuration (kerning, alignment, color)
-  - `FontLoaderBase` - Abstract base class for font loading (shared logic)
-  - `FontLoader` - Browser-specific font loading implementation
-  - `FontManifest` - Font registry for testing (optional)
-  - **Bundle Size**: ~18-22KB + font assets
-  - **Use Case**: Production applications displaying bitmap text
+  **Static Runtime Applications** (consuming pre-built fonts):
+  - `BitmapText` (static) - All rendering and measurement via static methods
+  - `FontProperties` - Font configuration (optional, for type safety)
+  - `TextProperties` - Text rendering configuration (optional, for type safety)
+  - **Bundle Size**: ~15-18KB + font assets
+  - **Use Case**: Production web apps, Node.js rendering, games
+  - **Configuration**: Zero-config in browser, minimal config in Node.js
 
   **Font Assets Building Applications**:
-  - All Core Classes (above) +
+  - `BitmapTextRuntime` - Instance-based text rendering (for FAB to extend)
+  - `AtlasDataStore` - Atlas data storage (for FAB to extend)
+  - `FontMetricsStore` - Font metrics storage (for FAB to extend)
   - `BitmapTextFAB` - Extended font assets building capabilities
   - `AtlasDataStoreFAB` - Atlas building and optimization
   - `FontMetricsStoreFAB` - Font metrics calculation and kerning generation
   - `FontPropertiesFAB` - Validation and font configuration tools
   - **Bundle Size**: ~55KB+ including font assets building tools
-  - **Use Case**: Development tools, font builders, CI pipelines
+  - **Use Case**: Font-assets-builder.html, development tools
 
-  **Key Pattern**: FAB classes extend Core classes and provide `extract*Instance()` methods to create clean runtime objects for distribution.
+  **Key Pattern**: Static BitmapText for end users, instance-based BitmapTextRuntime for FAB classes to extend.
 
   ### Core Classes (Runtime)
 
-  **BitmapText**
-  - Purpose: Text rendering engine
+  **BitmapText (static class)**
+  - Purpose: Static text rendering API and facade for internal stores
+  - Architecture: All methods static, delegates storage to AtlasDataStore and FontMetricsStore
   - Responsibilities:
-    - Text measurement (measureText)
+    - Configuration (Node.js): `configure({ dataDir, canvasFactory })`
+    - Font loading: `loadFont()`, `loadFonts()` - delegates to platform-specific FontLoader
+    - Font registration: `registerMetrics()`, `registerAtlas()` (called by font assets) - delegates to stores
+    - Font queries: `hasMetrics()`, `hasAtlas()`, `unloadMetrics()`, `unloadAtlas()` - delegates to stores
+    - Text measurement: `measureText()` - retrieves data from stores
+    - Text rendering: `drawTextFromAtlas()` - retrieves data from stores
+    - Platform-specific FontLoader detection: Checks for `FontLoader` class from src/platform/
+    - Canvas creation: Auto-creates in browser, uses canvasFactory in Node.js
+  - Internal Fields (private):
+    - `#fontLoader`: Platform-specific FontLoader class (src/platform/FontLoader-browser.js or FontLoader-node.js)
+    - `#dataDir`: Font assets directory (Node.js only)
+    - `#canvasFactory`: Canvas creation function (Node.js only)
+    - Storage: Delegated to AtlasDataStore and FontMetricsStore (stores are the single source of truth)
+
+  **BitmapTextRuntime (instance class)**
+  - Purpose: Instance-based text rendering for font-assets-builder
+  - Architecture: Extends old BitmapText instance-based implementation
+  - Used by: BitmapTextFAB extends BitmapTextRuntime
+  - Responsibilities:
+    - Text measurement (measureText instance method)
     - Glyph positioning with kerning
     - Color application via composite operations
     - Canvas rendering
     - Placeholder rectangle rendering for missing atlases
 
-  **AtlasDataStore**
-  - Purpose: Atlas image repository
+  **AtlasDataStore (static class)**
+  - Purpose: Single source of truth for atlas image storage
+  - Architecture: Static class, used by BitmapText (via delegation) and FontLoaderBase (directly)
   - Data structures:
-    - `atlases`: AtlasData objects containing both image and positioning data
+    - `atlases`: Map storing AtlasData objects (image + positioning data)
   - Methods:
     - `getAtlasData()`, `setAtlasData()`: Atlas storage and retrieval
-    - `isValidAtlas()`: Validates atlas integrity
+    - `deleteAtlas()`: Remove atlas from memory
+    - `hasAtlas()`: Check if atlas exists
+    - `getLoadedAtlases()`: List all loaded atlas IDs
+    - `clear()`: Clear all atlases (testing only)
 
   **AtlasImage**
   - Purpose: Encapsulates atlas image as immutable domain object
@@ -153,16 +204,21 @@
     - `get width()`, `get height()`: Convenient dimension accessors
     - `canRender()`: Checks if ready for rendering operations
 
-  **FontMetricsStore**
-  - Purpose: Font metrics repository
+  **FontMetricsStore (static class)**
+  - Purpose: Single source of truth for font metrics storage
+  - Architecture: Static class, used by BitmapText (via delegation) and FontLoaderBase (directly)
   - Data structures:
-    - `characterMetrics`: Text measurement data for layout calculation
-    - `kerningTables`: Pair-wise character adjustments
-    - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
+    - `fontMetrics`: Map storing FontMetrics instances
+    - Each FontMetrics contains:
+      - `characterMetrics`: Text measurement data for layout calculation
+      - `kerningTables`: Pair-wise character adjustments
+      - `spaceAdvancementOverrideForSmallSizesInPx`: Special spacing rules
   - Methods:
     - `getFontMetrics()`, `setFontMetrics()`: FontMetrics instance management
-    - `hasFontMetrics()`, `deleteFontMetrics()`: FontMetrics lifecycle management
-    - `getAvailableFonts()`: Available font configurations
+    - `deleteFontMetrics()`: Remove font metrics from memory
+    - `hasFontMetrics()`: Check if font metrics exist
+    - `getLoadedFonts()`: List all loaded font IDs
+    - `clear()`: Clear all font metrics (testing only)
 
   **TextProperties**
   - Purpose: Text rendering configuration management
@@ -176,63 +232,37 @@
     - `textBaseline`, `textAlign`: Canvas text positioning
     - `textColor`: CSS color specification
 
-  **FontLoaderBase**
-  - Purpose: Abstract base class for font loading across JavaScript environments
-  - Responsibilities:
-    - Template Method Pattern for orchestrating font loading workflow
-    - Shared logic consolidation to avoid code duplication
-    - Static storage for temporary atlas packages (_tempAtlasPackages)
-    - Path building methods for font assets (metrics, PNG, QOI, JS)
-    - Progress tracking (incrementProgress, isComplete)
-    - Atlas reconstruction via TightAtlasReconstructor integration
-  - Abstract Methods (must be implemented by subclasses):
-    - getDefaultCanvasFactory(): Environment-specific canvas creation
-    - getDefaultDataDir(): Environment-specific asset path defaults
-    - loadMetrics(IDString): Environment-specific metrics loading
-    - loadAtlas(IDString, isFileProtocol): Environment-specific atlas loading
-  - Shared Methods:
-    - loadAtlasFromPackage(IDString, atlasImage): Atlas reconstruction and storage
-    - loadFont(IDString, isFileProtocol): Template method for single font loading
-    - loadFonts(IDStrings, isFileProtocol): Batch font loading
-    - Path builders: getMetricsPath(), getAtlasPngPath(), getAtlasQoiPath(), getAtlasJsPath()
-  - Static Method: registerAtlasPackage(IDString, base64Data) for atlas JS files
-  - Static Constants: METRICS_PREFIX, ATLAS_PREFIX, PNG_EXTENSION, QOI_EXTENSION, JS_EXTENSION
-  - Static Messages: Error/warning templates for consistent user feedback
-
-  **FontLoader (Browser)**
-  - Purpose: Browser-specific font loading implementation
-  - Architecture: Extends FontLoaderBase
-  - Responsibilities:
-    - Promise-based async font data loading with DOM APIs
-    - Script tag loading for metrics JS files
+  **Font Loading (platform-specific FontLoader classes)**
+  - Purpose: Load font data from pre-generated assets
+  - Architecture: Platform-specific implementations with unified class name
+    - **src/platform/FontLoader-browser.js**: Browser implementation (class: `FontLoader`)
+    - **src/platform/FontLoader-node.js**: Node.js implementation (class: `FontLoader`)
+    - Platform selection: Build-time (which file is included), not runtime detection
+    - Both extend FontLoaderBase for shared logic
+  - Browser Implementation (FontLoader-browser.js):
+    - Script tag loading for metrics JS files (call `BitmapText.registerMetrics()`)
     - Image element loading for PNG atlases (http://)
     - Script tag + base64 decoding for JS-wrapped atlases (file://)
     - Protocol detection (file:// vs http://) for appropriate loading strategy
-    - Error handling and progress reporting
-  - Implementation:
-    - loadMetrics(): Creates <script> tag, awaits load event
-    - loadAtlas(): Delegates to loadAtlasFromJS() or loadAtlasFromPNG()
-    - getDefaultCanvasFactory(): Returns () => document.createElement('canvas')
-    - getDefaultDataDir(): Returns '../font-assets/' (relative to public/)
-  - Loading Dependency: Metrics MUST be loaded before atlases (inherited from base)
-  - Graceful degradation: Missing atlases result in placeholder rectangles
-
-  **FontLoader (Node.js)**
-  - Purpose: Node.js-specific font loading implementation
-  - Architecture: Extends FontLoaderBase
-  - Responsibilities:
-    - Synchronous font data loading with fs.readFileSync
-    - Direct file system access for metrics and atlas files
-    - eval-based loading with proper scope injection
+    - Promise-based async loading with progress callbacks
+    - Auto-detects canvas creation: `document.createElement('canvas')`
+    - Default data directory: '../font-assets/' (relative to public/)
+  - Node.js Implementation (FontLoader-node.js):
+    - Synchronous fs.readFileSync for metrics and atlas files
+    - eval-based loading with BitmapText static scope
     - QOI decoding for atlas image data
-    - Error handling with graceful degradation
-  - Implementation:
-    - loadMetrics(): Synchronous fs.readFileSync + eval with fontMetricsStore scope
-    - loadAtlas(): Synchronous fs.readFileSync + QOI decode + reconstruction
-    - getDefaultCanvasFactory(): Returns Canvas class constructor
-    - getDefaultDataDir(): Returns './font-assets/' (relative to script location)
-  - Loading Dependency: Metrics MUST be loaded before atlases (inherited from base)
-  - Cross-platform: Uses Canvas class for canvas creation
+    - Uses configured canvasFactory for canvas creation
+    - Uses configured dataDir for file paths
+  - FontLoaderBase (shared logic):
+    - Atlas reconstruction via TightAtlasReconstructor
+    - Stores data directly in AtlasDataStore and FontMetricsStore
+    - Pending atlas handling (atlas arrives before metrics)
+  - Loading Dependency: Metrics MUST be loaded before atlases
+  - Graceful degradation: Missing atlases result in placeholder rectangles
+  - API Methods (exposed via BitmapText):
+    - `BitmapText.loadFont(idString, options)`: Load single font
+    - `BitmapText.loadFonts(idStrings, options)`: Load multiple fonts in parallel
+    - Options: `{ isFileProtocol, onProgress }`
 
 ## Terminology
 
@@ -283,7 +313,7 @@ To support compound emojis would require:
 
   ### FAB Classes (Font Assets Building)
 
-  **BitmapTextFAB extends BitmapText**
+  **BitmapTextFAB extends BitmapTextRuntime**
   - Additional capabilities for font assets building
   - Creates individual glyph canvases
   - Calculates precise bounding boxes
@@ -566,40 +596,59 @@ To support compound emojis would require:
     8. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
   ```
 
-  ### Runtime Font Loading Workflow (Template Method Pattern)
+  ### Runtime Font Loading Workflow (Static API)
   ```
-  Browser:
-    User → FontLoader instance (extends FontLoaderBase) → loadFonts(IDStrings)
-      1. For each IDString: loadFont(IDString) [template method in base class]
-      2. loadMetrics() [browser implementation] → Create <script> tag → Await load → metrics file evals and populates store
-      3. loadAtlas() [browser implementation] → Delegates to loadAtlasFromJS() or loadAtlasFromPNG()
-         - loadAtlasFromPNG(): Create <img> → Await load → loadAtlasFromPackage() [base class]
-         - loadAtlasFromJS(): Create <script> → Await load → Decode base64 → loadAtlasFromPackage() [base class]
-      4. loadAtlasFromPackage() [base class] → TightAtlasReconstructor → AtlasData → Store
-      5. incrementProgress() [base class] → Progress callbacks fire for each file
+  Browser (uses src/platform/FontLoader-browser.js):
+    User → BitmapText.loadFonts(IDStrings, options)
+      1. BitmapText delegates to FontLoader (platform-specific, included at build time)
+      2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
+      3. Load metrics: Create <script> tag → Await load → metrics file calls BitmapText.registerMetrics()
+         → BitmapText.registerMetrics() delegates to FontMetricsStore.setFontMetrics()
+      4. Load atlas: Delegates to loadAtlasFromJS() or loadAtlasFromPNG()
+         - loadAtlasFromPNG(): Create <img> → Await load → TightAtlasReconstructor → store in AtlasDataStore
+         - loadAtlasFromJS(): Create <script> → Await load → atlas file calls BitmapText.registerAtlas()
+         → BitmapText.registerAtlas() delegates to AtlasDataStore.setAtlasData()
+      5. Progress callbacks fire for each file (optional)
       6. Return Promise when complete
 
-  Node.js:
-    User → FontLoader instance (extends FontLoaderBase) → loadFonts(IDStrings)
-      1. For each IDString: loadFont(IDString) [template method in base class]
-      2. loadMetrics() [Node.js implementation] → fs.readFileSync() → eval with fontMetricsStore in scope → Direct store population
-      3. loadAtlas() [Node.js implementation] → fs.readFileSync() → QOI decode → loadAtlasFromPackage() [base class]
-      4. loadAtlasFromPackage() [base class] → TightAtlasReconstructor → AtlasData → Store
-      5. incrementProgress() [base class] → Progress callbacks fire synchronously
+  Node.js (uses src/platform/FontLoader-node.js):
+    User → BitmapText.configure({ dataDir, canvasFactory }) → BitmapText.loadFonts(IDStrings, options)
+      1. BitmapText delegates to FontLoader (platform-specific, included at build time)
+      2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
+      3. Load metrics: fs.readFileSync() → eval with BitmapText in scope → calls BitmapText.registerMetrics()
+         → BitmapText.registerMetrics() delegates to FontMetricsStore.setFontMetrics()
+      4. Load atlas: fs.readFileSync() → QOI decode → TightAtlasReconstructor → store in AtlasDataStore
+      5. Progress callbacks fire synchronously (optional)
       6. Return immediately (synchronous)
+
+  Data Storage Flow:
+    FontLoader (platform-specific) → FontLoaderBase → TightAtlasReconstructor → AtlasDataStore/FontMetricsStore
+    BitmapText public API (registerMetrics/registerAtlas) → Delegates to stores
+    Internal BitmapText methods (measureText/drawTextFromAtlas) → Query stores directly
+
+  Self-Registration (Alternative):
+    Browser → Load font asset scripts directly:
+      <script src="font-assets/metrics-*.js"></script>  // Calls BitmapText.registerMetrics() → FontMetricsStore
+      <script src="font-assets/atlas-*-qoi.js"></script> // Calls BitmapText.registerAtlas() → AtlasDataStore
+    → Font data auto-registered in stores, ready to use immediately
   ```
 
-  ### Runtime Text Rendering Workflow
+  ### Runtime Text Rendering Workflow (Static API)
   ```
-  User → src/runtime/BitmapText.drawTextFromAtlas → src/runtime/AtlasDataStore + src/runtime/FontMetricsStore
+  User → BitmapText.drawTextFromAtlas(ctx, text, x, y, fontProperties, textProperties)
     1. Convert text to code point array ([...text])
-    2. Measure text (src/runtime/BitmapText.measureText)
-    3. For each character:
-       a. Get glyph metrics (src/runtime/FontMetricsStore.getFontMetrics)
-       b. Create colored glyph (src/runtime/BitmapText.createColoredGlyph)
-       c. Render to main canvas (src/runtime/BitmapText.renderGlyphToMainCanvas)
-       d. Calculate advancement with kerning (src/runtime/BitmapText.calculateAdvancement_CSS_Px:78)
-    4. Return final rendered text
+    2. Get FontMetrics from FontMetricsStore
+    3. Get AtlasData from AtlasDataStore
+    4. For each character:
+       a. Get glyph metrics from FontMetrics
+       b. Create colored glyph (internal method)
+       c. Render to canvas at position
+       d. Calculate advancement with kerning
+    5. Return { rendered, status }
+
+  Storage Query Flow:
+    BitmapText.measureText() → FontMetricsStore.getFontMetrics()
+    BitmapText.drawTextFromAtlas() → FontMetricsStore.getFontMetrics() + AtlasDataStore.getAtlasData()
   ```
 
   ## Extension Points

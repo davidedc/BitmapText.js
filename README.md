@@ -97,10 +97,12 @@
   ### Browser (Zero Configuration)
 
   ```html
-  <!-- Load BitmapText and font assets -->
-  <script src="src/runtime/BitmapText.js"></script>
+  <!-- Load core runtime classes -->
   <script src="src/runtime/FontProperties.js"></script>
   <script src="src/runtime/TextProperties.js"></script>
+  <script src="src/runtime/AtlasDataStore.js"></script>
+  <script src="src/runtime/FontMetricsStore.js"></script>
+  <script src="src/runtime/BitmapText.js"></script>
 
   <!-- Load pre-generated font data (self-registers automatically) -->
   <script src="font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-18-0.js"></script>

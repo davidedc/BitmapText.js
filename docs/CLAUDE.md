@@ -11,10 +11,13 @@
 
   ## Project Structure at a Glance
 
-  - **Core runtime**: src/runtime/BitmapText.js, src/runtime/AtlasDataStore.js, src/runtime/FontMetricsStore.js, src/runtime/FontProperties.js
-  - **Font assets building tools**: src/builder/*FAB.js files (includes FontPropertiesFAB.js)
-  - **Font utilities**: src/runtime/FontLoaderBase.js, src/platform/FontLoader-browser.js, src/platform/FontLoader-node.js
-  - **Font data**: font-assets/
+  - **Static runtime**: src/runtime/BitmapText.js (static class with zero-config API, delegates to stores)
+  - **Instance runtime**: src/runtime/BitmapTextRuntime.js (for font-assets-builder FAB classes)
+  - **Store classes**: src/runtime/AtlasDataStore.js, src/runtime/FontMetricsStore.js (single source of truth for storage, used by BitmapText and FAB)
+  - **Platform-specific loaders**: src/platform/FontLoader-browser.js, src/platform/FontLoader-node.js (unified class name, selected at build time)
+  - **Configuration classes**: src/runtime/FontProperties.js, src/runtime/TextProperties.js
+  - **Font assets building tools**: src/builder/*FAB.js files (extends BitmapTextRuntime + stores)
+  - **Font data**: font-assets/ (self-registering files that call BitmapText.registerMetrics/Atlas → delegates to stores)
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, png-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
   - **Examples**: examples/node/dist/ (Built Node.js demo bundles), src/node/ (demo source code)
@@ -32,6 +35,8 @@
   - Use src/utils/canvas-extensions.js debugging methods
   - Compare with browser's native rendering
   - Black rectangles indicate placeholder mode (metrics loaded but missing atlases)
+  - Browser console: Check for BitmapText registration calls when loading font assets
+  - Node.js: Verify BitmapText.configure() called before loading fonts
 
   ### Performance Testing
   Look for src/utils/timing.js calls throughout - they measure:
@@ -57,6 +62,8 @@
 
   ## Where to Find Things
 
+  - **Static runtime API**: src/runtime/BitmapText.js (static class - all methods, internal stores)
+  - **Instance runtime**: src/runtime/BitmapTextRuntime.js (for FAB classes to extend)
   - **Font configuration**: src/runtime/FontProperties.js (immutable font config class)
   - **Text rendering configuration**: src/runtime/TextProperties.js (immutable text config class - kerning, color, alignment)
   - **Font assets building utilities**: src/builder/FontPropertiesFAB.js (extends FontProperties)
@@ -65,17 +72,16 @@
   - **Atlas positioning data**: src/runtime/AtlasPositioning.js (immutable positioning domain object)
   - **Atlas positioning building**: src/builder/AtlasPositioningFAB.js (extends AtlasPositioning with building capabilities)
   - **Atlas data combination**: src/runtime/AtlasData.js (combines AtlasImage + AtlasPositioning)
+  - **Atlas store**: src/runtime/AtlasDataStore.js (single source of truth for atlas storage, used by BitmapText via delegation and by FAB)
+  - **Metrics store**: src/runtime/FontMetricsStore.js (single source of truth for metrics storage, used by BitmapText via delegation and by FAB)
+  - **Platform-specific font loading**: src/platform/FontLoader-browser.js (browser), src/platform/FontLoader-node.js (Node.js) - unified class name, selected at build time
+  - **Font loading base class**: src/runtime/FontLoaderBase.js (shared logic for both platforms, stores data directly in AtlasDataStore/FontMetricsStore)
   - **Atlas reconstruction utilities**: src/builder/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
   - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
   - **Tight atlas reconstruction**: src/runtime/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
   - **Glyph creation**: src/builder/GlyphFAB.js (6-step pipeline: canvas setup, measurement, corrections, dimensions, rendering, preservation)
   - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)
-  - **Kerning application**: src/runtime/BitmapText.calculateAdvancement_CSS_Px:78
-  - **Glyph rendering**: src/runtime/BitmapText.drawLetter:158
-  - **Placeholder rectangles**: src/runtime/BitmapText.drawPlaceholderRectangle:1
-  - **Atlas validation**: src/runtime/AtlasDataStore.isValidAtlas:1
-  - **Font loading base class**: src/runtime/FontLoaderBase.js (abstract base with shared logic)
-  - **Font loading utilities**: src/platform/FontLoader-browser.js (browser), src/platform/FontLoader-node.js (Node.js - both extend base class)
+  - **Font loading API**: src/runtime/BitmapText.js (static methods: loadFont, loadFonts - delegates to platform-specific FontLoader; registerMetrics, registerAtlas - delegates to stores)
   - **Font registry management**: src/runtime/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/runtime/AtlasPositioning.getHash:149 (positioning data hash)
   - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
