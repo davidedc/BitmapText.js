@@ -46,8 +46,7 @@
 
   **Distribution Strategy:**
   - **Static Runtime** (~15-18KB): BitmapText static class with internal stores - zero configuration in browsers, minimal configuration in Node.js
-  - **Instance Runtime** (~18-22KB): BitmapTextRuntime + AtlasDataStore + FontMetricsStore - used by font-assets-builder FAB classes
-  - **Full Distribution** (~55KB+): Instance runtime + FAB classes for complete font assets building capabilities
+  - **Full Distribution** (~55KB+): Static runtime + FAB classes for complete font assets building capabilities
 
   **Benefits:**
   1. **Zero Configuration**: Browser users load BitmapText.js and font assets - no setup required
@@ -57,12 +56,11 @@
   5. **Cross-Platform**: Same API works in browser and Node.js with minimal configuration
   6. **No Plumbing**: Stores are internal, no manual wiring required
 
-  **Dual Architecture:**
+  **Architecture:**
   - **BitmapText (static)**: Production runtime - static methods, delegates to internal stores
-  - **BitmapTextRuntime (instance)**: Font-assets-builder - extends old instance-based architecture for FAB classes
-  - **FAB Classes**: Extend BitmapTextRuntime, AtlasDataStore, FontMetricsStore for font building capabilities
+  - **FAB Classes**: Extend BitmapText, AtlasDataStore, FontMetricsStore for font building capabilities
 
-  This architecture provides a simple static API for end users while preserving the instance-based architecture for the font-assets-builder tool.
+  This architecture provides a simple static API for end users while also supporting the font-assets-builder tool through FAB extensions.
 
   ### Component Organization
 ```
@@ -108,9 +106,9 @@
   - **Configuration**: Zero-config in browser, minimal config in Node.js
 
   **Font Assets Building Applications**:
-  - `BitmapTextRuntime` - Instance-based text rendering (for FAB to extend)
-  - `AtlasDataStore` - Atlas data storage (for FAB to extend)
-  - `FontMetricsStore` - Font metrics storage (for FAB to extend)
+  - `BitmapText` - Static text rendering (base class for BitmapTextFAB)
+  - `AtlasDataStore` - Atlas data storage (base class for AtlasDataStoreFAB)
+  - `FontMetricsStore` - Font metrics storage (base class for FontMetricsStoreFAB)
   - `BitmapTextFAB` - Extended font assets building capabilities
   - `AtlasDataStoreFAB` - Atlas building and optimization
   - `FontMetricsStoreFAB` - Font metrics calculation and kerning generation
@@ -118,7 +116,7 @@
   - **Bundle Size**: ~55KB+ including font assets building tools
   - **Use Case**: Font-assets-builder.html, development tools
 
-  **Key Pattern**: Static BitmapText for end users, instance-based BitmapTextRuntime for FAB classes to extend.
+  **Key Pattern**: Static BitmapText for end users, extended by BitmapTextFAB for font building capabilities.
 
   ### Core Classes (Runtime)
 
@@ -139,17 +137,6 @@
     - `#dataDir`: Font assets directory (Node.js only)
     - `#canvasFactory`: Canvas creation function (Node.js only)
     - Storage: Delegated to AtlasDataStore and FontMetricsStore (stores are the single source of truth)
-
-  **BitmapTextRuntime (instance class)**
-  - Purpose: Instance-based text rendering for font-assets-builder
-  - Architecture: Extends old BitmapText instance-based implementation
-  - Used by: BitmapTextFAB extends BitmapTextRuntime
-  - Responsibilities:
-    - Text measurement (measureText instance method)
-    - Glyph positioning with kerning
-    - Color application via composite operations
-    - Canvas rendering
-    - Placeholder rectangle rendering for missing atlases
 
   **AtlasDataStore (static class)**
   - Purpose: Single source of truth for atlas image storage
@@ -313,7 +300,7 @@ To support compound emojis would require:
 
   ### FAB Classes (Font Assets Building)
 
-  **BitmapTextFAB extends BitmapTextRuntime**
+  **BitmapTextFAB extends BitmapText**
   - Additional capabilities for font assets building
   - Creates individual glyph canvases
   - Calculates precise bounding boxes

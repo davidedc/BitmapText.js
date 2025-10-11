@@ -72,7 +72,7 @@
 
   ```javascript
   // Import full toolkit including font assets building tools (~55KB+)
-  import { BitmapTextRuntime } from './src/runtime/BitmapTextRuntime.js';
+  import { BitmapText } from './src/runtime/BitmapText.js';
   import { AtlasDataStore } from './src/runtime/AtlasDataStore.js';
   import { FontMetricsStore } from './src/runtime/FontMetricsStore.js';
   import { BitmapTextFAB } from './src/builder/BitmapTextFAB.js';
@@ -97,7 +97,8 @@
   ### Browser (Zero Configuration)
 
   ```html
-  <!-- Load core runtime classes -->
+  <!-- Load core runtime classes (StatusCode must be loaded first) -->
+  <script src="src/runtime/StatusCode.js"></script>
   <script src="src/runtime/FontProperties.js"></script>
   <script src="src/runtime/TextProperties.js"></script>
   <script src="src/runtime/AtlasDataStore.js"></script>
@@ -302,6 +303,30 @@
 
   These are called automatically when font asset files are loaded.
 
+  ### StatusCode Module
+
+  The StatusCode module provides status codes and helper functions for handling rendering results. When using BitmapText in browsers with script tags, **StatusCode.js must be loaded before BitmapText.js** because BitmapText depends on the StatusCode constants.
+
+  **Import Order (Browser):**
+  ```html
+  <!-- Load StatusCode first -->
+  <script src="src/runtime/StatusCode.js"></script>
+
+  <!-- Then load other runtime classes -->
+  <script src="src/runtime/FontProperties.js"></script>
+  <script src="src/runtime/TextProperties.js"></script>
+  <script src="src/runtime/AtlasDataStore.js"></script>
+  <script src="src/runtime/FontMetricsStore.js"></script>
+  <script src="src/runtime/BitmapText.js"></script>
+  ```
+
+  **Import Order (ES Modules):**
+  ```javascript
+  // In ES modules, imports are automatically hoisted
+  import { StatusCode, isSuccess, getStatusDescription } from './src/runtime/StatusCode.js';
+  import { BitmapText } from './src/runtime/BitmapText.js';
+  ```
+
   ### StatusCode Constants
 
   ```javascript
@@ -363,9 +388,6 @@
   ### Properties
   - **key**: String - Pre-computed key for fast Map lookups
   - **idString**: String - Pre-computed ID string for asset file naming
-
-  ### Methods
-  - **toObject()**: Returns plain object representation for compatibility
 
 ## TextProperties Class
 
@@ -488,7 +510,7 @@ new TextProperties(options = {})
 
   **Performance Issues**
   - Pre-load atlases during initialization
-  - Reuse BitmapText instances rather than creating new ones
+  - BitmapText is a static class (no instances created) - pre-load fonts and cache measurements for best performance
   - Consider caching frequently used text measurements
 
   ## Browser Support
@@ -504,12 +526,13 @@ new TextProperties(options = {})
   ```
   /
   ├── src/               # Source code
-  │   ├── core/          # Runtime library classes
-  │   ├── font-assets-builder-FAB/        # Font assets building classes
+  │   ├── runtime/       # Runtime library classes
+  │   ├── builder/       # Font assets building classes
+  │   ├── platform/      # Platform-specific loaders
+  │   ├── node/          # Node.js demo source code
   │   ├── utils/         # Utility functions
   │   ├── ui/            # UI components
-  │   ├── specs/         # Font specifications
-  │   └── minification/  # Data minification utilities
+  │   └── specs/         # Font specifications
   ├── public/            # HTML entry points
   ├── font-assets/       # Generated font assets
   ├── test/              # Test utilities and data

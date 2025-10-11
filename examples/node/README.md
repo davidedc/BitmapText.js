@@ -22,15 +22,16 @@ examples/node/
 - **Output**: Creates `hello-world-output.png` in current directory
 - **Features**:
   - Basic "Hello World" rendering with QOI atlas loading
-  - Uses FontLoader instance API for unified font loading
+  - Uses BitmapText static API for unified font loading
 - **Source**: Built from `src/node/hello-world-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world.bundle.js`
+- **Size**: ~141KB standalone executable
 
 ### `dist/hello-world-multi-size.bundle.js`
 - **Purpose**: Demonstrates multi-size font rendering (18, 18.5, 19)
 - **Output**: Creates `hello-world-multi-size-output.png` in current directory
 - **Features**:
-  - Multi-size font loading using FontLoader.loadFonts() batch API
+  - Multi-size font loading using BitmapText.loadFonts() batch API
   - Placeholder rectangle fallback for missing atlases
   - Demonstrates graceful degradation
 - **Source**: Built from `src/node/hello-world-multi-size-main.js` + core library files
@@ -67,7 +68,7 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the single-size demo:
 1. **Main logic**: `src/node/hello-world-main.js`
-2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (Node.js implementation, class name: `FontLoader`)
+2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (Node.js implementation, used internally by BitmapText, class name: `FontLoader`)
 3. **Font loading base**: `src/runtime/FontLoaderBase.js` (shared logic for both platforms)
 4. **Core rendering**: `src/runtime/BitmapText.js` (delegates to stores)
 5. **Storage**: `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js` (single source of truth)
@@ -76,7 +77,7 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the multi-size demo:
 1. **Main logic**: `src/node/hello-world-multi-size-main.js`
-2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (unified API, works same as browser)
+2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (used internally by BitmapText, unified API, works same as browser)
 3. **Core rendering**: Same as above
 4. **Other components**: Same as above
 
@@ -100,8 +101,8 @@ npm run build-multi-size-demo
 - **Self-contained**: No external dependencies required (but needs font assets)
 - **Standalone**: Each file contains all necessary code
 - **Executable**: Can be run directly with `node filename.bundle.js`
-- **Size**: ~55-58KB each
-- **Lines**: ~1540-1608 lines each
+- **Size**: ~141-143KB each
+- **Lines**: ~4032-4081 lines each
 - **Format**: Concatenated JavaScript with proper module boundaries
 - **Font assets**: Expects `font-assets/` directory in same location as bundle
 

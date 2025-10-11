@@ -53,6 +53,8 @@ brew install trash         # Safe file deletion
 **Options:**
 - `--preserve-originals` - Keep .orig.png backup files after optimization
 - `--no-preserve-originals` - Remove .orig.png backup files (default)
+- `--remove-qoi` - Remove QOI files after successful PNG conversion
+- `--keep-positioning` - Preserve positioning JSON files during processing
 - `--help` - Show help message
 
 **Examples:**
@@ -131,6 +133,7 @@ node scripts/image-to-js-converter.js [directory] [options]
 - `--png`: Process PNG files only (generates *-png.js files)
 - `--qoi`: Process QOI files only (generates *-qoi.js files)
 - `--all`: Process both PNG and QOI files (default)
+- `--keep-positioning`: Preserve positioning JSON files during processing
 
 **Examples:**
 ```bash
@@ -139,7 +142,38 @@ node scripts/image-to-js-converter.js font-assets --png    # Process PNG files o
 node scripts/image-to-js-converter.js /path/to/images --qoi # Process QOI files only
 ```
 
-### 5. QOI Memory Calculator Script
+### 5. QOI to PNG Converter Script
+```bash
+node scripts/qoi-to-png-converter.js [directory] [options]
+```
+
+**Options:**
+- `--remove-qoi` - Remove QOI files after successful conversion
+- `--help, -h` - Show help message
+
+**Examples:**
+```bash
+node scripts/qoi-to-png-converter.js                    # Convert QOI files in font-assets/
+node scripts/qoi-to-png-converter.js data/              # Convert QOI files in data/ directory
+node scripts/qoi-to-png-converter.js --remove-qoi       # Convert and remove QOI files
+node scripts/qoi-to-png-converter.js data/ --remove-qoi # Custom directory, remove QOI files
+```
+
+**What it does:**
+- Converts QOI image files to uncompressed PNG format
+- Uses the project's built-in QOI decoder and PNG encoder libraries
+- Processes all .qoi files in the specified directory
+- Optionally removes source QOI files after successful conversion
+- Provides detailed feedback on conversion progress and results
+- Reports file sizes and conversion statistics
+
+**When to use:**
+- After extracting font assets that include QOI files
+- When you need PNG versions for compatibility or debugging
+- As part of the automated pipeline for font asset processing
+- When transitioning from QOI to PNG format for specific workflows
+
+### 6. QOI Memory Calculator Script
 ```bash
 node scripts/qoi-memory-calculator.js [directory]
 # or
@@ -165,7 +199,7 @@ npm run qoi-memory                                       # Using npm script
 - Displays compression ratios and memory savings
 - Identifies largest files by uncompressed size
 
-### 6. Font Registry Generator Script
+### 7. Font Registry Generator Script
 ```bash
 node scripts/generate-font-registry.js [options]
 # or
@@ -202,13 +236,14 @@ npm run generate-registry                                 # Using npm script
 
 ```
 scripts/
-├── watch-font-assets.sh     # Main monitoring script
-├── optimize-images.sh        # PNG compression
+├── watch-font-assets.sh       # Main monitoring script
+├── optimize-images.sh         # PNG compression
+├── qoi-to-png-converter.js    # QOI → PNG conversion
 ├── image-to-js-converter.js   # Image → JS wrapper conversion (PNG/QOI)
-├── qoi-memory-calculator.js  # QOI memory usage analyzer
-├── generate-font-registry.js # Font registry generator
-├── test-pipeline.sh          # One-time pipeline test
-└── README.md                 # This file
+├── qoi-memory-calculator.js   # QOI memory usage analyzer
+├── generate-font-registry.js  # Font registry generator
+├── test-pipeline.sh           # One-time pipeline test
+└── README.md                  # This file
 
 font-assets/
 ├── *.png                     # Optimized atlas images
@@ -216,7 +251,7 @@ font-assets/
 ├── *.js                      # Glyph data and metrics
 ├── image-*.js                # JS-wrapped images (for CORS-free loading)
 ├── font-registry.js          # Auto-generated font registry
-└── data-backup-*.zip         # Automatic backups
+└── font-assets-backup-*.zip  # Automatic backups
 ```
 
 ---
@@ -226,13 +261,15 @@ font-assets/
 When you drop `fontAssets.zip` in `~/Downloads/`:
 
 1. **🔍 Detection**: `fswatch` detects the new file
-2. **📦 Backup**: Current `font-assets/` → `data-backup-YYYY-MM-DD-HHMMSS.zip`
+2. **📦 Backup**: Current `font-assets/` → `font-assets-backup-YYYY-MM-DD-HHMMSS.zip`
 3. **🧹 Clear**: Empty `font-assets/` directory (keeping backups)
 4. **📂 Extract**: Unzip contents to `font-assets/`
-5. **🖼️ Optimize**: Compress PNGs with ImageOptim (optionally preserve originals)
-6. **🔧 Convert**: Create JS wrappers for CORS-free loading
-7. **🗑️ Cleanup**: Move processed zip to trash
-8. **🔄 Continue**: Return to monitoring
+5. **🎨 Convert QOI**: Convert QOI files to PNG format (optional --remove-qoi)
+6. **🖼️ Optimize**: Compress PNGs with ImageOptim (optionally preserve originals)
+7. **🔧 Convert to JS**: Create JS wrappers for CORS-free loading
+8. **📋 Generate Registry**: Generate font registry from metrics files
+9. **🗑️ Cleanup**: Move processed zip to trash
+10. **🔄 Continue**: Return to monitoring
 
 ---
 

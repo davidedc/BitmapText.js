@@ -12,13 +12,12 @@
   ## Project Structure at a Glance
 
   - **Static runtime**: src/runtime/BitmapText.js (static class with zero-config API, delegates to stores)
-  - **Instance runtime**: src/runtime/BitmapTextRuntime.js (for font-assets-builder FAB classes)
   - **Store classes**: src/runtime/AtlasDataStore.js, src/runtime/FontMetricsStore.js (single source of truth for storage, used by BitmapText and FAB)
   - **Platform-specific loaders**: src/platform/FontLoader-browser.js, src/platform/FontLoader-node.js (unified class name, selected at build time)
   - **Configuration classes**: src/runtime/FontProperties.js, src/runtime/TextProperties.js
-  - **Font assets building tools**: src/builder/*FAB.js files (extends BitmapTextRuntime + stores)
+  - **Font assets building tools**: src/builder/*FAB.js files (extends BitmapText + stores)
   - **Font data**: font-assets/ (self-registering files that call BitmapText.registerMetrics/Atlas → delegates to stores)
-  - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, png-to-js-converter.js)
+  - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, image-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
   - **Examples**: examples/node/dist/ (Built Node.js demo bundles), src/node/ (demo source code)
 
@@ -63,7 +62,6 @@
   ## Where to Find Things
 
   - **Static runtime API**: src/runtime/BitmapText.js (static class - all methods, internal stores)
-  - **Instance runtime**: src/runtime/BitmapTextRuntime.js (for FAB classes to extend)
   - **Font configuration**: src/runtime/FontProperties.js (immutable font config class)
   - **Text rendering configuration**: src/runtime/TextProperties.js (immutable text config class - kerning, color, alignment)
   - **Font assets building utilities**: src/builder/FontPropertiesFAB.js (extends FontProperties)
@@ -84,12 +82,12 @@
   - **Font loading API**: src/runtime/BitmapText.js (static methods: loadFont, loadFonts - delegates to platform-specific FontLoader; registerMetrics, registerAtlas - delegates to stores)
   - **Font registry management**: src/runtime/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/runtime/AtlasPositioning.getHash:149 (positioning data hash)
-  - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:98
+  - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:105
   - **Atlas generation & reconstruction**: public/font-assets-builder.html (displays Atlas source and reconstructed tight atlas side-by-side)
 
   ## Development Tips
 
-  - The "kern king" test text contains challenging character pairs
+  - The "kern king" test text contains challenging character pairs (see "Kern King Part 1" and "Kern King Part 2" in font-assets-builder.html)
   - Use drawCheckeredBackgrounds flag for transparency testing
   - Browser DevTools may show anti-aliased text - trust the hashes
   - QOI format: Browser exports QOI, pipeline auto-converts to PNG for processing
