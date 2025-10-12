@@ -88,7 +88,10 @@ class AtlasPositioningFAB extends AtlasPositioning {
         1;
 
       // Calculate positioning offsets for atlas rendering (all in physical pixels)
-      // EXACT formula - MUST match TightAtlasReconstructor.js:339-347
+      // CRITICAL: These formulas MUST exactly match TightAtlasReconstructor.js:339-347
+      // Any deviation will cause misalignment between atlas building and runtime rendering
+      // dx_PhysPx: Horizontal offset accounting for actualBoundingBoxLeft and tight canvas left edge
+      // dy_PhysPx: Vertical offset accounting for tight height, bottom distance, and pixelDensity baseline
       const dx_PhysPx = - Math.round(characterMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
       const dy_PhysPx = - tightHeight_PhysPx - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas_PhysPx + 1 * fontProperties.pixelDensity;
 

@@ -45,7 +45,9 @@ class AtlasData {
 
   /**
    * Check if positioning data exists for a character
-   * Null-safe convenience method for checking positioning availability
+   * Null-safe convenience method that delegates to the AtlasPositioning instance.
+   * This demonstrates the delegation pattern: AtlasData wraps AtlasPositioning
+   * and provides a simplified interface for checking character availability.
    * @param {string} char - Character (code point) to check
    * @returns {boolean} True if positioning data exists
    */

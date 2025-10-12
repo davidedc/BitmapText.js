@@ -57,7 +57,7 @@ class FontProperties {
   // Factory method to create FontProperties from ID string
   // Parses: density-1-0-Arial-style-normal-weight-normal-size-18-0
   static fromIDString(idString) {
-    const parts = idString.split('-');     
+    const parts = idString.split('-');
 
     // Extract and format numeric values (handling decimal parts)
     const pixelDensity = parseFloat(FontProperties.#formatNumericPart(parts[1], parts[2]));
@@ -65,7 +65,7 @@ class FontProperties {
     const fontFamily = parts[3];
     const fontStyle = parts[5];
     const fontWeight = parts[7];
-    
+
     // Return new FontProperties instance
     return new FontProperties(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
   }

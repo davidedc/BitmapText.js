@@ -49,12 +49,8 @@ class BitmapTextFAB extends BitmapText {
     }
   }
 
-  // Historical note: Character classification methods (hasLotsOfSpaceAtBottomRight,
-  // hasLotsOfSpaceAtBottomLeft, hasSomeSpaceAtBottomLeft, hasSomeSpaceAtBottomRight,
-  // hasSpaceAtTopRight, protrudesBottomLeft, protrudesBottomRight, protrudesTopLeft,
-  // isShortCharacter) were DELETED as dead code - they were part of the old kerning
-  // algorithm removed in commit 5bf84de (Sept 2023) when the system moved to spec-based
-  // kerning. These methods had zero callers and are recoverable from git history if needed.
+  // Historical note: Nine character classification methods deleted as dead code in commit 5bf84de
+  // (Sept 2023) when system moved to spec-based kerning. Recoverable from git history if needed.
 
   /**
    * Get kerning correction from spec
@@ -106,12 +102,25 @@ class BitmapTextFAB extends BitmapText {
     );
   }
 
-  // Note that you can parse the fontSize fontFamily and font-style from the ctx.font string
-  // HOWEVER for some quirks of Canvas implementaiton there is no way to read the font-weight
-  // (i.e. "bold"). The only way would be to do some text rendering and then measure the text
-  // and see if it's bold or not. This is not a good idea because it's slow.
-  // So, the best way is to keep track of the font-family, font-size and
-  // font-style that you use in your own code and pass as params.
+  /**
+   * Draws text by rendering individual character canvases directly (bypasses atlas)
+   *
+   * This method renders text using pre-generated glyph canvases instead of an atlas texture.
+   * Primarily used for debugging, validation, or scenarios where atlas rendering is unavailable.
+   *
+   * TECHNICAL NOTE:
+   * Canvas context provides fontSize, fontFamily, and fontStyle via ctx.font, but font-weight
+   * (e.g., "bold") is not extractable due to Canvas API limitations. The only way to detect
+   * weight would be through rendering and measuring, which is prohibitively slow.
+   * Therefore, fontProperties must be explicitly passed as a parameter.
+   *
+   * @param {CanvasRenderingContext2D} ctx - Target canvas context for rendering
+   * @param {string} text - Text string to render
+   * @param {number} x_CssPx - X position in CSS pixels
+   * @param {number} y_CssPx - Y position in CSS pixels (baseline position)
+   * @param {FontProperties} fontProperties - Font configuration (family, size, weight, style, pixelDensity)
+   * @param {TextProperties} [textProperties=null] - Optional text rendering properties (letterSpacing, etc.)
+   */
   static drawTextViaIndividualCanvasesNotViaAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
     let x_PhysPx = x_CssPx * fontProperties.pixelDensity;
     const y_PhysPx = y_CssPx * fontProperties.pixelDensity;
@@ -193,6 +202,7 @@ class BitmapTextFAB extends BitmapText {
         const drawX = xPos_PhysPx + leftSpacing_PhysPx;
         const drawY = yPos_PhysPx;
 
+        // TODO: Remove debug logging before production release
         // Debug first character of first call
         if (i === 0 && drawnCount === 1) {
           console.log(`[DEBUG] First drawImage call: char="${char}", canvas=${glyph.tightCanvas.width}x${glyph.tightCanvas.height}, x=${drawX}, y=${drawY}, y_PhysPx=${y_PhysPx}, tightCanvas.height=${glyph.tightCanvas.height}`);
@@ -209,6 +219,7 @@ class BitmapTextFAB extends BitmapText {
         BitmapText.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) *
         fontProperties.pixelDensity;
     }
+    // TODO: Remove debug logging before production release
     console.log(`[DEBUG] drawTextViaIndividualCanvasesNotViaAtlas drew ${drawnCount} glyphs for text: "${text.substring(0, 20)}..."`);
   }
 }

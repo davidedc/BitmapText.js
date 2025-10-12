@@ -1,5 +1,10 @@
 class GlyphFAB {
-  // Precision for metric truncation (rounds to 4 decimal places)
+  /**
+   * Precision for metric truncation (rounds to 4 decimal places)
+   * Used to reduce floating point precision in character metrics when truncateMetrics is enabled
+   * @type {number}
+   * @constant
+   */
   static METRIC_TRUNCATION_PRECISION = 10000;
 
   // Debug sampling rate (10% of space characters)

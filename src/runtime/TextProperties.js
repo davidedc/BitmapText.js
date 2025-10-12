@@ -22,7 +22,7 @@ class TextProperties {
     // Extract options with defaults - optimized for BitmapText usage
     const {
       isKerningEnabled = true,        // Enable kerning by default for better text rendering
-      textBaseline = 'bottom',        // This is DIFFERENT FROM THE HTML5 Canvas default (BitmapText uses 'bottom' as default because it's the only one supported yet, but the default in HTML5Canvas is 'alphabetic')
+      textBaseline = 'bottom',        // BitmapText uses 'bottom' baseline by architectural design (HTML5 Canvas default is 'alphabetic')
       textAlign = 'left',             // HTML5 Canvas default
       textColor = '#000000'           // Black color default
     } = options;

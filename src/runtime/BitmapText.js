@@ -81,7 +81,7 @@ class BitmapText {
   }
 
   /**
-   * Override canvas factory (for testing or custom environments)
+   * Override canvas factory (for Node.js environments, testing, or custom canvas implementations)
    * @param {Function} factory - Function that returns a canvas instance
    */
   static setCanvasFactory(factory) {
@@ -186,19 +186,18 @@ class BitmapText {
 
   /**
    * Measure text dimensions
-   * Returns object with metrics and status information
    * This returns an object with metrics and status information:
    *   {
    *     metrics: TextMetrics-compatible object (or null if measurement failed),
    *     status: { code: StatusCode, missingChars?: Set }
    *   }
-   * 
+   *
    * The metrics object has the same shape and meaning as the TextMetrics object (see
    * https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ) i.e.:
-   * the width should be the sum of the advancements (detracting kerning)
+   * the width should be the sum of the advancements (minus kerning adjustments)
    * actualBoundingBoxLeft = the actualBoundingBoxLeft of the first character
-   * actualBoundingBoxRight = the sum of the advancements (detracting kerning) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
-   * 
+   * actualBoundingBoxRight = the sum of the advancements (minus kerning adjustments) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
+   *
    * @param {string} text - Text to measure
    * @param {FontProperties} fontProperties - Font configuration
    * @param {TextProperties} textProperties - Text rendering configuration
@@ -421,8 +420,7 @@ class BitmapText {
     const characterMetrics = fontMetrics.getCharacterMetrics(char);
     let x_CssPx = 0;
 
-    // TODO this "space" section should handle all characters without a glyph
-    //      as there are many kinds of space-like characters.
+    // LIMITATION: Only handles standard space (U+0020), not other Unicode space characters
 
     // Handle space first ------------------------------------------
     // You could add the space advancement as we got it from the browser
@@ -449,10 +447,10 @@ class BitmapText {
     // Apply kerning correction
     let kerningCorrection = BitmapText.#getKerningCorrection(fontMetrics, char, nextChar, textProperties);
 
-    // We multiply the advancement of the character by the kerning
-    // Tracking and kerning are both measured in 1/1000 em, a unit of measure that is relative to the current type size.
-    // We don't use ems, rather we use pxs, however we still want to keep Kerning as strictly proportional to the current type size,
-    // and also to keep it as a measure "in thousands".
+    // Kerning adjustments are measured in 1/1000 em units (font-size relative).
+    // We convert to pixels by multiplying font size by the kerning correction
+    // and dividing by 1000. This keeps kerning proportional to font size while
+    // maintaining precision in the stored kerning values.
     x_CssPx -= fontProperties.fontSize * kerningCorrection / BitmapText.KERNING_UNIT_DIVISOR;
 
     // since we might want to actually _place_ a glyph,
@@ -602,6 +600,12 @@ class BitmapText {
       * fontProperties.pixelDensity;
   }
 
+  /**
+   * Check if atlas data is valid and ready for rendering
+   * @private
+   * @param {*} atlasData - Potential AtlasData instance
+   * @returns {boolean} True if atlasData is an AtlasData instance and is valid
+   */
   static #isValidAtlas(atlasData) {
     if (!(atlasData instanceof AtlasData)) {
       return false;
