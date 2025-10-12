@@ -62,7 +62,7 @@ class SpecsParser {
 
     // subspecs are separated by '--'
     const specsForFont = {};
-    const subSpecs = lines.slice(2).join('\n').split('--');
+    const subSpecs = lines.slice(3).join('\n').split('--');
 
     // go through each sub-spec and parse it
     for (const subSpec of subSpecs) {

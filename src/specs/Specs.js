@@ -33,9 +33,6 @@ class Specs {
     }
 
     const specEntry = this.specs[fontFamily][fontStyle][fontWeight][correctionKey];
-    if (fontSize <= specEntry) {
-      return null;
-    }
 
     const correctionEntries = [];
     for (const correctionEntry of specEntry) {
