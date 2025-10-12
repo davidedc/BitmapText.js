@@ -16,7 +16,6 @@ class SpecsParser {
     if (specsString !== this.previousSpecsString) {
       this.previousSpecsString = specsString;
       this.parseSpecs(specsString);
-      console.dir(this.parsedSpecs);
       // clear the kerning tables because the specs probably have changed
       // (unless the user is just changing, say, a comment, but we can't know that)
       FontMetricsStoreFAB.clearKerningTables();
@@ -229,8 +228,7 @@ class SpecsParser {
   parseNumberAndCheck(value, originalLine, parseFunction) {
     const parsedValue = parseFunction(value);
     if (isNaN(parsedValue)) {
-      console.log(originalLine);
-      debugger;
+      throw new Error(`Failed to parse number from line: ${originalLine}`);
     }
     return parsedValue;
   }

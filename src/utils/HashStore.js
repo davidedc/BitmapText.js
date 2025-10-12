@@ -49,7 +49,6 @@ class HashStore {
 
   // Copy hashes to clipboard
   async copyHashesToClipboard() {
-    debugger  
     try {
           await navigator.clipboard.writeText(this.getFormattedHashString());
           return true;

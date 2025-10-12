@@ -7,9 +7,6 @@ class GlyphFAB {
    */
   static METRIC_TRUNCATION_PRECISION = 10000;
 
-  // Debug sampling rate (10% of space characters)
-  static DEBUG_SAMPLE_RATE = 0.1;
-
   constructor(char, fontProperties) {
     this.char = char;
     this.fontProperties = fontProperties;
@@ -314,11 +311,6 @@ class GlyphFAB {
     canvasCopy.height = canvas.height;
     const copyCtx = canvasCopy.getContext('2d');
     copyCtx.drawImage(canvas, 0, 0);
-
-    // Debug log for space characters (sampled at 10%)
-    if (this.char === ' ' && Math.random() < GlyphFAB.DEBUG_SAMPLE_RATE) {
-      console.log(`[GlyphFAB] Created canvasCopy for space character: ${canvasCopy.width}x${canvasCopy.height}`);
-    }
 
     // Remove original canvas from DOM if needed for crisp rendering
     if (drawCrisply) {
