@@ -121,10 +121,11 @@
   ### Core Classes (Runtime)
 
   **BitmapText (static class)**
-  - Purpose: Static text rendering API and facade for internal stores
-  - Architecture: All methods static, delegates storage to AtlasDataStore and FontMetricsStore
+  - Purpose: Static text rendering API and facade for internal stores and FontLoader
+  - Architecture: All methods static, delegates storage to AtlasDataStore and FontMetricsStore, delegates font loading to FontLoaderBase
   - Responsibilities:
-    - Configuration (Node.js): `configure({ dataDir, canvasFactory })`
+    - Configuration (Optional): `configure({ fontDirectory, canvasFactory })` - delegates fontDirectory to FontLoader
+    - Font directory: `setFontDirectory()`, `getFontDirectory()` - delegates to FontLoader (FontLoader owns this)
     - Font loading: `loadFont()`, `loadFonts()` - delegates to platform-specific FontLoader
     - Font registration: `registerMetrics()`, `registerAtlas()` (called by font assets) - delegates to stores
     - Font queries: `hasMetrics()`, `hasAtlas()`, `unloadMetrics()`, `unloadAtlas()` - delegates to stores
@@ -134,9 +135,9 @@
     - Canvas creation: Auto-creates in browser, uses canvasFactory in Node.js
   - Internal Fields (private):
     - `#fontLoader`: Platform-specific FontLoader class (src/platform/FontLoader-browser.js or FontLoader-node.js)
-    - `#dataDir`: Font assets directory (Node.js only)
-    - `#canvasFactory`: Canvas creation function (Node.js only)
+    - `#canvasFactory`: Canvas creation function (optional override, platform-specific defaults)
     - Storage: Delegated to AtlasDataStore and FontMetricsStore (stores are the single source of truth)
+    - Note: fontDirectory is NOT stored in BitmapText - it's owned by FontLoaderBase
 
   **AtlasDataStore (static class)**
   - Purpose: Single source of truth for atlas image storage
@@ -233,17 +234,20 @@
     - Protocol detection (file:// vs http://) for appropriate loading strategy
     - Promise-based async loading with progress callbacks
     - Auto-detects canvas creation: `document.createElement('canvas')`
-    - Default data directory: '../font-assets/' (relative to public/)
+    - Default font directory: './font-assets/' (from FontLoaderBase)
   - Node.js Implementation (FontLoader-node.js):
     - Synchronous fs.readFileSync for metrics and atlas files
     - eval-based loading with BitmapText static scope
     - QOI decoding for atlas image data
-    - Uses configured canvasFactory for canvas creation
-    - Uses configured dataDir for file paths
-  - FontLoaderBase (shared logic):
+    - Uses configured canvasFactory from BitmapText for canvas creation
+    - Uses own fontDirectory (from FontLoaderBase) for file paths
+  - FontLoaderBase (shared logic and ownership):
+    - **Owns fontDirectory configuration**: `#fontDirectory` private field (default: './font-assets/')
+    - Methods: `setFontDirectory(path)`, `getFontDirectory()` (returns override ?? DEFAULT)
     - Atlas reconstruction via TightAtlasReconstructor
     - Stores data directly in AtlasDataStore and FontMetricsStore
     - Pending atlas handling (atlas arrives before metrics)
+    - Architecture rationale: FontLoader owns fontDirectory because it's the component that uses it
   - Loading Dependency: Metrics MUST be loaded before atlases
   - Graceful degradation: Missing atlases result in placeholder rectangles
   - API Methods (exposed via BitmapText):
@@ -599,7 +603,7 @@ To support compound emojis would require:
       6. Return Promise when complete
 
   Node.js (uses src/platform/FontLoader-node.js):
-    User → BitmapText.configure({ dataDir, canvasFactory }) → BitmapText.loadFonts(IDStrings, options)
+    User → BitmapText.configure({ fontDirectory, canvasFactory }) → BitmapText.loadFonts(IDStrings, options)
       1. BitmapText delegates to FontLoader (platform-specific, included at build time)
       2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
       3. Load metrics: fs.readFileSync() → eval with BitmapText in scope → calls BitmapText.registerMetrics()

@@ -59,7 +59,7 @@
 
   // Configure for Node.js environment
   BitmapText.configure({
-    dataDir: './font-assets/',
+    fontDirectory: './font-assets/',
     canvasFactory: () => new Canvas()
   });
   ```
@@ -147,7 +147,7 @@
 
   // Configure for Node.js
   BitmapText.configure({
-    dataDir: './font-assets/',
+    fontDirectory: './font-assets/',
     canvasFactory: () => new Canvas()
   });
 
@@ -213,16 +213,17 @@
 
   All methods are static - no instantiation required.
 
-  #### Configuration (Node.js only)
+  #### Configuration (Optional)
 
   ```javascript
   BitmapText.configure({
-    dataDir: './font-assets/',        // Directory containing font assets
+    fontDirectory: './font-assets/',   // Directory containing font assets
     canvasFactory: () => new Canvas()  // Canvas creation function
   })
   ```
 
-  **Browser**: No configuration needed - auto-detects environment
+  **Browser**: May need configuration if HTML files are in subdirectories (e.g., `public/`)
+  **Node.js**: May need configuration if running from different directory than project root
 
   #### Loading Methods
 
