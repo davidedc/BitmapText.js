@@ -29,14 +29,13 @@ class TightAtlasReconstructor {
   /**
    * Main entry point - reconstructs tight atlas from standard atlas
    *
-   * PARAMETER ORDER: Standardized to (fontMetrics, data, options) for API consistency
+   * PARAMETER ORDER: Standardized to (fontMetrics, data) for API consistency
    *
    * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions (CSS pixels) and positioning
    * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells, already at physical pixels)
-   * @param {Function} canvasFactory - Factory for creating canvases (e.g., () => document.createElement('canvas'))
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static reconstructFromAtlas(fontMetrics, atlasImage, canvasFactory) {
+  static reconstructFromAtlas(fontMetrics, atlasImage) {
     // 1. Get ImageData from atlas for pixel scanning
     const imageData = AtlasReconstructionUtils.getImageData(atlasImage);
 
@@ -106,7 +105,6 @@ class TightAtlasReconstructor {
       tightBounds,
       characters,
       atlasImage,
-      canvasFactory,
       pixelDensity,
       cellHeight_PhysPx
     );
@@ -209,12 +207,11 @@ class TightAtlasReconstructor {
    * @param {Object} tightBounds - Map of char → {left, top, width, height} within cells
    * @param {Array<string>} characters - Sorted array of characters
    * @param {Image|Canvas} sourceAtlasImage - Source Atlas image for extraction
-   * @param {Function} canvasFactory - Factory for creating canvases
    * @param {number} pixelDensity - Pixel density multiplier for positioning calculations
    * @param {number} cellHeight_PhysPx - Cell height in physical pixels (for distanceBetweenBottomAndBottomOfCanvas calculation)
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, canvasFactory, pixelDensity, cellHeight_PhysPx) {
+  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx) {
     // Calculate tight atlas dimensions (all in physical pixels)
     let totalWidth_PhysPx = 0;
     let maxHeight_PhysPx = 0;
@@ -226,8 +223,8 @@ class TightAtlasReconstructor {
       }
     }
 
-    // Create tight atlas canvas
-    const tightCanvas = canvasFactory();
+    // Create tight atlas canvas (explicit double invocation: get factory, call factory)
+    const tightCanvas = BitmapText.getCanvasFactory()();
     tightCanvas.width = totalWidth_PhysPx;
     tightCanvas.height = maxHeight_PhysPx;
     const ctx = tightCanvas.getContext('2d');
@@ -262,7 +259,7 @@ class TightAtlasReconstructor {
       }
 
       // Extract tight glyph from original atlas
-      const tempCanvas = canvasFactory();
+      const tempCanvas = BitmapText.getCanvasFactory()();
       tempCanvas.width = bounds.width;
       tempCanvas.height = bounds.height;
       const tempCtx = tempCanvas.getContext('2d');

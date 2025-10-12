@@ -42,10 +42,8 @@ class AtlasReconstructionUtils {
 
     // If Image element, draw to temporary canvas first
     if (actualImage.naturalWidth !== undefined || actualImage.width !== undefined) {
-      // Create canvas - use Canvas class in Node.js, document.createElement in browser
-      const canvas = (typeof document !== 'undefined')
-        ? document.createElement('canvas')
-        : new Canvas();
+      // Create canvas using explicit double invocation
+      const canvas = BitmapText.getCanvasFactory()();
       canvas.width = actualImage.naturalWidth || actualImage.width;
       canvas.height = actualImage.naturalHeight || actualImage.height;
       const ctx = canvas.getContext('2d');

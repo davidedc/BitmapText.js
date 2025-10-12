@@ -55,15 +55,6 @@ class FontLoaderBase {
   static #fontDirectory = null;
 
   /**
-   * Get default canvas factory for this platform
-   * @abstract Must be implemented by derived classes
-   * @returns {Function} Canvas factory function
-   */
-  static getDefaultCanvasFactory() {
-    throw new Error('FontLoaderBase.getDefaultCanvasFactory() must be implemented by derived class');
-  }
-
-  /**
    * Set font directory (overrides default)
    * @param {string} path - Path to font assets directory
    */
@@ -294,12 +285,9 @@ class FontLoaderBase {
       throw new Error(`FontLoader: TightAtlasReconstructor required for font loading - not available for ${idString}`);
     }
 
-    // Get canvas factory from BitmapText
-    const canvasFactory = bitmapTextClass.getCanvasFactory();
-
     // Reconstruct tight atlas + positioning from Atlas image
     const { atlasImage: tightAtlasImage, atlasPositioning } =
-      TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage, canvasFactory);
+      TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage);
 
     // Create AtlasData instance
     const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);

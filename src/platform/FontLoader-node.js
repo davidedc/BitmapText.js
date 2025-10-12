@@ -20,25 +20,6 @@
 // - Atlas: fs.readFileSync QOI file + QOIDecode + canvas creation
 
 class FontLoader extends FontLoaderBase {
-  // ============================================
-  // Platform Configuration
-  // ============================================
-
-  /**
-   * Get default canvas factory for Node.js
-   * @returns {Function} Canvas factory function
-   */
-  static getDefaultCanvasFactory() {
-    // Node.js uses node-canvas library
-    // Returns a factory that creates Canvas instances
-    return () => {
-      if (typeof require === 'undefined') {
-        throw new Error('FontLoader requires Node.js environment with require()');
-      }
-      const { createCanvas } = require('canvas');
-      return createCanvas(0, 0);
-    };
-  }
 
   // ============================================
   // File Name Constants (from BitmapText)
@@ -115,9 +96,8 @@ class FontLoader extends FontLoaderBase {
         const qoiData = Uint8Array.from(atob(pkg.base64Data), c => c.charCodeAt(0));
         const decoded = QOIDecode(qoiData.buffer);
 
-        // Create canvas and draw
-        const canvasFactory = bitmapTextClass.getCanvasFactory();
-        const canvas = canvasFactory();
+        // Create canvas and draw (explicit double invocation: get factory, call factory)
+        const canvas = bitmapTextClass.getCanvasFactory()();
         canvas.width = decoded.width;
         canvas.height = decoded.height;
         const ctx = canvas.getContext('2d');

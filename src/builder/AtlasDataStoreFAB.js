@@ -102,8 +102,7 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     const { atlasImage, atlasPositioning } =
       TightAtlasReconstructor.reconstructFromAtlas(
         fontMetrics,
-        atlasCanvas,
-        () => document.createElement('canvas')
+        atlasCanvas
       );
 
     return new AtlasData(atlasImage, atlasPositioning);

@@ -21,18 +21,6 @@
 
 class FontLoader extends FontLoaderBase {
   // ============================================
-  // Platform Configuration
-  // ============================================
-
-  /**
-   * Get default canvas factory for browser
-   * @returns {Function} Canvas factory function
-   */
-  static getDefaultCanvasFactory() {
-    return () => document.createElement('canvas');
-  }
-
-  // ============================================
   // File Name Constants (from BitmapText)
   // ============================================
 

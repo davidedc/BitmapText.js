@@ -22,6 +22,18 @@ if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' |
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
 // - Supports placeholder rectangles when atlases are missing but metrics are available
 //
+// CANVAS FACTORY (Node.js only):
+// - Node.js has no DOM, thus no native Canvas
+// - BitmapText needs Canvas to:
+//   1. Load atlas images from files
+//   2. Scan pixels to find tight bounding boxes for each glyph
+//   3. Create tight atlas from scanned data
+// - Cannot pass class reference: HTMLCanvasElement is NOT constructible
+//   (new HTMLCanvasElement() throws "Illegal constructor")
+// - Must pass factory function: () => new Canvas()
+// - Browser: via document.createElement('canvas')
+// - Node.js: Must configure with canvas-mock providing Canvas constructor
+//
 // USAGE:
 // - Zero configuration for browser: Just call BitmapText.drawTextFromAtlas()
 // - Node.js: Optionally set canvas factory: BitmapText.setCanvasFactory(() => new Canvas())
@@ -52,7 +64,7 @@ class BitmapText {
 
   // Configuration (user overrides, delegates to FontLoader for defaults)
   // fontDirectory is owned by FontLoader (it's the component that uses it)
-  static #canvasFactory = null;         // Optional user override
+  static #canvasFactory = (typeof document !== 'undefined' ? () => document.createElement('canvas') : null);         // Optional user override
 
   // Rendering resources (lazy-initialized on first render)
   static #coloredGlyphCanvas = null;    // Shared scratch canvas for coloring
@@ -86,8 +98,20 @@ class BitmapText {
   }
 
   /**
-   * Override canvas factory (for Node.js environments, testing, or custom canvas implementations)
+   * Override canvas factory (Node.js only, testing, or custom canvas implementations)
+   *
+   * WHY A FACTORY FUNCTION?
+   * HTMLCanvasElement is not constructible in JavaScript - new HTMLCanvasElement()
+   * throws "Illegal constructor". Browser uses document.createElement('canvas'),
+   * Node.js requires canvas-mock providing Canvas constructor.
+   *
    * @param {Function} factory - Function that returns a canvas instance
+   * @example
+   * // Node.js
+   * BitmapText.setCanvasFactory(() => new Canvas());
+   *
+   * // Browser (custom implementation)
+   * BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
    */
   static setCanvasFactory(factory) {
     BitmapText.#canvasFactory = factory;
@@ -98,15 +122,16 @@ class BitmapText {
 
   /**
    * Get canvas factory (with fallback to platform default)
+   *
+   * USAGE PATTERN:
+   * const canvas = BitmapText.getCanvasFactory()();  // Note double invocation
+   *   - First ():  Gets the factory function
+   *   - Second (): Invokes factory to create canvas
+   *
    * @returns {Function} Canvas factory function
    */
   static getCanvasFactory() {
-    if (BitmapText.#canvasFactory) {
-      return BitmapText.#canvasFactory;
-    }
-    // Delegate to FontLoader for platform-specific default
-    BitmapText.#ensureFontLoader();
-    return BitmapText.#fontLoader.getDefaultCanvasFactory();
+    return BitmapText.#canvasFactory;
   }
 
   /**
@@ -170,19 +195,6 @@ class BitmapText {
   static registerAtlas(idString, base64Data) {
     BitmapText.#ensureFontLoader();
     FontLoaderBase.registerAtlas(idString, base64Data);
-  }
-
-  // ============================================
-  // Internal Canvas Creation
-  // ============================================
-
-  /**
-   * Create canvas using configured or platform-default factory
-   * @private
-   */
-  static #createCanvas() {
-    const factory = BitmapText.getCanvasFactory();
-    return factory();
   }
 
   // ============================================
@@ -316,7 +328,8 @@ class BitmapText {
 
     // Lazy-initialize canvas on first render
     if (!BitmapText.#coloredGlyphCanvas) {
-      BitmapText.#coloredGlyphCanvas = BitmapText.#createCanvas();
+      // Explicit factory invocation: get factory, then call it
+      BitmapText.#coloredGlyphCanvas = BitmapText.getCanvasFactory()();
       BitmapText.#coloredGlyphCtx = BitmapText.#coloredGlyphCanvas.getContext('2d');
     }
 
