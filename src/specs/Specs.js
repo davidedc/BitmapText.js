@@ -79,7 +79,8 @@ class Specs {
   //  14 to 14 at pixel density 1
   //    .: -1
   //  13 to 14 at pixel density 1
-  //    ,: -110 to 10 at pixel density 1
+  //    ,: -1
+  //  10 to 10 at pixel density 1
   //    W: 1
   //  13 to 13 at pixel density 1
   //    v: 1
