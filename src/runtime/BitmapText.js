@@ -817,12 +817,7 @@ class BitmapText {
       const fontProperties = FontProperties.fromKey(key);
       const atlasData = AtlasDataStore.getAtlasData(fontProperties);
       if (atlasData && BitmapText.#isValidAtlas(atlasData)) {
-        // Reconstruct ID string from key
-        // Key format: "1:Arial:normal:normal:19"
-        const [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize] = key.split(':');
-        const formatNum = (num) => num.includes('.') ? num.replace('.', '-') : `${num}-0`;
-        const idString = `density-${formatNum(pixelDensity)}-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${formatNum(fontSize)}`;
-        loaded.push(idString);
+        loaded.push(fontProperties.idString);
       }
     }
     return loaded;
@@ -835,10 +830,8 @@ class BitmapText {
   static getLoadedMetrics() {
     const loaded = [];
     for (const key of FontMetricsStore.getAvailableFonts()) {
-      const [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize] = key.split(':');
-      const formatNum = (num) => num.includes('.') ? num.replace('.', '-') : `${num}-0`;
-      const idString = `density-${formatNum(pixelDensity)}-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${formatNum(fontSize)}`;
-      loaded.push(idString);
+      const fontProperties = FontProperties.fromKey(key);
+      loaded.push(fontProperties.idString);
     }
     return loaded;
   }
@@ -853,10 +846,7 @@ class BitmapText {
       const fontProperties = FontProperties.fromKey(key);
       const atlasData = AtlasDataStore.getAtlasData(fontProperties);
       if (BitmapText.#isValidAtlas(atlasData)) {
-        const [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize] = key.split(':');
-        const formatNum = (num) => num.includes('.') ? num.replace('.', '-') : `${num}-0`;
-        const idString = `density-${formatNum(pixelDensity)}-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${formatNum(fontSize)}`;
-        loaded.push(idString);
+        loaded.push(fontProperties.idString);
       }
     }
     return loaded;

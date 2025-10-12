@@ -70,6 +70,21 @@ class FontProperties {
     return new FontProperties(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
   }
 
+  // Factory method to create FontProperties from storage key
+  // Parses: "1:Arial:normal:normal:19" or "1.5:Arial:italic:bold:18.5"
+  static fromKey(key) {
+    const [pixelDensity, fontFamily, fontStyle, fontWeight, fontSize] = key.split(':');
+
+    // Return new FontProperties instance with parsed numeric values
+    return new FontProperties(
+      parseFloat(pixelDensity),
+      fontFamily,
+      fontStyle,
+      fontWeight,
+      parseFloat(fontSize)
+    );
+  }
+
   // Helper method to format numeric parts (used by fromIDString)
   static #formatNumericPart(integerPart, decimalPart) {
     if (!decimalPart || decimalPart === '0') {
