@@ -100,6 +100,9 @@ and then open the page from the browser at:
     // Determine protocol for image loading
     const isFileProtocol = window.location.href.includes("file://");
 
+    // Configure font directory (required since we're in public/ subdirectory)
+    BitmapText.setFontDirectory('../font-assets/');
+
     // Load all fonts using static API
     console.log("Using font registry IDs:", FontManifest.allFontIDs());
 

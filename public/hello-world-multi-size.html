@@ -103,6 +103,9 @@
     // Create IDStrings for all font sizes
     const IDStrings = fontSizes.map(createIDString);
 
+    // Configure font directory (required since we're in public/ subdirectory)
+    BitmapText.setFontDirectory('../font-assets/');
+
     // Detect if running on file:// protocol
     const isFileProtocol = window.location.href.includes("file://");
 

@@ -15,7 +15,8 @@ if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' |
 // - Contains no font generation code to keep bundle size minimal
 //
 // ARCHITECTURE:
-// - Static storage for font data (metrics + atlases)
+// - Facade pattern: Delegates storage to AtlasDataStore/FontMetricsStore, font loading to FontLoader
+// - fontDirectory configuration owned by FontLoader (this class delegates get/set)
 // - Auto-detects environment (browser vs Node.js) for canvas creation
 // - Draws text by looking up glyphs from atlases and positioning them with metrics/kerning
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
@@ -49,8 +50,8 @@ class BitmapText {
   // Font data storage delegated to AtlasDataStore and FontMetricsStore
   // (no private maps - stores are the single source of truth)
 
-  // Configuration (sensible defaults, can override)
-  static #dataDir = '../font-assets/';  // Default relative path
+  // Configuration (user overrides, delegates to FontLoader for defaults)
+  // fontDirectory is owned by FontLoader (it's the component that uses it)
   static #canvasFactory = null;         // Optional user override
 
   // Rendering resources (lazy-initialized on first render)
@@ -65,19 +66,23 @@ class BitmapText {
   // ============================================
 
   /**
-   * Override default font assets directory
-   * @param {string} dir - Path to font assets directory
+   * Set font directory (overrides default)
+   * Delegates to FontLoader which owns this configuration
+   * @param {string} path - Path to font assets directory
    */
-  static setDataDir(dir) {
-    BitmapText.#dataDir = dir;
+  static setFontDirectory(path) {
+    BitmapText.#ensureFontLoader();
+    BitmapText.#fontLoader.setFontDirectory(path);
   }
 
   /**
-   * Get current data directory
-   * @returns {string} Current data directory path
+   * Get font directory (returns override or default)
+   * Delegates to FontLoader which owns this configuration
+   * @returns {string} Font directory path
    */
-  static getDataDir() {
-    return BitmapText.#dataDir;
+  static getFontDirectory() {
+    BitmapText.#ensureFontLoader();
+    return BitmapText.#fontLoader.getFontDirectory();
   }
 
   /**
@@ -107,12 +112,12 @@ class BitmapText {
   /**
    * Configure multiple options at once
    * @param {Object} options - Configuration options
-   * @param {string} [options.dataDir] - Font assets directory
+   * @param {string} [options.fontDirectory] - Font assets directory
    * @param {Function} [options.canvasFactory] - Canvas factory function
    */
   static configure(options = {}) {
-    if (options.dataDir !== undefined) {
-      BitmapText.setDataDir(options.dataDir);
+    if (options.fontDirectory !== undefined) {
+      BitmapText.setFontDirectory(options.fontDirectory);
     }
     if (options.canvasFactory !== undefined) {
       BitmapText.setCanvasFactory(options.canvasFactory);
@@ -873,10 +878,13 @@ class BitmapText {
     if (FontLoaderBase._pendingAtlases) {
       FontLoaderBase._pendingAtlases.clear();
     }
+    // Reset FontLoader configuration
+    if (FontLoaderBase.setFontDirectory) {
+      FontLoaderBase.setFontDirectory(null);
+    }
     BitmapText.#coloredGlyphCanvas = null;
     BitmapText.#coloredGlyphCtx = null;
     BitmapText.#canvasFactory = null;
-    BitmapText.#dataDir = '../font-assets/';
     BitmapText.#fontLoader = null;
   }
 }

@@ -78,7 +78,10 @@
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
 
-    // Load font using static BitmapText API (zero configuration)
+    // Configure font directory (required since we're in public/ subdirectory)
+    BitmapText.setFontDirectory('../font-assets/');
+
+    // Load font using static BitmapText API
     const isFileProtocol = window.location.href.includes("file://");
 
     // Load font and render when ready

@@ -32,14 +32,6 @@ class FontLoader extends FontLoaderBase {
     return () => document.createElement('canvas');
   }
 
-  /**
-   * Get default data directory for browser
-   * @returns {string} Data directory path
-   */
-  static getDefaultDataDir() {
-    return 'font-assets/';
-  }
-
   // ============================================
   // File Name Constants (from BitmapText)
   // ============================================
@@ -62,8 +54,8 @@ class FontLoader extends FontLoaderBase {
   static async loadMetricsFile(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      const dataDir = bitmapTextClass.getDataDir();
-      script.src = `${dataDir}${FontLoader.METRICS_PREFIX}${idString}${FontLoader.JS_EXTENSION}`;
+      const fontDirectory = FontLoaderBase.getFontDirectory();
+      script.src = `${fontDirectory}${FontLoader.METRICS_PREFIX}${idString}${FontLoader.JS_EXTENSION}`;
 
       script.onload = () => {
         resolve();
@@ -109,8 +101,8 @@ class FontLoader extends FontLoaderBase {
   static _loadAtlasFromJS(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
       const imageScript = document.createElement('script');
-      const dataDir = bitmapTextClass.getDataDir();
-      imageScript.src = `${dataDir}${FontLoader.ATLAS_PREFIX}${idString}-png${FontLoader.JS_EXTENSION}`;
+      const fontDirectory = FontLoaderBase.getFontDirectory();
+      imageScript.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}-png${FontLoader.JS_EXTENSION}`;
 
       imageScript.onload = () => {
         const pkg = FontLoaderBase._tempAtlasPackages[idString];
@@ -160,8 +152,8 @@ class FontLoader extends FontLoaderBase {
   static _loadAtlasFromPNG(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      const dataDir = bitmapTextClass.getDataDir();
-      img.src = `${dataDir}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.PNG_EXTENSION}`;
+      const fontDirectory = FontLoaderBase.getFontDirectory();
+      img.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.PNG_EXTENSION}`;
 
       img.onload = () => {
         // Atlas will be reconstructed now or later when metrics are available

@@ -12,8 +12,10 @@
 // ARCHITECTURE:
 // - Abstract static class (not instantiated)
 // - Extended by FontLoaderBrowser and FontLoaderNode
+// - Owns fontDirectory configuration (#fontDirectory private field)
 // - Works with BitmapText's internal stores (#fontMetrics, #atlasData)
 // - Uses Template Method Pattern for platform-specific operations
+// - BitmapText delegates fontDirectory get/set to FontLoader (this class owns what it uses)
 //
 // LOADING FLOW:
 // 1. loadFonts() orchestrates loading of multiple fonts
@@ -41,6 +43,18 @@ class FontLoaderBase {
   // ============================================
 
   /**
+   * Default font directory for all platforms
+   * @constant {string}
+   */
+  static DEFAULT_FONT_DIRECTORY = './font-assets/';
+
+  /**
+   * User-configured font directory override (null = use default)
+   * @private
+   */
+  static #fontDirectory = null;
+
+  /**
    * Get default canvas factory for this platform
    * @abstract Must be implemented by derived classes
    * @returns {Function} Canvas factory function
@@ -50,12 +64,28 @@ class FontLoaderBase {
   }
 
   /**
-   * Get default data directory for this platform
-   * @abstract Must be implemented by derived classes
-   * @returns {string} Data directory path
+   * Set font directory (overrides default)
+   * @param {string} path - Path to font assets directory
    */
-  static getDefaultDataDir() {
-    throw new Error('FontLoaderBase.getDefaultDataDir() must be implemented by derived class');
+  static setFontDirectory(path) {
+    FontLoaderBase.#fontDirectory = path;
+  }
+
+  /**
+   * Get font directory (returns override or default)
+   * @returns {string} Font directory path
+   */
+  static getFontDirectory() {
+    return FontLoaderBase.#fontDirectory ?? FontLoaderBase.DEFAULT_FONT_DIRECTORY;
+  }
+
+  /**
+   * Get default font directory (shared across all platforms)
+   * @deprecated Use getFontDirectory() instead
+   * @returns {string} Font directory path
+   */
+  static getDefaultFontDirectory() {
+    return FontLoaderBase.DEFAULT_FONT_DIRECTORY;
   }
 
   // ============================================

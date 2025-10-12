@@ -40,14 +40,6 @@ class FontLoader extends FontLoaderBase {
     };
   }
 
-  /**
-   * Get default data directory for Node.js
-   * @returns {string} Data directory path
-   */
-  static getDefaultDataDir() {
-    return './font-assets/';
-  }
-
   // ============================================
   // File Name Constants (from BitmapText)
   // ============================================
@@ -74,8 +66,8 @@ class FontLoader extends FontLoaderBase {
     const fs = require('fs');
     const path = require('path');
 
-    const dataDir = bitmapTextClass.getDataDir();
-    const metricsPath = path.resolve(dataDir, `${FontLoader.METRICS_PREFIX}${idString}${FontLoader.JS_EXTENSION}`);
+    const fontDirectory = FontLoaderBase.getFontDirectory();
+    const metricsPath = path.resolve(fontDirectory, `${FontLoader.METRICS_PREFIX}${idString}${FontLoader.JS_EXTENSION}`);
 
     try {
       const metricsCode = fs.readFileSync(metricsPath, 'utf8');
@@ -103,8 +95,8 @@ class FontLoader extends FontLoaderBase {
     const fs = require('fs');
     const path = require('path');
 
-    const dataDir = bitmapTextClass.getDataDir();
-    const atlasPath = path.resolve(dataDir, `${FontLoader.ATLAS_PREFIX}${idString}-qoi${FontLoader.JS_EXTENSION}`);
+    const fontDirectory = FontLoaderBase.getFontDirectory();
+    const atlasPath = path.resolve(fontDirectory, `${FontLoader.ATLAS_PREFIX}${idString}-qoi${FontLoader.JS_EXTENSION}`);
 
     try {
       const atlasCode = fs.readFileSync(atlasPath, 'utf8');

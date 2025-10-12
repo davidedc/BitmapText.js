@@ -49,7 +49,7 @@ async function main() {
     // Configure BitmapText for Node.js environment
     console.log('Configuring BitmapText for Node.js...');
     BitmapText.configure({
-      dataDir: './font-assets/',
+      fontDirectory: './font-assets/',
       canvasFactory: () => new Canvas()
     });
 
