@@ -333,7 +333,7 @@ class GlyphFAB {
    *
    * @returns {{canvas: HTMLCanvasElement, charTextMetrics: Object, canvasCopy: HTMLCanvasElement}}
    */
-  createCanvasWithCharacterAndGetItsMetricss() {
+  createCanvasWithCharacterAndGetItsMetrics() {
     // Step 1: Create and configure canvas
     const { canvas, ctx } = this.createAndConfigureCanvas();
 
@@ -424,7 +424,7 @@ class GlyphFAB {
   }
 
   createCanvasesAndCharacterMetrics() {
-    const { canvas, charTextMetrics, canvasCopy } = this.createCanvasWithCharacterAndGetItsMetricss();
+    const { canvas, charTextMetrics, canvasCopy } = this.createCanvasWithCharacterAndGetItsMetrics();
     const { tightCanvas, tightCanvasBox } =
       this.getBoundingBoxOfOnPixels(canvas);
 
