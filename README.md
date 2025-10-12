@@ -218,12 +218,19 @@
   ```javascript
   BitmapText.configure({
     fontDirectory: './font-assets/',   // Directory containing font assets
-    canvasFactory: () => new Canvas()  // Canvas creation function
+    canvasFactory: () => new Canvas()  // Factory function (Node.js only)
   })
   ```
 
-  **Browser**: May need configuration if HTML files are in subdirectories (e.g., `public/`)
-  **Node.js**: May need configuration if running from different directory than project root
+  **fontDirectory**:
+  - Browser: May need configuration if HTML files are in subdirectories (e.g., `public/`)
+  - Node.js: May need configuration if running from different directory than project root
+
+  **canvasFactory** (Node.js only):
+  - Required because HTMLCanvasElement is not constructible (`new HTMLCanvasElement()` throws error)
+  - Must be a factory function that creates Canvas instances
+  - Browser: uses `document.createElement('canvas')`
+  - Node.js: Must provide `() => new Canvas()` from canvas-mock
 
   #### Loading Methods
 

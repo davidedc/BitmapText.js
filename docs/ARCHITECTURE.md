@@ -410,9 +410,69 @@ To support compound emojis would require:
   - Uses 4-step optimized tight bounds detection (bottom→top, top→bottom, left→right, right→left)
   - Calculates positioning data using exact formulas from AtlasPositioningFAB
   - Integrated into FontLoader for automatic Atlas → Tight Atlas conversion at load time
-  - Cross-platform canvas creation via canvasFactory parameter (browser: document.createElement, Node.js: Canvas class)
+  - Cross-platform canvas creation via `BitmapText.getCanvasFactory()()` (explicit double invocation pattern)
   - Part of core runtime distribution (~18-22KB)
-  - API: `reconstructFromAtlas(fontMetrics, atlasImage, canvasFactory)` - fontMetrics first for consistency
+  - API: `reconstructFromAtlas(fontMetrics, atlasImage)` - fontMetrics first for consistency
+
+## Canvas Factory Pattern
+
+### Why Factory Functions, Not Classes?
+
+**The HTMLCanvasElement Constraint:**
+- `HTMLCanvasElement` is **not constructible** in JavaScript
+- Attempting `new HTMLCanvasElement()` throws `"Illegal constructor"`
+- This is a platform limitation, not a design choice
+
+**Platform-Specific Solutions:**
+- **Browser**: Must use `document.createElement('canvas')` or `new OffscreenCanvas(width, height)`
+- **Node.js**: Requires canvas-mock library providing `Canvas` constructor
+
+**Why BitmapText Needs Canvas (Node.js-specific concern):**
+
+BitmapText needs to create Canvas instances internally for:
+1. **Loading atlas images** from atlas-*.js files
+2. **Scanning pixels** to find tight bounding boxes for each glyph
+3. **Creating tight atlases** from scanned data
+
+The browser has built-in Canvas via DOM, but Node.js does not. Hence the need for configuration.
+
+### Usage Pattern
+
+**Explicit double invocation** (makes the two-step process visible):
+```javascript
+const canvas = BitmapText.getCanvasFactory()();
+//               │                        │  │
+//               │                        │  └─ Invoke factory to create canvas
+//               │                        └──── Get the factory function
+//               └─────────────────────────── Returns factory
+```
+
+**Why explicit instead of hidden?**
+- Self-documenting: Shows "get factory, call factory"
+- Clear about the two-step process
+- No unnecessary abstraction layer
+
+### Configuration
+
+**Browser**:
+```javascript
+// No configuration needed - uses document.createElement('canvas')
+BitmapText.drawTextFromAtlas(...);
+```
+
+**Node.js** (requires configuration):
+```javascript
+import { Canvas } from './src/platform/canvas-mock.js';
+
+BitmapText.configure({
+  canvasFactory: () => new Canvas()  // Factory function, not class reference
+});
+```
+
+**Alternative**: Using OffscreenCanvas (browser):
+```javascript
+BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
+```
 
   ## Data Flow
 
