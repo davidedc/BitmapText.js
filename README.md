@@ -115,8 +115,14 @@
     const canvas = document.getElementById('myCanvas');
     const ctx = canvas.getContext('2d');
 
+    // IMPORTANT - Pixel Density Configuration:
+    // BitmapText requires explicit pixel density specification:
+    // - Standard displays: Use 1.0
+    // - HiDPI/Retina displays: Use window.devicePixelRatio (typically 2.0+)
+    // - No automatic detection - you must provide this value
+    // For detailed HiDPI setup, see "Understanding Coordinate Systems & Transforms" section below
+
     // Create font configuration
-    // For HiDPI setup, see "Understanding Coordinate Systems & Transforms" section below
     const fontProperties = new FontProperties(
       window.devicePixelRatio || 1, // pixelDensity (1.0 = standard, 2.0 = Retina)
       "Arial",                      // fontFamily
@@ -224,7 +230,7 @@ All BitmapText coordinates and measurements use **CSS pixels**:
 
 | API | Input Units | Output Units |
 |-----|-------------|--------------|
-| `drawTextFromAtlas(ctx, text, x, y, ...)` | x, y = CSS pixels | N/A |
+| `drawTextFromAtlas(ctx, text, x_CssPx, y_CssPx, ...)` | x_CssPx, y_CssPx = CSS pixels | rendered status |
 | `measureText(text, ...)` | N/A | width, bounds = CSS pixels |
 | `FontProperties(density, family, style, weight, size)` | size = CSS pixels | N/A |
 
@@ -438,7 +444,15 @@ BitmapText.drawTextFromAtlas(ctx, text, x, y, fontProps);
 
   ```javascript
   {
-    metrics: TextMetrics | null,  // TextMetrics-compatible object or null if failed
+    metrics: {
+      width: number,                      // CSS pixels - total text width
+      actualBoundingBoxLeft: number,      // CSS pixels - left extent from text position
+      actualBoundingBoxRight: number,     // CSS pixels - right extent from text position
+      actualBoundingBoxAscent: number,    // CSS pixels - ascent above baseline
+      actualBoundingBoxDescent: number,   // CSS pixels - descent below baseline (negative)
+      fontBoundingBoxAscent: number,      // CSS pixels - font ascent
+      fontBoundingBoxDescent: number      // CSS pixels - font descent (negative)
+    } | null,  // null if font metrics not available
     status: {
       code: StatusCode,           // 0=SUCCESS, 1=NO_METRICS, 2=PARTIAL_METRICS
       missingChars?: Set          // Missing characters (PARTIAL_METRICS only)
@@ -446,7 +460,9 @@ BitmapText.drawTextFromAtlas(ctx, text, x, y, fontProps);
   }
   ```
 
-  **drawTextFromAtlas(ctx, text, x, y, fontProperties, textProperties)**
+  **Note**: All measurements are in CSS pixels. To convert to physical pixels: `physicalPixels = cssPixels × fontProperties.pixelDensity`
+
+  **drawTextFromAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties)**
 
   Renders text and returns status:
 
@@ -465,7 +481,7 @@ BitmapText.drawTextFromAtlas(ctx, text, x, y, fontProps);
   Parameters:
   - **ctx**: Canvas 2D rendering context
   - **text**: String to render
-  - **x, y**: Position in CSS pixels (y is bottom of text bounding box)
+  - **x_CssPx, y_CssPx**: Position in CSS pixels (absolute from canvas origin; y_CssPx is bottom of text bounding box)
   - **fontProperties**: FontProperties instance
   - **textProperties**: TextProperties instance (optional)
 
