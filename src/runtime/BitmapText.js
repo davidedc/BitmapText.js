@@ -203,22 +203,26 @@ class BitmapText {
 
   /**
    * Measure text dimensions
-   * This returns an object with metrics and status information:
-   *   {
-   *     metrics: TextMetrics-compatible object (or null if measurement failed),
-   *     status: { code: StatusCode, missingChars?: Set }
-   *   }
+   *
+   * RETURN VALUES: All measurements are in CSS PIXELS
+   * - width, actualBoundingBox* values are CSS pixels
+   * - Measurements are independent of canvas setup or context transforms
+   * - To convert to physical pixels: multiply by fontProperties.pixelDensity
+   *
+   * NOTE: This method does NOT draw anything and is NOT affected by context transforms.
+   * It purely calculates metrics based on font data.
    *
    * The metrics object has the same shape and meaning as the TextMetrics object (see
-   * https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ) i.e.:
-   * the width should be the sum of the advancements (minus kerning adjustments)
-   * actualBoundingBoxLeft = the actualBoundingBoxLeft of the first character
-   * actualBoundingBoxRight = the sum of the advancements (minus kerning adjustments) EXCLUDING the one of the last char, plus the actualBoundingBoxRight of the last char
+   * https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics ):
+   * - width: sum of character advancements (minus kerning adjustments)
+   * - actualBoundingBoxLeft: actualBoundingBoxLeft of first character
+   * - actualBoundingBoxRight: sum of advancements (excluding last) + last char's actualBoundingBoxRight
    *
    * @param {string} text - Text to measure
    * @param {FontProperties} fontProperties - Font configuration
-   * @param {TextProperties} textProperties - Text rendering configuration
-   * @returns {Object} { metrics: TextMetrics | null, status: { code, missingChars? } }
+   * @param {TextProperties} [textProperties] - Text rendering configuration (optional)
+   * @returns {{metrics: {width: number, actualBoundingBoxLeft: number, actualBoundingBoxRight: number, actualBoundingBoxAscent: number, actualBoundingBoxDescent: number, fontBoundingBoxAscent: number, fontBoundingBoxDescent: number}|null, status: {code: number, missingChars?: Set}}}
+   *   All numeric values in metrics are CSS pixels
    */
   static measureText(text, fontProperties, textProperties) {
     if (!textProperties) {
@@ -309,19 +313,39 @@ class BitmapText {
   }
 
   /**
-   * Draw text using pre-rendered glyphs
-   * Returns status information about rendering
-   *   {
-   *     rendered: boolean (whether any rendering occurred),
-   *     status: { code: StatusCode, missingChars?: Set, missingAtlasChars?: Set, placeholdersUsed?: boolean }
-   *   }
-   * @param {CanvasRenderingContext2D} ctx - Canvas 2D context
+   * Draw text using pre-rendered glyphs from atlas
+   *
+   * COORDINATE SYSTEM:
+   * - All coordinates are in CSS PIXELS relative to canvas origin (0,0)
+   * - BitmapText IGNORES all context transforms (scale, translate, rotate, etc.)
+   * - Internal conversion: physicalPixels = cssPixels × fontProperties.pixelDensity
+   * - Transform is reset to identity during rendering, then restored
+   *
+   * TRANSFORM BEHAVIOR:
+   * BitmapText will reset the context transform to identity before drawing,
+   * meaning any ctx.scale(), ctx.translate(), ctx.rotate(), etc. are IGNORED.
+   * This ensures pixel-perfect rendering at exact physical pixel positions.
+   *
+   * Example:
+   *   ctx.scale(2, 2);          // User scales context
+   *   ctx.translate(100, 50);    // User translates
+   *   BitmapText.drawTextFromAtlas(ctx, "Hello", 10, 30, fontProps);
+   *   // Text renders at (10, 30) CSS pixels from origin, NOT (120, 80)!
+   *   // Transforms are ignored - coordinates are always absolute
+   *
+   * PIXEL DENSITY:
+   * - Specified via fontProperties.pixelDensity (e.g., window.devicePixelRatio)
+   * - Canvas should be sized: canvas.width = cssWidth × pixelDensity
+   * - Do NOT use ctx.scale(dpr, dpr) - BitmapText handles density internally
+   *
+   * @param {CanvasRenderingContext2D} ctx - Canvas 2D context (transform will be temporarily reset)
    * @param {string} text - Text to render
-   * @param {number} x_CssPx - X position in CSS pixels
-   * @param {number} y_CssPx - Y position in CSS pixels (bottom baseline)
-   * @param {FontProperties} fontProperties - Font configuration
-   * @param {TextProperties} textProperties - Text rendering configuration
-   * @returns {Object} { rendered: boolean, status: { code, missingChars?, missingAtlasChars?, placeholdersUsed? } }
+   * @param {number} x_CssPx - X position in CSS pixels (absolute, from canvas origin)
+   * @param {number} y_CssPx - Y position in CSS pixels (absolute, from canvas origin, bottom baseline)
+   * @param {FontProperties} fontProperties - Font configuration (including pixelDensity)
+   * @param {TextProperties} [textProperties] - Text rendering configuration (optional)
+   * @returns {{rendered: boolean, status: {code: number, missingChars?: Set, missingAtlasChars?: Set, placeholdersUsed?: boolean}}}
+   *   Rendering result and status information
    */
   static drawTextFromAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties = null) {
     textProperties = textProperties || new TextProperties();
@@ -367,6 +391,16 @@ class BitmapText {
     const missingAtlasChars = new Set();
     let placeholdersUsed = false;
 
+    // CRITICAL: Reset transform to identity for pixel-perfect physical rendering
+    // BitmapText ignores ALL context transforms (scale, translate, rotate, etc.)
+    // Coordinates are ALWAYS relative to canvas origin (0,0)
+    // This ensures:
+    // 1. Predictable positioning regardless of context state
+    // 2. Pixel-perfect rendering at physical pixel boundaries
+    // 3. No double-scaling when users apply ctx.scale(dpr, dpr)
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);  // Reset to identity matrix
+
     // Render text
     const chars = [...text];
     const textColor = textProperties.textColor;
@@ -407,6 +441,7 @@ class BitmapText {
       statusCode = StatusCode.PARTIAL_ATLAS;
     } else {
       // Complete success
+      ctx.restore();  // Restore original transform
       return {
         rendered: true,
         status: SUCCESS_STATUS
@@ -414,6 +449,7 @@ class BitmapText {
     }
 
     // Return detailed status for non-success cases
+    ctx.restore();  // Restore original transform
     return {
       rendered: true,
       status: createErrorStatus(statusCode, {

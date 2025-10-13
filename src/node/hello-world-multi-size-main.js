@@ -13,6 +13,8 @@ if (typeof path === 'undefined') {
 const fontSizes = [18, 18.5, 19];
 
 // Create font properties for each size using FontProperties class
+// Node.js pixel density: Use 1.0 for standard rendering, 2.0+ for HiDPI pre-rendering
+// See README.md "Node.js Pixel Density" section for details
 const fontPropertiesArray = fontSizes.map(size =>
   new FontProperties(1, "Arial", "normal", "normal", size) // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 );
@@ -96,7 +98,10 @@ async function main() {
     // White background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
+    // IMPORTANT: Coordinates are ABSOLUTE from canvas origin (0,0)
+    // BitmapText ignores context transforms
+
     // Render "Hello World" at each font size
     let allSuccess = true;
     let actualGlyphsDrawn = 0;
@@ -110,8 +115,8 @@ async function main() {
       const result = BitmapText.drawTextFromAtlas(
         ctx,
         text,
-        20,  // x position
-        yPosition,
+        20,  // x position in CSS pixels (absolute from origin)
+        yPosition,  // y position in CSS pixels (absolute from origin)
         fontProperties,
         textProperties  // text rendering properties including color and kerning
       );

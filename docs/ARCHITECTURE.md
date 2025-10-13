@@ -62,6 +62,61 @@
 
   This architecture provides a simple static API for end users while also supporting the font-assets-builder tool through FAB extensions.
 
+### Transform Reset Pattern
+
+**Design Decision:** BitmapText ignores context transforms for pixel-perfect rendering.
+
+**Rationale:**
+1. **Predictable Positioning:** Text always renders at exact physical pixel boundaries
+2. **No Double-Scaling:** Prevents bugs when users apply `ctx.scale(dpr, dpr)`
+3. **Independent Rendering:** BitmapText behavior is deterministic regardless of context state
+4. **Pixel-Perfect Guarantee:** Direct control over physical pixel placement ensures consistency
+
+**Implementation:**
+```javascript
+static drawTextFromAtlas(ctx, text, x_CssPx, y_CssPx, fontProperties, textProperties) {
+  // ... validation ...
+
+  ctx.save();                           // Save current transform
+  ctx.setTransform(1, 0, 0, 1, 0, 0);   // Reset to identity
+
+  // Draw at physical pixels: x_CssPx × pixelDensity
+  // All ctx.drawImage() calls receive physical pixel coordinates
+
+  ctx.restore();                        // Restore original transform
+
+  // ... return status ...
+}
+```
+
+**Trade-offs:**
+- ✅ **Pro:** Simple, robust, predictable
+- ✅ **Pro:** No complex transform mathematics
+- ✅ **Pro:** Compatible with any context state
+- ⚠️ **Con:** Users cannot use transforms to position BitmapText
+- ⚠️ **Con:** Different pattern than HTML5 Canvas fillText()
+
+**User Impact:**
+```javascript
+// This does NOT work as expected:
+ctx.translate(100, 50);
+BitmapText.drawTextFromAtlas(ctx, "Hello", 10, 20, fontProps);
+// Text renders at (10, 20), NOT (110, 70)
+
+// Users must calculate absolute positions:
+const baseX = 100;
+const baseY = 50;
+BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
+// Text renders at (110, 70) as intended
+```
+
+**Alternatives Considered:**
+1. **Respect Transforms:** Would require complex matrix mathematics and cause double-scaling issues
+2. **Smart Un-scale:** Would work only for simple `scale(dpr, dpr)`, breaks with translations/rotations
+3. **Transform-Aware Mode:** Would add API complexity and dual code paths
+
+**Chosen:** Reset transform (identity matrix) for simplicity and robustness.
+
   ### Component Organization
 ```
   ┌─────────────────────────────────────────┐

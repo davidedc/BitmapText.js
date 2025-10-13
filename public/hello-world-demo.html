@@ -64,6 +64,8 @@
 
   <script>
     // Font properties for Arial normal normal 19 with pixel density 1
+    // Pixel density 1.0 = standard display (non-Retina)
+    // For HiDPI displays, use window.devicePixelRatio (see README.md "Understanding Coordinate Systems")
     const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 
     // Text properties for rendering configuration
@@ -97,12 +99,16 @@
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // IMPORTANT: BitmapText ignores context transforms
+      // Coordinates (10, 50) are ABSOLUTE from canvas origin (0,0)
+      // Any ctx.scale(), ctx.translate(), ctx.rotate() are ignored
+
       // Draw "Hello World" using bitmap text - API returns status info
       const result = BitmapText.drawTextFromAtlas(
         ctx,
         "Hello World",
-        10,  // x position
-        50,  // y position
+        10,  // x position in CSS pixels (absolute from origin)
+        50,  // y position in CSS pixels (absolute from origin)
         fontProperties,
         textProperties  // text rendering properties including color and kerning
       );

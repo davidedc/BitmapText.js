@@ -116,12 +116,13 @@
     const ctx = canvas.getContext('2d');
 
     // Create font configuration
+    // For HiDPI setup, see "Understanding Coordinate Systems & Transforms" section below
     const fontProperties = new FontProperties(
-      window.devicePixelRatio || 1, // pixelDensity
+      window.devicePixelRatio || 1, // pixelDensity (1.0 = standard, 2.0 = Retina)
       "Arial",                      // fontFamily
       "normal",                     // fontStyle
       "normal",                     // fontWeight
-      18                           // fontSize
+      18                           // fontSize in CSS pixels
     );
 
     // Optional: Create text rendering configuration
@@ -131,6 +132,9 @@
       textAlign: 'left',           // Alignment (default: 'left')
       textColor: '#000000'         // Color (default: '#000000')
     });
+
+    // IMPORTANT: Do NOT call ctx.scale() - BitmapText handles scaling internally
+    // IMPORTANT: Coordinates are ABSOLUTE from canvas origin, transforms are ignored
 
     // Render text using static API
     BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties, textProperties);
@@ -152,6 +156,8 @@
   });
 
   // Create font configuration
+  // Node.js pixel density: Use 1.0 for standard rendering, 2.0+ for HiDPI pre-rendering
+  // See "Node.js Pixel Density" section below for details
   const fontProperties = new FontProperties(1.0, "Arial", "normal", "normal", 18);
 
   // Load font
@@ -161,6 +167,7 @@
   const canvas = new Canvas(400, 100);
   const ctx = canvas.getContext('2d');
 
+  // Coordinates are ABSOLUTE from canvas origin (0,0)
   BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties);
 
   // Export as PNG
@@ -187,6 +194,171 @@
     }
   }
   ```
+
+## Understanding Coordinate Systems & Transforms
+
+### Transform Behavior - CRITICAL
+
+**BitmapText IGNORES all context transforms.** Coordinates are always absolute from canvas origin (0,0).
+
+```javascript
+// Setup
+const ctx = canvas.getContext('2d');
+ctx.scale(2, 2);
+ctx.translate(100, 50);
+ctx.rotate(Math.PI / 4);
+
+// BitmapText ignores ALL transforms above
+const fontProps = new FontProperties(2.0, "Arial", "normal", "normal", 19);
+BitmapText.drawTextFromAtlas(ctx, "Hello", 10, 50, fontProps);
+// ✅ Text renders at exactly (10, 50) CSS pixels from origin
+// ❌ NOT at (120, 80) which would be 10+100 translate, 50+50 translate
+// ❌ NOT rotated 45 degrees
+```
+
+**Why:** BitmapText needs direct control over physical pixel positioning for pixel-perfect rendering. It temporarily resets the context transform to identity during drawing, then restores it.
+
+### Coordinate System Overview
+
+All BitmapText coordinates and measurements use **CSS pixels**:
+
+| API | Input Units | Output Units |
+|-----|-------------|--------------|
+| `drawTextFromAtlas(ctx, text, x, y, ...)` | x, y = CSS pixels | N/A |
+| `measureText(text, ...)` | N/A | width, bounds = CSS pixels |
+| `FontProperties(density, family, style, weight, size)` | size = CSS pixels | N/A |
+
+**Internal conversion:** `physicalPixels = cssPixels × pixelDensity`
+
+### Canvas Setup for HiDPI
+
+#### Standard Display (pixelDensity = 1.0)
+```javascript
+const fontProps = new FontProperties(1.0, "Arial", "normal", "normal", 18);
+const canvas = document.getElementById('myCanvas');
+canvas.width = 400;   // 400 physical pixels
+canvas.height = 100;  // 100 physical pixels
+const ctx = canvas.getContext('2d');
+
+// No special setup needed
+BitmapText.drawTextFromAtlas(ctx, "Hello", 10, 50, fontProps);
+```
+
+#### HiDPI Display (Retina, 2× or higher)
+```javascript
+const dpr = window.devicePixelRatio;  // e.g., 2.0 for Retina
+const fontProps = new FontProperties(dpr, "Arial", "normal", "normal", 18);
+
+const canvas = document.getElementById('myCanvas');
+const cssWidth = 400;
+const cssHeight = 100;
+
+// Set physical dimensions
+canvas.width = cssWidth * dpr;    // e.g., 800 physical pixels
+canvas.height = cssHeight * dpr;  // e.g., 200 physical pixels
+
+// Set CSS dimensions for proper display size
+canvas.style.width = cssWidth + 'px';
+canvas.style.height = cssHeight + 'px';
+
+const ctx = canvas.getContext('2d');
+
+// ⚠️ IMPORTANT: Do NOT call ctx.scale(dpr, dpr)
+// BitmapText handles density scaling internally!
+
+// Draw with CSS pixel coordinates
+BitmapText.drawTextFromAtlas(ctx, "Hello", 10, 50, fontProps);
+// Internally converts to physical (20, 100) for pixel-perfect rendering
+```
+
+### Comparison with HTML5 Canvas
+
+BitmapText uses a **different pattern** than standard HTML5 Canvas:
+
+**HTML5 Canvas (Standard HiDPI):**
+```javascript
+ctx.scale(dpr, dpr);  // Scale context
+ctx.font = '19px Arial';
+ctx.fillText('Hello', 10, 50);  // Transform applied automatically
+```
+
+**BitmapText:**
+```javascript
+// NO ctx.scale() - BitmapText handles scaling internally
+const fontProps = new FontProperties(dpr, 'Arial', 'normal', 'normal', 19);
+BitmapText.drawTextFromAtlas(ctx, 'Hello', 10, 50, fontProps);
+```
+
+**Key Differences:**
+
+| Aspect | HTML5 Canvas | BitmapText |
+|--------|--------------|------------|
+| Context scaling | `ctx.scale(dpr, dpr)` | NO scaling |
+| Transform handling | Respects transforms | IGNORES transforms |
+| Coordinate system | Relative to transform | Absolute from origin |
+| Font size | String `'19px'` | Number `19` |
+| Pixel density | Implicit in scale | Explicit in FontProperties |
+
+### Node.js Pixel Density
+
+Node.js has no `window.devicePixelRatio`. Choose based on your use case:
+
+**Standard Server-Side Rendering:**
+```javascript
+const fontProps = new FontProperties(1.0, "Arial", "normal", "normal", 18);
+const canvas = new Canvas(400, 100);  // Output is 400×100 pixels
+```
+
+**Pre-rendering for HiDPI Displays:**
+```javascript
+const targetDensity = 2.0;  // Target display is 2× (Retina)
+const fontProps = new FontProperties(targetDensity, "Arial", "normal", "normal", 18);
+
+// Output will be 2× larger
+const cssWidth = 400;
+const cssHeight = 100;
+const canvas = new Canvas(
+  cssWidth * targetDensity,   // 800 physical pixels
+  cssHeight * targetDensity   // 200 physical pixels
+);
+```
+
+### Common Pitfalls
+
+❌ **DON'T scale the context when using BitmapText:**
+```javascript
+ctx.scale(dpr, dpr);  // ❌ This will be IGNORED
+BitmapText.drawTextFromAtlas(ctx, text, 10, 50, fontProps);
+// Works, but the scale is wasted (reset then restored)
+```
+
+❌ **DON'T expect transforms to work:**
+```javascript
+ctx.translate(100, 50);  // ❌ This will be IGNORED
+BitmapText.drawTextFromAtlas(ctx, text, 10, 50, fontProps);
+// Text renders at (10, 50), NOT (110, 100)
+```
+
+❌ **DON'T mix density values:**
+```javascript
+const fontProps = new FontProperties(2.0, ...);  // Font at 2×
+canvas.width = 400;  // ❌ Canvas at 1× - glyphs will be too large!
+```
+
+✅ **DO keep density consistent:**
+```javascript
+const density = window.devicePixelRatio;
+const fontProps = new FontProperties(density, ...);
+canvas.width = 400 * density;  // ✅ Matching density
+```
+
+✅ **DO use absolute positioning:**
+```javascript
+// Calculate exact position you want
+const x = 10;  // Absolute CSS pixels from origin
+const y = 50;  // Absolute CSS pixels from origin
+BitmapText.drawTextFromAtlas(ctx, text, x, y, fontProps);
+```
 
   ## Generating Your Own Bitmap Fonts
 

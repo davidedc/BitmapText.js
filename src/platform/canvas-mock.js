@@ -108,6 +108,59 @@ class Context2D {
     this.canvas = canvas;
     this.fillStyle = '#000000';
     this.globalCompositeOperation = 'source-over';
+
+    // Transform stack for save/restore (minimal implementation)
+    this._stateStack = [];
+  }
+
+  // ============================================
+  // Transform Operations (Minimal Implementation)
+  // ============================================
+
+  /**
+   * Save current context state
+   *
+   * In full Canvas API, this saves transform, fill style, etc.
+   * For canvas-mock, we only save fillStyle and globalCompositeOperation
+   * since we don't actually use transforms for drawing.
+   */
+  save() {
+    this._stateStack.push({
+      fillStyle: this.fillStyle,
+      globalCompositeOperation: this.globalCompositeOperation
+    });
+  }
+
+  /**
+   * Restore previously saved context state
+   *
+   * Restores the most recently saved state from the stack.
+   */
+  restore() {
+    if (this._stateStack.length > 0) {
+      const state = this._stateStack.pop();
+      this.fillStyle = state.fillStyle;
+      this.globalCompositeOperation = state.globalCompositeOperation;
+    }
+  }
+
+  /**
+   * Set transform matrix (no-op in canvas-mock)
+   *
+   * Canvas-mock uses direct pixel coordinate operations without transforms.
+   * This method exists for API compatibility with BitmapText's transform reset,
+   * but does not actually modify drawing behavior.
+   *
+   * @param {number} a - Transform matrix parameter (ignored)
+   * @param {number} b - Transform matrix parameter (ignored)
+   * @param {number} c - Transform matrix parameter (ignored)
+   * @param {number} d - Transform matrix parameter (ignored)
+   * @param {number} e - Transform matrix parameter (ignored)
+   * @param {number} f - Transform matrix parameter (ignored)
+   */
+  setTransform(a, b, c, d, e, f) {
+    // No-op: canvas-mock doesn't implement transforms
+    // Drawing operations use direct pixel coordinates regardless of transform state
   }
 
   // ============================================

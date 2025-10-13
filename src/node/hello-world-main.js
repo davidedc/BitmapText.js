@@ -10,6 +10,10 @@ if (typeof path === 'undefined') {
 }
 
 // Font properties for Arial normal normal 19 with pixel density 1
+// Node.js pixel density considerations:
+// - Use 1.0 for standard server-side rendering (output matches canvas dimensions)
+// - Use 2.0+ when pre-rendering for specific HiDPI displays
+// - No equivalent to window.devicePixelRatio in Node.js
 const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
 
 // Text properties for rendering configuration
@@ -64,13 +68,16 @@ async function main() {
     // White background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, 300, 100);
-    
+
+    // IMPORTANT: Coordinates are ABSOLUTE from canvas origin (0,0)
+    // BitmapText ignores context transforms (not applicable in Node.js canvas-mock, but good to know)
+
     // Render "Hello World" using bitmap text - API returns status info
     const result = BitmapText.drawTextFromAtlas(
       ctx,
       "Hello World",
-      10,  // x position
-      50,  // y position
+      10,  // x position in CSS pixels (absolute from origin)
+      50,  // y position in CSS pixels (absolute from origin)
       fontProperties,
       textProperties  // text rendering properties including color and kerning
     );
