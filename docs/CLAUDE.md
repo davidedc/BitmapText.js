@@ -93,6 +93,8 @@
   - QOI format: Browser exports QOI, pipeline auto-converts to PNG for processing
   - QOI conversion: Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI files
   - Image to JS conversion: Use `node scripts/image-to-js-converter.js [directory] --all` to generate JS files from PNG and QOI images for file:// protocol compatibility
+  - PNG header stripping: Automatically applied during pipeline; strips predictable 24-char PNG header prefix from atlas-*-png.js files to reduce browser bundle size
+  - Manual PNG header strip: Use `node scripts/strip-png-base64-header.js [directory]` to strip headers from PNG atlas JS files (safe to run multiple times)
   - Node.js demo build: Use `./scripts/build-node-demo.sh` or `./run-node-demos.sh` (includes font asset setup)
   - Automated pipeline available: See `scripts/README.md` for complete automation guide
   - Use `--preserve-originals` flag to keep unoptimized PNGs for comparison during development

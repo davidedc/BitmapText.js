@@ -662,6 +662,15 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   5. **Dependency**: Requires FontMetrics for cell dimension calculation
   6. **Reconstruction Cost**: ~10-15ms one-time cost per font at load time
 
+  **PNG Base64 Header Stripping (Browser Optimization)**:
+  1. **Predictable Header**: All PNG files (width < 65,536) start with identical 18-byte signature + IHDR header
+  2. **Base64 Encoding**: These 18 bytes encode to "iVBORw0KGgoAAAANSUhEUgAA" (24 characters)
+  3. **Stripping Process**: scripts/strip-png-base64-header.js removes this prefix from atlas-*-png.js files
+  4. **Runtime Restoration**: src/platform/FontLoader-browser.js prepends header when loading (line ~114)
+  5. **File Size Savings**: ~24 bytes per PNG atlas file (scales with number of font configurations)
+  6. **Backwards Compatible**: Runtime checks for header presence, only adds if missing
+  7. **Node.js Unaffected**: Only applies to PNG files used in browsers; Node.js uses QOI format
+
   ## Memory Management
 
   Optimized for minimal memory footprint and efficient access:

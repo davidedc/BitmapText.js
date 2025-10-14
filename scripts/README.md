@@ -142,7 +142,40 @@ node scripts/image-to-js-converter.js font-assets --png    # Process PNG files o
 node scripts/image-to-js-converter.js /path/to/images --qoi # Process QOI files only
 ```
 
-### 5. QOI to PNG Converter Script
+### 5. PNG Base64 Header Stripper Script
+```bash
+node scripts/strip-png-base64-header.js [directory]
+```
+
+**What it does:**
+- Strips the predictable 24-character PNG header prefix from atlas-*-png.js base64 strings
+- Reduces file size by removing redundant data that's restored at runtime
+- Only processes PNG atlas files (not QOI files)
+- Backwards compatible with un-stripped files
+
+**How it works:**
+- All PNG files start with a signature + IHDR chunk header (18 bytes total)
+- For images with width < 65,536 pixels, these encode to "iVBORw0KGgoAAAANSUhEUgAA" in base64
+- The script removes these 24 characters and marks files as optimized
+- FontLoader-browser.js automatically prepends the header when loading
+
+**Examples:**
+```bash
+node scripts/strip-png-base64-header.js                    # Process files in font-assets/
+node scripts/strip-png-base64-header.js /path/to/assets/   # Custom directory
+```
+
+**When to use:**
+- Automatically called during watch-font-assets.sh pipeline
+- Can be run manually after regenerating atlas-*-png.js files
+- Safe to run multiple times (idempotent - won't double-strip)
+
+**File size savings:**
+- ~24 bytes per PNG atlas file
+- Scales with number of font configurations
+- Typical project: 4-10 atlases = 96-240 bytes saved
+
+### 6. QOI to PNG Converter Script
 ```bash
 node scripts/qoi-to-png-converter.js [directory] [options]
 ```
@@ -173,7 +206,7 @@ node scripts/qoi-to-png-converter.js data/ --remove-qoi # Custom directory, remo
 - As part of the automated pipeline for font asset processing
 - When transitioning from QOI to PNG format for specific workflows
 
-### 6. QOI Memory Calculator Script
+### 7. QOI Memory Calculator Script
 ```bash
 node scripts/qoi-memory-calculator.js [directory]
 # or
@@ -199,7 +232,7 @@ npm run qoi-memory                                       # Using npm script
 - Displays compression ratios and memory savings
 - Identifies largest files by uncompressed size
 
-### 7. Font Registry Generator Script
+### 8. Font Registry Generator Script
 ```bash
 node scripts/generate-font-registry.js [options]
 # or
@@ -236,14 +269,15 @@ npm run generate-registry                                 # Using npm script
 
 ```
 scripts/
-├── watch-font-assets.sh       # Main monitoring script
-├── optimize-images.sh         # PNG compression
-├── qoi-to-png-converter.js    # QOI → PNG conversion
-├── image-to-js-converter.js   # Image → JS wrapper conversion (PNG/QOI)
-├── qoi-memory-calculator.js   # QOI memory usage analyzer
-├── generate-font-registry.js  # Font registry generator
-├── test-pipeline.sh           # One-time pipeline test
-└── README.md                  # This file
+├── watch-font-assets.sh          # Main monitoring script
+├── optimize-images.sh            # PNG compression
+├── qoi-to-png-converter.js       # QOI → PNG conversion
+├── image-to-js-converter.js      # Image → JS wrapper conversion (PNG/QOI)
+├── strip-png-base64-header.js    # PNG header stripper (optimization)
+├── qoi-memory-calculator.js      # QOI memory usage analyzer
+├── generate-font-registry.js     # Font registry generator
+├── test-pipeline.sh              # One-time pipeline test
+└── README.md                     # This file
 
 font-assets/
 ├── *.png                     # Optimized atlas images
@@ -267,9 +301,10 @@ When you drop `fontAssets.zip` in `~/Downloads/`:
 5. **🎨 Convert QOI**: Convert QOI files to PNG format (optional --remove-qoi)
 6. **🖼️ Optimize**: Compress PNGs with ImageOptim (optionally preserve originals)
 7. **🔧 Convert to JS**: Create JS wrappers for CORS-free loading
-8. **📋 Generate Registry**: Generate font registry from metrics files
-9. **🗑️ Cleanup**: Move processed zip to trash
-10. **🔄 Continue**: Return to monitoring
+8. **✂️ Strip PNG Headers**: Remove predictable PNG header prefix from base64 strings (optimization)
+9. **📋 Generate Registry**: Generate font registry from metrics files
+10. **🗑️ Cleanup**: Move processed zip to trash
+11. **🔄 Continue**: Return to monitoring
 
 ---
 

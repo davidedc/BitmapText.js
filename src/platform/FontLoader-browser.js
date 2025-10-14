@@ -102,8 +102,21 @@ class FontLoader extends FontLoaderBase {
           return;
         }
 
+        // PNG Header Restoration (for optimized atlas files)
+        // The first 18 bytes of all PNG files (width < 65,536) encode to "iVBORw0KGgoAAAANSUhEUgAA"
+        // This header may be stripped during build to reduce file size
+        // If missing, we prepend it here for backwards compatibility
+        const PNG_HEADER_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAA';
+        let base64Data = pkg.base64Data;
+
+        // Check if PNG header is missing (doesn't start with PNG signature 'iVBOR')
+        // Prepend header only if stripped (backwards compatible with un-stripped files)
+        if (!base64Data.startsWith('iVBOR')) {
+          base64Data = PNG_HEADER_BASE64 + base64Data;
+        }
+
         const img = new Image();
-        img.src = `data:image/png;base64,${pkg.base64Data}`;
+        img.src = `data:image/png;base64,${base64Data}`;
 
         img.onload = () => {
           // Atlas will be reconstructed now or later when metrics are available

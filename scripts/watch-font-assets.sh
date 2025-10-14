@@ -310,6 +310,18 @@ function run_js_conversion() {
     fi
 }
 
+function strip_png_headers() {
+    log "INFO" "Stripping PNG headers from atlas JS files..."
+
+    if node "$PROJECT_ROOT/scripts/strip-png-base64-header.js" "$DATA_DIR"; then
+        log "SUCCESS" "PNG header stripping completed"
+        return 0
+    else
+        log "WARNING" "PNG header stripping failed, but continuing..."
+        return 1
+    fi
+}
+
 function generate_font_registry() {
     log "INFO" "Generating font registry for test-renderer..."
 
@@ -356,6 +368,11 @@ function process_font_assets() {
     # Step 6: Convert images (PNG and QOI) to JS
     if ! run_js_conversion; then
         log "WARNING" "Image to JS conversion failed, but continuing..."
+    fi
+
+    # Step 6.5: Strip PNG headers from base64 strings (optimization)
+    if ! strip_png_headers; then
+        log "WARNING" "PNG header stripping failed, but continuing..."
     fi
 
     # Step 7: Generate font registry
