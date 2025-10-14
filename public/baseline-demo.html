@@ -181,6 +181,13 @@
       <input type="checkbox" id="kerning" checked>
       <label for="kerning">Enable Kerning</label>
 
+      <label style="margin-left: 15px;">Pixel Density:</label>
+      <input type="radio" id="density-1" name="pixel-density" value="1" checked>
+      <label for="density-1">1.0</label>
+      <input type="radio" id="density-2" name="pixel-density" value="2">
+      <label for="density-2">2.0</label>
+      <span style="font-size: 11px; color: #666;">(Retina/HiDPI)</span>
+
       <button id="render-btn" style="margin-left: 20px; padding: 8px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Render Baselines</button>
     </div>
 
@@ -266,9 +273,11 @@
 
     // Get current font properties from UI
     function getFontPropertiesFromUI() {
-      const dpr = window.devicePixelRatio || 1;
+      // Get pixel density from radio buttons (not window.devicePixelRatio)
+      // This allows explicit testing of different densities
+      const pixelDensity = document.getElementById('density-2').checked ? 2 : 1;
       return new FontProperties(
-        dpr,
+        pixelDensity,
         document.getElementById('font-family').value,
         document.getElementById('font-style').value,
         document.getElementById('font-weight').value,
@@ -317,10 +326,11 @@
       // Reset transform and draw text
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);  // Scale context for pixel density (critical for correct text size)
       ctx.fillStyle = 'black';
       ctx.font = `${fontProps.fontStyle} ${fontProps.fontWeight} ${fontProps.fontSize}px ${fontProps.fontFamily}`;
       ctx.textBaseline = baseline;
-      ctx.fillText(text, 20 * dpr, referenceY * dpr);
+      ctx.fillText(text, 20, referenceY);  // Use CSS pixel coordinates (scaling handles conversion)
       ctx.restore();
     }
 
