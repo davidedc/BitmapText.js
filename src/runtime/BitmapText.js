@@ -414,9 +414,27 @@ class BitmapText {
       ? BitmapText.#calculateBaselineOffsetToBottom(textProperties.textBaseline, characterMetricsForBaseline)
       : 0;
 
-    // Apply baseline offset and convert to physical pixels
+    // ALIGNMENT SUPPORT: Convert user's x from their chosen alignment to 'left' alignment
+    // Measure text width to calculate alignment offset (measureText accounts for kerning if enabled)
+    let alignmentOffset_CssPx = 0;
+    if (textProperties.textAlign !== 'left') {
+      const measureResult = BitmapText.measureText(text, fontProperties, textProperties);
+      if (measureResult.status.code === 0 && measureResult.metrics) {
+        // Successfully measured text - calculate alignment offset
+        alignmentOffset_CssPx = BitmapText.#calculateAlignmentOffsetToLeft(
+          textProperties.textAlign,
+          measureResult.metrics.width
+        );
+      } else {
+        // Failed to measure (missing glyphs, etc.) - default to left alignment (offset = 0)
+        // Text will still render but won't be aligned as requested
+        console.warn(`BitmapText: Failed to measure text for alignment '${textProperties.textAlign}', defaulting to left alignment`);
+      }
+    }
+
+    // Apply baseline and alignment offsets, then convert to physical pixels
     const position_PhysPx = {
-      x: x_CssPx * fontProperties.pixelDensity,
+      x: (x_CssPx + alignmentOffset_CssPx) * fontProperties.pixelDensity,
       y: (y_CssPx + baselineOffset_CssPx) * fontProperties.pixelDensity
     };
 
@@ -607,6 +625,50 @@ class BitmapText {
       default:
         // Unknown baseline value - warn and default to bottom
         console.warn(`BitmapText: Unknown textBaseline '${textBaseline}', defaulting to 'bottom'. Valid values: top, hanging, middle, alphabetic, ideographic, bottom`);
+        return 0;
+    }
+  }
+
+  /**
+   * Calculate x-offset to convert from specified textAlign to 'left' alignment
+   *
+   * INTERNAL REFERENCE: BitmapText uses 'left' alignment for internal rendering.
+   * All text rendering starts from the x-coordinate and advances rightward.
+   * This method converts user's chosen alignment to that internal reference.
+   *
+   * COORDINATE SYSTEM: x increases rightward (Canvas convention)
+   * All measurements are in CSS pixels
+   *
+   * ALIGNMENT GEOMETRY:
+   * - left: x marks the start of the text (no offset needed)
+   * - center: x marks the center of the text (offset by -width/2)
+   * - right: x marks the end of the text (offset by -width)
+   *
+   * @private
+   * @param {string} textAlign - User's chosen alignment ('left', 'center', 'right')
+   * @param {number} textWidth_CssPx - Total width of the text in CSS pixels
+   * @returns {number} Offset in CSS pixels to add to x coordinate to reach 'left' alignment
+   */
+  static #calculateAlignmentOffsetToLeft(textAlign, textWidth_CssPx) {
+    // Convert from user's alignment to left alignment (internal reference)
+    switch (textAlign) {
+      case 'left':
+        // Already at left alignment - no offset needed
+        return 0;
+
+      case 'center':
+        // Center alignment → Left alignment
+        // Text is centered at x, need to shift left by half width to get start position
+        return -textWidth_CssPx / 2;
+
+      case 'right':
+        // Right alignment → Left alignment
+        // Text ends at x, need to shift left by full width to get start position
+        return -textWidth_CssPx;
+
+      default:
+        // Unknown alignment value - warn and default to left
+        console.warn(`BitmapText: Unknown textAlign '${textAlign}', defaulting to 'left'. Valid values: left, center, right`);
         return 0;
     }
   }

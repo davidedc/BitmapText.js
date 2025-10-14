@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>BitmapText Baseline Demonstration - Interactive</title>
+  <title>BitmapText Baseline & Alignment Demonstration - Interactive</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -86,8 +86,8 @@
 
     .comparison-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
       margin: 15px 0;
     }
 
@@ -146,7 +146,7 @@
     }
 
     #demos:empty:before {
-      content: 'Select font and size, then render baselines...';
+      content: 'Select font and size, then click "Render All Combinations" to compare BitmapText vs Native Canvas (36 demos total)...';
       display: block;
       padding: 40px;
       text-align: center;
@@ -155,7 +155,7 @@
   </style>
 </head>
 <body>
-  <h1>BitmapText Baseline Demonstration - Interactive</h1>
+  <h1>BitmapText Baseline & Alignment Demonstration</h1>
 
   <div class="controls-bar">
     <div style="margin-bottom: 15px;">
@@ -188,7 +188,7 @@
       <label for="density-2">2.0</label>
       <span style="font-size: 11px; color: #666;">(Retina/HiDPI)</span>
 
-      <button id="render-btn" style="margin-left: 20px; padding: 8px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Render Baselines</button>
+      <button id="render-btn" style="margin-left: 20px; padding: 8px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Render All Combinations</button>
     </div>
 
     <div style="margin-bottom: 15px;">
@@ -246,6 +246,13 @@
       { value: 'bottom', desc: 'Bottom of em square (BitmapText default)', color: '#795548' }
     ];
 
+    // Alignment configurations
+    const alignments = [
+      { value: 'left', label: 'Left Alignment', desc: 'Text starts at x', x: 80 },
+      { value: 'center', label: 'Center Alignment', desc: 'Text centered at x', x: 225 },
+      { value: 'right', label: 'Right Alignment', desc: 'Text ends at x', x: 370 }
+    ];
+
     const referenceY = 60; // Y position for baseline reference line
 
     // State
@@ -294,34 +301,71 @@
       return 'Hello World';
     }
 
-    // Draw reference line and marker
-    function drawReferenceLine(ctx, cssWidth, cssHeight, dpr, color) {
+    // Draw reference lines and intersection marker
+    function drawReferenceLines(ctx, cssWidth, cssHeight, dpr, baselineColor, alignmentX) {
       ctx.save();
-      ctx.strokeStyle = color;
+
+      // Draw horizontal line (baseline)
+      ctx.strokeStyle = baselineColor;
       ctx.lineWidth = 2 * dpr;
       ctx.beginPath();
       ctx.moveTo(0, referenceY * dpr);
       ctx.lineTo(cssWidth * dpr, referenceY * dpr);
       ctx.stroke();
 
-      ctx.fillStyle = color;
+      // Draw vertical line (alignment anchor)
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([5 * dpr, 3 * dpr]);
       ctx.beginPath();
-      ctx.arc(20 * dpr, referenceY * dpr, 4 * dpr, 0, 2 * Math.PI);
+      ctx.moveTo(alignmentX * dpr, 0);
+      ctx.lineTo(alignmentX * dpr, cssHeight * dpr);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw intersection marker
+      ctx.fillStyle = baselineColor;
+      ctx.beginPath();
+      ctx.arc(alignmentX * dpr, referenceY * dpr, 4 * dpr, 0, 2 * Math.PI);
       ctx.fill();
+
       ctx.restore();
     }
 
-    // Draw native canvas text
-    function drawNativeText(ctx, text, fontProps, baseline, color) {
+    // Draw BitmapText with baseline and alignment
+    function drawBitmapText(ctx, text, fontProps, baseline, baselineColor, alignment, alignmentX) {
       const dpr = fontProps.pixelDensity;
       const cssWidth = ctx.canvas.width / dpr;
       const cssHeight = ctx.canvas.height / dpr;
 
-      // Clear and draw reference line
+      // Clear and draw reference lines
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      drawReferenceLine(ctx, cssWidth, cssHeight, dpr, color);
+      drawReferenceLines(ctx, cssWidth, cssHeight, dpr, baselineColor, alignmentX);
+
+      // Draw text with BitmapText
+      const textProps = new TextProperties({
+        textBaseline: baseline,
+        textAlign: alignment,
+        textColor: '#000000',
+        isKerningEnabled: document.getElementById('kerning').checked
+      });
+
+      return BitmapText.drawTextFromAtlas(ctx, text, alignmentX, referenceY, fontProps, textProps);
+    }
+
+    // Draw native HTML5 Canvas text with baseline and alignment
+    function drawNativeText(ctx, text, fontProps, baseline, baselineColor, alignment, alignmentX) {
+      const dpr = fontProps.pixelDensity;
+      const cssWidth = ctx.canvas.width / dpr;
+      const cssHeight = ctx.canvas.height / dpr;
+
+      // Clear and draw reference lines
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      drawReferenceLines(ctx, cssWidth, cssHeight, dpr, baselineColor, alignmentX);
 
       // Reset transform and draw text
       ctx.save();
@@ -330,36 +374,15 @@
       ctx.fillStyle = 'black';
       ctx.font = `${fontProps.fontStyle} ${fontProps.fontWeight} ${fontProps.fontSize}px ${fontProps.fontFamily}`;
       ctx.textBaseline = baseline;
-      ctx.fillText(text, 20, referenceY);  // Use CSS pixel coordinates (scaling handles conversion)
+      ctx.textAlign = alignment;
+      ctx.fillText(text, alignmentX, referenceY);  // Use CSS pixel coordinates (scaling handles conversion)
       ctx.restore();
     }
 
-    // Draw BitmapText
-    function drawBitmapText(ctx, text, fontProps, baseline, color) {
-      const dpr = fontProps.pixelDensity;
-      const cssWidth = ctx.canvas.width / dpr;
-      const cssHeight = ctx.canvas.height / dpr;
-
-      // Clear and draw reference line
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      drawReferenceLine(ctx, cssWidth, cssHeight, dpr, color);
-
-      // Draw text with BitmapText
-      const textProps = new TextProperties({
-        textBaseline: baseline,
-        textColor: '#000000',
-        isKerningEnabled: document.getElementById('kerning').checked
-      });
-
-      return BitmapText.drawTextFromAtlas(ctx, text, 20, referenceY, fontProps, textProps);
-    }
-
-    // Render all baselines
-    async function renderAllBaselines() {
+    // Render all baseline × alignment combinations
+    async function renderAllCombinations() {
       const demosDiv = document.getElementById('demos');
-      demosDiv.innerHTML = '<div class="loading">Loading font and rendering baselines...</div>';
+      demosDiv.innerHTML = '<div class="loading">Loading font and rendering all 36 demos (BitmapText vs Native Canvas)...</div>';
 
       try {
         const fontProps = getFontPropertiesFromUI();
@@ -381,7 +404,7 @@
         currentFontProps = fontProps;
         demosDiv.innerHTML = '';
 
-        // Render each baseline
+        // Render each baseline with all alignments
         baselines.forEach(baseline => {
           const section = document.createElement('div');
           section.className = 'demo-section';
@@ -397,72 +420,108 @@
           desc.textContent = baseline.desc;
           section.appendChild(desc);
 
-          // Comparison grid
+          // Alignment grid (3 columns)
           const grid = document.createElement('div');
           grid.className = 'comparison-grid';
 
-          // BitmapText canvas
-          const bitmapWrapper = document.createElement('div');
-          bitmapWrapper.className = 'canvas-wrapper';
-          const bitmapLabel = document.createElement('div');
-          bitmapLabel.className = 'canvas-label label-bitmap';
-          bitmapLabel.textContent = 'BitmapText';
-          bitmapWrapper.appendChild(bitmapLabel);
+          // Render each alignment
+          alignments.forEach(alignment => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'canvas-wrapper';
 
-          const bitmapCanvas = document.createElement('canvas');
-          const cssWidth = 450;
-          const cssHeight = 120;
-          bitmapCanvas.width = cssWidth * fontProps.pixelDensity;
-          bitmapCanvas.height = cssHeight * fontProps.pixelDensity;
-          bitmapCanvas.style.width = cssWidth + 'px';
-          bitmapCanvas.style.height = cssHeight + 'px';
-          bitmapWrapper.appendChild(bitmapCanvas);
+            // Alignment header
+            const alignHeader = document.createElement('div');
+            alignHeader.style.fontWeight = 'bold';
+            alignHeader.style.fontSize = '16px';
+            alignHeader.style.marginBottom = '10px';
+            alignHeader.style.color = '#333';
+            alignHeader.textContent = alignment.label;
+            wrapper.appendChild(alignHeader);
 
-          const bitmapStatus = document.createElement('div');
-          bitmapStatus.className = 'status';
-          const result = drawBitmapText(bitmapCanvas.getContext('2d'), text, fontProps, baseline.value, baseline.color);
-          bitmapStatus.textContent = result.status.code === 0 ? '✓ Rendered' : `⚠ Status ${result.status.code}`;
-          if (result.status.code !== 0) bitmapStatus.classList.add('error');
-          bitmapWrapper.appendChild(bitmapStatus);
+            // BitmapText section
+            const bitmapLabel = document.createElement('div');
+            bitmapLabel.className = 'canvas-label label-bitmap';
+            bitmapLabel.textContent = 'BitmapText';
+            wrapper.appendChild(bitmapLabel);
 
-          grid.appendChild(bitmapWrapper);
+            const bitmapCanvas = document.createElement('canvas');
+            const cssWidth = 450;
+            const cssHeight = 120;
+            bitmapCanvas.width = cssWidth * fontProps.pixelDensity;
+            bitmapCanvas.height = cssHeight * fontProps.pixelDensity;
+            bitmapCanvas.style.width = cssWidth + 'px';
+            bitmapCanvas.style.height = cssHeight + 'px';
+            wrapper.appendChild(bitmapCanvas);
 
-          // Native canvas
-          const nativeWrapper = document.createElement('div');
-          nativeWrapper.className = 'canvas-wrapper';
-          const nativeLabel = document.createElement('div');
-          nativeLabel.className = 'canvas-label label-native';
-          nativeLabel.textContent = 'Native HTML5 Canvas';
-          nativeWrapper.appendChild(nativeLabel);
+            const bitmapResult = drawBitmapText(
+              bitmapCanvas.getContext('2d'),
+              text,
+              fontProps,
+              baseline.value,
+              baseline.color,
+              alignment.value,
+              alignment.x
+            );
 
-          const nativeCanvas = document.createElement('canvas');
-          nativeCanvas.width = cssWidth * fontProps.pixelDensity;
-          nativeCanvas.height = cssHeight * fontProps.pixelDensity;
-          nativeCanvas.style.width = cssWidth + 'px';
-          nativeCanvas.style.height = cssHeight + 'px';
-          nativeWrapper.appendChild(nativeCanvas);
+            const bitmapStatus = document.createElement('div');
+            bitmapStatus.className = 'status';
+            bitmapStatus.textContent = bitmapResult.status.code === 0 ? '✓ Rendered' : `⚠ Status ${bitmapResult.status.code}`;
+            if (bitmapResult.status.code !== 0) bitmapStatus.classList.add('error');
+            wrapper.appendChild(bitmapStatus);
 
-          drawNativeText(nativeCanvas.getContext('2d'), text, fontProps, baseline.value, baseline.color);
+            // Native Canvas section
+            const nativeLabel = document.createElement('div');
+            nativeLabel.className = 'canvas-label label-native';
+            nativeLabel.textContent = 'Native HTML5 Canvas';
+            nativeLabel.style.marginTop = '15px';
+            wrapper.appendChild(nativeLabel);
 
-          const nativeStatus = document.createElement('div');
-          nativeStatus.className = 'status';
-          nativeStatus.textContent = '✓ Rendered';
-          nativeWrapper.appendChild(nativeStatus);
+            const nativeCanvas = document.createElement('canvas');
+            nativeCanvas.width = cssWidth * fontProps.pixelDensity;
+            nativeCanvas.height = cssHeight * fontProps.pixelDensity;
+            nativeCanvas.style.width = cssWidth + 'px';
+            nativeCanvas.style.height = cssHeight + 'px';
+            wrapper.appendChild(nativeCanvas);
 
-          grid.appendChild(nativeWrapper);
+            drawNativeText(
+              nativeCanvas.getContext('2d'),
+              text,
+              fontProps,
+              baseline.value,
+              baseline.color,
+              alignment.value,
+              alignment.x
+            );
+
+            const nativeStatus = document.createElement('div');
+            nativeStatus.className = 'status';
+            nativeStatus.textContent = '✓ Rendered';
+            wrapper.appendChild(nativeStatus);
+
+            // Alignment description
+            const alignDesc = document.createElement('div');
+            alignDesc.className = 'reference-note';
+            alignDesc.style.marginTop = '10px';
+            alignDesc.textContent = alignment.desc;
+            wrapper.appendChild(alignDesc);
+
+            grid.appendChild(wrapper);
+          });
 
           section.appendChild(grid);
 
           // Reference note
           const refNote = document.createElement('div');
           refNote.className = 'reference-note';
-          refNote.innerHTML = `<span style="color: ${baseline.color}; font-weight: bold;">●</span> Colored line at y=${referenceY}px marks the <strong>${baseline.value}</strong> baseline`;
+          refNote.innerHTML = `<span style="color: ${baseline.color}; font-weight: bold;">━</span> Horizontal line = <strong>${baseline.value}</strong> baseline (y=${referenceY}px) &nbsp;|&nbsp; <span style="color: #666;">┋</span> Vertical dashed line = alignment anchor (x position)`;
           section.appendChild(refNote);
 
           demosDiv.appendChild(section);
         });
 
-        console.log('%c✓ All baselines rendered', 'color: #4CAF50; font-weight: bold;');
+        console.log('%c✓ All 36 demos rendered (6 baselines × 3 alignments × 2 implementations)', 'color: #4CAF50; font-weight: bold;');
+        console.log('  • 18 BitmapText renderings');
+        console.log('  • 18 Native HTML5 Canvas renderings');
 
       } catch (error) {
         console.error('Rendering error:', error);
@@ -472,11 +531,12 @@
 
     // Initialize
     initSizeButtons();
-    document.getElementById('render-btn').onclick = renderAllBaselines;
+    document.getElementById('render-btn').onclick = renderAllCombinations;
 
     // Auto-render on load with default settings
-    console.log('%cBaseline Demo Ready', 'color: #2196F3; font-weight: bold;');
-    console.log('Click "Render Baselines" to compare BitmapText vs Native Canvas rendering');
+    console.log('%cBaseline & Alignment Demo Ready', 'color: #2196F3; font-weight: bold;');
+    console.log('Click "Render All Combinations" to compare BitmapText vs Native Canvas');
+    console.log('Total demos: 36 (6 baselines × 3 alignments × 2 implementations)');
   </script>
 </body>
 </html>
