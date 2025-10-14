@@ -659,7 +659,75 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   - No caching needed due to trivial computation cost
 
   **Demo:**
-  See public/baseline-demo.html for visual demonstration of all baselines.
+  See public/baseline-alignment-demo.html for visual demonstration of all baselines.
+
+  ### Text Alignment
+
+  BitmapText supports three horizontal text alignment modes (left, center, right) by calculating an x-offset based on measured text width.
+
+  **Internal Architecture:**
+  All text rendering uses "left" alignment internally (characters are positioned starting from x-coordinate and advancing rightward). At runtime, BitmapText converts user's chosen alignment to this internal reference by measuring text width and applying an offset.
+
+  **Conversion Algorithm (src/runtime/BitmapText.js:#calculateAlignmentOffsetToLeft):**
+
+  All calculations in CSS pixels:
+
+  ```javascript
+  // Step 1: Measure text width (respects kerning if enabled)
+  const measureResult = BitmapText.measureText(text, fontProperties, textProperties);
+  const textWidth = measureResult.metrics.width;
+
+  // Step 2: Calculate alignment offset
+  alignmentOffset = switch (textAlign) {
+    'left':   0                  // No offset needed (internal reference)
+    'center': -textWidth / 2     // Shift left by half width
+    'right':  -textWidth         // Shift left by full width
+  }
+
+  // Step 3: Apply offset to x-coordinate
+  x_internal = x_user + alignmentOffset
+  ```
+
+  **Text Width Measurement:**
+  - Uses existing `measureText()` method (src/runtime/BitmapText.js:209-313)
+  - Accounts for character widths and kerning corrections (if enabled)
+  - Returns status code for error handling (missing glyphs, no metrics, etc.)
+  - Measurement respects same textProperties used for rendering (ensures consistency)
+
+  **Error Handling:**
+  - If `measureText()` fails (missing glyphs, no metrics):
+    - Alignment defaults to 'left' (alignmentOffset = 0)
+    - Warning logged to console
+    - Text still renders but without requested alignment
+    - Graceful degradation ensures partial functionality
+
+  **Performance:**
+  - One additional `measureText()` call per `drawTextFromAtlas()` when alignment != 'left'
+  - measureText is O(n) in text length: iterates through characters, sums widths and kerning
+  - Typical overhead: ~20-50μs for 10-20 character strings
+  - No caching needed (calculation is fast, measurement changes with textProperties/kerning)
+  - 'left' alignment skips measurement entirely (zero overhead for default case)
+
+  **Integration with Baseline Positioning:**
+  Both alignment (x-axis) and baseline (y-axis) offsets are calculated before rendering:
+  ```javascript
+  // src/runtime/BitmapText.js:408-439
+  const baselineOffset_CssPx = calculateBaselineOffsetToBottom(...);     // y-axis
+  const alignmentOffset_CssPx = calculateAlignmentOffsetToLeft(...);     // x-axis
+
+  const position_PhysPx = {
+    x: (x_CssPx + alignmentOffset_CssPx) * pixelDensity,
+    y: (y_CssPx + baselineOffset_CssPx) * pixelDensity
+  };
+  ```
+
+  **Coordinate System:**
+  - x-coordinate increases rightward (Canvas convention)
+  - Negative offset shifts text leftward (for center/right alignment)
+  - All calculations in CSS pixels before scaling to physical pixels
+
+  **Demo:**
+  See public/baseline-alignment-demo.html for visual demonstration showing all baseline and alignment combinations.
 
   ## QOI Image Format
 

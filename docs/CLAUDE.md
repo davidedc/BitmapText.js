@@ -63,7 +63,7 @@
 
   - **Static runtime API**: src/runtime/BitmapText.js (static class - all methods, internal stores)
   - **Font configuration**: src/runtime/FontProperties.js (immutable font config class)
-  - **Text rendering configuration**: src/runtime/TextProperties.js (immutable text config class - kerning, color, alignment)
+  - **Text rendering configuration**: src/runtime/TextProperties.js (immutable text config class - kerning, color, baseline, alignment)
   - **Font assets building utilities**: src/builder/FontPropertiesFAB.js (extends FontProperties)
   - **Atlas image management**: src/runtime/AtlasImage.js (immutable atlas image domain object)
   - **Atlas image building**: src/builder/AtlasImageFAB.js (extends AtlasImage with building capabilities)

@@ -415,7 +415,7 @@ BitmapText.drawTextFromAtlas(ctx, 'Bottom', 10, 125, fontProps, textProps);
 
 ### Visual Demo
 
-See `public/baseline-demo.html` for a comprehensive visual demonstration of all six baseline values with "Hello World" rendered at each baseline.
+See `public/baseline-alignment-demo.html` for a comprehensive visual demonstration of all baseline and alignment combinations.
 
 ### Baseline Coordinate System
 
@@ -423,6 +423,65 @@ See `public/baseline-demo.html` for a comprehensive visual demonstration of all 
 - The y-coordinate increases **downward** (standard Canvas convention)
 - Baseline data is captured from the browser during font generation and stored in metrics files
 - Each font has consistent baseline values across all characters (stored once, expanded to all)
+
+## Text Alignment
+
+BitmapText supports three horizontal text alignment modes. The x-coordinate you provide serves as the alignment anchor point.
+
+### Available Alignments
+
+| Alignment | Description | Anchor Point |
+|----------|-------------|--------------|
+| `left` | Text starts at x | Leftmost point (BitmapText default) |
+| `center` | Text is centered at x | Horizontal midpoint |
+| `right` | Text ends at x | Rightmost point |
+
+### Alignment Examples
+
+**Left alignment (default):**
+```javascript
+const textProps = new TextProperties({ textAlign: 'left' });
+// or simply omit textAlign to use default
+BitmapText.drawTextFromAtlas(ctx, 'Left', 100, 50, fontProps, textProps);
+// Text starts at x=100 and extends rightward
+```
+
+**Center alignment (horizontal centering):**
+```javascript
+const textProps = new TextProperties({ textAlign: 'center' });
+BitmapText.drawTextFromAtlas(ctx, 'Center', 200, 50, fontProps, textProps);
+// Text is centered at x=200, extending equally left and right
+```
+
+**Right alignment (right-justify):**
+```javascript
+const textProps = new TextProperties({ textAlign: 'right' });
+BitmapText.drawTextFromAtlas(ctx, 'Right', 300, 50, fontProps, textProps);
+// Text ends at x=300 and extends leftward
+```
+
+**Combining alignment and baseline:**
+```javascript
+// Center text both horizontally (textAlign) and vertically (textBaseline)
+const textProps = new TextProperties({
+  textAlign: 'center',
+  textBaseline: 'middle'
+});
+BitmapText.drawTextFromAtlas(ctx, 'Centered', 200, 150, fontProps, textProps);
+// Text is centered both horizontally and vertically at point (200, 150)
+```
+
+### Visual Demo
+
+See `public/baseline-alignment-demo.html` for a comprehensive visual demonstration of all baseline and alignment combinations.
+
+### How Alignment Works
+
+- BitmapText measures text width using `measureText()` before rendering
+- Alignment offset is calculated based on text width and desired alignment
+- The offset is applied to the x-coordinate before rendering begins
+- If text measurement fails (missing glyphs), alignment defaults to 'left' with a warning
+- Alignment respects kerning settings (text width includes kerning when enabled)
 
   ## Generating Your Own Bitmap Fonts
 
@@ -661,7 +720,10 @@ new TextProperties(options = {})
   - `"alphabetic"`: Alphabetic baseline (HTML5 Canvas default, standard for Latin)
   - `"ideographic"`: Ideographic baseline (Chinese, Japanese, Korean scripts)
   - `"bottom"`: Bottom of em square (BitmapText default)
-- **textAlign**: String (default: "left") - Text alignment
+- **textAlign**: String (default: "left") - Horizontal text alignment. Supported values:
+  - `"left"`: Text starts at x-coordinate (leftmost alignment, BitmapText default)
+  - `"center"`: Text is centered at x-coordinate (midpoint alignment)
+  - `"right"`: Text ends at x-coordinate (rightmost alignment)
 - **textColor**: String (default: "#000000") - CSS color string
 
 ### Properties
@@ -722,8 +784,8 @@ new TextProperties(options = {})
   **Multi-Size Demo**
   Open public/hello-world-multi-size.html to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
 
-  **Baseline Demo**
-  Open public/baseline-demo.html for an interactive demonstration of all six textBaseline values, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
+  **Baseline & Alignment Demo**
+  Open public/baseline-alignment-demo.html for an interactive demonstration of all baseline and alignment combinations, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
 
   **Node.js Usage**
   ```bash
