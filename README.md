@@ -366,6 +366,63 @@ const y = 50;  // Absolute CSS pixels from origin
 BitmapText.drawTextFromAtlas(ctx, text, x, y, fontProps);
 ```
 
+## Text Baseline Positioning
+
+BitmapText supports all six HTML5 Canvas textBaseline values. The y-coordinate you provide corresponds to the position of the chosen baseline.
+
+### Available Baselines
+
+| Baseline | Description | Use Case |
+|----------|-------------|----------|
+| `top` | Top of em square | Aligning text to top edge |
+| `hanging` | Hanging baseline | Tibetan, Devanagari scripts |
+| `middle` | Middle of em square | Vertically centering text |
+| `alphabetic` | Alphabetic baseline | Standard Latin text (HTML5 default) |
+| `ideographic` | Ideographic baseline | CJK characters |
+| `bottom` | Bottom of em square | Aligning to bottom edge (BitmapText default) |
+
+### Baseline Examples
+
+**Standard alphabetic baseline (HTML5 Canvas default):**
+```javascript
+const textProps = new TextProperties({ textBaseline: 'alphabetic' });
+BitmapText.drawTextFromAtlas(ctx, 'Hello', 10, 50, fontProps, textProps);
+// y=50 is at the alphabetic baseline (bottom of most letters, excluding descenders)
+```
+
+**Middle baseline (vertical centering):**
+```javascript
+const textProps = new TextProperties({ textBaseline: 'middle' });
+BitmapText.drawTextFromAtlas(ctx, 'World', 10, 75, fontProps, textProps);
+// y=75 is at the vertical center of the em square
+```
+
+**Top baseline (hanging down):**
+```javascript
+const textProps = new TextProperties({ textBaseline: 'top' });
+BitmapText.drawTextFromAtlas(ctx, 'Top', 10, 100, fontProps, textProps);
+// y=100 is at the top of the em square, text hangs down from this point
+```
+
+**Bottom baseline (BitmapText default):**
+```javascript
+const textProps = new TextProperties({ textBaseline: 'bottom' });
+// or simply omit textBaseline to use default
+BitmapText.drawTextFromAtlas(ctx, 'Bottom', 10, 125, fontProps, textProps);
+// y=125 is at the bottom of the em square
+```
+
+### Visual Demo
+
+See `public/baseline-demo.html` for a comprehensive visual demonstration of all six baseline values with "Hello World" rendered at each baseline.
+
+### Baseline Coordinate System
+
+- All baseline distances are measured relative to the **alphabetic baseline** (ab = 0)
+- The y-coordinate increases **downward** (standard Canvas convention)
+- Baseline data is captured from the browser during font generation and stored in metrics files
+- Each font has consistent baseline values across all characters (stored once, expanded to all)
+
   ## Generating Your Own Bitmap Fonts
 
   ### Automated Pipeline (Recommended)
@@ -596,7 +653,13 @@ new TextProperties(options = {})
 
 ### Parameters (all optional with defaults)
 - **isKerningEnabled**: Boolean (default: true) - Enable kerning for better text rendering
-- **textBaseline**: String (default: "bottom") - TextProperties uses 'bottom' as default (differs from HTML5 Canvas default of 'alphabetic')
+- **textBaseline**: String (default: "bottom") - Text baseline positioning. Supported values:
+  - `"top"`: Top of em square (text hangs down from this point)
+  - `"hanging"`: Hanging baseline (Tibetan, Devanagari scripts)
+  - `"middle"`: Middle of em square (text is vertically centered)
+  - `"alphabetic"`: Alphabetic baseline (HTML5 Canvas default, standard for Latin)
+  - `"ideographic"`: Ideographic baseline (Chinese, Japanese, Korean scripts)
+  - `"bottom"`: Bottom of em square (BitmapText default)
 - **textAlign**: String (default: "left") - Text alignment
 - **textColor**: String (default: "#000000") - CSS color string
 

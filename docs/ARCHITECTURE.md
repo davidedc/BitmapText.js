@@ -612,6 +612,55 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   4. Position at baseline using character metrics positioning
   5. Skip space characters (invisible placeholders)
 
+  ### Baseline Positioning
+
+  BitmapText supports all six HTML5 Canvas textBaseline values by converting user's chosen baseline to the internal "bottom" baseline reference.
+
+  **Internal Architecture:**
+  All glyph dy offsets are pre-calculated during font generation assuming y-coordinate is at the "bottom" of the em square (src/builder/AtlasPositioningFAB.js:96). At runtime, BitmapText converts user's chosen baseline to this internal reference before applying dy offsets.
+
+  **Conversion Algorithm (src/runtime/BitmapText.js:#calculateBaselineOffsetToBottom):**
+
+  All calculations in CSS pixels, relative to alphabetic baseline (ab = 0):
+
+  ```javascript
+  baselineOffset = switch (textBaseline) {
+    'top':         fontBoundingBoxAscent + fontBoundingBoxDescent
+    'hanging':     hangingBaseline + fontBoundingBoxDescent
+    'middle':      (fontBoundingBoxAscent + fontBoundingBoxDescent) / 2
+    'alphabetic':  fontBoundingBoxDescent
+    'ideographic': fontBoundingBoxDescent - ideographicBaseline
+    'bottom':      0  // No conversion needed
+  }
+
+  y_internal = y_user + baselineOffset
+  ```
+
+  **Baseline Data Source:**
+
+  Baseline measurements are captured automatically during font generation:
+  1. **Capture (src/builder/GlyphFAB.js:84):** Browser's `ctx.measureText()` returns TextMetrics with all baseline properties
+  2. **Storage (src/builder/MetricsMinifier.js:29-41):** Extracted from first character to minimize file size (~2.5KB savings per font)
+  3. **Minification:** Stored in `b` object: `{fba, fbd, hb, ab, ib, pd}` in metrics-*.js files
+  4. **Expansion (src/builder/MetricsExpander.js:63-70):** Copied to every character's metrics for convenient access
+  5. **Usage:** Available via `characterMetrics.fontBoundingBoxAscent/Descent`, `hangingBaseline`, `ideographicBaseline`
+
+  **Coordinate System:**
+  - y-coordinate increases downward (Canvas convention)
+  - Alphabetic baseline is the reference point (ab = 0)
+  - fontBoundingBoxAscent is positive (upward from alphabetic)
+  - fontBoundingBoxDescent is positive (downward from alphabetic)
+  - hangingBaseline is positive (upward from alphabetic)
+  - ideographicBaseline is typically negative (downward from alphabetic)
+
+  **Performance:**
+  - Baseline calculation: O(1), ~5-10 arithmetic operations per drawTextFromAtlas call
+  - Baseline offset calculated once per text string (not per character)
+  - No caching needed due to trivial computation cost
+
+  **Demo:**
+  See public/baseline-demo.html for visual demonstration of all baselines.
+
   ## QOI Image Format
 
   The system uses QOI (Quite OK Image format) for atlas export and storage:

@@ -404,9 +404,20 @@ class BitmapText {
     // Render text
     const chars = [...text];
     const textColor = textProperties.textColor;
+
+    // BASELINE SUPPORT: Convert user's y from their chosen baseline to 'bottom' baseline
+    // Get baseline data from first character (baseline values are identical for all characters in a font)
+    // Use first actual character, or fallback to space character for baseline calculation
+    const firstChar = chars.find(c => fontMetrics.hasGlyph(c)) || chars[0];
+    const characterMetricsForBaseline = fontMetrics.getCharacterMetrics(firstChar);
+    const baselineOffset_CssPx = characterMetricsForBaseline
+      ? BitmapText.#calculateBaselineOffsetToBottom(textProperties.textBaseline, characterMetricsForBaseline)
+      : 0;
+
+    // Apply baseline offset and convert to physical pixels
     const position_PhysPx = {
       x: x_CssPx * fontProperties.pixelDensity,
-      y: y_CssPx * fontProperties.pixelDensity
+      y: (y_CssPx + baselineOffset_CssPx) * fontProperties.pixelDensity
     };
 
     for (let i = 0; i < chars.length; i++) {
@@ -523,6 +534,80 @@ class BitmapText {
     }
 
     return 0;
+  }
+
+  /**
+   * Calculate y-offset to convert from specified textBaseline to 'bottom' baseline
+   *
+   * INTERNAL REFERENCE: BitmapText uses 'bottom' baseline for all dy calculations.
+   * All glyph dy offsets are pre-calculated assuming y is at the bottom of the em square.
+   * This method converts user's chosen baseline to that internal reference.
+   *
+   * COORDINATE SYSTEM: y increases downward (Canvas convention)
+   * All baseline distances are in CSS pixels and relative to alphabetic baseline (ab = 0)
+   *
+   * BASELINE GEOMETRY:
+   * - top: At fontBoundingBoxAscent above alphabetic
+   * - hanging: At hangingBaseline above alphabetic (Tibetan, Devanagari)
+   * - middle: At (fontBoundingBoxAscent - fontBoundingBoxDescent) / 2 above alphabetic
+   * - alphabetic: At 0 (reference point for Latin scripts)
+   * - ideographic: At ideographicBaseline below alphabetic (CJK scripts, negative value)
+   * - bottom: At fontBoundingBoxDescent below alphabetic
+   *
+   * @private
+   * @param {string} textBaseline - User's chosen baseline ('top', 'hanging', 'middle', 'alphabetic', 'ideographic', 'bottom')
+   * @param {Object} characterMetrics - Metrics containing baseline data (fba, fbd, hb, ab, ib)
+   * @returns {number} Offset in CSS pixels to add to y coordinate to reach 'bottom' baseline
+   */
+  static #calculateBaselineOffsetToBottom(textBaseline, characterMetrics) {
+    // Extract baseline measurements from character metrics
+    // These values are captured from browser's TextMetrics during font generation
+    const fba = characterMetrics.fontBoundingBoxAscent;    // Distance from alphabetic to top of em square (positive)
+    const fbd = characterMetrics.fontBoundingBoxDescent;   // Distance from alphabetic to bottom of em square (positive, downward)
+    const hb = characterMetrics.hangingBaseline;           // Distance from alphabetic to hanging baseline (positive, upward)
+    const ib = characterMetrics.ideographicBaseline;       // Distance from alphabetic to ideographic baseline (negative, downward)
+
+    // Convert from user's baseline to bottom baseline
+    // Formulas derived from geometric relationships in em square coordinate system
+    switch (textBaseline) {
+      case 'top':
+        // Top of em square → Bottom of em square
+        // Move down by full em height: ascent + descent
+        return fba + fbd;
+
+      case 'hanging':
+        // Hanging baseline → Bottom of em square
+        // Hanging is hb above alphabetic, bottom is fbd below alphabetic
+        // Total distance: hb (up to alphabetic) + fbd (down to bottom)
+        return hb + fbd;
+
+      case 'middle':
+        // Middle of em square → Bottom of em square
+        // Middle is halfway between top and bottom
+        // Distance from middle to bottom: (ascent + descent) / 2
+        return (fba + fbd) / 2;
+
+      case 'alphabetic':
+        // Alphabetic baseline → Bottom of em square
+        // Alphabetic is fbd above bottom (standard for Latin text)
+        return fbd;
+
+      case 'ideographic':
+        // Ideographic baseline → Bottom of em square
+        // Ideographic is typically below alphabetic (ib is negative)
+        // Distance from ideographic to bottom: fbd - ib
+        // Example: if fbd=4 and ib=-4.0264, offset = 4 - (-4.0264) = 8.0264
+        return fbd - ib;
+
+      case 'bottom':
+        // Already at bottom baseline - no offset needed
+        return 0;
+
+      default:
+        // Unknown baseline value - warn and default to bottom
+        console.warn(`BitmapText: Unknown textBaseline '${textBaseline}', defaulting to 'bottom'. Valid values: top, hanging, middle, alphabetic, ideographic, bottom`);
+        return 0;
+    }
   }
 
   // There are several optimisations possible here:

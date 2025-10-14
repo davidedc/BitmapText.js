@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BitmapText Baseline Demonstration</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+
+    .intro {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .intro ul {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+
+    .intro li {
+      margin: 5px 0;
+    }
+
+    .demo-section {
+      background: white;
+      margin: 20px 0;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .baseline-label {
+      font-weight: bold;
+      font-size: 18px;
+      color: #2196F3;
+      margin-bottom: 10px;
+    }
+
+    .baseline-code {
+      font-family: 'Courier New', monospace;
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+
+    canvas {
+      border: 1px solid #ddd;
+      display: block;
+      margin: 15px 0;
+      background: white;
+    }
+
+    .reference-line {
+      color: #666;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #4CAF50;
+      margin-top: 5px;
+    }
+
+    .error {
+      color: #f44336;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .note {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>BitmapText Baseline Demonstration</h1>
+
+  <div class="intro">
+    <p><strong>About this demo:</strong> This page demonstrates BitmapText's support for all six HTML5 Canvas textBaseline values.</p>
+    <p>Each canvas shows "Hello World" rendered with a different baseline. The <span style="color: red; font-weight: bold;">red horizontal line</span> marks the y-coordinate position where the baseline is anchored.</p>
+    <p><strong>Font:</strong> Arial, size 19px, density 1.0 (standard display)</p>
+
+    <div class="note">
+      <strong>Understanding Baselines:</strong>
+      <ul>
+        <li><strong>top</strong>: Aligns text to the top of the em square (tallest point)</li>
+        <li><strong>hanging</strong>: Used for Tibetan and Devanagari scripts</li>
+        <li><strong>middle</strong>: Vertically centers text in the em square</li>
+        <li><strong>alphabetic</strong>: Standard baseline for Latin scripts (HTML5 Canvas default)</li>
+        <li><strong>ideographic</strong>: Used for CJK (Chinese, Japanese, Korean) scripts</li>
+        <li><strong>bottom</strong>: Aligns to the bottom of the em square (BitmapText default)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="demos" class="grid"></div>
+
+  <!-- Load BitmapText runtime classes -->
+  <script src="../src/runtime/StatusCode.js"></script>
+  <script src="../src/runtime/FontProperties.js"></script>
+  <script src="../src/runtime/TextProperties.js"></script>
+  <script src="../src/runtime/FontMetrics.js"></script>
+  <script src="../src/runtime/AtlasPositioning.js"></script>
+  <script src="../src/runtime/AtlasImage.js"></script>
+  <script src="../src/runtime/AtlasData.js"></script>
+  <script src="../src/builder/AtlasReconstructionUtils.js"></script>
+  <script src="../src/utils/AtlasCellDimensions.js"></script>
+  <script src="../src/runtime/TightAtlasReconstructor.js"></script>
+  <script src="../src/runtime/AtlasDataStore.js"></script>
+  <script src="../src/runtime/FontMetricsStore.js"></script>
+  <script src="../src/runtime/FontLoaderBase.js"></script>
+  <script src="../src/platform/FontLoader-browser.js"></script>
+  <script src="../src/builder/MetricsExpander.js"></script>
+  <script src="../src/runtime/BitmapText.js"></script>
+
+  <!-- Load font assets -->
+  <script src="../font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js"></script>
+  <script src="../font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-png.js"></script>
+
+  <script>
+    const baselines = [
+      {
+        value: 'top',
+        desc: 'Top of em square - text hangs down from this point',
+        color: '#e91e63'
+      },
+      {
+        value: 'hanging',
+        desc: 'Hanging baseline (Tibetan, Devanagari scripts)',
+        color: '#9c27b0'
+      },
+      {
+        value: 'middle',
+        desc: 'Middle of em square - text is vertically centered',
+        color: '#2196F3'
+      },
+      {
+        value: 'alphabetic',
+        desc: 'Alphabetic baseline (HTML5 Canvas default, standard for Latin)',
+        color: '#4CAF50'
+      },
+      {
+        value: 'ideographic',
+        desc: 'Ideographic baseline (Chinese, Japanese, Korean scripts)',
+        color: '#FF9800'
+      },
+      {
+        value: 'bottom',
+        desc: 'Bottom of em square (BitmapText default)',
+        color: '#795548'
+      }
+    ];
+
+    const dpr = window.devicePixelRatio || 1;
+    const fontProps = new FontProperties(dpr, 'Arial', 'normal', 'normal', 19);
+    const text = 'Hello World';
+
+    // Reference line y-coordinate (in CSS pixels)
+    const referenceY = 60;
+
+    // Configure font directory (required since we're in public/ subdirectory)
+    BitmapText.setFontDirectory('../font-assets/');
+
+    // Detect file:// protocol to avoid CORS issues with direct image loading
+    const isFileProtocol = window.location.href.includes("file://");
+
+    // Load font first, then render all baseline demos
+    console.log('%cLoading font...', 'color: #2196F3; font-weight: bold;');
+    console.log('Font ID:', fontProps.idString);
+    console.log('Protocol:', isFileProtocol ? 'file://' : 'http(s)://');
+
+    BitmapText.loadFonts([fontProps.idString], {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`Loaded ${loaded} of ${total} files`)
+    }).then(() => {
+      console.log('%c✓ Font loaded successfully, rendering baselines...', 'color: #4CAF50; font-weight: bold;');
+      renderAllBaselines();
+    }).catch(error => {
+      console.error('%cFont failed to load!', 'color: #f44336; font-weight: bold;', error);
+      document.getElementById('demos').innerHTML = '<div style="color: red; padding: 20px;">Error: Font failed to load. ' + error.message + '</div>';
+    });
+
+    function renderAllBaselines() {
+      baselines.forEach(baseline => {
+      // Create demo section
+      const section = document.createElement('div');
+      section.className = 'demo-section';
+
+      const label = document.createElement('div');
+      label.className = 'baseline-label';
+      label.innerHTML = `<span class="baseline-code" style="background-color: ${baseline.color}22; border-left: 3px solid ${baseline.color}; padding-left: 8px;">textBaseline: "${baseline.value}"</span>`;
+      section.appendChild(label);
+
+      const desc = document.createElement('div');
+      desc.style.fontSize = '14px';
+      desc.style.color = '#666';
+      desc.style.marginBottom = '10px';
+      desc.textContent = baseline.desc;
+      section.appendChild(desc);
+
+      // Create canvas
+      const canvas = document.createElement('canvas');
+      const cssWidth = 420;
+      const cssHeight = 120;
+      canvas.width = cssWidth * dpr;
+      canvas.height = cssHeight * dpr;
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = cssHeight + 'px';
+
+      const ctx = canvas.getContext('2d');
+
+      // Draw reference line (physical pixels)
+      ctx.save();
+      ctx.strokeStyle = baseline.color;
+      ctx.lineWidth = 2 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(0, referenceY * dpr);
+      ctx.lineTo(cssWidth * dpr, referenceY * dpr);
+      ctx.stroke();
+
+      // Draw small baseline marker at x=20
+      ctx.fillStyle = baseline.color;
+      ctx.beginPath();
+      ctx.arc(20 * dpr, referenceY * dpr, 4 * dpr, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Draw text with specified baseline
+      const textProps = new TextProperties({
+        textBaseline: baseline.value,
+        textColor: '#000000'
+      });
+
+      const result = BitmapText.drawTextFromAtlas(
+        ctx,
+        text,
+        20,  // x in CSS pixels (starts at the baseline marker)
+        referenceY,  // y in CSS pixels (at the colored baseline)
+        fontProps,
+        textProps
+      );
+
+      section.appendChild(canvas);
+
+      // Status info
+      const status = document.createElement('div');
+      status.className = result.status.code === 0 ? 'status' : 'status error';
+      const statusMsg = result.status.code === 0
+        ? '✓ Rendered successfully'
+        : `⚠ Status code: ${result.status.code}`;
+      status.textContent = statusMsg;
+      section.appendChild(status);
+
+      const refLabel = document.createElement('div');
+      refLabel.className = 'reference-line';
+      refLabel.innerHTML = `<span style="color: ${baseline.color}; font-weight: bold;">●</span> Colored line at y=${referenceY}px represents the <strong>${baseline.value}</strong> baseline position`;
+      section.appendChild(refLabel);
+
+      document.getElementById('demos').appendChild(section);
+      });
+
+      console.log('%c✓ All baselines rendered successfully', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+      console.log('%cAll 6 textBaseline values demonstrated with "Hello World"', 'color: #666;');
+      console.log('Baselines rendered:', baselines.map(b => b.value).join(', '));
+    }
+  </script>
+</body>
+</html>
