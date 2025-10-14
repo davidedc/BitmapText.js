@@ -594,10 +594,11 @@ class BitmapText {
 
       case 'ideographic':
         // Ideographic baseline → Bottom of em square
-        // Ideographic is typically below alphabetic (ib is negative)
-        // Distance from ideographic to bottom: fbd - ib
-        // Example: if fbd=4 and ib=-4.0264, offset = 4 - (-4.0264) = 8.0264
-        return fbd - ib;
+        // Ideographic is ib pixels relative to alphabetic (negative = below alphabetic)
+        // Distance from ideographic to bottom: fbd + ib
+        // Example: if fbd=4 and ib=-4.0264, offset = 4 + (-4.0264) = -0.0264
+        // This small negative offset places ideographic just above bottom, matching native Canvas
+        return fbd + ib;
 
       case 'bottom':
         // Already at bottom baseline - no offset needed
