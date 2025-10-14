@@ -629,7 +629,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     'hanging':     hangingBaseline + fontBoundingBoxDescent
     'middle':      (fontBoundingBoxAscent + fontBoundingBoxDescent) / 2
     'alphabetic':  fontBoundingBoxDescent
-    'ideographic': fontBoundingBoxDescent - ideographicBaseline
+    'ideographic': fontBoundingBoxDescent + ideographicBaseline  // ib is negative, so this subtracts
     'bottom':      0  // No conversion needed
   }
 

@@ -17,6 +17,7 @@
   - ✅ Pre-rendered glyphs for consistent output
   - ✅ Advanced kerning with fine-grained control
   - ✅ Multiple pixel density support (retina displays)
+  - ✅ Full textBaseline support (top, hanging, middle, alphabetic, ideographic, bottom)
   - ✅ Hash-based verification for consistency
   - ✅ Font builder tool for generating bitmap fonts
   - ✅ Placeholder rectangle rendering when glyphs not loaded (to support dynamic loading)
@@ -720,6 +721,9 @@ new TextProperties(options = {})
 
   **Multi-Size Demo**
   Open public/hello-world-multi-size.html to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
+
+  **Baseline Demo**
+  Open public/baseline-demo.html for an interactive demonstration of all six textBaseline values, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
 
   **Node.js Usage**
   ```bash
