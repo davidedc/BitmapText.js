@@ -419,6 +419,27 @@ To support compound emojis would require:
 
   ### Supporting Classes
 
+  **Character Set Configuration (src/builder/character-set.js)**
+  - Defines the complete set of supported characters for font assets building
+  - Programmatically generates character set from multiple ranges:
+    - ASCII printable characters (32-126): space, numbers, letters, common symbols
+    - Windows-1252 (CP-1252) subset (128-159): commonly used extended ASCII symbols (€, •, —, ™, etc.)
+    - Latin-1 Supplement (161-255): accented characters, excluding soft hyphen (U+00AD)
+    - Full Block character (█): visual reference for maximum glyph space
+  - Implementation: `generateCharacterSet()` function creates sorted character string
+  - Exported as global: `characterSet` variable (used by create-glyphs.js and KerningCalculator)
+  - Character count: 217 characters (as of latest version)
+  - Distribution: Part of font assets building toolkit only
+
+  **Glyph Creation Utilities (src/builder/create-glyphs.js)**
+  - Orchestrates glyph creation for all characters in character set
+  - Function: `createGlyphsAndAddToFullStore(fontProperties)`
+  - Iterates through character set and creates GlyphFAB instance for each character
+  - Stores created glyphs in AtlasDataStoreFAB for subsequent atlas building
+  - Depends on: character-set.js (global characterSet), GlyphFAB, AtlasDataStoreFAB
+  - Used by: font-assets-builder.html build workflow
+  - Distribution: Part of font assets building toolkit only
+
   **KerningCalculator**
   - Service class for kerning calculation and table generation (build-time only)
   - Encapsulates kerning logic extracted from BitmapTextFAB
@@ -533,13 +554,17 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ### Font Assets Building Phase
 
-  1. **Glyph Creation**
-     Font Spec → Canvas Rendering → Individual Glyph (two formats: original canvas + tight canvas)
+  1. **Configuration Loading**
+     Character Set (src/builder/character-set.js) → 217 characters defined
+     Font Specs (src/specs/default-specs.js) → Kerning rules and corrections
 
-  2. **Atlas Assembly**
+  2. **Glyph Creation**
+     Character Set + Font Spec → Canvas Rendering (GlyphFAB) → Individual Glyph (two formats: original canvas + tight canvas)
+
+  3. **Atlas Assembly**
      Individual Glyphs (original canvases) → AtlasBuilder → Atlas Image (variable-width cells)
 
-  3. **Data Export**
+  4. **Data Export**
      Atlas Image → QOI → Compressed JS (base64)
      Font Metrics → MetricsMinifier → Compressed JS
      (No positioning data exported - reconstructed at runtime)
@@ -812,20 +837,21 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Workflow
   ```
   User → public/font-assets-builder.html → BitmapTextFAB → AtlasDataStoreFAB
-    1. Load font specifications (src/specs/default-specs.js)
-    2. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
-    3. Create individual glyph canvases (GlyphFAB 6-step pipeline per character):
+    1. Load character set configuration (src/builder/character-set.js → 217 characters)
+    2. Load font specifications (src/specs/default-specs.js)
+    3. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
+    4. Create individual glyph canvases (src/builder/create-glyphs.js → GlyphFAB 6-step pipeline per character):
        a. Canvas creation + configuration
        b. Character measurement
        c. Specs corrections application
        d. Dimension configuration
        e. Character rendering
        f. Canvas preservation
-    4. Apply tight bounding box detection (GlyphFAB pixel scanning)
-    5. Calculate kerning tables (KerningCalculator)
-    6. Build optimized atlases (AtlasBuilder → variable-width cells)
-    7. Generate minified metadata (MetricsMinifier)
-    8. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
+    5. Apply tight bounding box detection (GlyphFAB pixel scanning)
+    6. Calculate kerning tables (KerningCalculator using character set)
+    7. Build optimized atlases (AtlasBuilder → variable-width cells)
+    8. Generate minified metadata (MetricsMinifier)
+    9. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
   ```
 
   ### Runtime Font Loading Workflow (Static API)
