@@ -31,6 +31,10 @@ function generateCharacterSet() {
     //  338,  // Œ Latin capital ligature OE (CP-1252: 140)
     381,  // Ž Latin capital letter Z with caron (CP-1252: 142)
     //  8216, // ' Left single quotation mark (CP-1252: 145)
+
+    // UNFORTUNATELY SOMETIMES USED INSTEAD OF APOSTROPHE
+    8217, // ' ""curly apostrophe"" or "right single quotation mark" (CP-1252: 146)
+
     //  8220, // " Left double quotation mark (CP-1252: 147)
     //  8221, // " Right double quotation mark (CP-1252: 148)
     8226, // • Bullet (CP-1252: 149)
