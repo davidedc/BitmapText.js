@@ -1,3 +1,9 @@
+// CHARACTER SET CONSTANT - 204 characters
+// Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
+//
+// This is the sorted character set that defines the standard order for all font metrics.
+// ALL font files must contain exactly these 204 characters in this order.
+
 // Generate character set programmatically
 function generateCharacterSet() {
   const chars = [];
@@ -69,4 +75,5 @@ function generateCharacterSet() {
   return chars.sort().join('');
 }
 
-const characterSet = generateCharacterSet();
+// Export as constant
+const CHARACTER_SET = generateCharacterSet();

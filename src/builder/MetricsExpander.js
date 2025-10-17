@@ -1,6 +1,6 @@
 // Static utility class for expanding minified font metrics data (runtime only)
 // Converts compact format back to FontMetrics instances for use by the rendering engine
-// NOTE: Requires DEFAULT_CHARACTER_SET.js to be loaded first
+// NOTE: Requires CHARACTER_SET.js to be loaded first
 
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -13,7 +13,7 @@ class MetricsExpander {
    * TIER 2 OPTIMIZATION: Array-based glyph reconstruction
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range expansion
    *
-   * REQUIRES: Minified data must NOT contain 'c' field (always uses DEFAULT_CHARACTER_SET)
+   * REQUIRES: Minified data must NOT contain 'c' field (always uses CHARACTER_SET)
    *
    * @param {Object} minified - Minified metrics object with shortened keys
    * @returns {FontMetrics} FontMetrics instance with expanded data
@@ -53,7 +53,7 @@ class MetricsExpander {
    * TIER 3 OPTIMIZATION: Two-dimensional expansion (reverse order of compression)
    *   Pass 1 (left-side):  {"A-B":{"s":20}} → {"A":{"s":20},"B":{"s":20}}
    *   Pass 2 (right-side): {"A":{"0-1":20}} → {"A":{"0":20,"1":20}}
-   * Always uses DEFAULT_CHARACTER_SET for range expansion
+   * Always uses CHARACTER_SET for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
    * @param {Object} minified - Minified kerning table
    * @private
@@ -75,7 +75,7 @@ class MetricsExpander {
    * Expands left side of kerning table (characters that come before)
    * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
    * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
-   * Always uses DEFAULT_CHARACTER_SET for range expansion
+   * Always uses CHARACTER_SET for range expansion
    * @param {Object} minified - Minified kerning table with potential left-side ranges
    * @returns {Object} Left-expanded kerning table
    * @private
@@ -93,13 +93,13 @@ class MetricsExpander {
 
         // Check if both start and end are single characters in the character set
         if (startChar.length === 1 && endChar.length === 1) {
-          const startIndex = DEFAULT_CHARACTER_SET.indexOf(startChar);
-          const endIndex = DEFAULT_CHARACTER_SET.indexOf(endChar);
+          const startIndex = CHARACTER_SET.indexOf(startChar);
+          const endIndex = CHARACTER_SET.indexOf(endChar);
 
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
             // Valid range, expand it
             for (let i = startIndex; i <= endIndex; i++) {
-              expanded[DEFAULT_CHARACTER_SET[i]] = rightSideObj;
+              expanded[CHARACTER_SET[i]] = rightSideObj;
             }
             continue;
           }
@@ -115,7 +115,7 @@ class MetricsExpander {
 
   /**
    * Expands kerning pairs from range notation to individual character pairs
-   * Always uses DEFAULT_CHARACTER_SET for range expansion
+   * Always uses CHARACTER_SET for range expansion
    * @param {Object} pairs - Compressed pairs like {"0-█":20} or {"A":10,"B-D":20}
    * @returns {Object} Expanded pairs like {"0":20,"1":20,...,"█":20}
    * @private
@@ -133,13 +133,13 @@ class MetricsExpander {
 
         // Check if both start and end are single characters in the character set
         if (startChar.length === 1 && endChar.length === 1) {
-          const startIndex = DEFAULT_CHARACTER_SET.indexOf(startChar);
-          const endIndex = DEFAULT_CHARACTER_SET.indexOf(endChar);
+          const startIndex = CHARACTER_SET.indexOf(startChar);
+          const endIndex = CHARACTER_SET.indexOf(endChar);
 
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
             // Valid range, expand it
             for (let i = startIndex; i <= endIndex; i++) {
-              expanded[DEFAULT_CHARACTER_SET[i]] = value;
+              expanded[CHARACTER_SET[i]] = value;
             }
             continue;
           }
@@ -155,9 +155,9 @@ class MetricsExpander {
   
   /**
    * Expands glyph metrics from arrays back to full objects
-   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using DEFAULT_CHARACTER_SET
+   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CHARACTER_SET
    * Reconstructs full TextMetrics-compatible objects from compact arrays
-   * Always uses DEFAULT_CHARACTER_SET for character order
+   * Always uses CHARACTER_SET for character order
    * @param {Array} minifiedGlyphs - Array of metric arrays
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @private
@@ -165,8 +165,8 @@ class MetricsExpander {
   static #expandCharacterMetrics(minifiedGlyphs, metricsCommonToAllCharacters) {
     const expanded = {};
 
-    // Convert DEFAULT_CHARACTER_SET string to array of characters
-    const chars = Array.from(DEFAULT_CHARACTER_SET);
+    // Convert CHARACTER_SET string to array of characters
+    const chars = Array.from(CHARACTER_SET);
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {
