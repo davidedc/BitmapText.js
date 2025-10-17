@@ -143,7 +143,7 @@ echo "// =======================================================================
 echo "// CHARACTER SET CONSTANT" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/CHARACTER_SET.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/CHARACTER_SET.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate expansion utility

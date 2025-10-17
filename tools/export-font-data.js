@@ -180,7 +180,7 @@ function downloadFontAssets(options) {
       if (extraChars.length > 0) {
           throw new Error(
               `Font contains ${extraChars.length} characters not in CHARACTER_SET: ${extraChars.join(', ')}\n` +
-              `Please update CHARACTER_SET.js to include these characters.`
+              `Please update src/runtime/CHARACTER_SET.js to include these characters.`
           );
       }
 

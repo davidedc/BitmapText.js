@@ -1,6 +1,6 @@
 // Static utility class for expanding minified font metrics data (runtime only)
 // Converts compact format back to FontMetrics instances for use by the rendering engine
-// NOTE: Requires CHARACTER_SET.js to be loaded first
+// NOTE: Requires src/runtime/CHARACTER_SET.js to be loaded first
 
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
