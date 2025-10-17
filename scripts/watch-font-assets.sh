@@ -43,10 +43,11 @@ while [[ $# -gt 0 ]]; do
             echo "  2. Create timestamped backups of font-assets/ directory"
             echo "  3. Extract font assets to font-assets/"
             echo "  4. Convert QOI files to PNG format"
-            echo "  5. Optimize PNG files"
-            echo "  6. Convert images (PNG and QOI) to JS wrappers"
-            echo "  7. Generate font registry for test-renderer"
-            echo "  8. Continue monitoring"
+            echo "  5. Optimize PNG files with ImageOptim"
+            echo "  6. Convert PNG to WebP (lossless) and delete PNG files"
+            echo "  7. Convert images (WebP and QOI) to JS wrappers"
+            echo "  8. Generate font registry for test-renderer"
+            echo "  9. Continue monitoring"
             echo ""
             echo "Press Ctrl+C to stop monitoring."
             exit 0
@@ -136,7 +137,13 @@ function check_dependencies() {
         missing_deps+=("imageoptim-cli")
         log "WARNING" "ImageOptim CLI is not installed."
     fi
-    
+
+    # Check if cwebp is available (for WebP conversion)
+    if ! command -v cwebp &> /dev/null; then
+        missing_deps+=("webp")
+        log "WARNING" "cwebp (WebP tools) is not installed."
+    fi
+
     # Check if trash command is available (optional, but recommended)
     if ! command -v trash &> /dev/null; then
         log "WARNING" "trash command not found (will use rm instead)"
@@ -158,6 +165,9 @@ function check_dependencies() {
                     echo "  brew install --cask imageoptim"
                     echo "  brew install imageoptim-cli"
                     echo "  (Note: You need BOTH the app and CLI tool)"
+                    ;;
+                "webp")
+                    echo "  brew install webp"
                     ;;
                 "unzip")
                     echo "  unzip should be pre-installed on macOS"
@@ -271,7 +281,7 @@ function run_qoi_to_png_conversion() {
 
 function run_optimization() {
     log "INFO" "Running PNG optimization..."
-    
+
     local preserve_flag=""
     if [ "$PRESERVE_ORIGINALS" = "true" ]; then
         preserve_flag="--preserve-originals"
@@ -280,7 +290,7 @@ function run_optimization() {
         preserve_flag="--no-preserve-originals"
         log "INFO" "Original PNG backup files will be removed after optimization"
     fi
-    
+
     if bash "$PROJECT_ROOT/scripts/optimize-images.sh" $preserve_flag "$DATA_DIR"; then
         log "SUCCESS" "PNG optimization completed"
         return 0
@@ -290,8 +300,21 @@ function run_optimization() {
     fi
 }
 
+function run_webp_conversion() {
+    log "INFO" "Converting optimized PNG files to WebP format..."
+    log "INFO" "Source PNG files will be deleted after conversion"
+
+    if bash "$PROJECT_ROOT/scripts/convert-png-to-webp.sh" "$DATA_DIR"; then
+        log "SUCCESS" "WebP conversion completed (PNG files deleted)"
+        return 0
+    else
+        log "ERROR" "WebP conversion failed"
+        return 1
+    fi
+}
+
 function run_js_conversion() {
-    log "INFO" "Converting image files (PNG and QOI) to JS files..."
+    log "INFO" "Converting image files (WebP and QOI) to JS files..."
 
     local positioning_flag=""
     if [ "$KEEP_POSITIONING" = "true" ]; then
@@ -306,18 +329,6 @@ function run_js_conversion() {
         return 0
     else
         log "ERROR" "Image to JS conversion failed"
-        return 1
-    fi
-}
-
-function strip_png_headers() {
-    log "INFO" "Stripping PNG headers from atlas JS files..."
-
-    if node "$PROJECT_ROOT/scripts/strip-png-base64-header.js" "$DATA_DIR"; then
-        log "SUCCESS" "PNG header stripping completed"
-        return 0
-    else
-        log "WARNING" "PNG header stripping failed, but continuing..."
         return 1
     fi
 }
@@ -364,18 +375,18 @@ function process_font_assets() {
     if ! run_optimization; then
         log "WARNING" "PNG optimization failed, but continuing..."
     fi
-    
-    # Step 6: Convert images (PNG and QOI) to JS
+
+    # Step 6: Convert PNG to WebP (deletes PNG files)
+    if ! run_webp_conversion; then
+        log "WARNING" "WebP conversion failed, but continuing..."
+    fi
+
+    # Step 7: Convert images (WebP and QOI) to JS
     if ! run_js_conversion; then
         log "WARNING" "Image to JS conversion failed, but continuing..."
     fi
 
-    # Step 6.5: Strip PNG headers from base64 strings (optimization)
-    if ! strip_png_headers; then
-        log "WARNING" "PNG header stripping failed, but continuing..."
-    fi
-
-    # Step 7: Generate font registry
+    # Step 8: Generate font registry
     if ! generate_font_registry; then
         log "WARNING" "Font registry generation failed, but continuing..."
     fi

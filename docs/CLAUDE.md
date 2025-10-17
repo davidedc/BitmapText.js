@@ -92,11 +92,11 @@
   - The "kern king" test text contains challenging character pairs (see "Kern King Part 1" and "Kern King Part 2" in font-assets-builder.html)
   - Use drawCheckeredBackgrounds flag for transparency testing
   - Browser DevTools may show anti-aliased text - trust the hashes
-  - QOI format: Browser exports QOI, pipeline auto-converts to PNG for processing
-  - QOI conversion: Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI files
-  - Image to JS conversion: Use `node scripts/image-to-js-converter.js [directory] --all` to generate JS files from PNG and QOI images for file:// protocol compatibility
-  - PNG header stripping: Automatically applied during pipeline; strips predictable 24-char PNG header prefix from atlas-*-png.js files to reduce browser bundle size
-  - Manual PNG header strip: Use `node scripts/strip-png-base64-header.js [directory]` to strip headers from PNG atlas JS files (safe to run multiple times)
+  - Image formats: Browser exports QOI, pipeline converts QOI → PNG → WebP for browser delivery
+  - QOI to PNG conversion: Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI→PNG (intermediate step)
+  - PNG to WebP conversion: Use `./scripts/convert-png-to-webp.sh [directory]` to convert PNG→WebP (deletes source PNGs)
+  - Image to JS conversion: Use `node scripts/image-to-js-converter.js [directory] --all` to generate JS files from WebP and QOI images for file:// protocol compatibility
+  - WebP benefits: Lossless compression, 5-10% smaller than PNG, Safari 14+ required
   - Node.js demo build: Use `./scripts/build-node-demo.sh` or `./run-node-demos.sh` (includes font asset setup)
   - Automated pipeline available: See `scripts/README.md` for complete automation guide
   - Use `--preserve-originals` flag to keep unoptimized PNGs for comparison during development

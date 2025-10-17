@@ -108,7 +108,7 @@
 
   <!-- Load pre-generated font data (self-registers automatically) -->
   <script src="font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-18-0.js"></script>
-  <script src="font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-18-0-qoi.js"></script>
+  <script src="font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-18-0-webp.js"></script>
 
   <canvas id="myCanvas" width="400" height="100"></canvas>
 
@@ -822,10 +822,13 @@ new TextProperties(options = {})
   - Required for loading PNG atlases and calculating hashes
   - For file:// protocol: Convert images to JS files using `node scripts/image-to-js-converter.js [directory] --all`
 
-  **QOI Format Issues**
-  - Browser exports QOI format, pipeline converts to PNG automatically
-  - Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI files
-  - QOI files preserved by default for future Node.js compatibility
+  **QOI Format and Pipeline**
+  - Browser exports QOI format
+  - Pipeline converts: QOI → PNG (intermediate) → WebP (final browser format)
+  - Use `node scripts/qoi-to-png-converter.js [directory]` to manually convert QOI→PNG
+  - Use `./scripts/convert-png-to-webp.sh [directory]` to convert PNG→WebP
+  - QOI files preserved for Node.js usage
+  - Automated pipeline: `./scripts/watch-font-assets.sh` handles all conversions
 
   **Rendering Issues**
   - Ensure canvases are attached to DOM before rendering for crisp text
@@ -838,13 +841,34 @@ new TextProperties(options = {})
   - BitmapText is a static class (no instances created) - pre-load fonts and cache measurements for best performance
   - Consider caching frequently used text measurements
 
+  ## Image Formats
+
+  BitmapText.js uses different image formats optimized for each platform:
+
+  **Browser (WebP):**
+  - Lossless compression (pixel-identical to PNG)
+  - 5-10% smaller than optimized PNG
+  - Native browser support (Safari 14+, Chrome, Firefox, Edge)
+  - Used for atlas loading via `<img>` or JS wrappers
+
+  **Node.js (QOI):**
+  - Lightweight decoder (~200 lines)
+  - No external dependencies
+  - Direct loading from font-assets/
+
+  **Export (QOI):**
+  - Simple browser export format
+  - Pipeline converts: QOI → PNG (intermediate) → WebP (browser delivery)
+
   ## Browser Support
 
-  Works on all modern browsers supporting Canvas API:
+  Modern browsers with WebP (lossless) support:
   - Chrome/Edge 90+
   - Firefox 88+
-  - Safari 14+
-  - Mobile browsers
+  - Safari 14+ (September 2020)
+  - Mobile browsers (iOS 14+, Android 5+)
+
+  **Minimum requirement: Safari 14** for WebP support
 
   ## Project Structure
 

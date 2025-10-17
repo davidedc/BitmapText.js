@@ -16,8 +16,8 @@
 //
 // LOADING STRATEGIES:
 // - Metrics: Always via script tag injection
-// - Atlas (file:// protocol): Via script tag with base64 PNG data
-// - Atlas (http/https): Via Image object loading PNG directly
+// - Atlas (file:// protocol): Via script tag with base64 WebP data
+// - Atlas (http/https): Via Image object loading WebP directly
 
 class FontLoader extends FontLoaderBase {
   // ============================================
@@ -27,7 +27,7 @@ class FontLoader extends FontLoaderBase {
   static METRICS_PREFIX = 'metrics-';
   static ATLAS_PREFIX = 'atlas-';
   static JS_EXTENSION = '.js';
-  static PNG_EXTENSION = '.png';
+  static WEBP_EXTENSION = '.webp';
 
   // ============================================
   // Browser-Specific Loading Implementation
@@ -70,7 +70,7 @@ class FontLoader extends FontLoaderBase {
     if (isFileProtocol) {
       return FontLoader._loadAtlasFromJS(idString, bitmapTextClass);
     } else {
-      return FontLoader._loadAtlasFromPNG(idString, bitmapTextClass);
+      return FontLoader._loadAtlasFromWebP(idString, bitmapTextClass);
     }
   }
 
@@ -80,7 +80,7 @@ class FontLoader extends FontLoaderBase {
 
   /**
    * Load atlas from JS file (for file:// protocol)
-   * JS file contains base64-encoded PNG data
+   * JS file contains base64-encoded WebP data
    * @private
    * @param {string} idString - Font ID string
    * @param {Object} bitmapTextClass - BitmapText class reference
@@ -90,7 +90,7 @@ class FontLoader extends FontLoaderBase {
     return new Promise((resolve, reject) => {
       const imageScript = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      imageScript.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}-png${FontLoader.JS_EXTENSION}`;
+      imageScript.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}-webp${FontLoader.JS_EXTENSION}`;
 
       imageScript.onload = () => {
         const pkg = FontLoaderBase._tempAtlasPackages[idString];
@@ -102,21 +102,8 @@ class FontLoader extends FontLoaderBase {
           return;
         }
 
-        // PNG Header Restoration (for optimized atlas files)
-        // The first 18 bytes of all PNG files (width < 65,536) encode to "iVBORw0KGgoAAAANSUhEUgAA"
-        // This header may be stripped during build to reduce file size
-        // If missing, we prepend it here for backwards compatibility
-        const PNG_HEADER_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAA';
-        let base64Data = pkg.base64Data;
-
-        // Check if PNG header is missing (doesn't start with PNG signature 'iVBOR')
-        // Prepend header only if stripped (backwards compatible with un-stripped files)
-        if (!base64Data.startsWith('iVBOR')) {
-          base64Data = PNG_HEADER_BASE64 + base64Data;
-        }
-
         const img = new Image();
-        img.src = `data:image/png;base64,${base64Data}`;
+        img.src = `data:image/webp;base64,${pkg.base64Data}`;
 
         img.onload = () => {
           // Atlas will be reconstructed now or later when metrics are available
@@ -126,7 +113,7 @@ class FontLoader extends FontLoaderBase {
         };
 
         img.onerror = () => {
-          console.warn(`Failed to decode base64 image data for ${idString} - will use placeholder rectangles`);
+          console.warn(`Failed to decode base64 WebP data for ${idString} - will use placeholder rectangles`);
           imageScript.remove();
           delete FontLoaderBase._tempAtlasPackages[idString];
           resolve();
@@ -134,7 +121,7 @@ class FontLoader extends FontLoaderBase {
       };
 
       imageScript.onerror = () => {
-        console.warn(`Atlas JS not found: atlas-${idString}-png.js - will use placeholder rectangles`);
+        console.warn(`Atlas JS not found: atlas-${idString}-webp.js - will use placeholder rectangles`);
         imageScript.remove();
         resolve();
       };
@@ -144,17 +131,17 @@ class FontLoader extends FontLoaderBase {
   }
 
   /**
-   * Load atlas from PNG file directly (for http/https protocols)
+   * Load atlas from WebP file directly (for http/https protocols)
    * @private
    * @param {string} idString - Font ID string
    * @param {Object} bitmapTextClass - BitmapText class reference
    * @returns {Promise} Resolves when atlas is loaded
    */
-  static _loadAtlasFromPNG(idString, bitmapTextClass) {
+  static _loadAtlasFromWebP(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      img.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.PNG_EXTENSION}`;
+      img.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.WEBP_EXTENSION}`;
 
       img.onload = () => {
         // Atlas will be reconstructed now or later when metrics are available
@@ -163,7 +150,7 @@ class FontLoader extends FontLoaderBase {
       };
 
       img.onerror = () => {
-        console.warn(`Atlas image not found: atlas-${idString}.png - will use placeholder rectangles`);
+        console.warn(`Atlas image not found: atlas-${idString}.webp - will use placeholder rectangles`);
         resolve();
       };
     });

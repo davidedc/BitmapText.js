@@ -142,38 +142,52 @@ node scripts/image-to-js-converter.js font-assets --png    # Process PNG files o
 node scripts/image-to-js-converter.js /path/to/images --qoi # Process QOI files only
 ```
 
-### 5. PNG Base64 Header Stripper Script
+### 5. PNG to WebP Converter Script
 ```bash
-node scripts/strip-png-base64-header.js [directory]
+./scripts/convert-png-to-webp.sh [directory]
+```
+
+**Prerequisites:**
+```bash
+# macOS
+brew install webp
+
+# Ubuntu/Debian
+sudo apt-get install webp
+
+# RHEL/CentOS
+sudo yum install libwebp-tools
 ```
 
 **What it does:**
-- Strips the predictable 24-character PNG header prefix from atlas-*-png.js base64 strings
-- Reduces file size by removing redundant data that's restored at runtime
-- Only processes PNG atlas files (not QOI files)
-- Backwards compatible with un-stripped files
+- Converts optimized PNG files to lossless WebP format
+- Uses optimal compression: `cwebp -lossless -z 9 -m 6 -mt`
+- **Deletes source PNG files after successful conversion**
+- Checks for cwebp command existence with installation instructions
+- Reports file sizes and compression ratios
 
-**How it works:**
-- All PNG files start with a signature + IHDR chunk header (18 bytes total)
-- For images with width < 65,536 pixels, these encode to "iVBORw0KGgoAAAANSUhEUgAA" in base64
-- The script removes these 24 characters and marks files as optimized
-- FontLoader-browser.js automatically prepends the header when loading
+**Compression details:**
+- `-lossless`: Pixel-identical compression (no quality loss)
+- `-z 9`: Maximum compression effort (0-9 scale)
+- `-m 6`: Best compression method (0-6 scale)
+- `-mt`: Multi-threading for faster processing
 
 **Examples:**
 ```bash
-node scripts/strip-png-base64-header.js                    # Process files in font-assets/
-node scripts/strip-png-base64-header.js /path/to/assets/   # Custom directory
+./scripts/convert-png-to-webp.sh                    # Process files in font-assets/
+./scripts/convert-png-to-webp.sh /path/to/pngs/    # Custom directory
 ```
 
 **When to use:**
 - Automatically called during watch-font-assets.sh pipeline
-- Can be run manually after regenerating atlas-*-png.js files
-- Safe to run multiple times (idempotent - won't double-strip)
+- Can be run manually after PNG optimization
+- Typically achieves 5-10% additional size reduction over PNG
 
 **File size savings:**
-- ~24 bytes per PNG atlas file
+- ~5-10% reduction compared to ImageOptim-optimized PNG
+- Example: 2646 bytes (PNG) → 2430 bytes (WebP) = 8% savings
 - Scales with number of font configurations
-- Typical project: 4-10 atlases = 96-240 bytes saved
+- Modern browser requirement: Safari 14+ (September 2020)
 
 ### 6. QOI to PNG Converter Script
 ```bash
@@ -270,20 +284,21 @@ npm run generate-registry                                 # Using npm script
 ```
 scripts/
 ├── watch-font-assets.sh          # Main monitoring script
-├── optimize-images.sh            # PNG compression
-├── qoi-to-png-converter.js       # QOI → PNG conversion
-├── image-to-js-converter.js      # Image → JS wrapper conversion (PNG/QOI)
-├── strip-png-base64-header.js    # PNG header stripper (optimization)
+├── optimize-images.sh            # PNG compression (intermediate format)
+├── convert-png-to-webp.sh        # PNG → WebP conversion (browser delivery)
+├── qoi-to-png-converter.js       # QOI → PNG conversion (intermediate step)
+├── image-to-js-converter.js      # Image → JS wrapper conversion (WebP/QOI)
 ├── qoi-memory-calculator.js      # QOI memory usage analyzer
 ├── generate-font-registry.js     # Font registry generator
 ├── test-pipeline.sh              # One-time pipeline test
 └── README.md                     # This file
 
 font-assets/
-├── *.png                     # Optimized atlas images
-├── *.orig.png                # Original atlases (if --preserve-originals used)
+├── *.webp                    # WebP atlas images (browser delivery)
+├── *.qoi                     # QOI atlas images (Node.js usage)
 ├── *.js                      # Glyph data and metrics
-├── image-*.js                # JS-wrapped images (for CORS-free loading)
+├── *-webp.js                 # JS-wrapped WebP images (for file:// protocol)
+├── *-qoi.js                  # JS-wrapped QOI images (for file:// protocol)
 ├── font-registry.js          # Auto-generated font registry
 └── font-assets-backup-*.zip  # Automatic backups
 ```
@@ -299,9 +314,9 @@ When you drop `fontAssets.zip` in `~/Downloads/`:
 3. **🧹 Clear**: Empty `font-assets/` directory (keeping backups)
 4. **📂 Extract**: Unzip contents to `font-assets/`
 5. **🎨 Convert QOI**: Convert QOI files to PNG format (optional --remove-qoi)
-6. **🖼️ Optimize**: Compress PNGs with ImageOptim (optionally preserve originals)
-7. **🔧 Convert to JS**: Create JS wrappers for CORS-free loading
-8. **✂️ Strip PNG Headers**: Remove predictable PNG header prefix from base64 strings (optimization)
+6. **🖼️ Optimize PNG**: Compress PNGs with ImageOptim (intermediate format)
+7. **🌐 Convert to WebP**: Convert PNG→WebP with cwebp, delete source PNGs (browser delivery)
+8. **🔧 Convert to JS**: Create JS wrappers from WebP and QOI for CORS-free loading
 9. **📋 Generate Registry**: Generate font registry from metrics files
 10. **🗑️ Cleanup**: Move processed zip to trash
 11. **🔄 Continue**: Return to monitoring

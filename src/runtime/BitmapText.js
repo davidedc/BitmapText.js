@@ -51,7 +51,7 @@ class BitmapText {
   // Font asset naming conventions
   static METRICS_PREFIX = 'metrics-';
   static ATLAS_PREFIX = 'atlas-';
-  static PNG_EXTENSION = '.png';
+  static WEBP_EXTENSION = '.webp';
   static QOI_EXTENSION = '.qoi';
   static JS_EXTENSION = '.js';
 

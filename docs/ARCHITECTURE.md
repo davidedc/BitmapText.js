@@ -284,7 +284,7 @@ BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
     - Both extend FontLoaderBase for shared logic
   - Browser Implementation (FontLoader-browser.js):
     - Script tag loading for metrics JS files (call `BitmapText.registerMetrics()`)
-    - Image element loading for PNG atlases (http://)
+    - Image element loading for WebP atlases (http://)
     - Script tag + base64 decoding for JS-wrapped atlases (file://)
     - Protocol detection (file:// vs http://) for appropriate loading strategy
     - Promise-based async loading with progress callbacks
@@ -754,25 +754,43 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   **Demo:**
   See public/baseline-alignment-demo.html for visual demonstration showing all baseline and alignment combinations.
 
-  ## QOI Image Format
+  ## Image Format Strategy
 
-  The system uses QOI (Quite OK Image format) for atlas export and storage:
+  The system uses different formats optimized for each platform:
 
-  **Browser Export (tools/export-font-data.js:25)**:
-  1. Extract RGBA image data from canvas via `getImageData()`
-  2. Encode using QOIEncode with 4 channels (RGBA) and sRGB colorspace
-  3. Package as base64 in zip for download
+  **Browser Export (QOI)**:
+  - Tools/export-font-data.js exports QOI format from canvas
+  - QOI provides simple, portable export format
+  - Minimal dependencies (~200 line encoder)
 
-  **Pipeline Conversion (scripts/qoi-to-png-converter.js)**:
-  1. Decode QOI files using QOIDecode library
-  2. Convert to uncompressed PNG using PngEncoder for ImageOptim processing
-  3. Preserve QOI files by default for future Node.js font rendering
+  **Browser Delivery (WebP)**:
+  - Pipeline converts: QOI → PNG (intermediate) → WebP (final)
+  - WebP (lossless) provides best compression (5-10% smaller than PNG)
+  - Native browser support (Safari 14+, Chrome, Firefox, Edge)
+  - No header optimization needed (unlike PNG)
+
+  **Pipeline Conversion**:
+  1. **QOI → PNG** (scripts/qoi-to-png-converter.js):
+     - Decode QOI using QOIDecode library
+     - Convert to PNG for ImageOptim processing
+
+  2. **PNG → WebP** (scripts/convert-png-to-webp.sh):
+     - Convert with cwebp: `cwebp -lossless -z 9 -m 6 -mt`
+     - Delete source PNG files after conversion
+     - Lossless compression (pixel-identical)
+
+  3. **WebP → JS** (scripts/image-to-js-converter.js --webp):
+     - Wrap in JS for file:// protocol compatibility
+
+  **Node.js (QOI)**:
+  - Direct QOI loading without conversion
+  - QOI files preserved for Node.js usage
+  - Lightweight decoder, no external dependencies
 
   **Benefits**:
-  - **Minimal Dependencies**: Small, self-contained encoder/decoder (~200 lines each)
-  - **Reasonable Compression**: Better than raw RGBA, smaller than browser PNG
-  - **Node.js Compatibility**: Easy parsing without external dependencies
-  - **Future-Ready**: QOI files preserved for direct Node.js font renderer consumption
+  - **Browser**: WebP lossless, 8% smaller, modern standard
+  - **Node.js**: QOI direct loading, no dependencies
+  - **Export**: QOI simple, portable, minimal encoder
 
   ## Data Minification/Expansion
 
@@ -803,15 +821,6 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   4. **Runtime Reconstruction**: TightAtlasReconstructor converts Atlas → Tight Atlas + AtlasPositioning
   5. **Dependency**: Requires FontMetrics for cell dimension calculation
   6. **Reconstruction Cost**: ~10-15ms one-time cost per font at load time
-
-  **PNG Base64 Header Stripping (Browser Optimization)**:
-  1. **Predictable Header**: All PNG files (width < 65,536) start with identical 18-byte signature + IHDR header
-  2. **Base64 Encoding**: These 18 bytes encode to "iVBORw0KGgoAAAANSUhEUgAA" (24 characters)
-  3. **Stripping Process**: scripts/strip-png-base64-header.js removes this prefix from atlas-*-png.js files
-  4. **Runtime Restoration**: src/platform/FontLoader-browser.js prepends header when loading (line ~114)
-  5. **File Size Savings**: ~24 bytes per PNG atlas file (scales with number of font configurations)
-  6. **Backwards Compatible**: Runtime checks for header presence, only adds if missing
-  7. **Node.js Unaffected**: Only applies to PNG files used in browsers; Node.js uses QOI format
 
   ## Memory Management
 
@@ -851,7 +860,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     6. Calculate kerning tables (KerningCalculator using character set)
     7. Build optimized atlases (AtlasBuilder → variable-width cells)
     8. Generate minified metadata (MetricsMinifier)
-    9. Export metrics-*.js files + atlas-*-qoi.js/png.js files + font-registry.js
+    9. Export metrics-*.js files + atlas-*-qoi.js files + font-registry.js (browser pipeline converts QOI → WebP)
   ```
 
   ### Runtime Font Loading Workflow (Static API)
@@ -862,8 +871,8 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
       3. Load metrics: Create <script> tag → Await load → metrics file calls BitmapText.registerMetrics()
          → BitmapText.registerMetrics() delegates to FontMetricsStore.setFontMetrics()
-      4. Load atlas: Delegates to loadAtlasFromJS() or loadAtlasFromPNG()
-         - loadAtlasFromPNG(): Create <img> → Await load → TightAtlasReconstructor → store in AtlasDataStore
+      4. Load atlas: Delegates to loadAtlasFromJS() or loadAtlasFromWebP()
+         - loadAtlasFromWebP(): Create <img> → Await load → TightAtlasReconstructor → store in AtlasDataStore
          - loadAtlasFromJS(): Create <script> → Await load → atlas file calls BitmapText.registerAtlas()
          → BitmapText.registerAtlas() delegates to AtlasDataStore.setAtlasData()
       5. Progress callbacks fire for each file (optional)
