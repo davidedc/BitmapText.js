@@ -11,9 +11,13 @@ class MetricsExpander {
   /**
    * Expands minified metrics back to FontMetrics instance for runtime use
    * TIER 2 OPTIMIZATION: Array-based glyph reconstruction
-   * TIER 3 OPTIMIZATION: Uses DEFAULT_CHARACTER_SET when 'c' field is missing
+   * TIER 3 OPTIMIZATION: Two-dimensional kerning range expansion
+   *
+   * REQUIRES: Minified data must NOT contain 'c' field (always uses DEFAULT_CHARACTER_SET)
+   *
    * @param {Object} minified - Minified metrics object with shortened keys
    * @returns {FontMetrics} FontMetrics instance with expanded data
+   * @throws {Error} If 'c' field is present (legacy format not supported)
    */
   static expand(minified) {
     // Check if FontMetrics class is available (for cases where loaded as standalone)
@@ -21,12 +25,18 @@ class MetricsExpander {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
     }
 
-    // TIER 3: Use DEFAULT_CHARACTER_SET if 'c' field is missing (backward compatible)
-    const characterOrder = minified.c || DEFAULT_CHARACTER_SET;
+    // Reject legacy format with 'c' field
+    if (minified.c) {
+      throw new Error(
+        `Legacy minified format detected - 'c' field present.\n` +
+        `This file was generated with an old character order and is no longer supported.\n` +
+        `Please regenerate font assets using the current font-assets-builder.`
+      );
+    }
 
     const expandedData = {
-      kerningTable: this.#expandKerningTable(minified.k, characterOrder),
-      characterMetrics: this.#expandCharacterMetrics(minified.g, characterOrder, minified.b),
+      kerningTable: this.#expandKerningTable(minified.k),
+      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
 
@@ -43,19 +53,19 @@ class MetricsExpander {
    * TIER 3 OPTIMIZATION: Two-dimensional expansion (reverse order of compression)
    *   Pass 1 (left-side):  {"A-B":{"s":20}} → {"A":{"s":20},"B":{"s":20}}
    *   Pass 2 (right-side): {"A":{"0-1":20}} → {"A":{"0":20,"1":20}}
+   * Always uses DEFAULT_CHARACTER_SET for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
    * @param {Object} minified - Minified kerning table
-   * @param {string} characterOrder - Character order string for range expansion
    * @private
    */
-  static #expandKerningTable(minified, characterOrder) {
+  static #expandKerningTable(minified) {
     // PASS 1: Expand left side (characters that come before)
-    const leftExpanded = this.#expandLeftSide(minified, characterOrder);
+    const leftExpanded = this.#expandLeftSide(minified);
 
     // PASS 2: Expand right side (characters that follow)
     const expanded = {};
     for (const [leftChar, pairs] of Object.entries(leftExpanded)) {
-      expanded[leftChar] = this.#expandKerningPairs(pairs, characterOrder);
+      expanded[leftChar] = this.#expandKerningPairs(pairs);
     }
 
     return expanded;
@@ -65,12 +75,12 @@ class MetricsExpander {
    * Expands left side of kerning table (characters that come before)
    * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
    * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
+   * Always uses DEFAULT_CHARACTER_SET for range expansion
    * @param {Object} minified - Minified kerning table with potential left-side ranges
-   * @param {string} characterOrder - Character order string for range expansion
    * @returns {Object} Left-expanded kerning table
    * @private
    */
-  static #expandLeftSide(minified, characterOrder) {
+  static #expandLeftSide(minified) {
     const expanded = {};
 
     // Process entries in order so later entries can override earlier ones
@@ -83,13 +93,13 @@ class MetricsExpander {
 
         // Check if both start and end are single characters in the character set
         if (startChar.length === 1 && endChar.length === 1) {
-          const startIndex = characterOrder.indexOf(startChar);
-          const endIndex = characterOrder.indexOf(endChar);
+          const startIndex = DEFAULT_CHARACTER_SET.indexOf(startChar);
+          const endIndex = DEFAULT_CHARACTER_SET.indexOf(endChar);
 
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
             // Valid range, expand it
             for (let i = startIndex; i <= endIndex; i++) {
-              expanded[characterOrder[i]] = rightSideObj;
+              expanded[DEFAULT_CHARACTER_SET[i]] = rightSideObj;
             }
             continue;
           }
@@ -105,12 +115,12 @@ class MetricsExpander {
 
   /**
    * Expands kerning pairs from range notation to individual character pairs
+   * Always uses DEFAULT_CHARACTER_SET for range expansion
    * @param {Object} pairs - Compressed pairs like {"0-█":20} or {"A":10,"B-D":20}
-   * @param {string} characterOrder - Character order string for range expansion
    * @returns {Object} Expanded pairs like {"0":20,"1":20,...,"█":20}
    * @private
    */
-  static #expandKerningPairs(pairs, characterOrder) {
+  static #expandKerningPairs(pairs) {
     const expanded = {};
 
     // Process entries in order so later entries can override earlier ones
@@ -123,13 +133,13 @@ class MetricsExpander {
 
         // Check if both start and end are single characters in the character set
         if (startChar.length === 1 && endChar.length === 1) {
-          const startIndex = characterOrder.indexOf(startChar);
-          const endIndex = characterOrder.indexOf(endChar);
+          const startIndex = DEFAULT_CHARACTER_SET.indexOf(startChar);
+          const endIndex = DEFAULT_CHARACTER_SET.indexOf(endChar);
 
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
             // Valid range, expand it
             for (let i = startIndex; i <= endIndex; i++) {
-              expanded[characterOrder[i]] = value;
+              expanded[DEFAULT_CHARACTER_SET[i]] = value;
             }
             continue;
           }
@@ -145,18 +155,18 @@ class MetricsExpander {
   
   /**
    * Expands glyph metrics from arrays back to full objects
-   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using character order string
+   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using DEFAULT_CHARACTER_SET
    * Reconstructs full TextMetrics-compatible objects from compact arrays
+   * Always uses DEFAULT_CHARACTER_SET for character order
    * @param {Array} minifiedGlyphs - Array of metric arrays
-   * @param {string} characterOrder - String containing character order (e.g., "0123456789abc...")
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @private
    */
-  static #expandCharacterMetrics(minifiedGlyphs, characterOrder, metricsCommonToAllCharacters) {
+  static #expandCharacterMetrics(minifiedGlyphs, metricsCommonToAllCharacters) {
     const expanded = {};
 
-    // Convert character order string to array of characters
-    const chars = Array.from(characterOrder);
+    // Convert DEFAULT_CHARACTER_SET string to array of characters
+    const chars = Array.from(DEFAULT_CHARACTER_SET);
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {

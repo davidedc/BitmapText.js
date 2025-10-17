@@ -11,26 +11,52 @@ class MetricsMinifier {
   /**
    * Minifies font metrics data for smaller file size
    * TIER 2 OPTIMIZATION: Array-based glyph encoding
-   * TIER 3 OPTIMIZATION: Omits 'c' field when character set matches DEFAULT_CHARACTER_SET
+   * TIER 3 OPTIMIZATION: Two-dimensional kerning range compression
+   *
+   * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from DEFAULT_CHARACTER_SET
+   *
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
-   * @returns {Object} Minified metrics with shortened keys and compacted structure
+   * @returns {Object} Minified metrics with shortened keys and compacted structure (no 'c' field)
+   * @throws {Error} If not all 204 characters are present
    */
   static minify(metricsData) {
-    const characterOrder = Object.keys(metricsData.characterMetrics).join('');
-    const result = {
-      k: this.#minifyKerningTable(metricsData.kerningTable, characterOrder),
+    // Validate that ALL 204 characters from DEFAULT_CHARACTER_SET are present
+    // Note: We DON'T use Object.keys() because JavaScript reorders numeric keys
+    // Instead, we iterate through DEFAULT_CHARACTER_SET and check each character exists
+    const missingChars = [];
+    for (const char of DEFAULT_CHARACTER_SET) {
+      if (!(char in metricsData.characterMetrics)) {
+        missingChars.push(char);
+      }
+    }
+
+    if (missingChars.length > 0) {
+      throw new Error(
+        `MetricsMinifier requires ALL 204 characters from DEFAULT_CHARACTER_SET.\n` +
+        `Missing ${missingChars.length} characters: ${missingChars.slice(0, 10).join(', ')}${missingChars.length > 10 ? '...' : ''}\n` +
+        `Please ensure font-assets-builder generates ALL 204 characters.`
+      );
+    }
+
+    // Check for extra characters not in DEFAULT_CHARACTER_SET
+    const extraChars = Object.keys(metricsData.characterMetrics).filter(
+      char => !DEFAULT_CHARACTER_SET.includes(char)
+    );
+
+    if (extraChars.length > 0) {
+      throw new Error(
+        `Font contains ${extraChars.length} characters not in DEFAULT_CHARACTER_SET: ${extraChars.join(', ')}\n` +
+        `Please update DEFAULT_CHARACTER_SET.js to include these characters.`
+      );
+    }
+
+    // Minify without 'c' field (always use DEFAULT_CHARACTER_SET - all 204 chars)
+    return {
+      k: this.#minifyKerningTable(metricsData.kerningTable),
       b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
       g: this.#minifyCharacterMetrics(metricsData.characterMetrics),
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
-
-    // TIER 3: Only include 'c' field if character set differs from DEFAULT_CHARACTER_SET
-    // This saves 208 bytes when using the standard character set
-    if (characterOrder !== DEFAULT_CHARACTER_SET) {
-      result.c = characterOrder;
-    }
-
-    return result;
   }
 
   /**
@@ -125,11 +151,12 @@ class MetricsMinifier {
   /**
    * Extracts common metrics shared across all characters
    * so that we don't need to repeat these in the serialised file.
-   * Extract these from the first available character
+   * Extract these from the first character in DEFAULT_CHARACTER_SET (space)
    * @private
    */
   static #extractMetricsCommonToAllCharacters(characterMetrics) {
-    const firstChar = Object.keys(characterMetrics)[0];
+    // Use first character from DEFAULT_CHARACTER_SET (space character)
+    const firstChar = DEFAULT_CHARACTER_SET[0];
     const firstGlyph = characterMetrics[firstChar];
 
     return {
@@ -146,19 +173,23 @@ class MetricsMinifier {
    * Converts glyph metrics objects to compact arrays
    * TIER 2 OPTIMIZATION: Returns array of arrays (removes character keys, uses position instead)
    * Array format: [width, actualBoundingBoxLeft, actualBoundingBoxRight, actualBoundingBoxAscent, actualBoundingBoxDescent]
-   * Character order is stored separately in 'c' field for reconstruction
+   * Always uses DEFAULT_CHARACTER_SET order (all 204 characters)
    * @private
    */
   static #minifyCharacterMetrics(characterMetrics) {
-    // Convert to array of arrays (no character keys)
-    // Order preserved via Object.keys(), character order string stored in 'c' field
-    return Object.values(characterMetrics).map(glyph => [
-      glyph.width,
-      glyph.actualBoundingBoxLeft,
-      glyph.actualBoundingBoxRight,
-      glyph.actualBoundingBoxAscent,
-      glyph.actualBoundingBoxDescent
-    ]);
+    // Convert to array of arrays in DEFAULT_CHARACTER_SET order
+    // IMPORTANT: Must iterate through DEFAULT_CHARACTER_SET, not Object.keys/values
+    // because JavaScript reorders numeric string keys ("0"-"9")
+    return Array.from(DEFAULT_CHARACTER_SET).map(char => {
+      const glyph = characterMetrics[char];
+      return [
+        glyph.width,
+        glyph.actualBoundingBoxLeft,
+        glyph.actualBoundingBoxRight,
+        glyph.actualBoundingBoxAscent,
+        glyph.actualBoundingBoxDescent
+      ];
+    });
   }
   
   /**
@@ -166,40 +197,40 @@ class MetricsMinifier {
    * TIER 3 OPTIMIZATION: Two-pass compression
    *   Pass 1 (right-side): {"A":{"0":20,"1":20}} → {"A":{"0-1":20}}
    *   Pass 2 (left-side):  {"A":{"s":20},"B":{"s":20}} → {"A-B":{"s":20}}
+   * Always uses DEFAULT_CHARACTER_SET for range compression
    * @param {Object} kerningTable - Kerning table to minify
-   * @param {string} characterOrder - Character order string for range compression
    * @private
    */
-  static #minifyKerningTable(kerningTable, characterOrder) {
+  static #minifyKerningTable(kerningTable) {
     // PASS 1: Compress right side (characters that follow)
     const rightCompressed = {};
     for (const [leftChar, pairs] of Object.entries(kerningTable)) {
-      rightCompressed[leftChar] = this.#compressKerningPairs(pairs, characterOrder);
+      rightCompressed[leftChar] = this.#compressKerningPairs(pairs);
     }
 
     // PASS 2: Compress left side (characters that come before)
-    const leftCompressed = this.#compressLeftSide(rightCompressed, characterOrder);
+    const leftCompressed = this.#compressLeftSide(rightCompressed);
 
     return leftCompressed;
   }
 
   /**
    * Compresses kerning pairs by finding consecutive character ranges with same value
+   * Always uses DEFAULT_CHARACTER_SET for range compression
    * @param {Object} pairs - Kerning pairs like {"0":20,"1":20,"2":20,...}
-   * @param {string} characterOrder - Character order string for range compression
    * @returns {Object} Compressed pairs like {"0-2":20}
    * @private
    */
-  static #compressKerningPairs(pairs, characterOrder) {
+  static #compressKerningPairs(pairs) {
     if (Object.keys(pairs).length === 0) return {};
 
     // Build map of value -> array of character indices
     const valueToIndices = {};
 
     for (const [char, value] of Object.entries(pairs)) {
-      const index = characterOrder.indexOf(char);
+      const index = DEFAULT_CHARACTER_SET.indexOf(char);
       if (index === -1) {
-        console.warn(`Character "${char}" not found in character order, skipping`);
+        console.warn(`Character "${char}" not found in DEFAULT_CHARACTER_SET, skipping`);
         continue;
       }
 
@@ -221,22 +252,22 @@ class MetricsMinifier {
 
       // Convert ranges to notation
       for (const range of ranges) {
-        if (range.start === 0 && range.end === characterOrder.length - 1) {
+        if (range.start === 0 && range.end === DEFAULT_CHARACTER_SET.length - 1) {
           // Special case: Full character set
-          const firstChar = characterOrder[0];
-          const lastChar = characterOrder[characterOrder.length - 1];
+          const firstChar = DEFAULT_CHARACTER_SET[0];
+          const lastChar = DEFAULT_CHARACTER_SET[DEFAULT_CHARACTER_SET.length - 1];
           compressed[`${firstChar}-${lastChar}`] = parseFloat(value);
         } else if (range.start === range.end) {
           // Single character
-          compressed[characterOrder[range.start]] = parseFloat(value);
+          compressed[DEFAULT_CHARACTER_SET[range.start]] = parseFloat(value);
         } else if (range.end === range.start + 1) {
           // Two characters - more efficient as separate entries
-          compressed[characterOrder[range.start]] = parseFloat(value);
-          compressed[characterOrder[range.end]] = parseFloat(value);
+          compressed[DEFAULT_CHARACTER_SET[range.start]] = parseFloat(value);
+          compressed[DEFAULT_CHARACTER_SET[range.end]] = parseFloat(value);
         } else {
           // Range of 3+ characters
-          const startChar = characterOrder[range.start];
-          const endChar = characterOrder[range.end];
+          const startChar = DEFAULT_CHARACTER_SET[range.start];
+          const endChar = DEFAULT_CHARACTER_SET[range.end];
           compressed[`${startChar}-${endChar}`] = parseFloat(value);
         }
       }
@@ -280,13 +311,13 @@ class MetricsMinifier {
    * Compresses left side of kerning table (characters that come before)
    * TIER 3 OPTIMIZATION: Two-dimensional compression pass 2
    * Groups left characters with identical right-side objects and compresses to ranges
+   * Always uses DEFAULT_CHARACTER_SET for range compression
    * Example: {"A":{"s":20},"B":{"s":20},"C":{"s":20}} → {"A-C":{"s":20}}
    * @param {Object} kerningTable - Right-compressed kerning table
-   * @param {string} characterOrder - Character order string for range compression
    * @returns {Object} Left-compressed kerning table
    * @private
    */
-  static #compressLeftSide(kerningTable, characterOrder) {
+  static #compressLeftSide(kerningTable) {
     // Group left characters by their right-side object signature
     const rightSideToLeftChars = {};
 
@@ -304,9 +335,9 @@ class MetricsMinifier {
     for (const [signature, leftChars] of Object.entries(rightSideToLeftChars)) {
       const rightSideObj = JSON.parse(signature);
 
-      // Convert left characters to indices in characterOrder
+      // Convert left characters to indices in DEFAULT_CHARACTER_SET
       const indices = leftChars
-        .map(char => characterOrder.indexOf(char))
+        .map(char => DEFAULT_CHARACTER_SET.indexOf(char))
         .filter(idx => idx !== -1)
         .sort((a, b) => a - b);
 
@@ -317,15 +348,15 @@ class MetricsMinifier {
       for (const range of ranges) {
         if (range.start === range.end) {
           // Single character
-          compressed[characterOrder[range.start]] = rightSideObj;
+          compressed[DEFAULT_CHARACTER_SET[range.start]] = rightSideObj;
         } else if (range.end === range.start + 1) {
           // Two characters - more efficient as separate entries
-          compressed[characterOrder[range.start]] = rightSideObj;
-          compressed[characterOrder[range.end]] = rightSideObj;
+          compressed[DEFAULT_CHARACTER_SET[range.start]] = rightSideObj;
+          compressed[DEFAULT_CHARACTER_SET[range.end]] = rightSideObj;
         } else {
           // Range of 3+ characters
-          const startChar = characterOrder[range.start];
-          const endChar = characterOrder[range.end];
+          const startChar = DEFAULT_CHARACTER_SET[range.start];
+          const endChar = DEFAULT_CHARACTER_SET[range.end];
           compressed[`${startChar}-${endChar}`] = rightSideObj;
         }
       }

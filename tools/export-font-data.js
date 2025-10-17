@@ -127,7 +127,62 @@ function downloadFontAssets(options) {
       }
 
       // Extract character metrics directly from FontMetrics instance
-      const characterMetrics = { ...fontMetrics._characterMetrics };
+      const generatedMetrics = fontMetrics._characterMetrics;
+
+      // Check if we have any glyphs to export
+      if (Object.keys(generatedMetrics).length === 0) {
+          console.warn(`No glyphs found for ${fontProperties.key}, skipping export`);
+          return;
+      }
+
+      // REQUIRED: ALL 204 characters from DEFAULT_CHARACTER_SET must be included
+      // Create metrics for all 204 characters in DEFAULT_CHARACTER_SET order
+      const characterMetrics = {};
+
+      // Get baseline metrics from first generated character for fallback
+      const firstChar = Object.keys(generatedMetrics)[0];
+      const fallbackMetrics = generatedMetrics[firstChar];
+
+      // Create placeholder metrics for missing characters (zero width, invisible)
+      const createPlaceholderMetrics = () => ({
+          width: 0,
+          actualBoundingBoxLeft: 0,
+          actualBoundingBoxRight: 0,
+          actualBoundingBoxAscent: 0,
+          actualBoundingBoxDescent: 0,
+          fontBoundingBoxAscent: fallbackMetrics.fontBoundingBoxAscent,
+          fontBoundingBoxDescent: fallbackMetrics.fontBoundingBoxDescent,
+          hangingBaseline: fallbackMetrics.hangingBaseline,
+          alphabeticBaseline: fallbackMetrics.alphabeticBaseline,
+          ideographicBaseline: fallbackMetrics.ideographicBaseline,
+          pixelDensity: fallbackMetrics.pixelDensity
+      });
+
+      // Add all 204 characters from DEFAULT_CHARACTER_SET
+      for (const char of DEFAULT_CHARACTER_SET) {
+          if (generatedMetrics[char]) {
+              // Use generated metrics if available
+              characterMetrics[char] = generatedMetrics[char];
+          } else {
+              // Use placeholder for missing characters
+              characterMetrics[char] = createPlaceholderMetrics();
+          }
+      }
+
+      // Warn about missing characters (should not happen in normal operation)
+      const missingChars = Array.from(DEFAULT_CHARACTER_SET).filter(char => !generatedMetrics[char]);
+      if (missingChars.length > 0) {
+          console.warn(`⚠️  Generated placeholder metrics for ${missingChars.length} missing characters: ${missingChars.slice(0, 10).join('')}${missingChars.length > 10 ? '...' : ''}`);
+      }
+
+      // Verify no extra characters outside DEFAULT_CHARACTER_SET
+      const extraChars = Object.keys(generatedMetrics).filter(char => !DEFAULT_CHARACTER_SET.includes(char));
+      if (extraChars.length > 0) {
+          throw new Error(
+              `Font contains ${extraChars.length} characters not in DEFAULT_CHARACTER_SET: ${extraChars.join(', ')}\n` +
+              `Please update DEFAULT_CHARACTER_SET.js to include these characters.`
+          );
+      }
 
       // Metrics data (positioning data NO LONGER exported - reconstructed at runtime)
       const metricsData = {
@@ -136,15 +191,9 @@ function downloadFontAssets(options) {
           spaceAdvancementOverrideForSmallSizesInPx: fontMetrics._spaceAdvancementOverride
       };
 
-
-      // Check if we have any glyphs to export
-      if (Object.keys(characterMetrics).length === 0) {
-          console.warn(`No glyphs found for ${fontProperties.key}, skipping export`);
-          return;
-      }
-
       // Minify with automatic roundtrip verification
       // This catches compression bugs immediately during build
+      // Will throw error if characterMetrics is not in DEFAULT_CHARACTER_SET order
       const minified = MetricsMinifier.minifyWithVerification(metricsData);
 
       // Add metrics JS file to zip (only contains metrics, no atlas positioning)

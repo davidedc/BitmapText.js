@@ -138,6 +138,14 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/FontMetrics.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
+# Concatenate DEFAULT_CHARACTER_SET (MUST BE BEFORE MetricsExpander)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// DEFAULT CHARACTER SET CONSTANT" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/builder/DEFAULT_CHARACTER_SET.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
 # Concatenate expansion utility
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// EXPANSION UTILITY - MetricsExpander.js" >> "$OUTPUT_FILE"
