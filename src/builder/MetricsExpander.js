@@ -1,5 +1,6 @@
 // Static utility class for expanding minified font metrics data (runtime only)
 // Converts compact format back to FontMetrics instances for use by the rendering engine
+// NOTE: Requires DEFAULT_CHARACTER_SET.js to be loaded first
 
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -9,7 +10,8 @@ class MetricsExpander {
   
   /**
    * Expands minified metrics back to FontMetrics instance for runtime use
-   * TIER 2 OPTIMIZATION: Now accepts character order string (c) for array reconstruction
+   * TIER 2 OPTIMIZATION: Array-based glyph reconstruction
+   * TIER 3 OPTIMIZATION: Uses DEFAULT_CHARACTER_SET when 'c' field is missing
    * @param {Object} minified - Minified metrics object with shortened keys
    * @returns {FontMetrics} FontMetrics instance with expanded data
    */
@@ -19,9 +21,12 @@ class MetricsExpander {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
     }
 
+    // TIER 3: Use DEFAULT_CHARACTER_SET if 'c' field is missing (backward compatible)
+    const characterOrder = minified.c || DEFAULT_CHARACTER_SET;
+
     const expandedData = {
-      kerningTable: this.#expandKerningTable(minified.k),
-      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.c, minified.b),
+      kerningTable: this.#expandKerningTable(minified.k, characterOrder),
+      characterMetrics: this.#expandCharacterMetrics(minified.g, characterOrder, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
 
@@ -34,11 +39,108 @@ class MetricsExpander {
   }
   
   /**
-   * Expands kerning table (currently a direct copy, but kept for consistency)
+   * Expands kerning table with range notation support
+   * TIER 3 OPTIMIZATION: Two-dimensional expansion (reverse order of compression)
+   *   Pass 1 (left-side):  {"A-B":{"s":20}} → {"A":{"s":20},"B":{"s":20}}
+   *   Pass 2 (right-side): {"A":{"0-1":20}} → {"A":{"0":20,"1":20}}
+   * Later entries override earlier ones, allowing exceptions to ranges
+   * @param {Object} minified - Minified kerning table
+   * @param {string} characterOrder - Character order string for range expansion
    * @private
    */
-  static #expandKerningTable(minified) {
-    return { ...minified };
+  static #expandKerningTable(minified, characterOrder) {
+    // PASS 1: Expand left side (characters that come before)
+    const leftExpanded = this.#expandLeftSide(minified, characterOrder);
+
+    // PASS 2: Expand right side (characters that follow)
+    const expanded = {};
+    for (const [leftChar, pairs] of Object.entries(leftExpanded)) {
+      expanded[leftChar] = this.#expandKerningPairs(pairs, characterOrder);
+    }
+
+    return expanded;
+  }
+
+  /**
+   * Expands left side of kerning table (characters that come before)
+   * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
+   * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
+   * @param {Object} minified - Minified kerning table with potential left-side ranges
+   * @param {string} characterOrder - Character order string for range expansion
+   * @returns {Object} Left-expanded kerning table
+   * @private
+   */
+  static #expandLeftSide(minified, characterOrder) {
+    const expanded = {};
+
+    // Process entries in order so later entries can override earlier ones
+    for (const [key, rightSideObj] of Object.entries(minified)) {
+      if (key.includes('-') && key.length >= 3) {
+        // Potential range notation (e.g., "A-Z" or "0-9")
+        const hyphenIndex = key.indexOf('-');
+        const startChar = key.substring(0, hyphenIndex);
+        const endChar = key.substring(hyphenIndex + 1);
+
+        // Check if both start and end are single characters in the character set
+        if (startChar.length === 1 && endChar.length === 1) {
+          const startIndex = characterOrder.indexOf(startChar);
+          const endIndex = characterOrder.indexOf(endChar);
+
+          if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+            // Valid range, expand it
+            for (let i = startIndex; i <= endIndex; i++) {
+              expanded[characterOrder[i]] = rightSideObj;
+            }
+            continue;
+          }
+        }
+      }
+
+      // Not a range, or invalid range - treat as literal character
+      expanded[key] = rightSideObj;
+    }
+
+    return expanded;
+  }
+
+  /**
+   * Expands kerning pairs from range notation to individual character pairs
+   * @param {Object} pairs - Compressed pairs like {"0-█":20} or {"A":10,"B-D":20}
+   * @param {string} characterOrder - Character order string for range expansion
+   * @returns {Object} Expanded pairs like {"0":20,"1":20,...,"█":20}
+   * @private
+   */
+  static #expandKerningPairs(pairs, characterOrder) {
+    const expanded = {};
+
+    // Process entries in order so later entries can override earlier ones
+    for (const [key, value] of Object.entries(pairs)) {
+      if (key.includes('-') && key.length >= 3) {
+        // Potential range notation (e.g., "A-Z" or "0-█")
+        const hyphenIndex = key.indexOf('-');
+        const startChar = key.substring(0, hyphenIndex);
+        const endChar = key.substring(hyphenIndex + 1);
+
+        // Check if both start and end are single characters in the character set
+        if (startChar.length === 1 && endChar.length === 1) {
+          const startIndex = characterOrder.indexOf(startChar);
+          const endIndex = characterOrder.indexOf(endChar);
+
+          if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
+            // Valid range, expand it
+            for (let i = startIndex; i <= endIndex; i++) {
+              expanded[characterOrder[i]] = value;
+            }
+            continue;
+          }
+        }
+      }
+
+      // Not a range, or invalid range - treat as literal character
+      expanded[key] = value;
+    }
+
+    return expanded;
   }
   
   /**

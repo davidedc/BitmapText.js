@@ -143,51 +143,15 @@ function downloadFontAssets(options) {
           return;
       }
 
-      // Test minification and expansion for metrics data
-      const minified = MetricsMinifier.minify(metricsData);
-      const expanded = MetricsExpander.expand(minified);
-
-      // Instead of deep equality check, let's verify the essential properties are preserved
-      // Note: expanded is a FontMetrics instance, not a plain object
-      const firstChar = Object.keys(metricsData.characterMetrics)[0];
-      const originalGlyph = metricsData.characterMetrics[firstChar];
-      
-      // Use FontMetrics API to get the expanded glyph data
-      const expandedGlyph = expanded.getCharacterMetrics(firstChar);
-      
-      if (!expandedGlyph) {
-          console.error('Expanded glyph is undefined:', {
-              firstChar,
-              originalGlyph,
-              expandedType: typeof expanded,
-              expandedConstructor: expanded.constructor.name,
-              hasGlyph: expanded.hasGlyph(firstChar)
-          });
-          throw new Error(`[export-font-data] Expanded glyph data is missing for character '${firstChar}' - font: ${fontProperties.key}`);
-      }
-      
-      // Check that the essential named properties match
-      const essentialProps = ['width', 'actualBoundingBoxLeft', 'actualBoundingBoxRight', 'actualBoundingBoxAscent', 'actualBoundingBoxDescent'];
-      let allPropsMatch = true;
-      
-      for (const prop of essentialProps) {
-        if (originalGlyph[prop] !== expandedGlyph[prop]) {
-          console.error(`Property ${prop} mismatch: ${originalGlyph[prop]} vs ${expandedGlyph[prop]}`);
-          allPropsMatch = false;
-        }
-      }
-      
-      if (!allPropsMatch) {
-        throw new Error(`[export-font-data] Essential properties do not match after minification/expansion - font: ${fontProperties.key}`);
-      }
-      
-      console.log('✅ Minification/expansion test passed for essential properties');
+      // Minify with automatic roundtrip verification
+      // This catches compression bugs immediately during build
+      const minified = MetricsMinifier.minifyWithVerification(metricsData);
 
       // Add metrics JS file to zip (only contains metrics, no atlas positioning)
       // TIER 1 OPTIMIZATION: Comments removed, wrapper minified for smaller file size
       folder.file(
           `metrics-${IDString}.js`,
-          `if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${IDString}',${JSON.stringify(MetricsMinifier.minify(metricsData))})}`,
+          `if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${IDString}',${JSON.stringify(minified)})}`,
           { date: currentDate }
       );
 

@@ -132,6 +132,8 @@
 <script src="../src/ui/base-ui.js"></script>
 <script src="../src/ui/font-assets-builder-ui.js"></script>
 <script src="../tools/export-font-data.js"></script>
+<!-- TIER 3 OPTIMIZATION: Load shared character set constant first -->
+<script src="../src/builder/DEFAULT_CHARACTER_SET.js"></script>
 <script src="../src/builder/MetricsMinifier.js"></script>
 <!-- needed to test the roundtrip minification + expansion works -->
 <script src="../src/builder/MetricsExpander.js"></script>
