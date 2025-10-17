@@ -419,24 +419,24 @@ To support compound emojis would require:
 
   ### Supporting Classes
 
-  **Character Set Configuration (src/builder/character-set.js)**
-  - Defines the complete set of supported characters for font assets building
+  **Character Set Constant (src/CHARACTER_SET.js)**
+  - Defines the complete set of supported characters (shared by build-time and runtime)
   - Programmatically generates character set from multiple ranges:
     - ASCII printable characters (32-126): space, numbers, letters, common symbols
     - Windows-1252 (CP-1252) subset (128-159): commonly used extended ASCII symbols (€, •, —, ™, etc.)
     - Latin-1 Supplement (161-255): accented characters, excluding soft hyphen (U+00AD)
     - Full Block character (█): visual reference for maximum glyph space
   - Implementation: `generateCharacterSet()` function creates sorted character string
-  - Exported as global: `characterSet` variable (used by create-glyphs.js and KerningCalculator)
-  - Character count: 217 characters (as of latest version)
-  - Distribution: Part of font assets building toolkit only
+  - Exported as constant: `CHARACTER_SET` (used by build-time: create-glyphs.js, KerningCalculator, MetricsMinifier; runtime: MetricsExpander)
+  - Character count: 204 characters (all font files must contain all 204 characters)
+  - Distribution: Core constant used by both build-time and runtime
 
   **Glyph Creation Utilities (src/builder/create-glyphs.js)**
   - Orchestrates glyph creation for all characters in character set
   - Function: `createGlyphsAndAddToFullStore(fontProperties)`
-  - Iterates through character set and creates GlyphFAB instance for each character
+  - Iterates through CHARACTER_SET and creates GlyphFAB instance for each character
   - Stores created glyphs in AtlasDataStoreFAB for subsequent atlas building
-  - Depends on: character-set.js (global characterSet), GlyphFAB, AtlasDataStoreFAB
+  - Depends on: CHARACTER_SET.js (CHARACTER_SET constant), GlyphFAB, AtlasDataStoreFAB
   - Used by: font-assets-builder.html build workflow
   - Distribution: Part of font assets building toolkit only
 
@@ -555,7 +555,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Phase
 
   1. **Configuration Loading**
-     Character Set (src/builder/character-set.js) → 217 characters defined
+     Character Set (src/CHARACTER_SET.js) → 204 characters defined
      Font Specs (src/specs/default-specs.js) → Kerning rules and corrections
 
   2. **Glyph Creation**
@@ -846,7 +846,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Workflow
   ```
   User → public/font-assets-builder.html → BitmapTextFAB → AtlasDataStoreFAB
-    1. Load character set configuration (src/builder/character-set.js → 217 characters)
+    1. Load character set constant (src/CHARACTER_SET.js → 204 characters)
     2. Load font specifications (src/specs/default-specs.js)
     3. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     4. Create individual glyph canvases (src/builder/create-glyphs.js → GlyphFAB 6-step pipeline per character):

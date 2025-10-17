@@ -77,7 +77,7 @@
   - **Atlas reconstruction utilities**: src/builder/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
   - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
   - **Tight atlas reconstruction**: src/runtime/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
-  - **Character set configuration**: src/builder/character-set.js (defines supported characters - ASCII, CP-1252 subset, Latin-1 Supplement)
+  - **Character set constant**: src/CHARACTER_SET.js (204 characters - ASCII, CP-1252 subset, Latin-1 Supplement; used by both build-time and runtime)
   - **Glyph creation utilities**: src/builder/create-glyphs.js (creates glyphs for all characters in character set)
   - **Glyph rendering**: src/builder/GlyphFAB.js (6-step pipeline: canvas setup, measurement, corrections, dimensions, rendering, preservation)
   - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)
