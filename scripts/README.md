@@ -114,6 +114,7 @@ npm run build-multi-size-demo
 
 **Common source files used:**
 - `src/platform/canvas-mock.js` - Minimal Canvas implementation
+- `src/runtime/CHARACTER_SET.js` - Character set constant (204 characters)
 - `src/builder/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/runtime/FontLoaderBase.js` - Abstract base class for font loading (shared logic)

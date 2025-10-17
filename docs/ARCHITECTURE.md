@@ -419,7 +419,7 @@ To support compound emojis would require:
 
   ### Supporting Classes
 
-  **Character Set Constant (src/CHARACTER_SET.js)**
+  **Character Set Constant (src/runtime/CHARACTER_SET.js)**
   - Defines the complete set of supported characters (shared by build-time and runtime)
   - Programmatically generates character set from multiple ranges:
     - ASCII printable characters (32-126): space, numbers, letters, common symbols
@@ -429,14 +429,14 @@ To support compound emojis would require:
   - Implementation: `generateCharacterSet()` function creates sorted character string
   - Exported as constant: `CHARACTER_SET` (used by build-time: create-glyphs.js, KerningCalculator, MetricsMinifier; runtime: MetricsExpander)
   - Character count: 204 characters (all font files must contain all 204 characters)
-  - Distribution: Core constant used by both build-time and runtime
+  - Distribution: Core runtime constant used by both build-time and runtime
 
   **Glyph Creation Utilities (src/builder/create-glyphs.js)**
   - Orchestrates glyph creation for all characters in character set
   - Function: `createGlyphsAndAddToFullStore(fontProperties)`
   - Iterates through CHARACTER_SET and creates GlyphFAB instance for each character
   - Stores created glyphs in AtlasDataStoreFAB for subsequent atlas building
-  - Depends on: CHARACTER_SET.js (CHARACTER_SET constant), GlyphFAB, AtlasDataStoreFAB
+  - Depends on: src/runtime/CHARACTER_SET.js (CHARACTER_SET constant), GlyphFAB, AtlasDataStoreFAB
   - Used by: font-assets-builder.html build workflow
   - Distribution: Part of font assets building toolkit only
 
@@ -555,7 +555,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Phase
 
   1. **Configuration Loading**
-     Character Set (src/CHARACTER_SET.js) → 204 characters defined
+     Character Set (src/runtime/CHARACTER_SET.js) → 204 characters defined
      Font Specs (src/specs/default-specs.js) → Kerning rules and corrections
 
   2. **Glyph Creation**
@@ -794,19 +794,24 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ## Data Minification/Expansion
 
-  Font data is minified for efficient storage and network transfer:
+  Font data is minified for efficient storage and network transfer using three-tier compression:
 
   **Font Metrics Minification (src/builder/MetricsMinifier.js)**:
-  1. **Dynamic Base Metrics**: Uses first available character for base font metrics extraction
-  2. **Nested Structure Flattening**: Converts multi-level font property objects to flat arrays
-  3. **Data Deduplication**: Removes redundant entries across similar font configurations
-  4. **Property Name Shortening**: Optimizes repeated font family/style/weight combinations
+  - **Tier 1: Property Name Shortening** - Reduces JSON key names (e.g., `fontBoundingBoxAscent` → `fba`)
+  - **Tier 2: Array-Based Glyph Encoding** - Converts character metrics from objects to arrays (removes character keys, uses position instead)
+  - **Tier 3: Two-Dimensional Kerning Compression** - Compresses kerning table using range notation (e.g., `{"A":{"s":20},"B":{"s":20}}` → `{"A-B":{"s":20}}`)
+  - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
+  - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
+  - **Format Requirements** - All 204 characters from CHARACTER_SET must be present; no 'c' field (character order field eliminated)
+  - **File Size Savings** - ~2.4 KB per font file (~24% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression)
 
   **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
-  1. **Array to Object Mapping**: Rebuilds nested property structures
-  2. **Property Reconstruction**: Restores font property hierarchies
-  3. **Metrics Expansion**: Reconstructs full glyph metrics from minified data
-  4. **Essential Property Validation**: Verifies key metrics are preserved during roundtrip
+  - **CHARACTER_SET-Based Ordering** - Always uses CHARACTER_SET for character order (all 204 characters in sorted order)
+  - **Two-Dimensional Decompression** - Expands kerning ranges in reverse order (left-side then right-side)
+  - **Array to Object Reconstruction** - Rebuilds full TextMetrics-compatible objects from compact arrays
+  - **Legacy Format Rejection** - Throws error if 'c' field is present (legacy format no longer supported)
+  - **Common Metrics Distribution** - Copies shared metrics (fontBoundingBox, baselines, pixelDensity) to each character
+  - **Runtime Cost** - Minimal one-time expansion cost per font at load time (~1-2ms)
 
   **Atlas Reconstruction Utilities (src/builder/AtlasReconstructionUtils.js)**:
   1. **Image Data Extraction**: Central utility used by TightAtlasReconstructor for atlas image processing
@@ -846,7 +851,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Workflow
   ```
   User → public/font-assets-builder.html → BitmapTextFAB → AtlasDataStoreFAB
-    1. Load character set constant (src/CHARACTER_SET.js → 204 characters)
+    1. Load character set constant (src/runtime/CHARACTER_SET.js → 204 characters)
     2. Load font specifications (src/specs/default-specs.js)
     3. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     4. Create individual glyph canvases (src/builder/create-glyphs.js → GlyphFAB 6-step pipeline per character):
