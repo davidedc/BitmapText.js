@@ -8,6 +8,7 @@ class MetricsMinifier {
   
   /**
    * Minifies font metrics data for smaller file size
+   * TIER 2 OPTIMIZATION: Added character order string (c) for array-based glyph encoding
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
    * @returns {Object} Minified metrics with shortened keys and compacted structure
    */
@@ -16,6 +17,7 @@ class MetricsMinifier {
       k: this.#minifyKerningTable(metricsData.kerningTable),
       b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
       g: this.#minifyCharacterMetrics(metricsData.characterMetrics),
+      c: Object.keys(metricsData.characterMetrics).join(''), // Character order for array reconstruction
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
   }
@@ -42,21 +44,21 @@ class MetricsMinifier {
   
   /**
    * Converts glyph metrics objects to compact arrays
+   * TIER 2 OPTIMIZATION: Returns array of arrays (removes character keys, uses position instead)
    * Array format: [width, actualBoundingBoxLeft, actualBoundingBoxRight, actualBoundingBoxAscent, actualBoundingBoxDescent]
+   * Character order is stored separately in 'c' field for reconstruction
    * @private
    */
   static #minifyCharacterMetrics(characterMetrics) {
-    const minified = {};
-    Object.entries(characterMetrics).forEach(([char, glyph]) => {
-      minified[char] = [
-        glyph.width,
-        glyph.actualBoundingBoxLeft,
-        glyph.actualBoundingBoxRight,
-        glyph.actualBoundingBoxAscent,
-        glyph.actualBoundingBoxDescent
-      ];
-    });
-    return minified;
+    // Convert to array of arrays (no character keys)
+    // Order preserved via Object.keys(), character order string stored in 'c' field
+    return Object.values(characterMetrics).map(glyph => [
+      glyph.width,
+      glyph.actualBoundingBoxLeft,
+      glyph.actualBoundingBoxRight,
+      glyph.actualBoundingBoxAscent,
+      glyph.actualBoundingBoxDescent
+    ]);
   }
   
   /**

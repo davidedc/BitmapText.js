@@ -9,6 +9,7 @@ class MetricsExpander {
   
   /**
    * Expands minified metrics back to FontMetrics instance for runtime use
+   * TIER 2 OPTIMIZATION: Now accepts character order string (c) for array reconstruction
    * @param {Object} minified - Minified metrics object with shortened keys
    * @returns {FontMetrics} FontMetrics instance with expanded data
    */
@@ -20,7 +21,7 @@ class MetricsExpander {
 
     const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k),
-      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b),
+      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.c, minified.b),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
 
@@ -42,12 +43,22 @@ class MetricsExpander {
   
   /**
    * Expands glyph metrics from arrays back to full objects
+   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using character order string
    * Reconstructs full TextMetrics-compatible objects from compact arrays
+   * @param {Array} minifiedGlyphs - Array of metric arrays
+   * @param {string} characterOrder - String containing character order (e.g., "0123456789abc...")
+   * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @private
    */
-  static #expandCharacterMetrics(minifiedGlyphs, metricsCommonToAllCharacters) {
+  static #expandCharacterMetrics(minifiedGlyphs, characterOrder, metricsCommonToAllCharacters) {
     const expanded = {};
-    Object.entries(minifiedGlyphs).forEach(([char, metrics]) => {
+
+    // Convert character order string to array of characters
+    const chars = Array.from(characterOrder);
+
+    // Reconstruct object by mapping array positions to characters
+    chars.forEach((char, index) => {
+      const metrics = minifiedGlyphs[index];
       expanded[char] = {
         // Glyph-specific metrics from the array
         width: metrics[0],
