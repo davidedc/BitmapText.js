@@ -56,11 +56,17 @@ class MetricsMinifier {
       metricsData.characterMetrics
     );
 
+    // TIER 4: Create kerning value lookup table and indexed kerning table
+    const { kerningValueLookup, indexedKerningTable } = this.#createKerningValueLookupTable(
+      metricsData.kerningTable
+    );
+
     // Minify with value indexing (Tier 4 optimization)
     return {
-      k: this.#minifyKerningTable(metricsData.kerningTable),
+      kv: kerningValueLookup,  // TIER 4: Kerning value lookup table
+      k: indexedKerningTable,  // TIER 4: Kerning table with indexed values
       b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
-      v: valueLookup,          // TIER 4: Value lookup table
+      v: valueLookup,          // TIER 4: Glyph value lookup table
       g: indexedGlyphs,        // TIER 4: Glyph arrays now contain indices instead of raw values
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
@@ -244,6 +250,65 @@ class MetricsMinifier {
     return {
       valueLookup,
       indexedGlyphs
+    };
+  }
+
+  /**
+   * Creates kerning value lookup table and replaces kerning values with indices
+   * TIER 4 OPTIMIZATION: Value indexing for kerning table
+   *
+   * Strategy: Same as glyph value indexing - assign shortest indices to values
+   * with highest (occurrence_count × string_length)
+   *
+   * @param {Object} kerningTable - Original kerning table with numeric values
+   * @returns {Object} Object with kerningValueLookup array and indexedKerningTable
+   * @private
+   */
+  static #createKerningValueLookupTable(kerningTable) {
+    // Step 1: Collect all unique kerning values and count occurrences
+    const valueOccurrences = new Map();
+
+    for (const [leftChar, pairs] of Object.entries(kerningTable)) {
+      for (const [rightChar, value] of Object.entries(pairs)) {
+        valueOccurrences.set(value, (valueOccurrences.get(value) || 0) + 1);
+      }
+    }
+
+    // Step 2: Calculate scores and sort by savings potential
+    const valueScores = Array.from(valueOccurrences.entries()).map(([value, count]) => {
+      const stringLength = JSON.stringify(value).length;
+      const score = count * stringLength;
+      return { value, count, stringLength, score };
+    });
+
+    // Sort by score DESCENDING (highest savings first)
+    valueScores.sort((a, b) => b.score - a.score);
+
+    // Step 3: Create kerning value lookup table
+    const kerningValueLookup = valueScores.map(vs => vs.value);
+
+    // Step 4: Create value-to-index map
+    const valueToIndex = new Map();
+    kerningValueLookup.forEach((value, index) => {
+      valueToIndex.set(value, index);
+    });
+
+    // Step 5: Apply 2D compression with indexed values
+    // First, replace all values with indices
+    const indexedTable = {};
+    for (const [leftChar, pairs] of Object.entries(kerningTable)) {
+      indexedTable[leftChar] = {};
+      for (const [rightChar, value] of Object.entries(pairs)) {
+        indexedTable[leftChar][rightChar] = valueToIndex.get(value);
+      }
+    }
+
+    // Then apply 2D range compression on the indexed table
+    const indexedKerningTable = this.#minifyKerningTable(indexedTable);
+
+    return {
+      kerningValueLookup,
+      indexedKerningTable
     };
   }
 

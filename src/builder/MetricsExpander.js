@@ -15,11 +15,12 @@ class MetricsExpander {
    * TIER 4 OPTIMIZATION: Value indexing (looks up actual values from indices)
    *
    * REQUIRES: Minified data must NOT contain 'c' field (always uses CHARACTER_SET)
-   * REQUIRES: Minified data must contain 'v' field (value lookup table)
+   * REQUIRES: Minified data must contain 'kv' field (kerning value lookup table)
+   * REQUIRES: Minified data must contain 'v' field (glyph value lookup table)
    *
-   * @param {Object} minified - Minified metrics object with 'v', 'g', 'k', 'b', 's'
+   * @param {Object} minified - Minified metrics object with 'kv', 'k', 'v', 'g', 'b', 's'
    * @returns {FontMetrics} FontMetrics instance with expanded data
-   * @throws {Error} If 'c' field is present (legacy format) or 'v' field is missing
+   * @throws {Error} If 'c', 'kv', or 'v' fields are missing/invalid
    */
   static expand(minified) {
     // Check if FontMetrics class is available (for cases where loaded as standalone)
@@ -36,17 +37,25 @@ class MetricsExpander {
       );
     }
 
-    // Require value lookup table (Tier 4 optimization)
+    // Require value lookup tables (Tier 4 optimization)
     if (!minified.v) {
       throw new Error(
-        `Missing value lookup table ('v' field).\n` +
+        `Missing glyph value lookup table ('v' field).\n` +
+        `This file was generated with an old format and is no longer supported.\n` +
+        `Please regenerate font assets using the current font-assets-builder.`
+      );
+    }
+
+    if (!minified.kv) {
+      throw new Error(
+        `Missing kerning value lookup table ('kv' field).\n` +
         `This file was generated with an old format and is no longer supported.\n` +
         `Please regenerate font assets using the current font-assets-builder.`
       );
     }
 
     const expandedData = {
-      kerningTable: this.#expandKerningTable(minified.k),
+      kerningTable: this.#expandKerningTable(minified.k, minified.kv),
       characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b, minified.v),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
@@ -62,21 +71,33 @@ class MetricsExpander {
   /**
    * Expands kerning table with range notation support
    * TIER 3 OPTIMIZATION: Two-dimensional expansion (reverse order of compression)
-   *   Pass 1 (left-side):  {"A-B":{"s":20}} → {"A":{"s":20},"B":{"s":20}}
-   *   Pass 2 (right-side): {"A":{"0-1":20}} → {"A":{"0":20,"1":20}}
+   * TIER 4 OPTIMIZATION: Value indexing (looks up actual kerning values from indices)
+   *   Pass 1 (left-side):  {"A-B":{"s":0}} → {"A":{"s":0},"B":{"s":0}}
+   *   Pass 2 (right-side): {"A":{"0-1":0}} → {"A":{"0":0,"1":0}}
+   *   Pass 3 (values):     {"A":{"s":0}} → {"A":{"s":20}} (lookup from kerningValueLookup[0])
    * Always uses CHARACTER_SET for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
-   * @param {Object} minified - Minified kerning table
+   * @param {Object} minified - Minified kerning table with indexed values
+   * @param {Array} kerningValueLookup - Value lookup table for kerning values
    * @private
    */
-  static #expandKerningTable(minified) {
+  static #expandKerningTable(minified, kerningValueLookup) {
     // PASS 1: Expand left side (characters that come before)
     const leftExpanded = this.#expandLeftSide(minified);
 
     // PASS 2: Expand right side (characters that follow)
-    const expanded = {};
+    const rangeExpanded = {};
     for (const [leftChar, pairs] of Object.entries(leftExpanded)) {
-      expanded[leftChar] = this.#expandKerningPairs(pairs);
+      rangeExpanded[leftChar] = this.#expandKerningPairs(pairs);
+    }
+
+    // PASS 3 (TIER 4): Replace all indices with actual values from lookup table
+    const expanded = {};
+    for (const [leftChar, pairs] of Object.entries(rangeExpanded)) {
+      expanded[leftChar] = {};
+      for (const [rightChar, index] of Object.entries(pairs)) {
+        expanded[leftChar][rightChar] = kerningValueLookup[index];
+      }
     }
 
     return expanded;
