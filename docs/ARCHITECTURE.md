@@ -794,7 +794,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ## Data Minification/Expansion
 
-  Font data is minified for efficient storage and network transfer using four-tier compression:
+  Font data is minified for efficient storage and network transfer using five-tier compression:
 
   **Font Metrics Minification (src/builder/MetricsMinifier.js)**:
   - **Tier 1: Property Name Shortening** - Reduces JSON key names (e.g., `fontBoundingBoxAscent` → `fba`)
@@ -803,16 +803,23 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   - **Tier 4: Value Indexing** - Two-part optimization replacing repeated values with indices into lookup tables:
     - **Glyph Value Indexing** - 'v' field (glyph value lookup) + 'g' field contains indices, achieving ~52.7% reduction in glyph data size
     - **Kerning Value Indexing** - 'kv' field (kerning value lookup) + 'k' field contains indices, achieving ~51.0% reduction in kerning data size
-  - **Tier 5: Tuplet Compression** - Variable-length glyph tuplets (3/4/5 elements) exploiting redundancy patterns:
-    - **Case C (3 elements)**: `[w, l, a]` when width_idx === right_idx AND left_idx === descent_idx (~40% of glyphs)
-    - **Case B (4 elements)**: `[w, l, a, d]` when width_idx === right_idx only (~30% of glyphs)
-    - **Case A (5 elements)**: `[w, l, r, a, d]` no compression when width_idx ≠ right_idx (~30% of glyphs)
-    - **Decompression**: Deterministic based on array length (no flags needed)
-    - **Savings**: ~22% reduction in glyph index count (~225 indices saved per font)
+  - **Tier 5: Tuplet Deduplication** - Two-part optimization combining pattern compression with tuplet indexing:
+    - **Tier 5a: Variable-Length Tuplet Compression** - Exploits redundancy patterns in glyph metrics:
+      - **Case C (3 elements)**: `[w, l, a]` when width_idx === right_idx AND left_idx === descent_idx (~40% of glyphs)
+      - **Case B (4 elements)**: `[w, l, a, d]` when width_idx === right_idx only (~30% of glyphs)
+      - **Case A (5 elements)**: `[w, l, r, a, d]` no compression when width_idx ≠ right_idx (~30% of glyphs)
+      - **Decompression**: Deterministic based on array length (no flags needed)
+    - **Tier 5b: Tuplet Indexing** - Deduplicates tuplet arrays by storing unique tuplets once:
+      - **Scoring Algorithm**: `score = JSON.stringify(tuplet).length × occurrences`
+      - **Index Assignment**: Highest-scoring tuplets get shortest indices (0-9 = 1 char, 10-99 = 2 chars)
+      - **Format Change**: 't' field (unique tuplet lookup array) + 'g' field (single integer indices, not arrays)
+      - **Real-World Results**: 204 glyphs → ~61 unique tuplets (70% deduplication)
+      - **Example**: Tuplet `[0,3,0,2,1]` appearing 50 times: before 550 chars (50×11), after 61 chars (11 + 50×1) = 89% saved
+    - **Combined Savings**: ~1,124 bytes per font (~55% reduction on glyph data)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
   - **Format Requirements** - All 204 characters from CHARACTER_SET must be present; no 'c' field (character order field eliminated)
-  - **File Size Savings** - ~5.0 KB per font file (~48% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression) + 2,012 bytes (glyph value indexing) + 125 bytes (kerning value indexing) + 563 bytes (tuplet compression)
+  - **File Size Savings** - ~6.1 KB per font file (~58% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression) + 2,012 bytes (glyph value indexing) + 500 bytes (kerning value indexing) + 1,124 bytes (tuplet deduplication)
 
   **Value Indexing Algorithm (Tier 4)**:
   - **Score Calculation** - For each unique value: `score = occurrences × string_length`
@@ -835,9 +842,13 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     1. Left-side character range expansion
     2. Right-side character range expansion
     3. Value lookup (replace indices with actual kerning values from 'kv' array)
-  - **Glyph Value Lookup** - Reconstructs actual glyph metric values by looking up indices in 'v' array
+  - **Tuplet Lookup (Tier 5b)** - Reconstructs tuplet arrays from tuplet indices:
+    1. Look up tuplet from 't' array using integer index from 'g' field
+    2. Decompress variable-length tuplet (Tier 5a) based on array length (3/4/5 elements)
+    3. Expand to full 5-element index array
+  - **Glyph Value Lookup (Tier 4)** - Reconstructs actual glyph metric values by looking up indices in 'v' array
   - **Array to Object Reconstruction** - Rebuilds full TextMetrics-compatible objects from indexed arrays
-  - **Legacy Format Rejection** - Throws error if 'c' field is present (legacy character order), 'kv' field is missing, or 'v' field is missing (pre-Tier-4 format)
+  - **Legacy Format Rejection** - Throws error if 'c' field is present (legacy character order), 'kv' field is missing, 'v' field is missing (pre-Tier-4 format), or 't' field is missing (pre-Tier-5b format)
   - **Common Metrics Distribution** - Copies shared metrics (fontBoundingBox, baselines, pixelDensity) to each character
   - **Runtime Cost** - Minimal one-time expansion cost per font at load time (~1-2ms)
 
