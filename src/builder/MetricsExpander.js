@@ -12,12 +12,14 @@ class MetricsExpander {
    * Expands minified metrics back to FontMetrics instance for runtime use
    * TIER 2 OPTIMIZATION: Array-based glyph reconstruction
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range expansion
+   * TIER 4 OPTIMIZATION: Value indexing (looks up actual values from indices)
    *
    * REQUIRES: Minified data must NOT contain 'c' field (always uses CHARACTER_SET)
+   * REQUIRES: Minified data must contain 'v' field (value lookup table)
    *
-   * @param {Object} minified - Minified metrics object with shortened keys
+   * @param {Object} minified - Minified metrics object with 'v', 'g', 'k', 'b', 's'
    * @returns {FontMetrics} FontMetrics instance with expanded data
-   * @throws {Error} If 'c' field is present (legacy format not supported)
+   * @throws {Error} If 'c' field is present (legacy format) or 'v' field is missing
    */
   static expand(minified) {
     // Check if FontMetrics class is available (for cases where loaded as standalone)
@@ -34,9 +36,18 @@ class MetricsExpander {
       );
     }
 
+    // Require value lookup table (Tier 4 optimization)
+    if (!minified.v) {
+      throw new Error(
+        `Missing value lookup table ('v' field).\n` +
+        `This file was generated with an old format and is no longer supported.\n` +
+        `Please regenerate font assets using the current font-assets-builder.`
+      );
+    }
+
     const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k),
-      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b),
+      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b, minified.v),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
 
@@ -156,13 +167,15 @@ class MetricsExpander {
   /**
    * Expands glyph metrics from arrays back to full objects
    * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CHARACTER_SET
+   * TIER 4 OPTIMIZATION: Looks up actual values from indices using valueLookup table
    * Reconstructs full TextMetrics-compatible objects from compact arrays
    * Always uses CHARACTER_SET for character order
-   * @param {Array} minifiedGlyphs - Array of metric arrays
+   * @param {Array} minifiedGlyphs - Array of metric index arrays
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
+   * @param {Array} valueLookup - Value lookup table mapping indices to actual values
    * @private
    */
-  static #expandCharacterMetrics(minifiedGlyphs, metricsCommonToAllCharacters) {
+  static #expandCharacterMetrics(minifiedGlyphs, metricsCommonToAllCharacters, valueLookup) {
     const expanded = {};
 
     // Convert CHARACTER_SET string to array of characters
@@ -170,14 +183,22 @@ class MetricsExpander {
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {
-      const metrics = minifiedGlyphs[index];
+      const indices = minifiedGlyphs[index];
+
+      // TIER 4: Look up actual values from indices
+      const width = valueLookup[indices[0]];
+      const actualBoundingBoxLeft = valueLookup[indices[1]];
+      const actualBoundingBoxRight = valueLookup[indices[2]];
+      const actualBoundingBoxAscent = valueLookup[indices[3]];
+      const actualBoundingBoxDescent = valueLookup[indices[4]];
+
       expanded[char] = {
-        // Glyph-specific metrics from the array
-        width: metrics[0],
-        actualBoundingBoxLeft: metrics[1],
-        actualBoundingBoxRight: metrics[2],
-        actualBoundingBoxAscent: metrics[3],
-        actualBoundingBoxDescent: metrics[4],
+        // Glyph-specific metrics looked up from value table
+        width,
+        actualBoundingBoxLeft,
+        actualBoundingBoxRight,
+        actualBoundingBoxAscent,
+        actualBoundingBoxDescent,
 
         // Copy over the metrics common to all characters.
         // This is a bit of a waste of memory, however this object needs to

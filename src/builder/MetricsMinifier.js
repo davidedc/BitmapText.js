@@ -12,11 +12,12 @@ class MetricsMinifier {
    * Minifies font metrics data for smaller file size
    * TIER 2 OPTIMIZATION: Array-based glyph encoding
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range compression
+   * TIER 4 OPTIMIZATION: Value indexing (replaces repeated metric values with indices)
    *
    * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from CHARACTER_SET
    *
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
-   * @returns {Object} Minified metrics with shortened keys and compacted structure (no 'c' field)
+   * @returns {Object} Minified metrics with 'v' (value lookup), 'g' (indexed glyphs), 'k', 'b', 's'
    * @throws {Error} If not all 204 characters are present
    */
   static minify(metricsData) {
@@ -50,11 +51,17 @@ class MetricsMinifier {
       );
     }
 
-    // Minify without 'c' field (always use CHARACTER_SET - all 204 chars)
+    // TIER 4: Create value lookup table and indexed glyph arrays
+    const { valueLookup, indexedGlyphs } = this.#createValueLookupTable(
+      metricsData.characterMetrics
+    );
+
+    // Minify with value indexing (Tier 4 optimization)
     return {
       k: this.#minifyKerningTable(metricsData.kerningTable),
       b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
-      g: this.#minifyCharacterMetrics(metricsData.characterMetrics),
+      v: valueLookup,          // TIER 4: Value lookup table
+      g: indexedGlyphs,        // TIER 4: Glyph arrays now contain indices instead of raw values
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
   }
@@ -170,10 +177,82 @@ class MetricsMinifier {
   }
   
   /**
+   * Creates value lookup table and converts glyph metrics to indexed arrays
+   * TIER 4 OPTIMIZATION: Value indexing - replaces repeated metric values with indices
+   *
+   * Strategy: Assign shortest indices to values with highest (occurrence_count × string_length)
+   * This maximizes savings because frequently-occurring long values get 1-digit indices
+   *
+   * @param {Object} characterMetrics - Character metrics object with all 204 characters
+   * @returns {Object} Object with valueLookup array and indexedGlyphs array
+   * @private
+   */
+  static #createValueLookupTable(characterMetrics) {
+    // Step 1: Collect all unique values and count occurrences
+    const valueOccurrences = new Map(); // value -> count
+
+    for (const char of CHARACTER_SET) {
+      const glyph = characterMetrics[char];
+      const values = [
+        glyph.width,
+        glyph.actualBoundingBoxLeft,
+        glyph.actualBoundingBoxRight,
+        glyph.actualBoundingBoxAscent,
+        glyph.actualBoundingBoxDescent
+      ];
+
+      for (const value of values) {
+        valueOccurrences.set(value, (valueOccurrences.get(value) || 0) + 1);
+      }
+    }
+
+    // Step 2: Calculate scores and sort by savings potential
+    // Score = occurrences × string_length (higher = more savings from short index)
+    const valueScores = Array.from(valueOccurrences.entries()).map(([value, count]) => {
+      const stringLength = JSON.stringify(value).length;
+      const score = count * stringLength;
+      return { value, count, stringLength, score };
+    });
+
+    // Sort by score DESCENDING (highest savings first)
+    // Top 10 values get indices 0-9 (1 char)
+    // Next 90 values get indices 10-99 (2 chars)
+    // Remaining values get indices 100+ (3+ chars)
+    valueScores.sort((a, b) => b.score - a.score);
+
+    // Step 3: Create value lookup table (sorted by score)
+    const valueLookup = valueScores.map(vs => vs.value);
+
+    // Step 4: Create value-to-index map for fast lookup during indexing
+    const valueToIndex = new Map();
+    valueLookup.forEach((value, index) => {
+      valueToIndex.set(value, index);
+    });
+
+    // Step 5: Convert glyph arrays to use indices instead of raw values
+    const indexedGlyphs = Array.from(CHARACTER_SET).map(char => {
+      const glyph = characterMetrics[char];
+      return [
+        valueToIndex.get(glyph.width),
+        valueToIndex.get(glyph.actualBoundingBoxLeft),
+        valueToIndex.get(glyph.actualBoundingBoxRight),
+        valueToIndex.get(glyph.actualBoundingBoxAscent),
+        valueToIndex.get(glyph.actualBoundingBoxDescent)
+      ];
+    });
+
+    return {
+      valueLookup,
+      indexedGlyphs
+    };
+  }
+
+  /**
    * Converts glyph metrics objects to compact arrays
    * TIER 2 OPTIMIZATION: Returns array of arrays (removes character keys, uses position instead)
    * Array format: [width, actualBoundingBoxLeft, actualBoundingBoxRight, actualBoundingBoxAscent, actualBoundingBoxDescent]
    * Always uses CHARACTER_SET order (all 204 characters)
+   * @deprecated This method is replaced by #createValueLookupTable (Tier 4 optimization)
    * @private
    */
   static #minifyCharacterMetrics(characterMetrics) {
