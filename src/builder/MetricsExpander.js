@@ -13,14 +13,16 @@ class MetricsExpander {
    * TIER 2 OPTIMIZATION: Array-based glyph reconstruction
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range expansion
    * TIER 4 OPTIMIZATION: Value indexing (looks up actual values from indices)
+   * TIER 5 OPTIMIZATION: Tuplet deduplication (looks up tuplets from indices)
    *
    * REQUIRES: Minified data must NOT contain 'c' field (always uses CHARACTER_SET)
    * REQUIRES: Minified data must contain 'kv' field (kerning value lookup table)
    * REQUIRES: Minified data must contain 'v' field (glyph value lookup table)
+   * REQUIRES: Minified data must contain 't' field (tuplet lookup table)
    *
-   * @param {Object} minified - Minified metrics object with 'kv', 'k', 'v', 'g', 'b', 's'
+   * @param {Object} minified - Minified metrics object with 'kv', 'k', 'b', 'v', 't', 'g', 's'
    * @returns {FontMetrics} FontMetrics instance with expanded data
-   * @throws {Error} If 'c', 'kv', or 'v' fields are missing/invalid
+   * @throws {Error} If 'c', 'kv', 'v', or 't' fields are missing/invalid
    */
   static expand(minified) {
     // Check if FontMetrics class is available (for cases where loaded as standalone)
@@ -54,9 +56,18 @@ class MetricsExpander {
       );
     }
 
+    // Require tuplet lookup table (Tier 5 optimization)
+    if (!minified.t) {
+      throw new Error(
+        `Missing tuplet lookup table ('t' field).\n` +
+        `This file was generated with an old format (Tier 4 only).\n` +
+        `Please regenerate font assets using the current font-assets-builder.`
+      );
+    }
+
     const expandedData = {
       kerningTable: this.#expandKerningTable(minified.k, minified.kv),
-      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b, minified.v),
+      characterMetrics: this.#expandCharacterMetrics(minified.g, minified.b, minified.v, minified.t),
       spaceAdvancementOverrideForSmallSizesInPx: minified.s
     };
 
@@ -189,7 +200,8 @@ class MetricsExpander {
    * Expands glyph metrics from arrays back to full objects
    * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CHARACTER_SET
    * TIER 4 OPTIMIZATION: Looks up actual values from indices using valueLookup table
-   * TIER 5 OPTIMIZATION: Decompresses variable-length tuplets (3/4/5 elements)
+   * TIER 5a OPTIMIZATION: Decompresses variable-length tuplets (3/4/5 elements)
+   * TIER 5b OPTIMIZATION: Looks up tuplets from tuplet indices
    *
    * Tuplet decompression (deterministic based on length):
    *   - Length 3: [w, l, a] → [w, l, w, a, l]  (w===r AND l===d)
@@ -198,12 +210,13 @@ class MetricsExpander {
    *
    * Reconstructs full TextMetrics-compatible objects from compact arrays
    * Always uses CHARACTER_SET for character order
-   * @param {Array} minifiedGlyphs - Array of variable-length metric index arrays
+   * @param {Array} tupletIndices - Array of tuplet indices (single integers)
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @param {Array} valueLookup - Value lookup table mapping indices to actual values
+   * @param {Array} tupletLookup - Tuplet lookup table mapping tuplet indices to index arrays
    * @private
    */
-  static #expandCharacterMetrics(minifiedGlyphs, metricsCommonToAllCharacters, valueLookup) {
+  static #expandCharacterMetrics(tupletIndices, metricsCommonToAllCharacters, valueLookup, tupletLookup) {
     const expanded = {};
 
     // Convert CHARACTER_SET string to array of characters
@@ -211,7 +224,10 @@ class MetricsExpander {
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {
-      const compressed = minifiedGlyphs[index];
+      // TIER 5b: Look up tuplet from tuplet index
+      const tupletIndex = tupletIndices[index];
+      const compressed = tupletLookup[tupletIndex];
+
       let indices;
 
       // TIER 5: Decompress tuplet based on length

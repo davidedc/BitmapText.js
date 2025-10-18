@@ -13,11 +13,12 @@ class MetricsMinifier {
    * TIER 2 OPTIMIZATION: Array-based glyph encoding
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range compression
    * TIER 4 OPTIMIZATION: Value indexing (replaces repeated metric values with indices)
+   * TIER 5 OPTIMIZATION: Tuplet deduplication (deduplicates glyph index arrays)
    *
    * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from CHARACTER_SET
    *
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
-   * @returns {Object} Minified metrics with 'v' (value lookup), 'g' (indexed glyphs), 'k', 'b', 's'
+   * @returns {Object} Minified metrics with 'kv', 'k', 'b', 'v', 't', 'g', 's'
    * @throws {Error} If not all 204 characters are present
    */
   static minify(metricsData) {
@@ -61,13 +62,19 @@ class MetricsMinifier {
       metricsData.kerningTable
     );
 
-    // Minify with value indexing (Tier 4 optimization)
+    // TIER 5: Create tuplet lookup table and tuplet indices
+    const { tupletLookup, tupletIndices } = this.#createTupletLookupTable(
+      indexedGlyphs
+    );
+
+    // Minify with tuplet indexing (Tier 5 optimization)
     return {
       kv: kerningValueLookup,  // TIER 4: Kerning value lookup table
       k: indexedKerningTable,  // TIER 4: Kerning table with indexed values
       b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
       v: valueLookup,          // TIER 4: Glyph value lookup table
-      g: indexedGlyphs,        // TIER 4: Glyph arrays now contain indices instead of raw values
+      t: tupletLookup,         // TIER 5: Tuplet lookup table (unique index arrays)
+      g: tupletIndices,        // TIER 5: Now single integers (indices into 't'), not arrays!
       s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
     };
   }
@@ -283,6 +290,72 @@ class MetricsMinifier {
     return {
       valueLookup,
       indexedGlyphs
+    };
+  }
+
+  /**
+   * Creates tuplet lookup table and replaces glyph index arrays with tuplet indices
+   * TIER 5 OPTIMIZATION: Tuplet deduplication - many glyphs share identical index patterns
+   *
+   * Strategy: Assign shortest indices to tuplets with highest (JSON_length × occurrences)
+   * This works on top of Tier 5a pattern compression (variable-length tuplets)
+   *
+   * @param {Array<Array<number>>} indexedGlyphs - Array of index tuplets (may be variable length 3-5)
+   * @returns {Object} Object with tupletLookup array and tupletIndices array
+   * @private
+   */
+  static #createTupletLookupTable(indexedGlyphs) {
+    // Step 1: Collect unique tuplets and count occurrences
+    const tupletOccurrences = new Map(); // JSON string -> {tuplet, count}
+
+    for (const tuplet of indexedGlyphs) {
+      const key = JSON.stringify(tuplet);
+      if (!tupletOccurrences.has(key)) {
+        tupletOccurrences.set(key, { tuplet, count: 0 });
+      }
+      tupletOccurrences.get(key).count++;
+    }
+
+    // Step 2: Calculate scores and sort by savings potential
+    // Score = JSON_length × occurrences (higher = more savings from short index)
+    const tupletScores = Array.from(tupletOccurrences.values()).map(({tuplet, count}) => {
+      const stringLength = JSON.stringify(tuplet).length;
+      const score = stringLength * count;
+      return { tuplet, count, stringLength, score };
+    });
+
+    // Sort by score DESCENDING (highest savings first)
+    // Top 10 tuplets get indices 0-9 (1 char each)
+    // Next 90 tuplets get indices 10-99 (2 chars each)
+    // Remaining tuplets get indices 100+ (3+ chars each)
+    tupletScores.sort((a, b) => b.score - a.score);
+
+    // Step 3: Create tuplet lookup table (sorted by score for optimal indexing)
+    const tupletLookup = tupletScores.map(ts => ts.tuplet);
+
+    // Step 4: Create tuplet-to-index map for fast lookup
+    const tupletToIndex = new Map();
+    tupletLookup.forEach((tuplet, index) => {
+      const key = JSON.stringify(tuplet);
+      tupletToIndex.set(key, index);
+    });
+
+    // Step 5: Convert glyph tuplets to single tuplet indices
+    const tupletIndices = indexedGlyphs.map(tuplet => {
+      const key = JSON.stringify(tuplet);
+      return tupletToIndex.get(key);
+    });
+
+    // Log compression statistics
+    const uniqueTuplets = tupletLookup.length;
+    const totalGlyphs = indexedGlyphs.length;
+    const deduplicationPercent = ((1 - uniqueTuplets / totalGlyphs) * 100).toFixed(1);
+
+    console.debug(`🗜️  Tuplet deduplication: ${totalGlyphs} glyphs → ${uniqueTuplets} unique tuplets (${deduplicationPercent}% deduplicated)`);
+
+    return {
+      tupletLookup,
+      tupletIndices
     };
   }
 
