@@ -183,14 +183,20 @@ class MetricsMinifier {
   }
   
   /**
-   * Creates value lookup table and converts glyph metrics to indexed arrays
+   * Creates value lookup table and converts glyph metrics to indexed arrays with tuplet compression
    * TIER 4 OPTIMIZATION: Value indexing - replaces repeated metric values with indices
+   * TIER 5 OPTIMIZATION: Tuplet compression - reduces tuplet length from 5 to 3/4/5 based on redundancy
    *
    * Strategy: Assign shortest indices to values with highest (occurrence_count × string_length)
    * This maximizes savings because frequently-occurring long values get 1-digit indices
    *
+   * Tuplet compression:
+   *   - Case C (3 elements): w===r AND l===d  →  [w, l, a]
+   *   - Case B (4 elements): w===r only       →  [w, l, a, d]
+   *   - Case A (5 elements): no compression   →  [w, l, r, a, d]
+   *
    * @param {Object} characterMetrics - Character metrics object with all 204 characters
-   * @returns {Object} Object with valueLookup array and indexedGlyphs array
+   * @returns {Object} Object with valueLookup array and indexedGlyphs array (variable-length tuplets)
    * @private
    */
   static #createValueLookupTable(characterMetrics) {
@@ -235,17 +241,44 @@ class MetricsMinifier {
       valueToIndex.set(value, index);
     });
 
-    // Step 5: Convert glyph arrays to use indices instead of raw values
+    // Step 5: Convert glyph arrays to indices and compress tuplets (TIER 5)
     const indexedGlyphs = Array.from(CHARACTER_SET).map(char => {
       const glyph = characterMetrics[char];
-      return [
-        valueToIndex.get(glyph.width),
-        valueToIndex.get(glyph.actualBoundingBoxLeft),
-        valueToIndex.get(glyph.actualBoundingBoxRight),
-        valueToIndex.get(glyph.actualBoundingBoxAscent),
-        valueToIndex.get(glyph.actualBoundingBoxDescent)
+      const indices = [
+        valueToIndex.get(glyph.width),                      // 0: width
+        valueToIndex.get(glyph.actualBoundingBoxLeft),      // 1: left
+        valueToIndex.get(glyph.actualBoundingBoxRight),     // 2: right
+        valueToIndex.get(glyph.actualBoundingBoxAscent),    // 3: ascent
+        valueToIndex.get(glyph.actualBoundingBoxDescent)    // 4: descent
       ];
+
+      // TIER 5: Tuplet compression based on redundancy patterns
+      const widthEqualsRight = indices[0] === indices[2];   // w === r
+      const leftEqualsDescent = indices[1] === indices[4];  // l === d
+
+      if (widthEqualsRight && leftEqualsDescent) {
+        // Case C: Both conditions met - compress to 3 elements [w, l, a]
+        return [indices[0], indices[1], indices[3]];
+      }
+      else if (widthEqualsRight) {
+        // Case B: Only width === right - compress to 4 elements [w, l, a, d]
+        return [indices[0], indices[1], indices[3], indices[4]];
+      }
+      else {
+        // Case A: No compression - keep all 5 elements [w, l, r, a, d]
+        return indices;
+      }
     });
+
+    // Log compression statistics
+    let caseC = 0, caseB = 0, caseA = 0;
+    for (const tuplet of indexedGlyphs) {
+      if (tuplet.length === 3) caseC++;
+      else if (tuplet.length === 4) caseB++;
+      else caseA++;
+    }
+    const savedIndices = 1020 - (caseC * 3 + caseB * 4 + caseA * 5);
+    console.debug(`🗜️  Tuplet compression: ${caseC} × 3-elem, ${caseB} × 4-elem, ${caseA} × 5-elem (saved ${savedIndices} indices)`);
 
     return {
       valueLookup,

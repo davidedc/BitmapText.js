@@ -189,9 +189,16 @@ class MetricsExpander {
    * Expands glyph metrics from arrays back to full objects
    * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CHARACTER_SET
    * TIER 4 OPTIMIZATION: Looks up actual values from indices using valueLookup table
+   * TIER 5 OPTIMIZATION: Decompresses variable-length tuplets (3/4/5 elements)
+   *
+   * Tuplet decompression (deterministic based on length):
+   *   - Length 3: [w, l, a] → [w, l, w, a, l]  (w===r AND l===d)
+   *   - Length 4: [w, l, a, d] → [w, l, w, a, d]  (w===r only)
+   *   - Length 5: [w, l, r, a, d] (no decompression)
+   *
    * Reconstructs full TextMetrics-compatible objects from compact arrays
    * Always uses CHARACTER_SET for character order
-   * @param {Array} minifiedGlyphs - Array of metric index arrays
+   * @param {Array} minifiedGlyphs - Array of variable-length metric index arrays
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @param {Array} valueLookup - Value lookup table mapping indices to actual values
    * @private
@@ -204,7 +211,43 @@ class MetricsExpander {
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {
-      const indices = minifiedGlyphs[index];
+      const compressed = minifiedGlyphs[index];
+      let indices;
+
+      // TIER 5: Decompress tuplet based on length
+      if (compressed.length === 3) {
+        // Case C: [w, l, a] → [w, l, w, a, l]
+        // Both w===r and l===d
+        indices = [
+          compressed[0],  // width
+          compressed[1],  // left
+          compressed[0],  // right = width (pattern 1)
+          compressed[2],  // ascent
+          compressed[1]   // descent = left (pattern 2)
+        ];
+      }
+      else if (compressed.length === 4) {
+        // Case B: [w, l, a, d] → [w, l, w, a, d]
+        // Only w===r
+        indices = [
+          compressed[0],  // width
+          compressed[1],  // left
+          compressed[0],  // right = width (pattern 1)
+          compressed[2],  // ascent
+          compressed[3]   // descent
+        ];
+      }
+      else if (compressed.length === 5) {
+        // Case A: [w, l, r, a, d] - no decompression needed
+        indices = compressed;
+      }
+      else {
+        throw new Error(
+          `Invalid glyph tuplet length for character "${char}" at index ${index}.\n` +
+          `Expected 3, 4, or 5 elements, got ${compressed.length}: [${compressed.join(',')}]\n` +
+          `This indicates a corrupted font file. Please regenerate font assets.`
+        );
+      }
 
       // TIER 4: Look up actual values from indices
       const width = valueLookup[indices[0]];
