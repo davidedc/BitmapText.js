@@ -794,22 +794,32 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ## Data Minification/Expansion
 
-  Font data is minified for efficient storage and network transfer using three-tier compression:
+  Font data is minified for efficient storage and network transfer using four-tier compression:
 
   **Font Metrics Minification (src/builder/MetricsMinifier.js)**:
   - **Tier 1: Property Name Shortening** - Reduces JSON key names (e.g., `fontBoundingBoxAscent` → `fba`)
   - **Tier 2: Array-Based Glyph Encoding** - Converts character metrics from objects to arrays (removes character keys, uses position instead)
   - **Tier 3: Two-Dimensional Kerning Compression** - Compresses kerning table using range notation (e.g., `{"A":{"s":20},"B":{"s":20}}` → `{"A-B":{"s":20}}`)
+  - **Tier 4: Value Indexing** - Replaces repeated metric values with indices into a value lookup table ('v' field), achieving ~52.7% reduction in glyph data size
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
   - **Format Requirements** - All 204 characters from CHARACTER_SET must be present; no 'c' field (character order field eliminated)
-  - **File Size Savings** - ~2.4 KB per font file (~24% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression)
+  - **File Size Savings** - ~4.5 KB per font file (~43% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression) + 2,012 bytes (value indexing)
+
+  **Value Indexing Algorithm (Tier 4)**:
+  - **Score Calculation** - For each unique value: `score = occurrences × string_length`
+  - **Optimal Index Assignment** - Values sorted by score descending, assigned indices 0, 1, 2, ...
+  - **Index Length Strategy** - Highest-scoring values get shortest indices (0-9 are 1 character, 10-99 are 2 characters, 100+ are 3+ characters)
+  - **Example Savings** - Value `10.5669` appearing 58 times: before 406 chars (58×7), after 65 chars (7 lookup + 58×1 index) = 341 chars saved
+  - **Format** - Minified data includes 'v' field (value lookup array) and 'g' field contains indices instead of raw values
+  - **Real-World Performance** - Typical font has ~108 unique values from 862 total values (12.5% uniqueness), achieving 52.7% compression
 
   **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
   - **CHARACTER_SET-Based Ordering** - Always uses CHARACTER_SET for character order (all 204 characters in sorted order)
   - **Two-Dimensional Decompression** - Expands kerning ranges in reverse order (left-side then right-side)
-  - **Array to Object Reconstruction** - Rebuilds full TextMetrics-compatible objects from compact arrays
-  - **Legacy Format Rejection** - Throws error if 'c' field is present (legacy format no longer supported)
+  - **Value Lookup** - Reconstructs actual metric values by looking up indices in 'v' array (Tier 4 decompression)
+  - **Array to Object Reconstruction** - Rebuilds full TextMetrics-compatible objects from indexed arrays
+  - **Legacy Format Rejection** - Throws error if 'c' field is present (legacy character order format) or 'v' field is missing (pre-Tier-4 format)
   - **Common Metrics Distribution** - Copies shared metrics (fontBoundingBox, baselines, pixelDensity) to each character
   - **Runtime Cost** - Minimal one-time expansion cost per font at load time (~1-2ms)
 
