@@ -803,10 +803,16 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   - **Tier 4: Value Indexing** - Two-part optimization replacing repeated values with indices into lookup tables:
     - **Glyph Value Indexing** - 'v' field (glyph value lookup) + 'g' field contains indices, achieving ~52.7% reduction in glyph data size
     - **Kerning Value Indexing** - 'kv' field (kerning value lookup) + 'k' field contains indices, achieving ~51.0% reduction in kerning data size
+  - **Tier 5: Tuplet Compression** - Variable-length glyph tuplets (3/4/5 elements) exploiting redundancy patterns:
+    - **Case C (3 elements)**: `[w, l, a]` when width_idx === right_idx AND left_idx === descent_idx (~40% of glyphs)
+    - **Case B (4 elements)**: `[w, l, a, d]` when width_idx === right_idx only (~30% of glyphs)
+    - **Case A (5 elements)**: `[w, l, r, a, d]` no compression when width_idx ≠ right_idx (~30% of glyphs)
+    - **Decompression**: Deterministic based on array length (no flags needed)
+    - **Savings**: ~22% reduction in glyph index count (~225 indices saved per font)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
   - **Format Requirements** - All 204 characters from CHARACTER_SET must be present; no 'c' field (character order field eliminated)
-  - **File Size Savings** - ~4.6 KB per font file (~44% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression) + 2,012 bytes (glyph value indexing) + 125 bytes (kerning value indexing)
+  - **File Size Savings** - ~5.0 KB per font file (~48% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression) + 2,012 bytes (glyph value indexing) + 125 bytes (kerning value indexing) + 563 bytes (tuplet compression)
 
   **Value Indexing Algorithm (Tier 4)**:
   - **Score Calculation** - For each unique value: `score = occurrences × string_length`
