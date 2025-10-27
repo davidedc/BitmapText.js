@@ -5,6 +5,20 @@ function setupGlyphUIFAB() {
     copyToClipboardButton.addEventListener('click', () => hashStore.copyHashesToClipboard());
 
 
+    // Checkbox to include non-minified metrics files in download
+    const includeNonMinifiedLabel = document.createElement('label');
+    includeNonMinifiedLabel.style.marginLeft = '20px';
+    includeNonMinifiedLabel.style.fontSize = '14px';
+
+    const includeNonMinifiedMetricsCheckbox = document.createElement('input');
+    includeNonMinifiedMetricsCheckbox.type = 'checkbox';
+    includeNonMinifiedMetricsCheckbox.id = 'include-non-minified-metrics-checkbox';
+    includeNonMinifiedMetricsCheckbox.style.marginRight = '5px';
+
+    includeNonMinifiedLabel.appendChild(includeNonMinifiedMetricsCheckbox);
+    includeNonMinifiedLabel.appendChild(document.createTextNode('Include non-minified metrics files'));
+    selectorsDiv.appendChild(includeNonMinifiedLabel);
+
     // button to download all the font assets
     const downloadAllAtlasesButton = createElement('button', 'download-all-atlases-button', 'Download font assets', selectorsDiv);
     downloadAllAtlasesButton.addEventListener('click', function() {
@@ -16,7 +30,8 @@ function setupGlyphUIFAB() {
             pixelDensity,
             fontFamily: fontFamilySelect.value,
             fontStyle: fontStyleSelect.value,
-            fontWeight: fontWeightSelect.value
+            fontWeight: fontWeightSelect.value,
+            includeNonMinifiedMetrics: includeNonMinifiedMetricsCheckbox.checked
         });
     });
 }

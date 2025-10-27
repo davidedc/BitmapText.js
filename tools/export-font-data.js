@@ -3,7 +3,8 @@ function downloadFontAssets(options) {
       pixelDensity,
       fontFamily,
       fontStyle,
-      fontWeight
+      fontWeight,
+      includeNonMinifiedMetrics = false
   } = options;
 
   // Note: atlasDataStoreFAB and fontMetricsStoreFAB are now static classes
@@ -196,13 +197,23 @@ function downloadFontAssets(options) {
       // Will throw error if characterMetrics is not in CHARACTER_SET order
       const minified = MetricsMinifier.minifyWithVerification(metricsData);
 
-      // Add metrics JS file to zip (only contains metrics, no atlas positioning)
+      // Add minified metrics JS file to zip (only contains metrics, no atlas positioning)
       // TIER 1 OPTIMIZATION: Comments removed, wrapper minified for smaller file size
       folder.file(
           `metrics-${IDString}.js`,
           `if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${IDString}',${JSON.stringify(minified)})}`,
           { date: currentDate }
       );
+
+      // Optionally add non-minified metrics file for debugging/development
+      if (includeNonMinifiedMetrics) {
+          folder.file(
+              `metrics-${IDString}-full.js`,
+              `// Full non-minified metrics for debugging\n// This file is NOT used by the runtime - it's for development/inspection only\nif(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${IDString}',${JSON.stringify(metricsData, null, 2)})}`,
+              { date: currentDate }
+          );
+          console.log(`✅ Added non-minified metrics file: metrics-${IDString}-full.js`);
+      }
 
       // NO positioning JSON file - positioning will be reconstructed at runtime from Atlas image
       // This eliminates ~3.7KB per font (75% of previous serialized size)
