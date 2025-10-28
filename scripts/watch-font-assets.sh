@@ -46,8 +46,9 @@ while [[ $# -gt 0 ]]; do
             echo "  5. Optimize PNG files with ImageOptim"
             echo "  6. Convert PNG to WebP (lossless) and delete PNG files"
             echo "  7. Convert images (WebP and QOI) to JS wrappers"
-            echo "  8. Generate font registry for test-renderer"
-            echo "  9. Continue monitoring"
+            echo "  8. Minify metrics files with terser"
+            echo "  9. Generate font registry for test-renderer"
+            echo "  10. Continue monitoring"
             echo ""
             echo "Press Ctrl+C to stop monitoring."
             exit 0
@@ -144,6 +145,12 @@ function check_dependencies() {
         log "WARNING" "cwebp (WebP tools) is not installed."
     fi
 
+    # Check if terser is available (for metrics minification)
+    if ! command -v terser &> /dev/null; then
+        missing_deps+=("terser")
+        log "WARNING" "terser is not installed."
+    fi
+
     # Check if trash command is available (optional, but recommended)
     if ! command -v trash &> /dev/null; then
         log "WARNING" "trash command not found (will use rm instead)"
@@ -168,6 +175,10 @@ function check_dependencies() {
                     ;;
                 "webp")
                     echo "  brew install webp"
+                    ;;
+                "terser")
+                    echo "  npm install -g terser"
+                    echo "  (Note: Requires Node.js/npm to be installed)"
                     ;;
                 "unzip")
                     echo "  unzip should be pre-installed on macOS"
@@ -345,6 +356,54 @@ function generate_font_registry() {
     fi
 }
 
+function run_terser_minification() {
+    log "INFO" "Minifying metrics files with terser..."
+
+    # Find all metrics files (excluding -full.js files)
+    local metrics_files=$(find "$DATA_DIR" -name "metrics-density-*.js" ! -name "*-full.js" -type f)
+
+    if [ -z "$metrics_files" ]; then
+        log "WARNING" "No metrics files found to minify"
+        return 0
+    fi
+
+    local file_count=0
+    local total_before=0
+    local total_after=0
+
+    while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            local before_size=$(wc -c < "$file")
+            local temp_file="${file}.tmp"
+
+            # Run terser: minify in-place with compact output
+            if terser "$file" -c -m -o "$temp_file" 2>/dev/null; then
+                local after_size=$(wc -c < "$temp_file")
+                mv "$temp_file" "$file"
+
+                local saved=$((before_size - after_size))
+                log "SUCCESS" "$(basename "$file"): ${before_size} → ${after_size} bytes (saved ${saved} bytes)"
+
+                file_count=$((file_count + 1))
+                total_before=$((total_before + before_size))
+                total_after=$((total_after + after_size))
+            else
+                log "WARNING" "Failed to minify $(basename "$file")"
+                rm -f "$temp_file"
+            fi
+        fi
+    done <<< "$metrics_files"
+
+    if [ $file_count -gt 0 ]; then
+        local total_saved=$((total_before - total_after))
+        log "SUCCESS" "Minified ${file_count} file(s): ${total_before} → ${total_after} bytes (saved ${total_saved} bytes total)"
+        return 0
+    else
+        log "WARNING" "No files were minified"
+        return 1
+    fi
+}
+
 function process_font_assets() {
     log "INFO" "Starting font assets processing pipeline..."
     
@@ -386,14 +445,19 @@ function process_font_assets() {
         log "WARNING" "Image to JS conversion failed, but continuing..."
     fi
 
-    # Step 8: Generate font registry
+    # Step 8: Minify metrics files with terser
+    if ! run_terser_minification; then
+        log "WARNING" "Terser minification failed, but continuing..."
+    fi
+
+    # Step 9: Generate font registry
     if ! generate_font_registry; then
         log "WARNING" "Font registry generation failed, but continuing..."
     fi
 
-    # Step 8: Move zip to trash
+    # Step 10: Move zip to trash
     move_zip_to_trash
-    
+
     log "SUCCESS" "Font assets processing pipeline completed!"
     return 0
 }

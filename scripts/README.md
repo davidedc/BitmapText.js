@@ -34,6 +34,8 @@ brew install fswatch        # File system monitoring
 brew install node          # JavaScript runtime
 brew install --cask imageoptim    # Image optimization app
 brew install imageoptim-cli       # ImageOptim command line tool
+brew install webp          # WebP conversion tools (cwebp)
+npm install -g terser      # JavaScript minification
 
 # Optional but recommended
 brew install trash         # Safe file deletion
@@ -410,9 +412,10 @@ When you drop `fontAssets.zip` in `~/Downloads/`:
 6. **🖼️ Optimize PNG**: Compress PNGs with ImageOptim (intermediate format)
 7. **🌐 Convert to WebP**: Convert PNG→WebP with cwebp, delete source PNGs (browser delivery)
 8. **🔧 Convert to JS**: Create JS wrappers from WebP and QOI for CORS-free loading
-9. **📋 Generate Registry**: Generate font registry from metrics files
-10. **🗑️ Cleanup**: Move processed zip to trash
-11. **🔄 Continue**: Return to monitoring
+9. **⚡ Minify Metrics**: Minify production metrics files with terser (saves ~2-3% file size)
+10. **📋 Generate Registry**: Generate font registry from metrics files
+11. **🗑️ Cleanup**: Move processed zip to trash
+12. **🔄 Continue**: Return to monitoring
 
 ---
 
@@ -434,6 +437,11 @@ brew install imageoptim-cli
 **"node: command not found"**
 ```bash
 brew install node
+```
+
+**"terser: command not found"**
+```bash
+npm install -g terser
 ```
 
 **Files not in expected location**
