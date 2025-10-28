@@ -7,110 +7,107 @@ class MetricsExpander {
   constructor() {
     throw new Error('MetricsExpander cannot be instantiated - use static methods');
   }
-  
+
+  /**
+   * TIER 6c OPTIMIZATION: Decode base64 string to array of integers
+   * Reverses the base64 byte encoding from MetricsMinifier
+   *
+   * @param {string} base64 - Base64 encoded string
+   * @returns {Array<number>} Array of integers (0-255)
+   */
+  static #decodeFromBase64Bytes(base64) {
+    // In browser: use atob
+    // In Node.js: use Buffer
+    let bytes;
+
+    if (typeof Buffer !== 'undefined') {
+      // Node.js environment
+      bytes = Buffer.from(base64, 'base64');
+    } else {
+      // Browser environment
+      const binary = atob(base64);
+      bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+    }
+
+    return Array.from(bytes);
+  }
+
+  /**
+   * TIER 6c OPTIMIZATION: Decode varint+zigzag+base64 to signed integers
+   * Reverses the VarInt encoding from MetricsMinifier
+   *
+   * @param {string} base64 - Base64 encoded varint bytes
+   * @returns {Array<number>} Array of signed integers
+   */
+  static #decodeVarInts(base64) {
+    const bytes = this.#decodeFromBase64Bytes(base64);
+    const integers = [];
+    let i = 0;
+
+    while (i < bytes.length) {
+      // Decode VarInt: 7 bits per byte, MSB indicates continuation
+      let value = 0;
+      let shift = 0;
+      let byte;
+
+      do {
+        byte = bytes[i++];
+        value |= (byte & 0x7F) << shift;
+        shift += 7;
+      } while (byte & 0x80);
+
+      // Zigzag decoding: convert unsigned back to signed
+      // 0→0, 1→-1, 2→1, 3→-2, 4→2, ...
+      const signed = (value & 1) ? -(value + 1) / 2 : value / 2;
+      integers.push(signed);
+    }
+
+    return integers;
+  }
+
   /**
    * Expands minified metrics back to FontMetrics instance for runtime use
-   * TIER 2 OPTIMIZATION: Array-based glyph reconstruction
-   * TIER 3 OPTIMIZATION: Two-dimensional kerning range expansion
-   * TIER 4 OPTIMIZATION: Value indexing (looks up actual values from indices)
-   * TIER 5 OPTIMIZATION: Tuplet deduplication (looks up tuplets from indices)
-   * TIER 6 OPTIMIZATION: Additional space optimizations (baseline/top-level arrays, tuplet flattening, integer values)
+   * TIER 6c FORMAT ONLY (no backward compatibility)
    *
-   * @param {Array|Object} minified - Minified metrics (Tier 6: array, Tier 5: object)
+   * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
   static expand(minified) {
-    // Check if FontMetrics class is available (for cases where loaded as standalone)
+    // Check if FontMetrics class is available
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
     }
 
-    // TIER 6+6b: Detect array format (new) vs object format (old)
-    let kv, k, b, v, t, g, s, cl;
-
-    if (Array.isArray(minified)) {
-      // TIER 6/6b: Array format [kv, k, b, v, t, g, s] or [kv, k, b, v, t, g, s, cl]
-      if (minified.length !== 7 && minified.length !== 8) {
-        throw new Error(
-          `Invalid Tier 6 array format - expected 7 or 8 elements, got ${minified.length}.\n` +
-          `This indicates a corrupted font file. Please regenerate font assets.`
-        );
-      }
-
-      // Extract values from array (Tier 6/6b format)
-      if (minified.length === 8) {
-        // TIER 6b: 8-element format with common left index
-        [kv, k, b, v, t, g, s, cl] = minified;
-      } else {
-        // TIER 6: 7-element format (backward compatibility)
-        [kv, k, b, v, t, g, s] = minified;
-        cl = undefined;  // No 2-element tuplets in Tier 6
-      }
-
-      // TIER 6: Convert integer values back to floats (divide by 10000)
-      kv = this.#convertIntegersToValues(kv);
-      v = this.#convertIntegersToValues(v);
-
-      // TIER 6: Unflatten baseline array to object
-      b = this.#unflattenBaseline(b);
-
-      // TIER 6/6b: Unflatten tuplet data from length-prefixed format
-      t = this.#unflattenTuplets(t);
-
-    } else if (typeof minified === 'object' && minified !== null) {
-      // TIER 5: Object format (legacy support for Tier 5 files)
-
-      // Reject legacy format with 'c' field
-      if (minified.c) {
-        throw new Error(
-          `Legacy minified format detected - 'c' field present.\n` +
-          `This file was generated with an old character order and is no longer supported.\n` +
-          `Please regenerate font assets using the current font-assets-builder.`
-        );
-      }
-
-      // Require value lookup tables (Tier 4 optimization)
-      if (!minified.v) {
-        throw new Error(
-          `Missing glyph value lookup table ('v' field).\n` +
-          `This file was generated with an old format and is no longer supported.\n` +
-          `Please regenerate font assets using the current font-assets-builder.`
-        );
-      }
-
-      if (!minified.kv) {
-        throw new Error(
-          `Missing kerning value lookup table ('kv' field).\n` +
-          `This file was generated with an old format and is no longer supported.\n` +
-          `Please regenerate font assets using the current font-assets-builder.`
-        );
-      }
-
-      // Require tuplet lookup table (Tier 5 optimization)
-      if (!minified.t) {
-        throw new Error(
-          `Missing tuplet lookup table ('t' field).\n` +
-          `This file was generated with an old format (Tier 4 only).\n` +
-          `Please regenerate font assets using the current font-assets-builder.`
-        );
-      }
-
-      // Extract values from object (Tier 5 format)
-      kv = minified.kv;
-      k = minified.k;
-      b = minified.b;
-      v = minified.v;
-      t = minified.t;
-      g = minified.g;
-      s = minified.s;
-
-    } else {
+    // Validate Tier 6c format: 8-element array only
+    if (!Array.isArray(minified) || minified.length !== 8) {
       throw new Error(
-        `Invalid minified format - expected array (Tier 6) or object (Tier 5), got ${typeof minified}.\n` +
-        `This indicates a corrupted font file. Please regenerate font assets.`
+        `Invalid format - expected 8-element array (Tier 6c), got ${typeof minified === 'object' ? 'array' : typeof minified} with ${minified?.length || 0} elements.\n` +
+        `Please regenerate font assets with the current version.`
       );
     }
+
+    // Extract values from Tier 6c array format
+    let [kv, k, b, v, t, g, s, cl] = minified;
+
+    // Convert integer values back to floats (divide by 10000)
+    kv = this.#convertIntegersToValues(kv);
+    v = this.#convertIntegersToValues(v);
+
+    // Unflatten baseline array to object
+    b = this.#unflattenBaseline(b);
+
+    // Decode base64-encoded binary data
+    // t = VarInt+zigzag encoded flattened tuplets
+    // g = byte-encoded tuplet indices
+    t = this.#decodeVarInts(t);
+    g = this.#decodeFromBase64Bytes(g);
+
+    // Unflatten tuplet data from negative-delimiter format
+    t = this.#unflattenTuplets(t);
 
     const expandedData = {
       kerningTable: this.#expandKerningTable(k, kv),

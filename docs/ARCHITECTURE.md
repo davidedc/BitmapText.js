@@ -816,14 +816,12 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       - **Real-World Results**: 204 glyphs → ~61 unique tuplets (70% deduplication)
       - **Example**: Tuplet `[0,3,0,2,1]` appearing 50 times: before 550 chars (50×11), after 61 chars (11 + 50×1) = 89% saved
     - **Combined Savings**: ~1,124 bytes per font (~55% reduction on glyph data)
-  - **Tier 6b: Advanced Optimization Suite** - Three-part optimization for additional file size reduction:
-    - **Part 1: Multi-Parameter Font ID** - Replaces string ID with multiple parameters in registration call:
-      - **Before**: `BitmapText.r('1,Arial,0,0,18', [data])`
-      - **After**: `BitmapText.r(1,'Arial',0,0,18,[data])`
+  - **Tier 6c: Binary Encoding Optimization** - Final compression tier using binary encoding for maximum efficiency:
+    - **Multi-Parameter Font ID** - Replaces string ID with multiple parameters in registration call:
+      - **Format**: `BitmapText.r(1,'Arial',0,0,18,[data])`
       - **Style/Weight Encoding**: `styleIdx` (0=normal, 1=italic, 2=oblique), `weightIdx` (0=normal, 1=bold, or numeric)
-      - **Backward Compatibility**: Runtime supports both old 2-parameter and new 6-parameter formats
       - **Savings**: ~10 bytes per file
-    - **Part 2: Configurable 2-Element Tuplet Compression** - Adds most-frequent-left-index optimization:
+    - **Configurable 2-Element Tuplet Compression** - Adds most-frequent-left-index optimization:
       - **Common Left Detection**: Finds most common left bounding box value (typically 0, appears in ~92% of glyphs)
       - **4-Level Cascading Compression** (most-frequent-first):
         - **Case D (2 elements)**: `[w, a]` when w===r AND l===d AND l===common (~43% of glyphs)
@@ -834,18 +832,28 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
         - **Index Shift**: All indices shifted by 1 (0→1) to avoid `-0` JSON problem
         - **Format**: `[3,2,-15,1,2,16,-8]` represents two tuplets: `[2,1,14]` and `[0,1,15,7]`
         - **Trade-off**: Only 9 "short index" slots (1-9) instead of 10, but saves ~110 bytes vs length-prefix
-      - **File Format**: Expanded from 7 to 8 elements, added common left index (`cl`) as last element
-      - **Savings**: ~300-400 bytes per file
-    - **Part 3: Advanced Kerning Compression** - Groups all characters with same value (not just consecutive):
+      - **File Format**: 8-element array with common left index (`cl`) as last element
+    - **Advanced Kerning Compression** - Groups all characters with same value (not just consecutive):
       - **Non-Sequential Grouping**: `{"T":{" ":1,",":1,".":1,"a":1,"c":1,"d":1,"e":1}}` → `{"T":{" ,.ac-e":1}}`
       - **Compact Notation**: Dash-at-start = literal dash, dash-in-middle = range delimiter
-      - **Example**: `"-,.:;ac-egj-s"` = literal dash + individual chars + ranges (a-e = a,c,d,e; g,j-s = g,j,k,l,m,n,o,p,q,r,s)
-      - **Savings**: ~150-200 bytes per file
-    - **Combined Tier 6b Savings**: ~580 bytes per file (~17% additional reduction over Tier 5)
+      - **Example**: `"-,.:;ac-egj-s"` = literal dash + individual chars + ranges
+    - **Binary Encoding (A1+A2)** - Base64-encoded binary data for maximum compression:
+      - **Tuplet Indices** - Byte-encoded array (each index 0-255 becomes 1 byte), then base64
+        - **Before**: `[127,76,108,...]` = 593 bytes JSON
+        - **After**: `"f0xsXTs8..."` = ~270 bytes base64
+        - **Savings**: ~320 bytes per file (54% reduction)
+      - **Flattened Tuplets** - VarInt+zigzag encoding, then base64
+        - **Zigzag Encoding**: Handles negative delimiters (0→0, -1→1, 1→2, -2→3, 2→4)
+        - **VarInt Encoding**: Small values (0-127) = 1 byte, larger values = 2+ bytes with continuation bit
+        - **Before**: `[1,2,7,-8,...]` = 1,209 bytes JSON
+        - **After**: `"AgQODwIEKBMG..."` = ~600-700 bytes base64
+        - **Savings**: ~500 bytes per file (40-50% reduction)
+        - **Key Insight**: 54-58% of values are 1-10, encoded in just 1 byte
+    - **Combined Tier 6c Savings**: ~2,689 bytes average (~31% reduction from Tier 6b, ~69% from original)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
-  - **Format Requirements** - All 204 characters from CHARACTER_SET must be present; no 'c' field (character order field eliminated)
-  - **Total File Size Savings** - ~6.7 KB per font file (~63% reduction from original): Tier 1-5 (~6.1 KB, 58%) + Tier 6b (~580 bytes, 17% additional)
+  - **Format Requirements** - All 204 characters from CHARACTER_SET must be present (no legacy format support)
+  - **Total File Size** - Average ~1,990 bytes per font file (97.3% reduction from ~73KB original)
 
   **Value Indexing Algorithm (Tier 4)**:
   - **Score Calculation** - For each unique value: `score = occurrences × string_length`
@@ -864,31 +872,36 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
   - **CHARACTER_SET-Based Ordering** - Always uses CHARACTER_SET for character order (all 204 characters in sorted order)
-  - **Format Detection** - Automatically detects format by array length (7 = Tier 5, 8 = Tier 6b)
-  - **Multi-Parameter Support (Tier 6b)** - BitmapText.r() supports both formats:
-    - Old: `r(idString, data)` - 2 parameters
-    - New: `r(density, fontFamily, styleIdx, weightIdx, size, data)` - 6 parameters
-    - Reconstructs full ID string from multi-parameter format automatically
+  - **Tier 6c Format Only** - Expects 8-element array format (no backward compatibility):
+    - `[kv, k, b, v, t, g, s, cl]` where `t` and `g` are base64 strings
+    - Throws error for any other format
+  - **Multi-Parameter Registration** - `BitmapText.r(density, fontFamily, styleIdx, weightIdx, size, data)`:
+    - 6 required parameters
+    - Reconstructs full ID string from parameters automatically
+  - **Binary Decoding** - Decodes base64-encoded binary data:
+    - **Tuplet Indices**: Base64 → byte array (each byte = one index)
+    - **Flattened Tuplets**: Base64 → VarInt decoding → zigzag decoding → signed integers
+      - VarInt decoding: 7 bits per byte, MSB continuation bit
+      - Zigzag decoding: 0→0, 1→-1, 2→1, 3→-2, 4→2
   - **Three-Pass Kerning Expansion** - Expands kerning in three passes:
-    1. Left-side character range expansion (handles Tier 6b compact notation with dash-at-start)
+    1. Left-side character range expansion (handles compact notation with dash-at-start)
     2. Right-side character range expansion
     3. Value lookup (replace indices with actual kerning values from 'kv' array)
-  - **Negative Delimiter Unflattening (Tier 6b)** - Reconstructs tuplet arrays from flattened format:
+  - **Negative Delimiter Unflattening** - Reconstructs tuplet arrays from flattened format:
     - Negative values mark tuplet boundaries
     - All indices shifted back by 1 (subtract 1 to restore 0-based indexing)
     - Example: `[3,2,-15,1,2,16,-8]` → `[[2,1,14],[0,1,15,7]]`
-  - **Tuplet Lookup (Tier 5b/6b)** - Reconstructs tuplet arrays from tuplet indices:
+  - **Tuplet Lookup** - Reconstructs tuplet arrays from tuplet indices:
     1. Look up tuplet from 't' array using integer index from 'g' field
     2. Decompress variable-length tuplet based on array length (2/3/4/5 elements)
     3. Expand to full 5-element index array using common left index for 2-element case
-  - **2-Element Tuplet Expansion (Tier 6b)** - Decompresses shortest format:
+  - **2-Element Tuplet Expansion** - Decompresses shortest format:
     - Input: `[w, a]` + common left index from 'cl' field
     - Output: `[w, cl, w, a, cl]` (left=cl, right=width, descent=cl)
-  - **Glyph Value Lookup (Tier 4)** - Reconstructs actual glyph metric values by looking up indices in 'v' array
+  - **Glyph Value Lookup** - Reconstructs actual glyph metric values by looking up indices in 'v' array
   - **Array to Object Reconstruction** - Rebuilds full TextMetrics-compatible objects from indexed arrays
-  - **Legacy Format Rejection** - Throws error if 'c' field is present (legacy character order), 'kv' field is missing, 'v' field is missing (pre-Tier-4 format), or 't' field is missing (pre-Tier-5b format)
   - **Common Metrics Distribution** - Copies shared metrics (fontBoundingBox, baselines, pixelDensity) to each character
-  - **Runtime Cost** - Minimal one-time expansion cost per font at load time (~1-2ms)
+  - **Runtime Cost** - Minimal one-time expansion cost per font at load time (~1-2ms including binary decoding)
 
   **Atlas Reconstruction Utilities (src/builder/AtlasReconstructionUtils.js)**:
   1. **Image Data Extraction**: Central utility used by TightAtlasReconstructor for atlas image processing

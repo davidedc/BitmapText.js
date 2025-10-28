@@ -70,12 +70,64 @@ class MetricsMinifier {
   }
 
   /**
+   * TIER 6c OPTIMIZATION: Encode array of integers to base64 byte array
+   * Each integer (0-255) becomes one byte
+   *
+   * @param {Array<number>} integers - Array of integers (0-255)
+   * @returns {string} Base64 encoded string
+   */
+  static #encodeToBase64Bytes(integers) {
+    // In browser: use btoa
+    // In Node.js: use Buffer
+    const bytes = new Uint8Array(integers);
+
+    if (typeof Buffer !== 'undefined') {
+      // Node.js environment
+      return Buffer.from(bytes).toString('base64');
+    } else {
+      // Browser environment
+      const binary = String.fromCharCode.apply(null, bytes);
+      return btoa(binary);
+    }
+  }
+
+  /**
+   * TIER 6c OPTIMIZATION: Encode signed integers using zigzag + varint + base64
+   * Zigzag: 0→0, -1→1, 1→2, -2→3, 2→4, ...
+   * VarInt: 0-127 use 1 byte, 128+ use 2+ bytes
+   *
+   * @param {Array<number>} signedIntegers - Array of signed integers
+   * @returns {string} Base64 encoded varint bytes
+   */
+  static #encodeVarInts(signedIntegers) {
+    const bytes = [];
+
+    for (const value of signedIntegers) {
+      // Zigzag encoding: convert signed to unsigned
+      // n >= 0 → 2n
+      // n < 0 → -2n - 1
+      const zigzagged = value >= 0 ? (value * 2) : (-value * 2 - 1);
+
+      // VarInt encoding: 7 bits per byte, MSB indicates continuation
+      let remaining = zigzagged;
+      while (remaining >= 128) {
+        bytes.push((remaining & 0x7F) | 0x80); // Set continuation bit
+        remaining >>>= 7;
+      }
+      bytes.push(remaining & 0x7F); // Last byte, no continuation bit
+    }
+
+    return this.#encodeToBase64Bytes(bytes);
+  }
+
+  /**
    * Minifies font metrics data for smaller file size
    * TIER 2 OPTIMIZATION: Array-based glyph encoding
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range compression
    * TIER 4 OPTIMIZATION: Value indexing (replaces repeated metric values with indices)
    * TIER 5 OPTIMIZATION: Tuplet deduplication (deduplicates glyph index arrays)
    * TIER 6 OPTIMIZATION: Additional space optimizations (baseline/top-level arrays, tuplet flattening, integer values)
+   * TIER 6c OPTIMIZATION: Binary encoding for tuplet indices and flattened tuplets
    *
    * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from CHARACTER_SET
    *
@@ -142,18 +194,29 @@ class MetricsMinifier {
       this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics)
     );
 
-    // TIER 6: Flatten tuplet lookup arrays to length-prefixed format
+    // TIER 6: Flatten tuplet lookup arrays to negative-delimiter format
     const flattenedTuplets = this.#flattenTuplets(tupletLookup);
 
-    // TIER 6: Return as array instead of object (top-level flattening)
+    // TIER 6c: Encode tuplet indices as base64 byte array (A1 optimization)
+    // Each index 0-255 becomes one byte, then base64 encode
+    // Savings: ~320 bytes (593 bytes JSON → ~270 bytes base64)
+    const encodedTupletIndices = this.#encodeToBase64Bytes(tupletIndices);
+
+    // TIER 6c: Encode flattened tuplets as varint+base64 (A2 optimization)
+    // Zigzag encoding handles negative delimiters, varint compresses small values
+    // Savings: ~500 bytes (1209 bytes JSON → ~700 bytes base64)
+    const encodedFlattenedTuplets = this.#encodeVarInts(flattenedTuplets);
+
+    // TIER 6c: Return as array with encoded binary data
     // Array format: [kv, k, b, v, t, g, s, cl]
+    // NOTE: Elements 4 and 5 are now base64 strings instead of arrays
     return [
       kerningValueLookupIntegers,  // 0: TIER 4+6: Kerning value lookup (as integers)
       indexedKerningTable,         // 1: TIER 4: Kerning table with indexed values
       baselineArray,               // 2: TIER 6: Baseline array [fba,fbd,hb,ab,ib,pd]
       valueLookupIntegers,         // 3: TIER 4+6: Glyph value lookup (as integers)
-      flattenedTuplets,            // 4: TIER 5+6: Flattened tuplet data (length-prefixed)
-      tupletIndices,               // 5: TIER 5: Tuplet indices (single integers)
+      encodedFlattenedTuplets,     // 4: TIER 6c: VarInt encoded flattened tuplets (base64 string)
+      encodedTupletIndices,        // 5: TIER 6c: Byte-encoded tuplet indices (base64 string)
       metricsData.spaceAdvancementOverrideForSmallSizesInPx,  // 6: Space override
       commonLeftIndex              // 7: TIER 6b: Common left index for 2-element tuplet decompression
     ];
