@@ -197,11 +197,24 @@ function downloadFontAssets(options) {
       // Will throw error if characterMetrics is not in CHARACTER_SET order
       const minified = MetricsMinifier.minifyWithVerification(metricsData);
 
+      // TIER 6b: Decompose font ID for multi-parameter format
+      const parts = IDString.split('-');
+      const density = parts[1] + (parts[2] === '0' ? '' : '.' + parts[2]); // "1" or "1.5"
+      const fontFamilyFromID = parts[3];
+      const styleFromID = parts[5]; // "normal", "italic", "oblique"
+      const weightFromID = parts[7]; // "normal", "bold", or numeric
+      const sizeStr = parts[9] + (parts[10] === '0' ? '' : '.' + parts[10]); // "18" or "18.5"
+
+      // Compress style and weight to indices
+      const styleIdx = styleFromID === 'normal' ? 0 : (styleFromID === 'italic' ? 1 : 2);
+      const weightIdx = weightFromID === 'normal' ? 0 : (weightFromID === 'bold' ? 1 : weightFromID);
+
       // Add minified metrics JS file to zip (only contains metrics, no atlas positioning)
       // TIER 1 OPTIMIZATION: Comments removed, wrapper minified for smaller file size
+      // TIER 6b OPTIMIZATION: Use 'r' shorthand with multi-parameter format (saves ~10 bytes)
       folder.file(
           `metrics-${IDString}.js`,
-          `if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${IDString}',${JSON.stringify(minified)})}`,
+          `if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(minified)})}`,
           { date: currentDate }
       );
 
@@ -209,7 +222,7 @@ function downloadFontAssets(options) {
       if (includeNonMinifiedMetrics) {
           folder.file(
               `metrics-${IDString}-full.js`,
-              `// Full non-minified metrics for debugging\n// This file is NOT used by the runtime - it's for development/inspection only\nif(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${IDString}',${JSON.stringify(metricsData, null, 2)})}`,
+              `// Full non-minified metrics for debugging\n// This file is NOT used by the runtime - it's for development/inspection only\nif(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(metricsData, null, 2)})}`,
               { date: currentDate }
           );
           console.log(`✅ Added non-minified metrics file: metrics-${IDString}-full.js`);

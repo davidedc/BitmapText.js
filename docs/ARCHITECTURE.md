@@ -794,7 +794,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ## Data Minification/Expansion
 
-  Font data is minified for efficient storage and network transfer using five-tier compression:
+  Font data is minified for efficient storage and network transfer using six-tier compression:
 
   **Font Metrics Minification (src/builder/MetricsMinifier.js)**:
   - **Tier 1: Property Name Shortening** - Reduces JSON key names (e.g., `fontBoundingBoxAscent` → `fba`)
@@ -816,10 +816,36 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       - **Real-World Results**: 204 glyphs → ~61 unique tuplets (70% deduplication)
       - **Example**: Tuplet `[0,3,0,2,1]` appearing 50 times: before 550 chars (50×11), after 61 chars (11 + 50×1) = 89% saved
     - **Combined Savings**: ~1,124 bytes per font (~55% reduction on glyph data)
+  - **Tier 6b: Advanced Optimization Suite** - Three-part optimization for additional file size reduction:
+    - **Part 1: Multi-Parameter Font ID** - Replaces string ID with multiple parameters in registration call:
+      - **Before**: `BitmapText.r('1,Arial,0,0,18', [data])`
+      - **After**: `BitmapText.r(1,'Arial',0,0,18,[data])`
+      - **Style/Weight Encoding**: `styleIdx` (0=normal, 1=italic, 2=oblique), `weightIdx` (0=normal, 1=bold, or numeric)
+      - **Backward Compatibility**: Runtime supports both old 2-parameter and new 6-parameter formats
+      - **Savings**: ~10 bytes per file
+    - **Part 2: Configurable 2-Element Tuplet Compression** - Adds most-frequent-left-index optimization:
+      - **Common Left Detection**: Finds most common left bounding box value (typically 0, appears in ~92% of glyphs)
+      - **4-Level Cascading Compression** (most-frequent-first):
+        - **Case D (2 elements)**: `[w, a]` when w===r AND l===d AND l===common (~43% of glyphs)
+        - **Case C (3 elements)**: `[w, l, a]` when w===r AND l===d
+        - **Case B (4 elements)**: `[w, l, a, d]` when w===r
+        - **Case A (5 elements)**: `[w, l, r, a, d]` no compression
+      - **Negative Delimiter Encoding**: Tuplets flattened with negative last element marking boundaries
+        - **Index Shift**: All indices shifted by 1 (0→1) to avoid `-0` JSON problem
+        - **Format**: `[3,2,-15,1,2,16,-8]` represents two tuplets: `[2,1,14]` and `[0,1,15,7]`
+        - **Trade-off**: Only 9 "short index" slots (1-9) instead of 10, but saves ~110 bytes vs length-prefix
+      - **File Format**: Expanded from 7 to 8 elements, added common left index (`cl`) as last element
+      - **Savings**: ~300-400 bytes per file
+    - **Part 3: Advanced Kerning Compression** - Groups all characters with same value (not just consecutive):
+      - **Non-Sequential Grouping**: `{"T":{" ":1,",":1,".":1,"a":1,"c":1,"d":1,"e":1}}` → `{"T":{" ,.ac-e":1}}`
+      - **Compact Notation**: Dash-at-start = literal dash, dash-in-middle = range delimiter
+      - **Example**: `"-,.:;ac-egj-s"` = literal dash + individual chars + ranges (a-e = a,c,d,e; g,j-s = g,j,k,l,m,n,o,p,q,r,s)
+      - **Savings**: ~150-200 bytes per file
+    - **Combined Tier 6b Savings**: ~580 bytes per file (~17% additional reduction over Tier 5)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
   - **Format Requirements** - All 204 characters from CHARACTER_SET must be present; no 'c' field (character order field eliminated)
-  - **File Size Savings** - ~6.1 KB per font file (~58% reduction): 208 bytes ('c' field removed) + 2,239 bytes (2D kerning compression) + 2,012 bytes (glyph value indexing) + 500 bytes (kerning value indexing) + 1,124 bytes (tuplet deduplication)
+  - **Total File Size Savings** - ~6.7 KB per font file (~63% reduction from original): Tier 1-5 (~6.1 KB, 58%) + Tier 6b (~580 bytes, 17% additional)
 
   **Value Indexing Algorithm (Tier 4)**:
   - **Score Calculation** - For each unique value: `score = occurrences × string_length`
@@ -838,14 +864,26 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
   - **CHARACTER_SET-Based Ordering** - Always uses CHARACTER_SET for character order (all 204 characters in sorted order)
+  - **Format Detection** - Automatically detects format by array length (7 = Tier 5, 8 = Tier 6b)
+  - **Multi-Parameter Support (Tier 6b)** - BitmapText.r() supports both formats:
+    - Old: `r(idString, data)` - 2 parameters
+    - New: `r(density, fontFamily, styleIdx, weightIdx, size, data)` - 6 parameters
+    - Reconstructs full ID string from multi-parameter format automatically
   - **Three-Pass Kerning Expansion** - Expands kerning in three passes:
-    1. Left-side character range expansion
+    1. Left-side character range expansion (handles Tier 6b compact notation with dash-at-start)
     2. Right-side character range expansion
     3. Value lookup (replace indices with actual kerning values from 'kv' array)
-  - **Tuplet Lookup (Tier 5b)** - Reconstructs tuplet arrays from tuplet indices:
+  - **Negative Delimiter Unflattening (Tier 6b)** - Reconstructs tuplet arrays from flattened format:
+    - Negative values mark tuplet boundaries
+    - All indices shifted back by 1 (subtract 1 to restore 0-based indexing)
+    - Example: `[3,2,-15,1,2,16,-8]` → `[[2,1,14],[0,1,15,7]]`
+  - **Tuplet Lookup (Tier 5b/6b)** - Reconstructs tuplet arrays from tuplet indices:
     1. Look up tuplet from 't' array using integer index from 'g' field
-    2. Decompress variable-length tuplet (Tier 5a) based on array length (3/4/5 elements)
-    3. Expand to full 5-element index array
+    2. Decompress variable-length tuplet based on array length (2/3/4/5 elements)
+    3. Expand to full 5-element index array using common left index for 2-element case
+  - **2-Element Tuplet Expansion (Tier 6b)** - Decompresses shortest format:
+    - Input: `[w, a]` + common left index from 'cl' field
+    - Output: `[w, cl, w, a, cl]` (left=cl, right=width, descent=cl)
   - **Glyph Value Lookup (Tier 4)** - Reconstructs actual glyph metric values by looking up indices in 'v' array
   - **Array to Object Reconstruction** - Rebuilds full TextMetrics-compatible objects from indexed arrays
   - **Legacy Format Rejection** - Throws error if 'c' field is present (legacy character order), 'kv' field is missing, 'v' field is missing (pre-Tier-4 format), or 't' field is missing (pre-Tier-5b format)

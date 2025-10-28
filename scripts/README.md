@@ -314,7 +314,7 @@ npm run generate-registry                                 # Using npm script
 1. Finds all `*-full.js` files in font-assets/
 2. Extracts full metricsData from each file
 3. Runs `MetricsMinifier.minifyWithVerification()`:
-   - Minifies data (Tier 3-5 optimizations)
+   - Minifies data (Tier 1-6b optimizations)
    - Expands back using MetricsExpander
    - Compares with original (roundtrip verification)
    - Throws error if mismatch detected
@@ -333,8 +333,8 @@ Found 3 full metrics file(s) to process
    → metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0-full-minified.js
    ID: density-1-0-Arial-style-normal-weight-normal-size-19-0
    Original: 77,074 chars
-   Minified: 3,748 chars
-   Saved: 73,326 chars (95.1% reduction)
+   Minified: 3,123 chars
+   Saved: 73,951 chars (95.9% reduction)
    ✓ Roundtrip verification passed
 ```
 

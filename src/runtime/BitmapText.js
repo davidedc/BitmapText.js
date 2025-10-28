@@ -178,12 +178,101 @@ class BitmapText {
   /**
    * Register font metrics from metrics-*.js file
    * Delegates to FontLoader which handles platform-specific details
-   * @param {string} idString - Font ID string
-   * @param {Object} compactedData - Compacted metrics data
+   * TIER 6b: Supports multi-parameter format for better compression
+   *
+   * Formats supported:
+   * - Multi-param (Tier 6b): r(1,'Arial',0,0,18, [...])
+   * - Compressed string (Tier 6): r('1,Arial,0,0,18', [...])
+   * - Full string (legacy): r('density-1-0-Arial-...', [...])
+   *
+   * @param {number|string} densityOrIdString - Pixel density (number) or full ID string
+   * @param {string|Object|Array} fontFamilyOrData - Font family name or compacted data (if 2-param format)
+   * @param {number} [styleIdx] - Style index (0=normal, 1=italic, 2=oblique) - only for 6-param format
+   * @param {number} [weightIdx] - Weight index (0=normal, 1=bold, or numeric) - only for 6-param format
+   * @param {number} [size] - Font size - only for 6-param format
+   * @param {Object|Array} [compactedData] - Compacted metrics data - only for 6-param format
    */
-  static registerMetrics(idString, compactedData) {
+  static registerMetrics(densityOrIdString, fontFamilyOrData, styleIdx, weightIdx, size, compactedData) {
     BitmapText.#ensureFontLoader();
-    FontLoaderBase.registerMetrics(idString, compactedData, BitmapText);
+
+    let fullIDString;
+    let data;
+
+    // TIER 6b: Detect format by checking argument count and types
+    if (arguments.length === 6 && typeof densityOrIdString === 'number') {
+      // Multi-parameter format: r(1,'Arial',0,0,18, [...])
+      const density = densityOrIdString;
+      const fontFamily = fontFamilyOrData;
+
+      // Decompress style and weight
+      const style = styleIdx === 0 ? 'normal' : (styleIdx === 1 ? 'italic' : 'oblique');
+      const weight = weightIdx === 0 ? 'normal' : (weightIdx === 1 ? 'bold' : String(weightIdx));
+
+      // Format density (1 → 1-0, 1.5 → 1-5)
+      const densityStr = String(density);
+      const densityFormatted = densityStr.includes('.') ? densityStr.replace('.', '-') : `${densityStr}-0`;
+
+      // Format size (18 → 18-0, 18.5 → 18-5)
+      const sizeStr = String(size);
+      const sizeFormatted = sizeStr.includes('.') ? sizeStr.replace('.', '-') : `${sizeStr}-0`;
+
+      // Reconstruct full ID
+      fullIDString = `density-${densityFormatted}-${fontFamily}-style-${style}-weight-${weight}-size-${sizeFormatted}`;
+      data = compactedData;
+
+    } else {
+      // String format (Tier 6 or legacy)
+      const idString = densityOrIdString;
+      data = fontFamilyOrData;
+
+      // TIER 6: Detect compressed ID format (contains commas)
+      const isCompressed = typeof idString === 'string' && idString.includes(',') && !idString.includes('-');
+
+      if (isCompressed) {
+        // Compressed format: '1,Arial,0,0,18'
+        if (typeof MetricsMinifier !== 'undefined' && MetricsMinifier.decompressFontID) {
+          fullIDString = MetricsMinifier.decompressFontID(idString);
+        } else {
+          fullIDString = BitmapText.#decompressFontID(idString);
+        }
+      } else {
+        // Full format: 'density-1-0-Arial-style-normal-weight-normal-size-18-0'
+        fullIDString = idString;
+      }
+    }
+
+    FontLoaderBase.registerMetrics(fullIDString, data, BitmapText);
+  }
+
+  /**
+   * Inline font ID decompressor for runtime environments (where MetricsMinifier isn't loaded)
+   * TIER 6: Decompresses compact font ID to full format
+   * @param {string} compressed - Compressed ID like '1,Arial,0,0,18'
+   * @returns {string} Full ID like 'density-1-0-Arial-style-normal-weight-normal-size-18-0'
+   * @private
+   */
+  static #decompressFontID(compressed) {
+    const parts = compressed.split(',');
+    const density = parts[0];
+    const fontFamily = parts[1];
+    const styleIdx = parts[2];
+    const weightIdx = parts[3];
+    const size = parts[4];
+
+    // Decompress style
+    const style = styleIdx === '0' ? 'normal' : (styleIdx === '1' ? 'italic' : 'oblique');
+
+    // Decompress weight
+    const weight = weightIdx === '0' ? 'normal' : (weightIdx === '1' ? 'bold' : weightIdx);
+
+    // Format density (1 → 1-0, 1.5 → 1-5)
+    const densityFormatted = density.includes('.') ? density.replace('.', '-') : `${density}-0`;
+
+    // Format size (18 → 18-0, 18.5 → 18-5)
+    const sizeFormatted = size.includes('.') ? size.replace('.', '-') : `${size}-0`;
+
+    // Reconstruct full ID
+    return `density-${densityFormatted}-${fontFamily}-style-${style}-weight-${weight}-size-${sizeFormatted}`;
   }
 
   /**
@@ -1085,3 +1174,6 @@ class BitmapText {
     BitmapText.#fontLoader = null;
   }
 }
+
+// TIER 6 OPTIMIZATION: Short alias for registerMetrics (saves ~30 bytes per file)
+BitmapText.r = BitmapText.registerMetrics;

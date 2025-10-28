@@ -253,7 +253,9 @@ function processFullMetricsFiles() {
       const content = fs.readFileSync(fullPath, 'utf8');
 
       // Extract metricsData using capture mechanism
-      // The -full.js files have format:
+      // The -full.js files have format (Tier 6):
+      // BitmapText.r('compressedID', {...metricsData...})
+      // OR legacy format:
       // BitmapText.registerMetrics('idString', {...metricsData...})
       let capturedIdString = null;
       let capturedData = null;
@@ -263,14 +265,52 @@ function processFullMetricsFiles() {
         registerMetrics: function(idString, data) {
           capturedIdString = idString;
           capturedData = data;
+        },
+        r: function(densityOrIdString, fontFamilyOrData, styleIdx, weightIdx, size, data) {
+          // TIER 6b: Support both old string format and new multi-parameter format
+          if (arguments.length === 2) {
+            // Old format: r(idString, data)
+            capturedIdString = densityOrIdString;
+            capturedData = fontFamilyOrData;
+          } else if (arguments.length === 6) {
+            // New multi-parameter format: r(density, fontFamily, styleIdx, weightIdx, size, data)
+            const density = densityOrIdString;
+            const fontFamily = fontFamilyOrData;
+
+            // Reconstruct full ID string from parameters
+            // Convert numeric indices back to strings
+            const styleStr = styleIdx === 0 ? 'normal' : (styleIdx === 1 ? 'italic' : 'oblique');
+            const weightStr = weightIdx === 0 ? 'normal' : (weightIdx === 1 ? 'bold' : String(weightIdx));
+
+            // Parse density and size to handle both integer and decimal formats
+            const densityParts = String(density).split('.');
+            const densityInt = densityParts[0];
+            const densityFrac = densityParts[1] || '0';
+
+            const sizeParts = String(size).split('.');
+            const sizeInt = sizeParts[0];
+            const sizeFrac = sizeParts[1] || '0';
+
+            // Reconstruct full ID: density-{d}-{frac}-{family}-style-{style}-weight-{weight}-size-{s}-{frac}
+            capturedIdString = `density-${densityInt}-${densityFrac}-${fontFamily}-style-${styleStr}-weight-${weightStr}-size-${sizeInt}-${sizeFrac}`;
+            capturedData = data;
+          } else {
+            throw new Error(`Unexpected parameter count: ${arguments.length}`);
+          }
         }
       };
 
-      // Evaluate the file to trigger registerMetrics call
+      // Evaluate the file to trigger registerMetrics/r call
       eval(content);
 
       if (!capturedData) {
-        throw new Error('Failed to extract metricsData from file (registerMetrics not called)');
+        throw new Error('Failed to extract metricsData from file (registerMetrics/r not called)');
+      }
+
+      // TIER 6: Decompress ID if it's in compressed format
+      if (capturedIdString.includes(',')) {
+        // Compressed format - decompress it
+        capturedIdString = MetricsMinifier.decompressFontID(capturedIdString);
       }
 
       // Calculate original size
@@ -297,9 +337,22 @@ function processFullMetricsFiles() {
       const outputFilename = `${baseFilename}-full-minified.js`;
       const outputPath = path.join(fontAssetsDir, outputFilename);
 
-      // Write minified version with EXACT production wrapper
-      // Must match: if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('idString',{...})}
-      const jsContent = `if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${capturedIdString}',${JSON.stringify(minified)})}`;
+      // TIER 6b: Decompose font ID for multi-parameter format
+      const parts = capturedIdString.split('-');
+      const density = parts[1] + (parts[2] === '0' ? '' : '.' + parts[2]); // "1" or "1.5"
+      const fontFamilyFromID = parts[3];
+      const styleFromID = parts[5]; // "normal", "italic", "oblique"
+      const weightFromID = parts[7]; // "normal", "bold", or numeric
+      const sizeStr = parts[9] + (parts[10] === '0' ? '' : '.' + parts[10]); // "18" or "18.5"
+
+      // Compress style and weight to indices
+      const styleIdx = styleFromID === 'normal' ? 0 : (styleFromID === 'italic' ? 1 : 2);
+      const weightIdx = weightFromID === 'normal' ? 0 : (weightFromID === 'bold' ? 1 : weightFromID);
+
+      // Write minified version with TIER 6b production wrapper
+      // TIER 6b: Use 'r' shorthand with multi-parameter format
+      // Must match: if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(1,'Arial',0,0,18,[...])}
+      const jsContent = `if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(minified)})}`;
       fs.writeFileSync(outputPath, jsContent, 'utf8');
 
       // Optional: Verify exact match with production file

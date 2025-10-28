@@ -9,16 +9,78 @@ class MetricsMinifier {
   }
   
   /**
+   * Compresses font ID string from verbose format to compact format
+   * TIER 6 OPTIMIZATION: Font ID compression
+   *
+   * @param {string} idString - Full ID like 'density-1-0-Arial-style-normal-weight-normal-size-18-0'
+   * @returns {string} Compact ID like '1,Arial,0,0,18'
+   */
+  static compressFontID(idString) {
+    // Parse: density-1-0-Arial-style-normal-weight-normal-size-18-0
+    const parts = idString.split('-');
+
+    // Extract values
+    const density = parts[1] + (parts[2] === '0' ? '' : '.' + parts[2]); // "1" or "1.5"
+    const fontFamily = parts[3];
+    const style = parts[5]; // "normal", "italic", "oblique"
+    const weight = parts[7]; // "normal", "bold", or numeric
+    const size = parts[9] + (parts[10] === '0' ? '' : '.' + parts[10]); // "18" or "18.5"
+
+    // Compress style: 0=normal, 1=italic, 2=oblique
+    const styleIdx = style === 'normal' ? '0' : (style === 'italic' ? '1' : '2');
+
+    // Compress weight: 0=normal, 1=bold, or keep numeric
+    const weightIdx = weight === 'normal' ? '0' : (weight === 'bold' ? '1' : weight);
+
+    // Format: density,fontFamily,styleIdx,weightIdx,size
+    return `${density},${fontFamily},${styleIdx},${weightIdx},${size}`;
+  }
+
+  /**
+   * Decompresses font ID string from compact format to verbose format
+   * TIER 6 OPTIMIZATION: Font ID decompression
+   *
+   * @param {string} compressed - Compact ID like '1,Arial,0,0,18'
+   * @returns {string} Full ID like 'density-1-0-Arial-style-normal-weight-normal-size-18-0'
+   */
+  static decompressFontID(compressed) {
+    const parts = compressed.split(',');
+
+    // Parse compact format: density,fontFamily,styleIdx,weightIdx,size
+    const density = parts[0];
+    const fontFamily = parts[1];
+    const styleIdx = parts[2];
+    const weightIdx = parts[3];
+    const size = parts[4];
+
+    // Decompress style
+    const style = styleIdx === '0' ? 'normal' : (styleIdx === '1' ? 'italic' : 'oblique');
+
+    // Decompress weight
+    const weight = weightIdx === '0' ? 'normal' : (weightIdx === '1' ? 'bold' : weightIdx);
+
+    // Format density (1 → 1-0, 1.5 → 1-5)
+    const densityFormatted = density.includes('.') ? density.replace('.', '-') : `${density}-0`;
+
+    // Format size (18 → 18-0, 18.5 → 18-5)
+    const sizeFormatted = size.includes('.') ? size.replace('.', '-') : `${size}-0`;
+
+    // Reconstruct full ID
+    return `density-${densityFormatted}-${fontFamily}-style-${style}-weight-${weight}-size-${sizeFormatted}`;
+  }
+
+  /**
    * Minifies font metrics data for smaller file size
    * TIER 2 OPTIMIZATION: Array-based glyph encoding
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range compression
    * TIER 4 OPTIMIZATION: Value indexing (replaces repeated metric values with indices)
    * TIER 5 OPTIMIZATION: Tuplet deduplication (deduplicates glyph index arrays)
+   * TIER 6 OPTIMIZATION: Additional space optimizations (baseline/top-level arrays, tuplet flattening, integer values)
    *
    * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from CHARACTER_SET
    *
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
-   * @returns {Object} Minified metrics with 'kv', 'k', 'b', 'v', 't', 'g', 's'
+   * @returns {Array} Minified metrics as array (Tier 6: top-level object → array)
    * @throws {Error} If not all 204 characters are present
    */
   static minify(metricsData) {
@@ -52,9 +114,13 @@ class MetricsMinifier {
       );
     }
 
-    // TIER 4: Create value lookup table and indexed glyph arrays
-    const { valueLookup, indexedGlyphs } = this.#createValueLookupTable(
-      metricsData.characterMetrics
+    // TIER 6b: Find most common left bounding box value for 2-element tuplet compression
+    const commonLeftValue = this.#findCommonLeftValue(metricsData.characterMetrics);
+
+    // TIER 4+6b: Create value lookup table and indexed glyph arrays with 2-element compression
+    const { valueLookup, indexedGlyphs, commonLeftIndex } = this.#createValueLookupTable(
+      metricsData.characterMetrics,
+      commonLeftValue
     );
 
     // TIER 4: Create kerning value lookup table and indexed kerning table
@@ -67,16 +133,30 @@ class MetricsMinifier {
       indexedGlyphs
     );
 
-    // Minify with tuplet indexing (Tier 5 optimization)
-    return {
-      kv: kerningValueLookup,  // TIER 4: Kerning value lookup table
-      k: indexedKerningTable,  // TIER 4: Kerning table with indexed values
-      b: this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics),
-      v: valueLookup,          // TIER 4: Glyph value lookup table
-      t: tupletLookup,         // TIER 5: Tuplet lookup table (unique index arrays)
-      g: tupletIndices,        // TIER 5: Now single integers (indices into 't'), not arrays!
-      s: metricsData.spaceAdvancementOverrideForSmallSizesInPx
-    };
+    // TIER 6a: Convert value lookups to integers (multiply by 10000)
+    const valueLookupIntegers = this.#convertValuesToIntegers(valueLookup);
+    const kerningValueLookupIntegers = this.#convertValuesToIntegers(kerningValueLookup);
+
+    // TIER 6: Flatten baseline object to array
+    const baselineArray = this.#flattenBaseline(
+      this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics)
+    );
+
+    // TIER 6: Flatten tuplet lookup arrays to length-prefixed format
+    const flattenedTuplets = this.#flattenTuplets(tupletLookup);
+
+    // TIER 6: Return as array instead of object (top-level flattening)
+    // Array format: [kv, k, b, v, t, g, s, cl]
+    return [
+      kerningValueLookupIntegers,  // 0: TIER 4+6: Kerning value lookup (as integers)
+      indexedKerningTable,         // 1: TIER 4: Kerning table with indexed values
+      baselineArray,               // 2: TIER 6: Baseline array [fba,fbd,hb,ab,ib,pd]
+      valueLookupIntegers,         // 3: TIER 4+6: Glyph value lookup (as integers)
+      flattenedTuplets,            // 4: TIER 5+6: Flattened tuplet data (length-prefixed)
+      tupletIndices,               // 5: TIER 5: Tuplet indices (single integers)
+      metricsData.spaceAdvancementOverrideForSmallSizesInPx,  // 6: Space override
+      commonLeftIndex              // 7: TIER 6b: Common left index for 2-element tuplet decompression
+    ];
   }
 
   /**
@@ -190,23 +270,62 @@ class MetricsMinifier {
   }
   
   /**
+   * Finds the most common left bounding box value across all glyphs
+   * TIER 6b OPTIMIZATION: 2-element tuplet compression requires common left value
+   *
+   * Analysis shows ~92% of glyphs share the same left value (usually 0)
+   * This enables aggressive 2-element tuplet compression for these glyphs
+   *
+   * @param {Object} characterMetrics - Character metrics object with all 204 characters
+   * @returns {number} Most common left bounding box value
+   * @private
+   */
+  static #findCommonLeftValue(characterMetrics) {
+    // Count frequency of each left value
+    const leftValueCounts = new Map();
+
+    for (const char of CHARACTER_SET) {
+      const leftValue = characterMetrics[char].actualBoundingBoxLeft;
+      leftValueCounts.set(leftValue, (leftValueCounts.get(leftValue) || 0) + 1);
+    }
+
+    // Find the most frequent left value
+    let mostCommonValue = 0;
+    let maxCount = 0;
+
+    for (const [value, count] of leftValueCounts.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        mostCommonValue = value;
+      }
+    }
+
+    console.debug(`🔍 Common left value: ${mostCommonValue} (appears in ${maxCount}/${CHARACTER_SET.length} glyphs, ${(maxCount/CHARACTER_SET.length*100).toFixed(1)}%)`);
+
+    return mostCommonValue;
+  }
+
+  /**
    * Creates value lookup table and converts glyph metrics to indexed arrays with tuplet compression
    * TIER 4 OPTIMIZATION: Value indexing - replaces repeated metric values with indices
    * TIER 5 OPTIMIZATION: Tuplet compression - reduces tuplet length from 5 to 3/4/5 based on redundancy
+   * TIER 6b OPTIMIZATION: 2-element tuplet compression - further reduces when left===common
    *
    * Strategy: Assign shortest indices to values with highest (occurrence_count × string_length)
    * This maximizes savings because frequently-occurring long values get 1-digit indices
    *
-   * Tuplet compression:
-   *   - Case C (3 elements): w===r AND l===d  →  [w, l, a]
-   *   - Case B (4 elements): w===r only       →  [w, l, a, d]
-   *   - Case A (5 elements): no compression   →  [w, l, r, a, d]
+   * Tuplet compression (cascading, most-frequent-first):
+   *   - Case D (2 elements): w===r AND l===d AND l===CL  →  [w, a]  (CL = common left)
+   *   - Case C (3 elements): w===r AND l===d             →  [w, l, a]
+   *   - Case B (4 elements): w===r only                  →  [w, l, a, d]
+   *   - Case A (5 elements): no compression              →  [w, l, r, a, d]
    *
    * @param {Object} characterMetrics - Character metrics object with all 204 characters
-   * @returns {Object} Object with valueLookup array and indexedGlyphs array (variable-length tuplets)
+   * @param {number} commonLeftValue - Most common left bounding box value (will be converted to index)
+   * @returns {Object} Object with valueLookup array, indexedGlyphs array, and commonLeftIndex
    * @private
    */
-  static #createValueLookupTable(characterMetrics) {
+  static #createValueLookupTable(characterMetrics, commonLeftValue) {
     // Step 1: Collect all unique values and count occurrences
     const valueOccurrences = new Map(); // value -> count
 
@@ -248,7 +367,14 @@ class MetricsMinifier {
       valueToIndex.set(value, index);
     });
 
-    // Step 5: Convert glyph arrays to indices and compress tuplets (TIER 5)
+    // TIER 6b: Convert common left value to index for tuplet compression
+    const commonLeftIndex = valueToIndex.get(commonLeftValue);
+    if (commonLeftIndex === undefined) {
+      throw new Error(`Common left value ${commonLeftValue} not found in value lookup table`);
+    }
+    console.debug(`🔍 Common left index after value mapping: ${commonLeftIndex}`);
+
+    // Step 5: Convert glyph arrays to indices and compress tuplets (TIER 5+6b)
     const indexedGlyphs = Array.from(CHARACTER_SET).map(char => {
       const glyph = characterMetrics[char];
       const indices = [
@@ -259,16 +385,28 @@ class MetricsMinifier {
         valueToIndex.get(glyph.actualBoundingBoxDescent)    // 4: descent
       ];
 
-      // TIER 5: Tuplet compression based on redundancy patterns
-      const widthEqualsRight = indices[0] === indices[2];   // w === r
-      const leftEqualsDescent = indices[1] === indices[4];  // l === d
+      // TIER 5+6b: Tuplet compression based on redundancy patterns
+      // Cascading strategy (most-frequent-first):
+      // Strategy 1: w===r (most frequent, 48%)
+      // Strategy 2: l===d (combined with #1, 43%)
+      // Strategy 3: l===common (combined with #1+#2, ~40% of those)
+      const widthEqualsRight = indices[0] === indices[2];      // w === r
+      const leftEqualsDescent = indices[1] === indices[4];     // l === d
+      const leftEqualsCommon = indices[1] === commonLeftIndex; // l === common left
 
-      if (widthEqualsRight && leftEqualsDescent) {
-        // Case C: Both conditions met - compress to 3 elements [w, l, a]
+      if (widthEqualsRight && leftEqualsDescent && leftEqualsCommon) {
+        // Case D: All three strategies apply - compress to 2 elements [w, a]
+        // Decompression: [w, a] → [w, CL, w, a, CL]
+        return [indices[0], indices[3]];
+      }
+      else if (widthEqualsRight && leftEqualsDescent) {
+        // Case C: First two strategies apply - compress to 3 elements [w, l, a]
+        // Decompression: [w, l, a] → [w, l, w, a, l]
         return [indices[0], indices[1], indices[3]];
       }
       else if (widthEqualsRight) {
-        // Case B: Only width === right - compress to 4 elements [w, l, a, d]
+        // Case B: First strategy only - compress to 4 elements [w, l, a, d]
+        // Decompression: [w, l, a, d] → [w, l, w, a, d]
         return [indices[0], indices[1], indices[3], indices[4]];
       }
       else {
@@ -278,18 +416,20 @@ class MetricsMinifier {
     });
 
     // Log compression statistics
-    let caseC = 0, caseB = 0, caseA = 0;
+    let caseD = 0, caseC = 0, caseB = 0, caseA = 0;
     for (const tuplet of indexedGlyphs) {
-      if (tuplet.length === 3) caseC++;
+      if (tuplet.length === 2) caseD++;
+      else if (tuplet.length === 3) caseC++;
       else if (tuplet.length === 4) caseB++;
       else caseA++;
     }
-    const savedIndices = 1020 - (caseC * 3 + caseB * 4 + caseA * 5);
-    console.debug(`🗜️  Tuplet compression: ${caseC} × 3-elem, ${caseB} × 4-elem, ${caseA} × 5-elem (saved ${savedIndices} indices)`);
+    const savedIndices = 1020 - (caseD * 2 + caseC * 3 + caseB * 4 + caseA * 5);
+    console.debug(`🗜️  Tuplet compression: ${caseD} × 2-elem, ${caseC} × 3-elem, ${caseB} × 4-elem, ${caseA} × 5-elem (saved ${savedIndices} indices)`);
 
     return {
       valueLookup,
-      indexedGlyphs
+      indexedGlyphs,
+      commonLeftIndex  // TIER 6b: Return common left index for file format
     };
   }
 
@@ -465,10 +605,23 @@ class MetricsMinifier {
   }
 
   /**
-   * Compresses kerning pairs by finding consecutive character ranges with same value
+   * Compresses kerning pairs by grouping ALL characters with same value (sequential or not)
+   * TIER 6b OPTIMIZATION: Advanced kerning compression
+   *
+   * Groups all characters with same value into compact string notation:
+   * - Individual characters: "abc"
+   * - Ranges (3+ consecutive): "a-z"
+   * - Mixed: "a-eg-ijk" (range a-e, then g, then range g-i, then j, then k)
+   *
+   * Special dash handling:
+   * - Dash at START is literal: "-abc" means dash, a, b, c
+   * - Dash in MIDDLE is range: "a-c" means range from a to c
+   *
+   * Example: {" ":1,",":1,".":1,"a":1,"c":1,"d":1,"e":1} → {" ,.ac-e":1}
+   *
    * Always uses CHARACTER_SET for range compression
    * @param {Object} pairs - Kerning pairs like {"0":20,"1":20,"2":20,...}
-   * @returns {Object} Compressed pairs like {"0-2":20}
+   * @returns {Object} Compressed pairs like {" ,.ac-e":20}
    * @private
    */
   static #compressKerningPairs(pairs) {
@@ -490,40 +643,70 @@ class MetricsMinifier {
       valueToIndices[value].push(index);
     }
 
-    // For each value, find consecutive ranges
+    // For each value, build compact string notation
     const compressed = {};
 
     for (const [value, indices] of Object.entries(valueToIndices)) {
       // Sort indices
       indices.sort((a, b) => a - b);
 
-      // Find consecutive ranges
-      const ranges = this.#findConsecutiveRanges(indices);
+      // Build compact string notation
+      const compactString = this.#buildCompactCharString(indices);
 
-      // Convert ranges to notation
-      for (const range of ranges) {
-        if (range.start === 0 && range.end === CHARACTER_SET.length - 1) {
-          // Special case: Full character set
-          const firstChar = CHARACTER_SET[0];
-          const lastChar = CHARACTER_SET[CHARACTER_SET.length - 1];
-          compressed[`${firstChar}-${lastChar}`] = parseFloat(value);
-        } else if (range.start === range.end) {
-          // Single character
-          compressed[CHARACTER_SET[range.start]] = parseFloat(value);
-        } else if (range.end === range.start + 1) {
-          // Two characters - more efficient as separate entries
-          compressed[CHARACTER_SET[range.start]] = parseFloat(value);
-          compressed[CHARACTER_SET[range.end]] = parseFloat(value);
-        } else {
-          // Range of 3+ characters
-          const startChar = CHARACTER_SET[range.start];
-          const endChar = CHARACTER_SET[range.end];
-          compressed[`${startChar}-${endChar}`] = parseFloat(value);
-        }
-      }
+      // Store with compact string as key
+      compressed[compactString] = parseFloat(value);
     }
 
     return compressed;
+  }
+
+  /**
+   * Builds compact character string from indices
+   * TIER 6b OPTIMIZATION: Groups all characters (sequential or not)
+   *
+   * Special handling:
+   * - Dash character (index 13 in CHARACTER_SET): placed at beginning to avoid ambiguity
+   * - Ranges of 3+: "a-z"
+   * - Individual chars: "abc"
+   * - Mixed: "-,.:;ac-egj-s"
+   *
+   * @param {number[]} indices - Sorted array of CHARACTER_SET indices
+   * @returns {string} Compact string notation
+   * @private
+   */
+  static #buildCompactCharString(indices) {
+    const DASH_INDEX = CHARACTER_SET.indexOf('-');
+    let result = '';
+
+    // Check if dash is in the list - if so, handle it first
+    const hasDash = indices.includes(DASH_INDEX);
+    if (hasDash) {
+      result = '-';
+      // Remove dash from indices for processing
+      indices = indices.filter(idx => idx !== DASH_INDEX);
+    }
+
+    // Find consecutive ranges
+    const ranges = this.#findConsecutiveRanges(indices);
+
+    // Build string from ranges
+    for (const range of ranges) {
+      if (range.start === range.end) {
+        // Single character
+        result += CHARACTER_SET[range.start];
+      } else if (range.end === range.start + 1) {
+        // Two characters - more efficient as separate (no dash needed)
+        result += CHARACTER_SET[range.start];
+        result += CHARACTER_SET[range.end];
+      } else {
+        // Range of 3+ characters - use dash notation
+        result += CHARACTER_SET[range.start];
+        result += '-';
+        result += CHARACTER_SET[range.end];
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -613,6 +796,72 @@ class MetricsMinifier {
     }
 
     return compressed;
+  }
+
+  /**
+   * Converts array of float values to integers by multiplying by 10000
+   * TIER 6 OPTIMIZATION: Value to integer conversion
+   *
+   * @param {number[]} values - Array of float values
+   * @returns {number[]} Array of integer values
+   * @private
+   */
+  static #convertValuesToIntegers(values) {
+    return values.map(val => {
+      // Handle integers (no decimal point)
+      if (Number.isInteger(val)) {
+        return val * 10000;
+      }
+      // Handle floats - multiply and round to avoid floating point errors
+      return Math.round(val * 10000);
+    });
+  }
+
+  /**
+   * Flattens baseline object to array
+   * TIER 6 OPTIMIZATION: Baseline object → array
+   *
+   * @param {Object} baseline - Baseline object with {fba, fbd, hb, ab, ib, pd}
+   * @returns {number[]} Array [fba, fbd, hb, ab, ib, pd]
+   * @private
+   */
+  static #flattenBaseline(baseline) {
+    // Fixed order: fba, fbd, hb, ab, ib, pd
+    return [
+      baseline.fba,
+      baseline.fbd,
+      baseline.hb,
+      baseline.ab,
+      baseline.ib,
+      baseline.pd
+    ];
+  }
+
+  /**
+   * Flattens tuplet arrays using negative delimiter format
+   * TIER 6b OPTIMIZATION: Tuplet array flattening with negative delimiters
+   *
+   * Uses negative on last element to mark tuplet boundary.
+   * Shifts indices by 1 to avoid -0 problem in JSON (0 becomes 1, 1 becomes 2, etc.)
+   *
+   * Converts: [[2,1,14],[0,1,15,7]] → [3,2,-15,1,2,16,-8]
+   * Each tuplet ends with a negative number (saves 1 char per tuplet vs length-prefix)
+   *
+   * @param {Array<Array<number>>} tuplets - Array of tuplet arrays (0-based indices)
+   * @returns {number[]} Flattened array with negative delimiters (1-based indices)
+   * @private
+   */
+  static #flattenTuplets(tuplets) {
+    const flattened = [];
+    for (const tuplet of tuplets) {
+      // Shift all indices by 1 (to avoid -0 problem) and negate the last one
+      for (let i = 0; i < tuplet.length - 1; i++) {
+        flattened.push(tuplet[i] + 1);  // Add 1 to shift from 0-based to 1-based
+      }
+      // Last element: add 1 and negate to mark end of tuplet
+      flattened.push(-(tuplet[tuplet.length - 1] + 1));
+    }
+    return flattened;
   }
 
 }
