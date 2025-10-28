@@ -29,6 +29,13 @@
   3. Use automated pipeline: `./scripts/watch-font-assets.sh` for processing
   4. Test with public/test-renderer.html
 
+  ### Testing Minification Strategies
+  1. Generate full metrics with font-assets-builder.html (enable "Include non-minified metrics files" checkbox)
+  2. Modify src/builder/MetricsMinifier.js with new strategy
+  3. Rebuild tool: `./scripts/build-metrics-minifier.sh`
+  4. Test: `./tools/minify-metrics.js` (performs automatic roundtrip verification)
+  5. See scripts/README.md for detailed workflow
+
   ### Debugging Rendering Issues
   - Check hash mismatches in src/utils/HashStore
   - Use src/utils/canvas-extensions.js debugging methods
