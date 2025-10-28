@@ -850,10 +850,14 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
         - **Savings**: ~500 bytes per file (40-50% reduction)
         - **Key Insight**: 54-58% of values are 1-10, encoded in just 1 byte
     - **Combined Tier 6c Savings**: ~2,689 bytes average (~31% reduction from Tier 6b, ~69% from original)
+  - **Tier 7: Wrapper Simplification** - Removes safety checks for private library use:
+    - **Format Change**: `BitmapText.r(...)` instead of `if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(...)}`
+    - **Assumption**: BitmapText is always defined before loading metrics files (safe for private library)
+    - **Savings**: ~51 bytes per file (2.6% reduction from Tier 6c)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
   - **Format Requirements** - All 204 characters from CHARACTER_SET must be present (no legacy format support)
-  - **Total File Size** - Average ~1,990 bytes per font file (97.3% reduction from ~73KB original)
+  - **Total File Size** - Average ~1,940 bytes per font file (97.3% reduction from ~73KB original)
 
   **Value Indexing Algorithm (Tier 4)**:
   - **Score Calculation** - For each unique value: `score = occurrences × string_length`

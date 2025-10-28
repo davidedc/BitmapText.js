@@ -212,9 +212,10 @@ function downloadFontAssets(options) {
       // Add minified metrics JS file to zip (only contains metrics, no atlas positioning)
       // TIER 1 OPTIMIZATION: Comments removed, wrapper minified for smaller file size
       // TIER 6b OPTIMIZATION: Use 'r' shorthand with multi-parameter format (saves ~10 bytes)
+      // TIER 7 OPTIMIZATION: Remove safety checks - assume BitmapText exists (private library, saves ~46 bytes)
       folder.file(
           `metrics-${IDString}.js`,
-          `if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(minified)})}`,
+          `BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(minified)})`,
           { date: currentDate }
       );
 
@@ -222,7 +223,7 @@ function downloadFontAssets(options) {
       if (includeNonMinifiedMetrics) {
           folder.file(
               `metrics-${IDString}-full.js`,
-              `// Full non-minified metrics for debugging\n// This file is NOT used by the runtime - it's for development/inspection only\nif(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(metricsData, null, 2)})}`,
+              `// Full non-minified metrics for debugging\n// This file is NOT used by the runtime - it's for development/inspection only\nBitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(metricsData, null, 2)})`,
               { date: currentDate }
           );
           console.log(`✅ Added non-minified metrics file: metrics-${IDString}-full.js`);

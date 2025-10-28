@@ -1107,5 +1107,5 @@ class BitmapText {
   }
 }
 
-// TIER 6 OPTIMIZATION: Short alias for registerMetrics (saves ~30 bytes per file)
+// TIER 6b OPTIMIZATION: Short alias for registerMetrics (saves ~15 bytes per file)
 BitmapText.r = BitmapText.registerMetrics;

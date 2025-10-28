@@ -349,10 +349,11 @@ function processFullMetricsFiles() {
       const styleIdx = styleFromID === 'normal' ? 0 : (styleFromID === 'italic' ? 1 : 2);
       const weightIdx = weightFromID === 'normal' ? 0 : (weightFromID === 'bold' ? 1 : weightFromID);
 
-      // Write minified version with TIER 6b production wrapper
+      // Write minified version with TIER 7 production wrapper
       // TIER 6b: Use 'r' shorthand with multi-parameter format
-      // Must match: if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(1,'Arial',0,0,18,[...])}
-      const jsContent = `if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(minified)})}`;
+      // TIER 7: Remove safety checks - assume BitmapText exists (private library, saves ~46 bytes)
+      // Must match: BitmapText.r(1,'Arial',0,0,18,[...])
+      const jsContent = `BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(minified)})`;
       fs.writeFileSync(outputPath, jsContent, 'utf8');
 
       // Optional: Verify exact match with production file
