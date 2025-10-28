@@ -300,10 +300,14 @@ npm run generate-registry                                 # Using npm script
 
 **Usage after building:**
 ```bash
-# Run the generated tool
+# Show help and all options
+./tools/minify-metrics.js --help
+
+# Test minification (default: no comparison with production files)
 ./tools/minify-metrics.js
-# or
-node tools/minify-metrics.js
+
+# Validate tool output matches production exactly (for tool validation only)
+./tools/minify-metrics.js --verify-exact
 ```
 
 **What the generated tool does:**
@@ -348,12 +352,17 @@ To get `*-full.js` files:
 # 2. Rebuild the tool
 ./scripts/build-metrics-minifier.sh
 
-# 3. Test on real font data
+# 3. Test on real font data (default: no comparison, just minify + roundtrip verify)
 ./tools/minify-metrics.js
 
-# 4. Verify output matches production format exactly
-diff font-assets/metrics-*-19-0.js font-assets/metrics-*-19-0-full-minified.js
+# 4. Examine output files
+cat font-assets/metrics-*-full-minified.js
+
+# Optional: Validate tool produces identical output to browser (one-time check)
+./tools/minify-metrics.js --verify-exact
 ```
+
+**Note:** Default behavior does NOT compare with production files, allowing you to freely test new minification strategies. Use `--verify-exact` only when validating the tool itself produces identical output to the browser font-assets-builder.
 
 ---
 
