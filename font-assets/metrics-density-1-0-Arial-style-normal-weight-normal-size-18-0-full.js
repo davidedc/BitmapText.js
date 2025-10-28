@@ -1,6 +1,6 @@
 // Full non-minified metrics for debugging
 // This file is NOT used by the runtime - it's for development/inspection only
-if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(1,'Arial',0,0,18,{
+BitmapText.r(1,'Arial',0,0,18,{
   "kerningTable": {
     "A": {
       "0": 20,
@@ -3365,4 +3365,4 @@ if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(1,'Arial',0,0,18,
     }
   },
   "spaceAdvancementOverrideForSmallSizesInPx": 5
-})}
+})
