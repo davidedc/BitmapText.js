@@ -20,16 +20,19 @@
  *   - Find all *-full.js files in font-assets/
  *   - Extract full metricsData from each file
  *   - Run MetricsMinifier.minifyWithVerification() (includes roundtrip check)
- *   - Output minified JSON files as *-full-minified.json
+ *   - Output minified .js files as *-full-minified.js
  *   - Report statistics and verification results
  *
  * Usage:
- *   ./tools/minify-metrics.js
- *   # or
- *   node tools/minify-metrics.js
+ *   ./tools/minify-metrics.js [options]
+ *   node tools/minify-metrics.js [options]
+ *
+ * Options:
+ *   --verify-exact    Compare output with production metrics-*.js files (byte-for-byte)
+ *   --help, -h        Show this help message
  *
  * Input:  font-assets/metrics-...-full.js (full metrics from font-assets-builder)
- * Output: font-assets/metrics-...-full-minified.js (EXACT production format)
+ * Output: font-assets/metrics-...-full-minified.js (minified .js files)
  *
  * To rebuild this tool:
  *   ./scripts/build-metrics-minifier.sh
@@ -43,6 +46,67 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// ============================================================================
+// COMMAND-LINE ARGUMENT PARSING
+// ============================================================================
+
+const args = process.argv.slice(2);
+const options = {
+  verifyExact: args.includes('--verify-exact'),
+  help: args.includes('--help') || args.includes('-h')
+};
+
+if (options.help) {
+  console.log(`
+Metrics Minifier - Test minification strategies on full metrics files
+
+Usage:
+  ./tools/minify-metrics.js [options]
+  node tools/minify-metrics.js [options]
+
+Options:
+  --verify-exact    Compare output with production metrics-*.js files
+                    Performs byte-for-byte comparison to verify node script
+                    produces identical output to browser font-assets-builder
+                    (useful for validating the tool, not for testing new strategies)
+
+  --help, -h        Show this help message
+
+Description:
+  Processes all *-full.js files in font-assets/ directory:
+  1. Extracts full metricsData from each file
+  2. Runs MetricsMinifier.minifyWithVerification() (includes roundtrip check)
+  3. Outputs minified .js files as *-full-minified.js
+  4. Reports statistics and verification results
+
+  The tool uses the EXACT same minification code as the browser
+  font-assets-builder page, ensuring identical behavior.
+
+Prerequisites:
+  Generate *-full.js files first:
+  1. Open public/font-assets-builder.html in browser
+  2. Configure font settings
+  3. Check "Include non-minified metrics files"
+  4. Click "Download font assets"
+  5. Extract fontAssets.zip to font-assets/
+
+Examples:
+  # Standard usage (no comparison with production files)
+  ./tools/minify-metrics.js
+
+  # Verify output matches production files exactly
+  ./tools/minify-metrics.js --verify-exact
+
+Development Workflow:
+  # Test new minification strategy
+  1. Edit src/builder/MetricsMinifier.js
+  2. ./scripts/build-metrics-minifier.sh
+  3. ./tools/minify-metrics.js
+  4. Examine *-full-minified.js output files
+`);
+  process.exit(0);
+}
 
 // ============================================================================
 // CHARACTER SET CONSTANT
@@ -1198,8 +1262,11 @@ function deepEqual(obj1, obj2) {
 // MAIN SCRIPT LOGIC
 // ============================================================================
 
+// ============================================================================
+
 function processFullMetricsFiles() {
   const fontAssetsDir = path.join(__dirname, '..', 'font-assets');
+  const productionDir = fontAssetsDir; // Production files in same directory
 
   // Check if font-assets directory exists
   if (!fs.existsSync(fontAssetsDir)) {
@@ -1226,7 +1293,11 @@ function processFullMetricsFiles() {
 
   console.log('\n🔬 Metrics Minification & Verification');
   console.log('═'.repeat(60));
-  console.log(`Found ${files.length} full metrics file(s) to process\n`);
+  console.log(`Found ${files.length} full metrics file(s) to process`);
+  if (options.verifyExact) {
+    console.log('🔍 Exact verification: ENABLED (comparing with production files)');
+  }
+  console.log('');
 
   let successCount = 0;
   let errorCount = 0;
@@ -1289,6 +1360,21 @@ function processFullMetricsFiles() {
       const jsContent = `if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('${capturedIdString}',${JSON.stringify(minified)})}`;
       fs.writeFileSync(outputPath, jsContent, 'utf8');
 
+      // Optional: Verify exact match with production file
+      let exactMatch = null;
+      if (options.verifyExact) {
+        // Find corresponding production file (without -full suffix)
+        const productionFilename = filename.replace('-full.js', '.js');
+        const productionPath = path.join(productionDir, productionFilename);
+
+        if (fs.existsSync(productionPath)) {
+          const productionContent = fs.readFileSync(productionPath, 'utf8');
+          exactMatch = (jsContent === productionContent);
+        } else {
+          exactMatch = 'no-production-file';
+        }
+      }
+
       results.push({
         input: filename,
         output: outputFilename,
@@ -1296,6 +1382,7 @@ function processFullMetricsFiles() {
         minifiedSize,
         reduction,
         savedBytes,
+        exactMatch,
         status: 'success'
       });
 
@@ -1306,6 +1393,17 @@ function processFullMetricsFiles() {
       console.log(`   Minified: ${minifiedSize.toLocaleString()} chars`);
       console.log(`   Saved: ${savedBytes.toLocaleString()} chars (${reduction}% reduction)`);
       console.log(`   ✓ Roundtrip verification passed`);
+
+      if (options.verifyExact) {
+        if (exactMatch === true) {
+          console.log(`   ✓ Exact match with production file`);
+        } else if (exactMatch === false) {
+          console.log(`   ⚠️  Output differs from production file`);
+        } else if (exactMatch === 'no-production-file') {
+          console.log(`   ℹ️  No production file to compare (${filename.replace('-full.js', '.js')} not found)`);
+        }
+      }
+
       console.log('');
 
       successCount++;
@@ -1356,6 +1454,25 @@ function processFullMetricsFiles() {
     console.log('');
     console.log(`   Total: ${totalOriginal.toLocaleString()} → ${totalMinified.toLocaleString()} chars`);
     console.log(`   Saved: ${totalSaved.toLocaleString()} chars (${totalReduction}% overall reduction)`);
+
+    // Report exact match results if verification was enabled
+    if (options.verifyExact) {
+      const exactMatches = successResults.filter(r => r.exactMatch === true).length;
+      const mismatches = successResults.filter(r => r.exactMatch === false).length;
+      const noProductionFile = successResults.filter(r => r.exactMatch === 'no-production-file').length;
+
+      console.log('');
+      console.log('🔍 Exact Verification Results:');
+      if (exactMatches > 0) {
+        console.log(`   ✓ ${exactMatches} file(s) match production exactly`);
+      }
+      if (mismatches > 0) {
+        console.log(`   ⚠️  ${mismatches} file(s) differ from production`);
+      }
+      if (noProductionFile > 0) {
+        console.log(`   ℹ️  ${noProductionFile} file(s) have no production file to compare`);
+      }
+    }
   }
 
   if (errorCount > 0) {
@@ -1365,12 +1482,14 @@ function processFullMetricsFiles() {
     });
   }
 
-  console.log('\n💡 Output files are EXACTLY identical to production metrics files');
-  console.log('   (same format, same wrapper, byte-for-byte match).');
+  console.log('\n💡 Output files can be used to test different minification strategies');
+  console.log('   by modifying MetricsMinifier.js and rebuilding this tool.');
   console.log('');
-  console.log('   These can be used to test different minification strategies by');
-  console.log('   modifying MetricsMinifier.js and rebuilding this tool.');
-  console.log('');
+  if (!options.verifyExact) {
+    console.log('   Tip: Use --verify-exact to compare with production files');
+    console.log('   (useful for validating the tool produces identical output).');
+    console.log('');
+  }
 
   process.exit(errorCount > 0 ? 1 : 0);
 }
