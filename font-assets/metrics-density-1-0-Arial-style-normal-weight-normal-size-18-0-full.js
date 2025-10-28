@@ -1,6 +1,6 @@
 // Full non-minified metrics for debugging
 // This file is NOT used by the runtime - it's for development/inspection only
-if(typeof BitmapText!=='undefined'&&BitmapText.registerMetrics){BitmapText.registerMetrics('density-1-0-Arial-style-normal-weight-normal-size-18-0',{
+if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(1,'Arial',0,0,18,{
   "kerningTable": {
     "A": {
       "0": 20,
