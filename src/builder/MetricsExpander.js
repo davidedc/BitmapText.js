@@ -69,10 +69,37 @@ class MetricsExpander {
   }
 
   /**
+   * TIER 7 OPTIMIZATION: Decompress value lookup array from delta encoding + base64
+   *
+   * Reverses the compression:
+   * 1. Decode base64 → varint → zigzag → deltas
+   * 2. Reconstruct sorted values from deltas
+   * 3. Return as unsorted array (order doesn't matter for lookup)
+   *
+   * @param {string} base64 - Base64 encoded delta-compressed string
+   * @returns {Array<number>} Array of metric value integers
+   */
+  static #decompressValueArray(base64) {
+    // Decode base64 → deltas
+    const deltas = this.#decodeVarInts(base64);
+
+    // Reconstruct sorted values from deltas
+    const sorted = [deltas[0]]; // First value is absolute
+    for (let i = 1; i < deltas.length; i++) {
+      sorted.push(sorted[i - 1] + deltas[i]);
+    }
+
+    // Return as-is (order doesn't matter for value lookup)
+    // The indices in tuplets refer to sorted positions
+    return sorted;
+  }
+
+  /**
    * Expands minified metrics back to FontMetrics instance for runtime use
-   * TIER 6c FORMAT ONLY (no backward compatibility)
+   * TIER 7 FORMAT (backward compatible with Tier 6c)
    *
    * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
+   *   - v can be array (Tier 6c) or base64 string (Tier 7)
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
@@ -90,12 +117,23 @@ class MetricsExpander {
       );
     }
 
-    // Extract values from Tier 6c array format
+    // Extract values from Tier 6c/7 array format
     let [kv, k, b, v, t, g, s, cl] = minified;
 
     // Convert integer values back to floats (divide by 10000)
     kv = this.#convertIntegersToValues(kv);
-    v = this.#convertIntegersToValues(v);
+
+    // TIER 7: Handle value lookup array - can be array (Tier 6c) or base64 string (Tier 7)
+    if (typeof v === 'string') {
+      // Tier 7: Decompress from delta-encoded base64
+      v = this.#decompressValueArray(v);
+      v = this.#convertIntegersToValues(v);
+    } else if (Array.isArray(v)) {
+      // Tier 6c: Already an array of integers
+      v = this.#convertIntegersToValues(v);
+    } else {
+      throw new Error('Invalid value lookup format - expected array or string');
+    }
 
     // Unflatten baseline array to object
     b = this.#unflattenBaseline(b);

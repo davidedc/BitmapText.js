@@ -794,7 +794,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ## Data Minification/Expansion
 
-  Font data is minified for efficient storage and network transfer using six-tier compression:
+  Font data is minified for efficient storage and network transfer using seven-tier compression:
 
   **Font Metrics Minification (src/builder/MetricsMinifier.js)**:
   - **Tier 1: Property Name Shortening** - Reduces JSON key names (e.g., `fontBoundingBoxAscent` → `fba`)
@@ -850,34 +850,51 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
         - **Savings**: ~500 bytes per file (40-50% reduction)
         - **Key Insight**: 54-58% of values are 1-10, encoded in just 1 byte
     - **Combined Tier 6c Savings**: ~2,689 bytes average (~31% reduction from Tier 6b, ~69% from original)
-  - **Tier 7: Wrapper Simplification** - Removes safety checks for private library use:
-    - **Format Change**: `BitmapText.r(...)` instead of `if(typeof BitmapText!=='undefined'&&BitmapText.r){BitmapText.r(...)}`
-    - **Assumption**: BitmapText is always defined before loading metrics files (safe for private library)
-    - **Savings**: ~51 bytes per file (2.6% reduction from Tier 6c)
+  - **Tier 7: Value Array Delta Encoding** - Compresses glyph value lookup array using base64+delta encoding:
+    - **Magnitude Sorting**: Values sorted ascending for optimal delta compression (0, 156, 1563, 1875...)
+      - **Delta Efficiency**: Sorted deltas average ~2,100 (vs ~88,000 for unsorted)
+      - **Key Change**: Replaces frequency-based sorting with magnitude sorting
+    - **Delta Encoding**: First value absolute, subsequent values as differences
+      - **Example**: `[0, 156, 1563]` → deltas: `[0, 156, 1407]`
+    - **VarInt + Base64**: Uses existing zigzag+varint infrastructure, then base64 encode
+      - **Before**: `[100107,0,120059,...]` = ~655 bytes JSON array
+      - **After**: `"ALgC1A6qB/AE..."` = ~288 bytes base64 string
+      - **Savings**: ~365 bytes per file (55.7% reduction on value array)
+    - **Format Change**: Element [3] changes from array to base64 string
+    - **Index Mapping**: Tuplet indices correctly reference magnitude-sorted positions (0=smallest value)
+    - **Combined Tier 7 Savings**: ~307 bytes average per file (16.5% reduction from Tier 6c)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
   - **Format Requirements** - All 204 characters from CHARACTER_SET must be present (no legacy format support)
-  - **Total File Size** - Average ~1,940 bytes per font file (97.3% reduction from ~73KB original)
+  - **Total File Size** - Average ~1,560 bytes per font file (97.9% reduction from ~73KB original)
 
   **Value Indexing Algorithm (Tier 4)**:
-  - **Score Calculation** - For each unique value: `score = occurrences × string_length`
-  - **Optimal Index Assignment** - Values sorted by score descending, assigned indices 0, 1, 2, ...
-  - **Index Length Strategy** - Highest-scoring values get shortest indices (0-9 are 1 character, 10-99 are 2 characters, 100+ are 3+ characters)
-  - **Glyph Value Example** - Value `10.5669` appearing 58 times: before 406 chars (58×7), after 65 chars (7 lookup + 58×1 index) = 341 chars saved
-  - **Kerning Value Example** - Value `50` appearing 46 times: before 92 chars (46×2), after 18 chars (2 lookup + 46×1 index) = 74 chars saved
+  - **Glyph Values (Tier 7 Update)** - Magnitude-sorted for optimal delta encoding:
+    - **Sorting Strategy**: Values sorted ascending by magnitude (0, 156, 1563, 1875...)
+    - **Index Assignment**: Index = position in sorted array (0=smallest, 1=next smallest, ...)
+    - **Rationale**: Enables efficient delta compression in Tier 7 (~2K avg deltas vs ~88K unsorted)
+    - **Trade-off Analysis**: Magnitude sorting saves ~365 bytes on value array with no cost to tuplet indices
+  - **Kerning Values** - Frequency-sorted for optimal index compression:
+    - **Score Calculation**: `score = occurrences × string_length`
+    - **Index Assignment**: Highest-scoring values get shortest indices (0-9 = 1 char, 10-99 = 2 chars)
+    - **Rationale**: Kerning values remain as JSON array (not delta-encoded), so small indices save space
+    - **Example**: Value `50` appearing 46 times: before 92 chars (46×2), after 18 chars (2 lookup + 46×1 index) = 74 chars saved
   - **Format** - Minified data includes:
-    - 'kv' field: kerning value lookup array
+    - 'kv' field: kerning value lookup array (frequency-sorted)
     - 'k' field: kerning table with indexed values
-    - 'v' field: glyph value lookup array
+    - 'v' field: glyph value lookup (Tier 7: base64 delta-encoded string, Tier 6c: magnitude-sorted array)
     - 'g' field: glyph arrays with indexed values
   - **Real-World Performance** - Typical font:
-    - Glyph values: ~108 unique from 862 total (12.5% uniqueness) → 52.7% compression
+    - Glyph values: ~108 unique from 862 total (12.5% uniqueness) → Tier 7: 55.7% compression on value array
     - Kerning values: ~5 unique from 107 total (4.7% uniqueness) → 51.0% compression
 
   **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
   - **CHARACTER_SET-Based Ordering** - Always uses CHARACTER_SET for character order (all 204 characters in sorted order)
-  - **Tier 6c Format Only** - Expects 8-element array format (no backward compatibility):
-    - `[kv, k, b, v, t, g, s, cl]` where `t` and `g` are base64 strings
+  - **Tier 7 Format** - Expects 8-element array format with backward compatibility for Tier 6c:
+    - `[kv, k, b, v, t, g, s, cl]` where `t`, `g`, and `v` can be base64 strings
+    - Element `v` handling:
+      - **Tier 7**: Base64 string → decode VarInt → reconstruct deltas → magnitude-sorted array
+      - **Tier 6c**: Array of integers (magnitude-sorted)
     - Throws error for any other format
   - **Multi-Parameter Registration** - `BitmapText.r(density, fontFamily, styleIdx, weightIdx, size, data)`:
     - 6 required parameters
@@ -887,6 +904,10 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     - **Flattened Tuplets**: Base64 → VarInt decoding → zigzag decoding → signed integers
       - VarInt decoding: 7 bits per byte, MSB continuation bit
       - Zigzag decoding: 0→0, 1→-1, 2→1, 3→-2, 4→2
+    - **Value Array (Tier 7)**: Base64 → VarInt decoding → delta reconstruction → magnitude-sorted array
+      - Decodes base64 string to deltas: `[0, 156, 1407, ...]`
+      - Reconstructs values: first value absolute, subsequent = previous + delta
+      - Result: magnitude-sorted array `[0, 156, 1563, ...]` ready for index lookups
   - **Three-Pass Kerning Expansion** - Expands kerning in three passes:
     1. Left-side character range expansion (handles compact notation with dash-at-start)
     2. Right-side character range expansion

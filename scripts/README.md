@@ -316,7 +316,7 @@ npm run generate-registry                                 # Using npm script
 1. Finds all `*-full.js` files in font-assets/
 2. Extracts full metricsData from each file
 3. Runs `MetricsMinifier.minifyWithVerification()`:
-   - Minifies data (Tier 1-6b optimizations)
+   - Minifies data (Tier 1-7 optimizations)
    - Expands back using MetricsExpander
    - Compares with original (roundtrip verification)
    - Throws error if mismatch detected
