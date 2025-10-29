@@ -28,7 +28,7 @@
   "b": {...},
   "g": [...],
   "s": 5
-  // No 'c' field - always uses DEFAULT_CHARACTER_SET
+  // No 'c' field - always uses CHARACTER_SET
 }
 ```
 
@@ -42,9 +42,9 @@
 
 **Changes:**
 - ✅ Removed `characterOrder` parameter from all methods
-- ✅ Always uses `DEFAULT_CHARACTER_SET` for compression
+- ✅ Always uses `CHARACTER_SET` for compression
 - ✅ Never includes 'c' field in output
-- ✅ Throws error if input characterMetrics not in DEFAULT_CHARACTER_SET order
+- ✅ Throws error if input characterMetrics not in CHARACTER_SET order
 - ✅ Updated all documentation
 
 **Key changes:**
@@ -52,16 +52,16 @@
 // BEFORE: Accepted any character order
 static minify(metricsData) {
   const characterOrder = Object.keys(metricsData.characterMetrics).join('');
-  if (characterOrder !== DEFAULT_CHARACTER_SET) {
+  if (characterOrder !== CHARACTER_SET) {
     result.c = characterOrder; // Include 'c' field for non-default order
   }
 }
 
-// AFTER: Requires DEFAULT_CHARACTER_SET order
+// AFTER: Requires CHARACTER_SET order
 static minify(metricsData) {
   const characterOrder = Object.keys(metricsData.characterMetrics).join('');
-  if (characterOrder !== DEFAULT_CHARACTER_SET) {
-    throw new Error('characterMetrics must be in DEFAULT_CHARACTER_SET order');
+  if (characterOrder !== CHARACTER_SET) {
+    throw new Error('characterMetrics must be in CHARACTER_SET order');
   }
   // Never include 'c' field
 }
@@ -71,7 +71,7 @@ static minify(metricsData) {
 
 **Changes:**
 - ✅ Removed `characterOrder` parameter from all methods
-- ✅ Always uses `DEFAULT_CHARACTER_SET` for expansion
+- ✅ Always uses `CHARACTER_SET` for expansion
 - ✅ Rejects files with 'c' field (legacy format)
 - ✅ Updated all documentation
 
@@ -79,7 +79,7 @@ static minify(metricsData) {
 ```javascript
 // BEFORE: Accepted any character order
 static expand(minified) {
-  const characterOrder = minified.c || DEFAULT_CHARACTER_SET;
+  const characterOrder = minified.c || CHARACTER_SET;
   // ... use characterOrder
 }
 
@@ -88,33 +88,33 @@ static expand(minified) {
   if (minified.c) {
     throw new Error('Legacy format not supported - regenerate font assets');
   }
-  // Always use DEFAULT_CHARACTER_SET
+  // Always use CHARACTER_SET
 }
 ```
 
 ### `tools/export-font-data.js`
 
 **Changes:**
-- ✅ Sorts characterMetrics into DEFAULT_CHARACTER_SET order before minification
-- ✅ Validates all characters are in DEFAULT_CHARACTER_SET
+- ✅ Sorts characterMetrics into CHARACTER_SET order before minification
+- ✅ Validates all characters are in CHARACTER_SET
 - ✅ Throws error if unknown characters found
 
 **Key changes:**
 ```javascript
-// Sort characterMetrics into DEFAULT_CHARACTER_SET order
+// Sort characterMetrics into CHARACTER_SET order
 const characterMetrics = {};
-for (const char of DEFAULT_CHARACTER_SET) {
+for (const char of CHARACTER_SET) {
     if (unsortedCharacterMetrics[char]) {
         characterMetrics[char] = unsortedCharacterMetrics[char];
     }
 }
 
-// Verify all characters are in DEFAULT_CHARACTER_SET
+// Verify all characters are in CHARACTER_SET
 const missingFromDefault = Object.keys(unsortedCharacterMetrics).filter(
-    char => !DEFAULT_CHARACTER_SET.includes(char)
+    char => !CHARACTER_SET.includes(char)
 );
 if (missingFromDefault.length > 0) {
-    throw new Error('Font contains characters not in DEFAULT_CHARACTER_SET');
+    throw new Error('Font contains characters not in CHARACTER_SET');
 }
 ```
 
@@ -143,7 +143,7 @@ Please regenerate font assets using the current font-assets-builder.
 
 **If you have custom character sets:**
 
-You must add them to `DEFAULT_CHARACTER_SET` in `src/builder/DEFAULT_CHARACTER_SET.js`:
+You must add them to `CHARACTER_SET` in `src/builder/CHARACTER_SET.js`:
 
 ```javascript
 // Add custom characters to the generation logic
@@ -185,13 +185,13 @@ Then regenerate the constant.
 ### ❌ No Longer Supported
 
 1. **Legacy font files with 'c' field** - will throw error at runtime
-2. **Custom character orders** - must match DEFAULT_CHARACTER_SET
+2. **Custom character orders** - must match CHARACTER_SET
 3. **Mixed character orders** - all files must use same order
 
 ### ✅ Required Actions
 
 1. **Regenerate all font files** using current font-assets-builder
-2. **Update DEFAULT_CHARACTER_SET** if you need custom characters
+2. **Update CHARACTER_SET** if you need custom characters
 3. **Test all demos** after regeneration
 
 ---
@@ -203,8 +203,8 @@ Then regenerate the constant.
 **Build-time (MetricsMinifier):**
 ```javascript
 const characterOrder = Object.keys(metricsData.characterMetrics).join('');
-if (characterOrder !== DEFAULT_CHARACTER_SET) {
-  throw new Error('Must use DEFAULT_CHARACTER_SET order');
+if (characterOrder !== CHARACTER_SET) {
+  throw new Error('Must use CHARACTER_SET order');
 }
 ```
 
@@ -213,10 +213,10 @@ if (characterOrder !== DEFAULT_CHARACTER_SET) {
 if (minified.c) {
   throw new Error('Legacy format not supported');
 }
-// Always use DEFAULT_CHARACTER_SET
+// Always use CHARACTER_SET
 ```
 
-### DEFAULT_CHARACTER_SET Definition
+### CHARACTER_SET Definition
 
 204 characters in sorted order:
 ```
@@ -317,4 +317,4 @@ You'll lose:
 
 - `TWO-DIMENSIONAL-COMPRESSION-COMPLETE.md` - Compression implementation
 - `FIX-CHARACTER-ORDER-BUG.md` - Original character order fix (now obsolete)
-- `DEFAULT_CHARACTER_SET.js` - Character set definition
+- `CHARACTER_SET.js` - Character set definition

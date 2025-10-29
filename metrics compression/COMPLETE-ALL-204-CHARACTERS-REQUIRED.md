@@ -8,7 +8,7 @@
 
 ## Summary
 
-Successfully eliminated all backwards compatibility code and enforced that ALL font files must contain all 204 characters from DEFAULT_CHARACTER_SET. This allows complete removal of the 'c' field, saving 208 bytes per font file.
+Successfully eliminated all backwards compatibility code and enforced that ALL font files must contain all 204 characters from CHARACTER_SET. This allows complete removal of the 'c' field, saving 208 bytes per font file.
 
 ---
 
@@ -17,21 +17,21 @@ Successfully eliminated all backwards compatibility code and enforced that ALL f
 ### 1. **Always Require All 204 Characters**
 
 **Before:** Font files could contain any subset of characters
-**After:** Font files MUST contain ALL 204 characters from DEFAULT_CHARACTER_SET
+**After:** Font files MUST contain ALL 204 characters from CHARACTER_SET
 
 **Benefit:** Can completely omit 'c' field (saves 208 bytes per file)
 
 ### 2. **Removed All Legacy Support**
 
 **Before:** Supported mixed character orders, partial character sets, 'c' field
-**After:** Single standard: DEFAULT_CHARACTER_SET order, all 204 chars, no 'c' field
+**After:** Single standard: CHARACTER_SET order, all 204 chars, no 'c' field
 
 **Benefit:** Simpler code, clearer errors, consistent behavior
 
 ### 3. **JavaScript Object Key Ordering Handled**
 
 **Problem:** JavaScript reorders numeric string keys ("0"-"9") before other keys
-**Solution:** Never use `Object.keys()` - always iterate through DEFAULT_CHARACTER_SET
+**Solution:** Never use `Object.keys()` - always iterate through CHARACTER_SET
 
 ---
 
@@ -44,17 +44,17 @@ Successfully eliminated all backwards compatibility code and enforced that ALL f
 // Validate ALL 204 characters are present
 // Note: We DON'T use Object.keys() because JavaScript reorders numeric keys
 const missingChars = [];
-for (const char of DEFAULT_CHARACTER_SET) {
+for (const char of CHARACTER_SET) {
   if (!(char in metricsData.characterMetrics)) {
     missingChars.push(char);
   }
 }
 ```
 
-**Always Use DEFAULT_CHARACTER_SET Order:**
+**Always Use CHARACTER_SET Order:**
 ```javascript
-// Convert to array in DEFAULT_CHARACTER_SET order
-return Array.from(DEFAULT_CHARACTER_SET).map(char => {
+// Convert to array in CHARACTER_SET order
+return Array.from(CHARACTER_SET).map(char => {
   const glyph = characterMetrics[char];
   return [glyph.width, ...];
 });
@@ -69,10 +69,10 @@ if (minified.c) {
 }
 ```
 
-**Always Use DEFAULT_CHARACTER_SET:**
+**Always Use CHARACTER_SET:**
 ```javascript
 // Always expand all 204 characters
-const chars = Array.from(DEFAULT_CHARACTER_SET);
+const chars = Array.from(CHARACTER_SET);
 chars.forEach((char, index) => {
   expanded[char] = { ...minifiedGlyphs[index], ...commonMetrics };
 });
@@ -82,8 +82,8 @@ chars.forEach((char, index) => {
 
 **Generate All 204 Characters:**
 ```javascript
-// Add all 204 characters from DEFAULT_CHARACTER_SET
-for (const char of DEFAULT_CHARACTER_SET) {
+// Add all 204 characters from CHARACTER_SET
+for (const char of CHARACTER_SET) {
   if (generatedMetrics[char]) {
     characterMetrics[char] = generatedMetrics[char];
   } else {
@@ -167,14 +167,14 @@ Object.keys(obj).join('');
 
 **Never use `Object.keys()` or `Object.values()` for order-sensitive operations.**
 
-Instead, always iterate through DEFAULT_CHARACTER_SET:
+Instead, always iterate through CHARACTER_SET:
 
 ```javascript
 // ❌ WRONG - JavaScript reorders keys
 const chars = Object.keys(characterMetrics);
 
-// ✅ CORRECT - Iterate through DEFAULT_CHARACTER_SET
-for (const char of DEFAULT_CHARACTER_SET) {
+// ✅ CORRECT - Iterate through CHARACTER_SET
+for (const char of CHARACTER_SET) {
   const metrics = characterMetrics[char];
   // ...
 }
@@ -317,8 +317,8 @@ Unused characters cost ~20-30 bytes each in the 'g' array:
 ## Files Modified
 
 ### Core Implementation
-1. ✅ `src/builder/MetricsMinifier.js` - Enforce all 204 chars, use DEFAULT_CHARACTER_SET order
-2. ✅ `src/builder/MetricsExpander.js` - Reject 'c' field, always use DEFAULT_CHARACTER_SET
+1. ✅ `src/builder/MetricsMinifier.js` - Enforce all 204 chars, use CHARACTER_SET order
+2. ✅ `src/builder/MetricsExpander.js` - Reject 'c' field, always use CHARACTER_SET
 3. ✅ `tools/export-font-data.js` - Generate all 204 chars with placeholders
 
 ### Testing
@@ -333,11 +333,11 @@ Unused characters cost ~20-30 bytes each in the 'g' array:
 
 ## Known Limitations
 
-### 1. Must Use DEFAULT_CHARACTER_SET
+### 1. Must Use CHARACTER_SET
 
-Cannot use custom character sets without modifying `DEFAULT_CHARACTER_SET.js`.
+Cannot use custom character sets without modifying `CHARACTER_SET.js`.
 
-**Workaround:** Add custom characters to DEFAULT_CHARACTER_SET and rebuild all fonts.
+**Workaround:** Add custom characters to CHARACTER_SET and rebuild all fonts.
 
 ### 2. All 204 Characters Required
 
@@ -369,7 +369,7 @@ All existing font files must be regenerated.
 
 **Problem:** Backwards compatibility with legacy character orders added complexity
 
-**Solution:** Enforce single standard - all 204 characters, DEFAULT_CHARACTER_SET order, no 'c' field
+**Solution:** Enforce single standard - all 204 characters, CHARACTER_SET order, no 'c' field
 
 **Result:**
 - ✅ 208 bytes saved per file ('c' field removed)
@@ -388,4 +388,4 @@ All existing font files must be regenerated.
 
 - `BREAKING-CHANGE-NO-LEGACY-SUPPORT.md` - Breaking changes overview
 - `TWO-DIMENSIONAL-COMPRESSION-COMPLETE.md` - 2D compression implementation
-- `DEFAULT_CHARACTER_SET.js` - Character set definition (204 chars)
+- `CHARACTER_SET.js` - Character set definition (204 chars)
