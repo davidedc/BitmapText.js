@@ -3,6 +3,7 @@
   **Documentation Navigation:**
   - **API Usage Examples** → See README.md
   - **System Architecture** → See ARCHITECTURE.md
+  - **Script Automation** → See scripts/README.md
 
   ## Quick Context
 
@@ -15,7 +16,7 @@
   - **Store classes**: src/runtime/AtlasDataStore.js, src/runtime/FontMetricsStore.js (single source of truth for storage, used by BitmapText and FAB)
   - **Platform-specific loaders**: src/platform/FontLoader-browser.js, src/platform/FontLoader-node.js (unified class name, selected at build time)
   - **Configuration classes**: src/runtime/FontProperties.js, src/runtime/TextProperties.js
-  - **Font assets building tools**: src/builder/*FAB.js files (extends BitmapText + stores)
+  - **Font assets building tools**: src/builder/*FAB.js files (extend runtime classes with building capabilities)
   - **Font data**: font-assets/ (self-registering files that call BitmapText.registerMetrics/Atlas → delegates to stores)
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, image-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
@@ -55,10 +56,12 @@
   1. **CORS Issues**: Always serve via HTTP server, not file://
   2. **Pixel Density**: Remember to scale coordinates by pixelDensity
   3. **Anti-aliasing**: Canvases must be attached to DOM before rendering for crisp text
+  4. **StatusCode Loading**: In browser script tags, StatusCode.js MUST load before BitmapText.js (dependency requirement)
+  5. **Transform Behavior**: BitmapText IGNORES all canvas transforms - coordinates are ABSOLUTE from canvas origin (see README.md "Transform Behavior - CRITICAL")
 
   ## Testing
-  
-  See README.md for testing approach and instructions. Node.js example (examples/node/dist/hello-world.bundle.js) demonstrates library functionality outside browser environment using QOI format and PNG export.
+
+  See README.md for testing approach and instructions.
 
   ## Key Invariants
 
@@ -90,8 +93,8 @@
   - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)
   - **Font loading API**: src/runtime/BitmapText.js (static methods: loadFont, loadFonts - delegates to platform-specific FontLoader; registerMetrics, registerAtlas - delegates to stores)
   - **Font registry management**: src/runtime/FontManifest.js (replaces global bitmapTextManifest)
-  - **Hash verification**: src/utils/canvas-extensions.getHash:1 (canvas pixel hash), src/runtime/AtlasPositioning.getHash:149 (positioning data hash)
-  - **Specs parsing**: src/specs/SpecsParser.parseSubSpec:105
+  - **Hash verification**: src/utils/canvas-extensions.js (getHash method for canvas pixel hash), src/runtime/AtlasPositioning.js (getHash method for positioning data hash)
+  - **Specs parsing**: src/specs/SpecsParser.js:104 (parseSubSpec method)
   - **Atlas generation & reconstruction**: public/font-assets-builder.html (displays Atlas source and reconstructed tight atlas side-by-side)
 
   ## Development Tips
@@ -104,10 +107,12 @@
   - PNG to WebP conversion: Use `./scripts/convert-png-to-webp.sh [directory]` to convert PNG→WebP (deletes source PNGs)
   - Image to JS conversion: Use `node scripts/image-to-js-converter.js [directory] --all` to generate JS files from WebP and QOI images for file:// protocol compatibility
   - WebP benefits: Lossless compression, 5-10% smaller than PNG, Safari 14+ required
-  - Node.js demo build: Use `./scripts/build-node-demo.sh` or `./run-node-demos.sh` (includes font asset setup)
   - Automated pipeline available: See `scripts/README.md` for complete automation guide
   - Use `--preserve-originals` flag to keep unoptimized PNGs for comparison during development
   - Use `--remove-qoi` flag to cleanup QOI files if disk space is limited
-  - QOI memory analysis: Use `npm run qoi-memory` or `node scripts/qoi-memory-calculator.js [directory]` to analyze uncompressed memory usage of bitmap fonts
+  - Test baseline and alignment: public/baseline-alignment-demo.html shows all combinations side-by-side
+  - Automated image pipeline: See scripts/README.md for QOI/PNG/WebP conversion workflow and command details
+  - Node.js demos: See README.md for build and run instructions
+  - QOI memory analysis: Use `npm run qoi-memory` to analyze uncompressed memory usage of bitmap fonts
 
   See README.md for API usage, ARCHITECTURE.md for system design.

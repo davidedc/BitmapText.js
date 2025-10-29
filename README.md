@@ -5,6 +5,7 @@
   **Documentation Navigation:**
   - **System Architecture** → See docs/ARCHITECTURE.md for detailed design information
   - **Development with Claude** → See docs/CLAUDE.md for Claude-specific development guidance
+  - **Automation Scripts** → See scripts/README.md for pipeline documentation
 
   ## Problem Statement
 
@@ -529,9 +530,9 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
 
   #### Loading Methods
 
-  **loadFont(idString, options)**
+  **loadFont(idString, options): Promise\<void\>**
 
-  Loads a single font (metrics + atlas):
+  Loads a single font (metrics + atlas). Returns a Promise that resolves when the font is loaded, or rejects on error.
 
   ```javascript
   await BitmapText.loadFont('density-1-0-Arial-style-normal-weight-normal-size-18-0', {
@@ -542,9 +543,9 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
   });
   ```
 
-  **loadFonts(idStrings, options)**
+  **loadFonts(idStrings, options): Promise\<void\>**
 
-  Loads multiple fonts in parallel:
+  Loads multiple fonts in parallel. Returns a Promise that resolves when all fonts are loaded, or rejects on error.
 
   ```javascript
   await BitmapText.loadFonts([
@@ -598,16 +599,47 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
   Parameters:
   - **ctx**: Canvas 2D rendering context
   - **text**: String to render
-  - **x_CssPx, y_CssPx**: Position in CSS pixels (absolute from canvas origin; y_CssPx is bottom of text bounding box)
+  - **x_CssPx**: Position in CSS pixels (absolute from canvas origin)
+  - **y_CssPx**: Position in CSS pixels (absolute from canvas origin; represents position of the specified baseline - see textBaseline property)
   - **fontProperties**: FontProperties instance
   - **textProperties**: TextProperties instance (optional)
 
   #### Query Methods
 
-  **hasMetrics(idString)**: Check if metrics are loaded
-  **hasAtlas(idString)**: Check if atlas is loaded
-  **unloadMetrics(idString)**: Remove metrics from memory
-  **unloadAtlas(idString)**: Remove atlas from memory
+  **hasMetrics(idString: string): boolean** - Check if metrics are loaded for a specific font
+
+  **hasAtlas(idString: string): boolean** - Check if atlas is loaded for a specific font
+
+  **hasFont(idString: string): boolean** - Check if both metrics and atlas are loaded
+
+  ```javascript
+  const isLoaded = BitmapText.hasFont('density-1-0-Arial-style-normal-weight-normal-size-18-0');
+  if (!isLoaded) {
+    await BitmapText.loadFont('density-1-0-Arial-style-normal-weight-normal-size-18-0');
+  }
+  ```
+
+  #### Unloading Methods
+
+  **unloadMetrics(idString: string): void** - Remove metrics from memory for a specific font
+
+  **unloadAtlas(idString: string): void** - Remove atlas from memory for a specific font
+
+  **unloadFont(idString: string): void** - Remove both metrics and atlas from memory
+
+  **unloadFonts(idStrings: string[]): void** - Remove multiple fonts from memory
+
+  **unloadAllFonts(): void** - Remove all fonts (metrics and atlases) from memory
+
+  **unloadAllAtlases(): void** - Remove all atlases from memory (keeps metrics)
+
+  ```javascript
+  // Unload a specific font to free memory
+  BitmapText.unloadFont('density-1-0-Arial-style-normal-weight-normal-size-18-0');
+
+  // Unload all atlases (keeps metrics for measurement)
+  BitmapText.unloadAllAtlases();
+  ```
 
   #### Registration Methods (Called by Font Assets)
 
@@ -755,10 +787,11 @@ new TextProperties(options = {})
 
   **Note**: End users of the static BitmapText API don't need to interact with these classes directly.
 
-  Build Instructions
+  ## Build Instructions
 
-  Development Setup
+  ### Development Setup
 
+  ```bash
   # Clone repository
   git clone [repository-url]
 
@@ -769,23 +802,24 @@ new TextProperties(options = {})
 
   # Open in browser
   http://localhost:8000/public/font-assets-builder.html
+  ```
 
-  Building Font Data
+  ### Building Font Data
 
   1. Configure specs in src/specs/default-specs.js or via UI
   2. Use Font Builder to generate atlases
   3. Compressed data saved to font-assets/
 
-  Testing and Examples
+  ## Testing and Examples
 
   **Minimal Demo**
-  Open public/hello-world-demo.html for a simple "Hello World" example showing basic usage.
+  Open `public/hello-world-demo.html` for a simple "Hello World" example showing basic usage.
 
   **Multi-Size Demo**
-  Open public/hello-world-multi-size.html to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
+  Open `public/hello-world-multi-size.html` to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
 
   **Baseline & Alignment Demo**
-  Open public/baseline-alignment-demo.html for an interactive demonstration of all baseline and alignment combinations, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
+  Open `public/baseline-alignment-demo.html` for an interactive demonstration of all baseline and alignment combinations, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
 
   **Node.js Usage**
   ```bash
@@ -805,8 +839,8 @@ new TextProperties(options = {})
   
   **Multi-size demo**: Renders "Hello World" at sizes 18, 18.5, and 19. Demonstrates multi-size font loading and placeholder rectangle fallback for missing atlases. Self-contained scripts with no npm dependencies, built from modular source files.
 
-  **Full Test Suite**  
-  Open public/test-renderer.html to run visual tests and hash verification.
+  **Full Test Suite**
+  Open `public/test-renderer.html` to run visual tests and hash verification.
 
   Tests verify:
   - Pixel-identical rendering consistency
@@ -835,6 +869,11 @@ new TextProperties(options = {})
   - Check pixel density scaling is applied correctly
   - Verify font data is loaded before attempting to render
   - If you see simplified black rectangles instead of text, atlases are missing but metrics are loaded (placeholder mode)
+
+  **Node.js Issues**
+  - Canvas factory configuration is required: `BitmapText.configure({ canvasFactory: () => new Canvas() })`
+  - Must call `BitmapText.configure()` before loading fonts
+  - Font directory may need configuration if running from non-standard location
 
   **Performance Issues**
   - Pre-load atlases during initialization
@@ -884,6 +923,8 @@ new TextProperties(options = {})
   │   └── specs/         # Font specifications
   ├── public/            # HTML entry points
   ├── font-assets/       # Generated font assets
+  ├── examples/          # Example applications
+  │   └── node/         # Node.js demo applications
   ├── test/              # Test utilities and data
   ├── tools/             # Development tools
   ├── lib/               # Third-party libraries

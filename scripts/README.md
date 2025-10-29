@@ -136,7 +136,6 @@ node scripts/image-to-js-converter.js [directory] [options]
 - `--png`: Process PNG files only (generates *-png.js files)
 - `--qoi`: Process QOI files only (generates *-qoi.js files)
 - `--all`: Process both PNG and QOI files (default)
-- `--keep-positioning`: Preserve positioning JSON files during processing
 
 **Examples:**
 ```bash
@@ -496,3 +495,11 @@ Test the pipeline without monitoring:
 - All scripts support directory parameters for flexibility
 - Comprehensive error checking and dependency validation
 - Cross-compatible with different project structures
+
+## Cross-References
+
+For related information, see:
+- **API usage and examples** → README.md
+- **System architecture and design** → docs/ARCHITECTURE.md
+- **Claude development workflow tips** → docs/CLAUDE.md
+- **Font assets building process** → README.md (Font Assets Building section)

@@ -189,9 +189,11 @@ BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
     - Platform-specific FontLoader detection: Checks for `FontLoader` class from src/platform/
     - Canvas creation: Auto-creates in browser, uses canvasFactory in Node.js
   - Internal Fields (private):
-    - `#fontLoader`: Platform-specific FontLoader class (src/platform/FontLoader-browser.js or FontLoader-node.js)
+    - `#fontLoader`: Platform-specific FontLoader instance (lazy-initialized on first use)
     - `#canvasFactory`: Canvas creation function (optional override, platform-specific defaults)
-    - Storage: Delegated to AtlasDataStore and FontMetricsStore (stores are the single source of truth)
+    - `#coloredGlyphCanvas`: Shared scratch canvas for coloring glyphs (lazy-initialized)
+    - `#coloredGlyphCtx`: 2D context for scratch canvas (lazy-initialized)
+    - Storage: ALL font data delegated to AtlasDataStore and FontMetricsStore (stores are the single source of truth)
     - Note: fontDirectory is NOT stored in BitmapText - it's owned by FontLoaderBase
 
   **AtlasDataStore (static class)**
@@ -262,6 +264,21 @@ BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
     - `hasFontMetrics()`: Check if font metrics exist
     - `getLoadedFonts()`: List all loaded font IDs
     - `clear()`: Clear all font metrics (testing only)
+
+  **FontMetrics**
+  - Purpose: Immutable domain object encapsulating all metrics for one font configuration
+  - Architecture: Eliminates fontProperties parameter passing throughout the codebase, provides clean API for metrics access
+  - Data structures:
+    - `_characterMetrics`: Map of character → TextMetrics-compatible objects (width, ascent, descent, bounding boxes)
+    - `_kerningTable`: Map of character pairs → adjustment values (in 1/1000 em units)
+    - `_spaceAdvancementOverride`: Special spacing rules for small font sizes
+  - Methods:
+    - `getCharacterMetrics(char)`: Get TextMetrics-compatible object for a character
+    - `getKerningAdjustment(leftChar, rightChar)`: Get kerning adjustment between character pair
+    - `hasGlyph(char)`: Check if character exists in this font
+    - `getAvailableCharacters()`: List all characters with metrics
+    - `getSpaceAdvancementOverride()`: Get space override value (for small sizes)
+  - Used by: BitmapText.measureText(), BitmapText.drawTextFromAtlas()
 
   **TextProperties**
   - Purpose: Text rendering configuration management
@@ -461,6 +478,23 @@ To support compound emojis would require:
   - DSL parser for font specifications
   - Converts human-readable specs to data structures
 
+  **StatusCode (src/runtime/StatusCode.js)**
+  - Purpose: Centralized status code system for error reporting and success handling
+  - Architecture: Global constants and factory functions for structured status information
+  - Status Codes:
+    - `SUCCESS = 0`: Operation completed successfully
+    - `NO_METRICS = 1`: Font metrics not available
+    - `PARTIAL_METRICS = 2`: Some characters missing metrics
+    - `NO_ATLAS = 3`: Atlas image not available (placeholder mode)
+    - `PARTIAL_ATLAS = 4`: Some characters missing from atlas
+  - Factory Functions:
+    - `createSuccessStatus()`: Create success status object
+    - `createErrorStatus(code, data)`: Create error status with optional data
+  - Helper Functions:
+    - `isSuccess(status)`, `isCompleteFailure(status)`, `isPartialSuccess(status)`, `getStatusDescription(status)`
+  - Used by: BitmapText.measureText(), BitmapText.drawTextFromAtlas(), FontLoader methods
+  - Distribution: Core runtime constant, must be loaded before BitmapText.js in browser script tags
+
   **HashStore**
   - Hash computation for rendered output using djb2-style algorithm
   - Verification of pixel-identical consistency across browsers
@@ -633,6 +667,8 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   3. Draw character-specific rectangle using actualBoundingBox (not font-wide fontBoundingBox):
      - Width: actualBoundingBoxLeft + actualBoundingBoxRight (scaled by pixelDensity)
      - Height: actualBoundingBoxAscent + actualBoundingBoxDescent (scaled by pixelDensity)
+     - X position: position.x - actualBoundingBoxLeft (accounts for left protrusion, e.g., italic 'f')
+     - Y position: position.y - fontBoundingBoxDescent - actualBoundingBoxAscent (from bottom baseline)
      - Makes 'a' shorter than 'A', shows descenders on 'g', etc.
   4. Position at baseline using character metrics positioning
   5. Skip space characters (invisible placeholders)
@@ -990,11 +1026,13 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       1. BitmapText delegates to FontLoader (platform-specific, included at build time)
       2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
       3. Load metrics: Create <script> tag → Await load → metrics file calls BitmapText.registerMetrics()
-         → BitmapText.registerMetrics() delegates to FontMetricsStore.setFontMetrics()
+         → BitmapText.registerMetrics() delegates to FontLoaderBase.registerMetrics()
+         → FontLoaderBase uses MetricsExpander.expand() to restore full metrics
+         → FontMetricsStore.setFontMetrics()
       4. Load atlas: Delegates to loadAtlasFromJS() or loadAtlasFromWebP()
-         - loadAtlasFromWebP(): Create <img> → Await load → TightAtlasReconstructor → store in AtlasDataStore
+         - loadAtlasFromWebP(): Create <img> → Await load → TightAtlasReconstructor → AtlasDataStore.setAtlasData()
          - loadAtlasFromJS(): Create <script> → Await load → atlas file calls BitmapText.registerAtlas()
-         → BitmapText.registerAtlas() delegates to AtlasDataStore.setAtlasData()
+           → BitmapText.registerAtlas() reconstructs via TightAtlasReconstructor → AtlasDataStore.setAtlasData()
       5. Progress callbacks fire for each file (optional)
       6. Return Promise when complete
 
@@ -1003,7 +1041,9 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       1. BitmapText delegates to FontLoader (platform-specific, included at build time)
       2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
       3. Load metrics: fs.readFileSync() → eval with BitmapText in scope → calls BitmapText.registerMetrics()
-         → BitmapText.registerMetrics() delegates to FontMetricsStore.setFontMetrics()
+         → BitmapText.registerMetrics() delegates to FontLoaderBase.registerMetrics()
+         → FontLoaderBase uses MetricsExpander.expand() to restore full metrics
+         → FontMetricsStore.setFontMetrics()
       4. Load atlas: fs.readFileSync() → QOI decode → TightAtlasReconstructor → store in AtlasDataStore
       5. Progress callbacks fire synchronously (optional)
       6. Return immediately (synchronous)

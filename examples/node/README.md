@@ -10,8 +10,8 @@ The files in this directory are **generated/bundled executables**, not source co
 examples/node/
 ├── README.md                           # This file
 ├── dist/                              # Built/bundled demo files
-│   ├── hello-world.bundle.js          # Single-size demo (~54KB)
-│   └── hello-world-multi-size.bundle.js  # Multi-size demo (~58KB)
+│   ├── hello-world.bundle.js          # Single-size demo (~187KB)
+│   └── hello-world-multi-size.bundle.js  # Multi-size demo (~189KB)
 └── [source examples would go here]    # Future: Simple source examples
 ```
 
@@ -25,7 +25,7 @@ examples/node/
   - Uses BitmapText static API for unified font loading
 - **Source**: Built from `src/node/hello-world-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world.bundle.js`
-- **Size**: ~141KB standalone executable
+- **Size**: ~187KB standalone executable
 
 ### `dist/hello-world-multi-size.bundle.js`
 - **Purpose**: Demonstrates multi-size font rendering (18, 18.5, 19)
@@ -101,8 +101,8 @@ npm run build-multi-size-demo
 - **Self-contained**: No external dependencies required (but needs font assets)
 - **Standalone**: Each file contains all necessary code
 - **Executable**: Can be run directly with `node filename.bundle.js`
-- **Size**: ~141-143KB each
-- **Lines**: ~4032-4081 lines each
+- **Size**: ~187-189KB each
+- **Lines**: ~5,156-5,203 lines each
 - **Format**: Concatenated JavaScript with proper module boundaries
 - **Font assets**: Expects `font-assets/` directory in same location as bundle
 
