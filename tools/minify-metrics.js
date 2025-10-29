@@ -429,6 +429,33 @@ class MetricsMinifier {
   }
 
   /**
+   * TIER 7 OPTIMIZATION: Compress value lookup array using delta encoding + base64
+   *
+   * Strategy:
+   * 1. Values are already magnitude-sorted (from #createValueLookupTable)
+   * 2. Convert to deltas (first value + differences)
+   * 3. Encode using zigzag + varint + base64
+   *
+   * Example: [0, 100107, 120059] → deltas: [0, 100107, 19952] → base64
+   *
+   * @param {Array<number>} valueIntegers - Magnitude-sorted array of metric value integers
+   * @returns {string} Base64 encoded delta-compressed string
+   */
+  static #compressValueArray(valueIntegers) {
+    // Values are already magnitude-sorted from #createValueLookupTable (TIER 7)
+    // No need to sort again - preserves ordering and avoids redundant work
+
+    // Convert to deltas
+    const deltas = [valueIntegers[0]]; // First value stays as-is
+    for (let i = 1; i < valueIntegers.length; i++) {
+      deltas.push(valueIntegers[i] - valueIntegers[i - 1]);
+    }
+
+    // Encode using existing varint infrastructure
+    return this.#encodeVarInts(deltas);
+  }
+
+  /**
    * Minifies font metrics data for smaller file size
    * TIER 2 OPTIMIZATION: Array-based glyph encoding
    * TIER 3 OPTIMIZATION: Two-dimensional kerning range compression
@@ -436,11 +463,12 @@ class MetricsMinifier {
    * TIER 5 OPTIMIZATION: Tuplet deduplication (deduplicates glyph index arrays)
    * TIER 6 OPTIMIZATION: Additional space optimizations (baseline/top-level arrays, tuplet flattening, integer values)
    * TIER 6c OPTIMIZATION: Binary encoding for tuplet indices and flattened tuplets
+   * TIER 7 OPTIMIZATION: Delta encoding + base64 for value lookup array
    *
    * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from CHARACTER_SET
    *
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
-   * @returns {Array} Minified metrics as array (Tier 6: top-level object → array)
+   * @returns {Array} Minified metrics as array (Tier 7: element [3] is now base64 string)
    * @throws {Error} If not all 204 characters are present
    */
   static minify(metricsData) {
@@ -515,14 +543,18 @@ class MetricsMinifier {
     // Savings: ~500 bytes (1209 bytes JSON → ~700 bytes base64)
     const encodedFlattenedTuplets = this.#encodeVarInts(flattenedTuplets);
 
-    // TIER 6c: Return as array with encoded binary data
+    // TIER 7: Compress value lookup array using delta encoding + base64
+    // Savings: ~380 bytes (664 bytes JSON → ~280 bytes base64)
+    const encodedValueLookup = this.#compressValueArray(valueLookupIntegers);
+
+    // TIER 7: Return as array with encoded binary data
     // Array format: [kv, k, b, v, t, g, s, cl]
-    // NOTE: Elements 4 and 5 are now base64 strings instead of arrays
+    // NOTE: Elements 3, 4, and 5 are now base64 strings instead of arrays
     return [
       kerningValueLookupIntegers,  // 0: TIER 4+6: Kerning value lookup (as integers)
       indexedKerningTable,         // 1: TIER 4: Kerning table with indexed values
       baselineArray,               // 2: TIER 6: Baseline array [fba,fbd,hb,ab,ib,pd]
-      valueLookupIntegers,         // 3: TIER 4+6: Glyph value lookup (as integers)
+      encodedValueLookup,          // 3: TIER 7: Delta+VarInt encoded glyph value lookup (base64 string)
       encodedFlattenedTuplets,     // 4: TIER 6c: VarInt encoded flattened tuplets (base64 string)
       encodedTupletIndices,        // 5: TIER 6c: Byte-encoded tuplet indices (base64 string)
       metricsData.spaceAdvancementOverrideForSmallSizesInPx,  // 6: Space override
@@ -681,9 +713,10 @@ class MetricsMinifier {
    * TIER 4 OPTIMIZATION: Value indexing - replaces repeated metric values with indices
    * TIER 5 OPTIMIZATION: Tuplet compression - reduces tuplet length from 5 to 3/4/5 based on redundancy
    * TIER 6b OPTIMIZATION: 2-element tuplet compression - further reduces when left===common
+   * TIER 7 OPTIMIZATION: Magnitude-sorted value array for optimal delta encoding
    *
-   * Strategy: Assign shortest indices to values with highest (occurrence_count × string_length)
-   * This maximizes savings because frequently-occurring long values get 1-digit indices
+   * Strategy: Sort values by magnitude (ascending) for optimal delta encoding compression.
+   * This enables small deltas in the base64-encoded value array (~2K avg vs ~80K for unsorted).
    *
    * Tuplet compression (cascading, most-frequent-first):
    *   - Case D (2 elements): w===r AND l===d AND l===CL  →  [w, a]  (CL = common left)
@@ -697,42 +730,25 @@ class MetricsMinifier {
    * @private
    */
   static #createValueLookupTable(characterMetrics, commonLeftValue) {
-    // Step 1: Collect all unique values and count occurrences
-    const valueOccurrences = new Map(); // value -> count
+    // Step 1: Collect all unique values
+    const uniqueValues = new Set();
 
     for (const char of CHARACTER_SET) {
       const glyph = characterMetrics[char];
-      const values = [
-        glyph.width,
-        glyph.actualBoundingBoxLeft,
-        glyph.actualBoundingBoxRight,
-        glyph.actualBoundingBoxAscent,
-        glyph.actualBoundingBoxDescent
-      ];
-
-      for (const value of values) {
-        valueOccurrences.set(value, (valueOccurrences.get(value) || 0) + 1);
-      }
+      uniqueValues.add(glyph.width);
+      uniqueValues.add(glyph.actualBoundingBoxLeft);
+      uniqueValues.add(glyph.actualBoundingBoxRight);
+      uniqueValues.add(glyph.actualBoundingBoxAscent);
+      uniqueValues.add(glyph.actualBoundingBoxDescent);
     }
 
-    // Step 2: Calculate scores and sort by savings potential
-    // Score = occurrences × string_length (higher = more savings from short index)
-    const valueScores = Array.from(valueOccurrences.entries()).map(([value, count]) => {
-      const stringLength = JSON.stringify(value).length;
-      const score = count * stringLength;
-      return { value, count, stringLength, score };
-    });
+    // Step 2: Sort by magnitude (ascending) for optimal delta encoding
+    // TIER 7: Magnitude sorting enables efficient delta compression
+    // Sorted sequence (e.g., 0, 156, 1563...) has small deltas (~2K avg)
+    // vs unsorted (e.g., 100107, 0, 120059...) has huge deltas (~80K avg)
+    const valueLookup = Array.from(uniqueValues).sort((a, b) => a - b);
 
-    // Sort by score DESCENDING (highest savings first)
-    // Top 10 values get indices 0-9 (1 char)
-    // Next 90 values get indices 10-99 (2 chars)
-    // Remaining values get indices 100+ (3+ chars)
-    valueScores.sort((a, b) => b.score - a.score);
-
-    // Step 3: Create value lookup table (sorted by score)
-    const valueLookup = valueScores.map(vs => vs.value);
-
-    // Step 4: Create value-to-index map for fast lookup during indexing
+    // Step 3: Create value-to-index map for fast lookup during indexing
     const valueToIndex = new Map();
     valueLookup.forEach((value, index) => {
       valueToIndex.set(value, index);
@@ -1312,10 +1328,37 @@ class MetricsExpander {
   }
 
   /**
+   * TIER 7 OPTIMIZATION: Decompress value lookup array from delta encoding + base64
+   *
+   * Reverses the compression:
+   * 1. Decode base64 → varint → zigzag → deltas
+   * 2. Reconstruct sorted values from deltas
+   * 3. Return as unsorted array (order doesn't matter for lookup)
+   *
+   * @param {string} base64 - Base64 encoded delta-compressed string
+   * @returns {Array<number>} Array of metric value integers
+   */
+  static #decompressValueArray(base64) {
+    // Decode base64 → deltas
+    const deltas = this.#decodeVarInts(base64);
+
+    // Reconstruct sorted values from deltas
+    const sorted = [deltas[0]]; // First value is absolute
+    for (let i = 1; i < deltas.length; i++) {
+      sorted.push(sorted[i - 1] + deltas[i]);
+    }
+
+    // Return as-is (order doesn't matter for value lookup)
+    // The indices in tuplets refer to sorted positions
+    return sorted;
+  }
+
+  /**
    * Expands minified metrics back to FontMetrics instance for runtime use
-   * TIER 6c FORMAT ONLY (no backward compatibility)
+   * TIER 7 FORMAT (backward compatible with Tier 6c)
    *
    * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
+   *   - v can be array (Tier 6c) or base64 string (Tier 7)
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
@@ -1333,12 +1376,23 @@ class MetricsExpander {
       );
     }
 
-    // Extract values from Tier 6c array format
+    // Extract values from Tier 6c/7 array format
     let [kv, k, b, v, t, g, s, cl] = minified;
 
     // Convert integer values back to floats (divide by 10000)
     kv = this.#convertIntegersToValues(kv);
-    v = this.#convertIntegersToValues(v);
+
+    // TIER 7: Handle value lookup array - can be array (Tier 6c) or base64 string (Tier 7)
+    if (typeof v === 'string') {
+      // Tier 7: Decompress from delta-encoded base64
+      v = this.#decompressValueArray(v);
+      v = this.#convertIntegersToValues(v);
+    } else if (Array.isArray(v)) {
+      // Tier 6c: Already an array of integers
+      v = this.#convertIntegersToValues(v);
+    } else {
+      throw new Error('Invalid value lookup format - expected array or string');
+    }
 
     // Unflatten baseline array to object
     b = this.#unflattenBaseline(b);
