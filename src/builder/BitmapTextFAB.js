@@ -74,19 +74,10 @@ class BitmapTextFAB extends BitmapText {
       return;
     }
 
-    // CHARACTER_SET is a global constant
-    // Loaded from src/runtime/CHARACTER_SET.js
-    if (typeof CHARACTER_SET === 'undefined') {
-      throw new Error(
-        'Global CHARACTER_SET not defined. ' +
-        'Ensure src/runtime/CHARACTER_SET.js is loaded before calling this method.'
-      );
-    }
-
     // Build kerning table using calculator (pure calculation, no side effects)
     const kerningTable = this.#kerningCalculator.buildTable(
       fontProperties,
-      CHARACTER_SET
+      BitmapText.CHARACTER_SET
     );
 
     // Store kerning table (orchestration responsibility of FAB class)

@@ -1,6 +1,6 @@
 // Static utility class for expanding minified font metrics data (runtime only)
 // Converts compact format back to FontMetrics instances for use by the rendering engine
-// NOTE: Requires src/runtime/CHARACTER_SET.js to be loaded first
+// NOTE: Requires BitmapText.js to be loaded first (uses BitmapText.CHARACTER_SET)
 
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -168,7 +168,7 @@ class MetricsExpander {
    *   Pass 1 (left-side):  {"A-B":{"s":0}} → {"A":{"s":0},"B":{"s":0}}
    *   Pass 2 (right-side): {"A":{"0-1":0}} → {"A":{"0":0,"1":0}}
    *   Pass 3 (values):     {"A":{"s":0}} → {"A":{"s":20}} (lookup from kerningValueLookup[0])
-   * Always uses CHARACTER_SET for range expansion
+   * Always uses BitmapText.CHARACTER_SET for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
    * @param {Object} minified - Minified kerning table with indexed values
    * @param {Array} kerningValueLookup - Value lookup table for kerning values
@@ -200,7 +200,7 @@ class MetricsExpander {
    * Expands left side of kerning table (characters that come before)
    * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
    * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
-   * Always uses CHARACTER_SET for range expansion
+   * Always uses BitmapText.CHARACTER_SET for range expansion
    * @param {Object} minified - Minified kerning table with potential left-side ranges
    * @returns {Object} Left-expanded kerning table
    * @private
@@ -218,13 +218,13 @@ class MetricsExpander {
 
         // Check if both start and end are single characters in the character set
         if (startChar.length === 1 && endChar.length === 1) {
-          const startIndex = CHARACTER_SET.indexOf(startChar);
-          const endIndex = CHARACTER_SET.indexOf(endChar);
+          const startIndex = BitmapText.CHARACTER_SET.indexOf(startChar);
+          const endIndex = BitmapText.CHARACTER_SET.indexOf(endChar);
 
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
             // Valid range, expand it
             for (let i = startIndex; i <= endIndex; i++) {
-              expanded[CHARACTER_SET[i]] = rightSideObj;
+              expanded[BitmapText.CHARACTER_SET[i]] = rightSideObj;
             }
             continue;
           }
@@ -247,7 +247,7 @@ class MetricsExpander {
    * - Individual chars: comma, dot, colon, semicolon
    * - Ranges: a, c-e (c,d,e), g, j-s (j,k,l,m,n,o,p,q,r,s)
    *
-   * Always uses CHARACTER_SET for range expansion
+   * Always uses BitmapText.CHARACTER_SET for range expansion
    * @param {Object} pairs - Compressed pairs like {"-,.:;ac-egj-s":20}
    * @returns {Object} Expanded pairs like {"-":20,",":20,".":20,...,"s":20}
    * @private
@@ -303,14 +303,14 @@ class MetricsExpander {
         const startChar = currentChar;
         const endChar = compactStr[i + 2];
 
-        // Verify it's a valid range in CHARACTER_SET
-        const startIndex = CHARACTER_SET.indexOf(startChar);
-        const endIndex = CHARACTER_SET.indexOf(endChar);
+        // Verify it's a valid range in BitmapText.CHARACTER_SET
+        const startIndex = BitmapText.CHARACTER_SET.indexOf(startChar);
+        const endIndex = BitmapText.CHARACTER_SET.indexOf(endChar);
 
         if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
           // Valid range - expand it
           for (let j = startIndex; j <= endIndex; j++) {
-            chars.push(CHARACTER_SET[j]);
+            chars.push(BitmapText.CHARACTER_SET[j]);
           }
           i += 3; // Skip X, -, Y
         } else {
@@ -330,7 +330,7 @@ class MetricsExpander {
   
   /**
    * Expands glyph metrics from arrays back to full objects
-   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CHARACTER_SET
+   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using BitmapText.CHARACTER_SET
    * TIER 4 OPTIMIZATION: Looks up actual values from indices using valueLookup table
    * TIER 5a OPTIMIZATION: Decompresses variable-length tuplets (2/3/4/5 elements)
    * TIER 5b OPTIMIZATION: Looks up tuplets from tuplet indices
@@ -343,7 +343,7 @@ class MetricsExpander {
    *   - Length 5: [w, l, r, a, d] (no decompression)
    *
    * Reconstructs full TextMetrics-compatible objects from compact arrays
-   * Always uses CHARACTER_SET for character order
+   * Always uses BitmapText.CHARACTER_SET for character order
    * @param {Array} tupletIndices - Array of tuplet indices (single integers)
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @param {Array} valueLookup - Value lookup table mapping indices to actual values
@@ -354,8 +354,8 @@ class MetricsExpander {
   static #expandCharacterMetrics(tupletIndices, metricsCommonToAllCharacters, valueLookup, tupletLookup, commonLeftIndex) {
     const expanded = {};
 
-    // Convert CHARACTER_SET string to array of characters
-    const chars = Array.from(CHARACTER_SET);
+    // Convert BitmapText.CHARACTER_SET string to array of characters
+    const chars = Array.from(BitmapText.CHARACTER_SET);
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {

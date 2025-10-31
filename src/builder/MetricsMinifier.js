@@ -1,6 +1,6 @@
 // Static utility class for minifying font metrics data (build-time only)
 // Converts verbose object structures to compact format for smaller file sizes
-// NOTE: Requires src/runtime/CHARACTER_SET.js to be loaded first
+// NOTE: Requires BitmapText.js to be loaded first (uses BitmapText.CHARACTER_SET)
 
 class MetricsMinifier {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -157,18 +157,18 @@ class MetricsMinifier {
    * TIER 6c OPTIMIZATION: Binary encoding for tuplet indices and flattened tuplets
    * TIER 7 OPTIMIZATION: Delta encoding + base64 for value lookup array
    *
-   * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from CHARACTER_SET
+   * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from BitmapText.CHARACTER_SET
    *
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
    * @returns {Array} Minified metrics as array (Tier 7: element [3] is now base64 string)
    * @throws {Error} If not all 204 characters are present
    */
   static minify(metricsData) {
-    // Validate that ALL 204 characters from CHARACTER_SET are present
+    // Validate that ALL 204 characters from BitmapText.CHARACTER_SET are present
     // Note: We DON'T use Object.keys() because JavaScript reorders numeric keys
-    // Instead, we iterate through CHARACTER_SET and check each character exists
+    // Instead, we iterate through BitmapText.CHARACTER_SET and check each character exists
     const missingChars = [];
-    for (const char of CHARACTER_SET) {
+    for (const char of BitmapText.CHARACTER_SET) {
       if (!(char in metricsData.characterMetrics)) {
         missingChars.push(char);
       }
@@ -176,21 +176,21 @@ class MetricsMinifier {
 
     if (missingChars.length > 0) {
       throw new Error(
-        `MetricsMinifier requires ALL 204 characters from CHARACTER_SET.\n` +
+        `MetricsMinifier requires ALL 204 characters from BitmapText.CHARACTER_SET.\n` +
         `Missing ${missingChars.length} characters: ${missingChars.slice(0, 10).join(', ')}${missingChars.length > 10 ? '...' : ''}\n` +
         `Please ensure font-assets-builder generates ALL 204 characters.`
       );
     }
 
-    // Check for extra characters not in CHARACTER_SET
+    // Check for extra characters not in BitmapText.CHARACTER_SET
     const extraChars = Object.keys(metricsData.characterMetrics).filter(
-      char => !CHARACTER_SET.includes(char)
+      char => !BitmapText.CHARACTER_SET.includes(char)
     );
 
     if (extraChars.length > 0) {
       throw new Error(
-        `Font contains ${extraChars.length} characters not in CHARACTER_SET: ${extraChars.join(', ')}\n` +
-        `Please update src/runtime/CHARACTER_SET.js to include these characters.`
+        `Font contains ${extraChars.length} characters not in BitmapText.CHARACTER_SET: ${extraChars.join(', ')}\n` +
+        `Please update BitmapText.CHARACTER_SET in src/runtime/BitmapText.js to include these characters.`
       );
     }
 
@@ -346,12 +346,12 @@ class MetricsMinifier {
   /**
    * Extracts common metrics shared across all characters
    * so that we don't need to repeat these in the serialised file.
-   * Extract these from the first character in CHARACTER_SET (space)
+   * Extract these from the first character in BitmapText.CHARACTER_SET (space)
    * @private
    */
   static #extractMetricsCommonToAllCharacters(characterMetrics) {
-    // Use first character from CHARACTER_SET (space character)
-    const firstChar = CHARACTER_SET[0];
+    // Use first character from BitmapText.CHARACTER_SET (space character)
+    const firstChar = BitmapText.CHARACTER_SET[0];
     const firstGlyph = characterMetrics[firstChar];
 
     return {
@@ -379,7 +379,7 @@ class MetricsMinifier {
     // Count frequency of each left value
     const leftValueCounts = new Map();
 
-    for (const char of CHARACTER_SET) {
+    for (const char of BitmapText.CHARACTER_SET) {
       const leftValue = characterMetrics[char].actualBoundingBoxLeft;
       leftValueCounts.set(leftValue, (leftValueCounts.get(leftValue) || 0) + 1);
     }
@@ -395,7 +395,7 @@ class MetricsMinifier {
       }
     }
 
-    console.debug(`🔍 Common left value: ${mostCommonValue} (appears in ${maxCount}/${CHARACTER_SET.length} glyphs, ${(maxCount/CHARACTER_SET.length*100).toFixed(1)}%)`);
+    console.debug(`🔍 Common left value: ${mostCommonValue} (appears in ${maxCount}/${BitmapText.CHARACTER_SET.length} glyphs, ${(maxCount/BitmapText.CHARACTER_SET.length*100).toFixed(1)}%)`);
 
     return mostCommonValue;
   }
@@ -425,7 +425,7 @@ class MetricsMinifier {
     // Step 1: Collect all unique values
     const uniqueValues = new Set();
 
-    for (const char of CHARACTER_SET) {
+    for (const char of BitmapText.CHARACTER_SET) {
       const glyph = characterMetrics[char];
       uniqueValues.add(glyph.width);
       uniqueValues.add(glyph.actualBoundingBoxLeft);
@@ -454,7 +454,7 @@ class MetricsMinifier {
     console.debug(`🔍 Common left index after value mapping: ${commonLeftIndex}`);
 
     // Step 5: Convert glyph arrays to indices and compress tuplets (TIER 5+6b)
-    const indexedGlyphs = Array.from(CHARACTER_SET).map(char => {
+    const indexedGlyphs = Array.from(BitmapText.CHARACTER_SET).map(char => {
       const glyph = characterMetrics[char];
       const indices = [
         valueToIndex.get(glyph.width),                      // 0: width
@@ -641,15 +641,15 @@ class MetricsMinifier {
    * Converts glyph metrics objects to compact arrays
    * TIER 2 OPTIMIZATION: Returns array of arrays (removes character keys, uses position instead)
    * Array format: [width, actualBoundingBoxLeft, actualBoundingBoxRight, actualBoundingBoxAscent, actualBoundingBoxDescent]
-   * Always uses CHARACTER_SET order (all 204 characters)
+   * Always uses BitmapText.CHARACTER_SET order (all 204 characters)
    * @deprecated This method is replaced by #createValueLookupTable (Tier 4 optimization)
    * @private
    */
   static #minifyCharacterMetrics(characterMetrics) {
-    // Convert to array of arrays in CHARACTER_SET order
-    // IMPORTANT: Must iterate through CHARACTER_SET, not Object.keys/values
+    // Convert to array of arrays in BitmapText.CHARACTER_SET order
+    // IMPORTANT: Must iterate through BitmapText.CHARACTER_SET, not Object.keys/values
     // because JavaScript reorders numeric string keys ("0"-"9")
-    return Array.from(CHARACTER_SET).map(char => {
+    return Array.from(BitmapText.CHARACTER_SET).map(char => {
       const glyph = characterMetrics[char];
       return [
         glyph.width,
@@ -666,7 +666,7 @@ class MetricsMinifier {
    * TIER 3 OPTIMIZATION: Two-pass compression
    *   Pass 1 (right-side): {"A":{"0":20,"1":20}} → {"A":{"0-1":20}}
    *   Pass 2 (left-side):  {"A":{"s":20},"B":{"s":20}} → {"A-B":{"s":20}}
-   * Always uses CHARACTER_SET for range compression
+   * Always uses BitmapText.CHARACTER_SET for range compression
    * @param {Object} kerningTable - Kerning table to minify
    * @private
    */
@@ -698,7 +698,7 @@ class MetricsMinifier {
    *
    * Example: {" ":1,",":1,".":1,"a":1,"c":1,"d":1,"e":1} → {" ,.ac-e":1}
    *
-   * Always uses CHARACTER_SET for range compression
+   * Always uses BitmapText.CHARACTER_SET for range compression
    * @param {Object} pairs - Kerning pairs like {"0":20,"1":20,"2":20,...}
    * @returns {Object} Compressed pairs like {" ,.ac-e":20}
    * @private
@@ -710,9 +710,9 @@ class MetricsMinifier {
     const valueToIndices = {};
 
     for (const [char, value] of Object.entries(pairs)) {
-      const index = CHARACTER_SET.indexOf(char);
+      const index = BitmapText.CHARACTER_SET.indexOf(char);
       if (index === -1) {
-        console.warn(`Character "${char}" not found in CHARACTER_SET, skipping`);
+        console.warn(`Character "${char}" not found in BitmapText.CHARACTER_SET, skipping`);
         continue;
       }
 
@@ -744,17 +744,17 @@ class MetricsMinifier {
    * TIER 6b OPTIMIZATION: Groups all characters (sequential or not)
    *
    * Special handling:
-   * - Dash character (index 13 in CHARACTER_SET): placed at beginning to avoid ambiguity
+   * - Dash character (index 13 in BitmapText.CHARACTER_SET): placed at beginning to avoid ambiguity
    * - Ranges of 3+: "a-z"
    * - Individual chars: "abc"
    * - Mixed: "-,.:;ac-egj-s"
    *
-   * @param {number[]} indices - Sorted array of CHARACTER_SET indices
+   * @param {number[]} indices - Sorted array of BitmapText.CHARACTER_SET indices
    * @returns {string} Compact string notation
    * @private
    */
   static #buildCompactCharString(indices) {
-    const DASH_INDEX = CHARACTER_SET.indexOf('-');
+    const DASH_INDEX = BitmapText.CHARACTER_SET.indexOf('-');
     let result = '';
 
     // Check if dash is in the list - if so, handle it first
@@ -772,16 +772,16 @@ class MetricsMinifier {
     for (const range of ranges) {
       if (range.start === range.end) {
         // Single character
-        result += CHARACTER_SET[range.start];
+        result += BitmapText.CHARACTER_SET[range.start];
       } else if (range.end === range.start + 1) {
         // Two characters - more efficient as separate (no dash needed)
-        result += CHARACTER_SET[range.start];
-        result += CHARACTER_SET[range.end];
+        result += BitmapText.CHARACTER_SET[range.start];
+        result += BitmapText.CHARACTER_SET[range.end];
       } else {
         // Range of 3+ characters - use dash notation
-        result += CHARACTER_SET[range.start];
+        result += BitmapText.CHARACTER_SET[range.start];
         result += '-';
-        result += CHARACTER_SET[range.end];
+        result += BitmapText.CHARACTER_SET[range.end];
       }
     }
 
@@ -823,7 +823,7 @@ class MetricsMinifier {
    * Compresses left side of kerning table (characters that come before)
    * TIER 3 OPTIMIZATION: Two-dimensional compression pass 2
    * Groups left characters with identical right-side objects and compresses to ranges
-   * Always uses CHARACTER_SET for range compression
+   * Always uses BitmapText.CHARACTER_SET for range compression
    * Example: {"A":{"s":20},"B":{"s":20},"C":{"s":20}} → {"A-C":{"s":20}}
    * @param {Object} kerningTable - Right-compressed kerning table
    * @returns {Object} Left-compressed kerning table
@@ -847,9 +847,9 @@ class MetricsMinifier {
     for (const [signature, leftChars] of Object.entries(rightSideToLeftChars)) {
       const rightSideObj = JSON.parse(signature);
 
-      // Convert left characters to indices in CHARACTER_SET
+      // Convert left characters to indices in BitmapText.CHARACTER_SET
       const indices = leftChars
-        .map(char => CHARACTER_SET.indexOf(char))
+        .map(char => BitmapText.CHARACTER_SET.indexOf(char))
         .filter(idx => idx !== -1)
         .sort((a, b) => a - b);
 
@@ -860,15 +860,15 @@ class MetricsMinifier {
       for (const range of ranges) {
         if (range.start === range.end) {
           // Single character
-          compressed[CHARACTER_SET[range.start]] = rightSideObj;
+          compressed[BitmapText.CHARACTER_SET[range.start]] = rightSideObj;
         } else if (range.end === range.start + 1) {
           // Two characters - more efficient as separate entries
-          compressed[CHARACTER_SET[range.start]] = rightSideObj;
-          compressed[CHARACTER_SET[range.end]] = rightSideObj;
+          compressed[BitmapText.CHARACTER_SET[range.start]] = rightSideObj;
+          compressed[BitmapText.CHARACTER_SET[range.end]] = rightSideObj;
         } else {
           // Range of 3+ characters
-          const startChar = CHARACTER_SET[range.start];
-          const endChar = CHARACTER_SET[range.end];
+          const startChar = BitmapText.CHARACTER_SET[range.start];
+          const endChar = BitmapText.CHARACTER_SET[range.end];
           compressed[`${startChar}-${endChar}`] = rightSideObj;
         }
       }

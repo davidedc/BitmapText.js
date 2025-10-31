@@ -138,15 +138,16 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/FontMetrics.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate CHARACTER_SET (MUST BE BEFORE MetricsExpander)
+# Concatenate BitmapText (includes CHARACTER_SET required by MetricsExpander)
+# Note: This MUST come before other dependencies that need it
 echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// CHARACTER SET CONSTANT" >> "$OUTPUT_FILE"
+echo "// BITMAP TEXT STATIC CLASS (includes CHARACTER_SET)" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/runtime/CHARACTER_SET.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/BitmapText.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate expansion utility
+# Concatenate expansion utility (depends on BitmapText.CHARACTER_SET)
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// EXPANSION UTILITY - MetricsExpander.js" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
@@ -256,14 +257,6 @@ echo "// PNG ENCODER" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$LIB_DIR/PngEncoder.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Concatenate BitmapTextStatic (includes all functionality)
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// BITMAP TEXT STATIC CLASS" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/runtime/BitmapText.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate main execution (using multi-size version)

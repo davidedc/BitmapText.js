@@ -2,7 +2,7 @@
 // This is used by the font-assets-builder to generate glyph data
 
 function createGlyphsAndAddToFullStore(fontProperties) {
-  for (const char of CHARACTER_SET) {
+  for (const char of BitmapText.CHARACTER_SET) {
     AtlasDataStoreFAB.addGlyph(new GlyphFAB(char, fontProperties));
   }
 }

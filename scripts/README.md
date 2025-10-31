@@ -116,12 +116,12 @@ npm run build-multi-size-demo
 
 **Common source files used:**
 - `src/platform/canvas-mock.js` - Minimal Canvas implementation
-- `src/runtime/CHARACTER_SET.js` - Character set constant (204 characters)
+- `src/runtime/BitmapText.js` - Core rendering class (includes CHARACTER_SET constant)
 - `src/builder/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/runtime/FontLoaderBase.js` - Abstract base class for font loading (shared logic)
 - `src/platform/FontLoader-node.js` - Node.js font loader implementation
-- `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js`, `src/runtime/BitmapText.js` - Core classes
+- `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js` - Storage classes
 
 **Output:**
 - Self-contained executables: `examples/node/dist/hello-world.bundle.js`, `examples/node/dist/hello-world-multi-size.bundle.js`
@@ -287,7 +287,7 @@ npm run generate-registry                                 # Using npm script
 **What it does:**
 - Builds a standalone Node.js tool (tools/minify-metrics.js) by concatenating source files
 - Re-uses the EXACT same code as font-assets-builder.html for minification
-- Includes: CHARACTER_SET.js, FontMetrics.js, MetricsMinifier.js, MetricsExpander.js, deep-equal.js
+- Includes: StatusCode.js, BitmapText.js (with CHARACTER_SET), FontMetrics.js, MetricsMinifier.js, MetricsExpander.js, deep-equal.js
 - No external dependencies (self-contained executable)
 
 **Output:**

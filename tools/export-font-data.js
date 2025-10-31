@@ -136,8 +136,8 @@ function downloadFontAssets(options) {
           return;
       }
 
-      // REQUIRED: ALL 204 characters from CHARACTER_SET must be included
-      // Create metrics for all 204 characters in CHARACTER_SET order
+      // REQUIRED: ALL 204 characters from BitmapText.CHARACTER_SET must be included
+      // Create metrics for all 204 characters in BitmapText.CHARACTER_SET order
       const characterMetrics = {};
 
       // Get baseline metrics from first generated character for fallback
@@ -159,8 +159,8 @@ function downloadFontAssets(options) {
           pixelDensity: fallbackMetrics.pixelDensity
       });
 
-      // Add all 204 characters from CHARACTER_SET
-      for (const char of CHARACTER_SET) {
+      // Add all 204 characters from BitmapText.CHARACTER_SET
+      for (const char of BitmapText.CHARACTER_SET) {
           if (generatedMetrics[char]) {
               // Use generated metrics if available
               characterMetrics[char] = generatedMetrics[char];
@@ -171,17 +171,17 @@ function downloadFontAssets(options) {
       }
 
       // Warn about missing characters (should not happen in normal operation)
-      const missingChars = Array.from(CHARACTER_SET).filter(char => !generatedMetrics[char]);
+      const missingChars = Array.from(BitmapText.CHARACTER_SET).filter(char => !generatedMetrics[char]);
       if (missingChars.length > 0) {
           console.warn(`⚠️  Generated placeholder metrics for ${missingChars.length} missing characters: ${missingChars.slice(0, 10).join('')}${missingChars.length > 10 ? '...' : ''}`);
       }
 
-      // Verify no extra characters outside CHARACTER_SET
-      const extraChars = Object.keys(generatedMetrics).filter(char => !CHARACTER_SET.includes(char));
+      // Verify no extra characters outside BitmapText.CHARACTER_SET
+      const extraChars = Object.keys(generatedMetrics).filter(char => !BitmapText.CHARACTER_SET.includes(char));
       if (extraChars.length > 0) {
           throw new Error(
-              `Font contains ${extraChars.length} characters not in CHARACTER_SET: ${extraChars.join(', ')}\n` +
-              `Please update src/runtime/CHARACTER_SET.js to include these characters.`
+              `Font contains ${extraChars.length} characters not in BitmapText.CHARACTER_SET: ${extraChars.join(', ')}\n` +
+              `Please update BitmapText.CHARACTER_SET in src/runtime/BitmapText.js to include these characters.`
           );
       }
 
@@ -194,7 +194,7 @@ function downloadFontAssets(options) {
 
       // Minify with automatic roundtrip verification
       // This catches compression bugs immediately during build
-      // Will throw error if characterMetrics is not in CHARACTER_SET order
+      // Will throw error if characterMetrics is not in BitmapText.CHARACTER_SET order
       const minified = MetricsMinifier.minifyWithVerification(metricsData);
 
       // TIER 6b: Decompose font ID for multi-parameter format
