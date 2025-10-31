@@ -58,6 +58,7 @@
   3. **Anti-aliasing**: Canvases must be attached to DOM before rendering for crisp text
   4. **StatusCode Loading**: In browser script tags, StatusCode.js MUST load before BitmapText.js (dependency requirement)
   5. **Transform Behavior**: BitmapText IGNORES all canvas transforms - coordinates are ABSOLUTE from canvas origin (see README.md "Transform Behavior - CRITICAL")
+  6. **Short Aliases**: Generated font files use BitmapText.r (registerMetrics) and BitmapText.a (registerAtlas) for minimal file size
 
   ## Testing
 

@@ -182,19 +182,17 @@ class BitmapText {
   // ============================================
 
   /**
-   * Register font metrics from metrics-*.js file
-   * TIER 6c: Multi-parameter format only (no legacy support)
-   *
-   * @param {number} density - Pixel density (e.g., 1 or 1.5)
-   * @param {string} fontFamily - Font family name (e.g., 'Arial')
+   * Convert registration parameters to ID string
+   * Shared helper for registerMetrics and registerAtlas
+   * @private
+   * @param {number} density - Pixel density
+   * @param {string} fontFamily - Font family name
    * @param {number} styleIdx - Style index (0=normal, 1=italic, 2=oblique)
-   * @param {number} weightIdx - Weight index (0=normal, 1=bold, or numeric weight)
-   * @param {number} size - Font size (e.g., 18 or 18.5)
-   * @param {Array} compactedData - Tier 6c compacted metrics array
+   * @param {number} weightIdx - Weight index (0=normal, 1=bold, or numeric)
+   * @param {number} size - Font size
+   * @returns {string} ID string (e.g., "density-1-0-Arial-style-normal-weight-normal-size-19-0")
    */
-  static registerMetrics(density, fontFamily, styleIdx, weightIdx, size, compactedData) {
-    BitmapText.#ensureFontLoader();
-
+  static #parametersToIDString(density, fontFamily, styleIdx, weightIdx, size) {
     // Decompress style and weight indices
     const style = styleIdx === 0 ? 'normal' : (styleIdx === 1 ? 'italic' : 'oblique');
     const weight = weightIdx === 0 ? 'normal' : (weightIdx === 1 ? 'bold' : String(weightIdx));
@@ -208,20 +206,40 @@ class BitmapText {
     const sizeFormatted = sizeStr.includes('.') ? sizeStr.replace('.', '-') : `${sizeStr}-0`;
 
     // Reconstruct full ID
-    const fullIDString = `density-${densityFormatted}-${fontFamily}-style-${style}-weight-${weight}-size-${sizeFormatted}`;
+    return `density-${densityFormatted}-${fontFamily}-style-${style}-weight-${weight}-size-${sizeFormatted}`;
+  }
 
+  /**
+   * Register font metrics from metrics-*.js file
+   * TIER 6c: Multi-parameter format only (no legacy support)
+   *
+   * @param {number} density - Pixel density (e.g., 1 or 1.5)
+   * @param {string} fontFamily - Font family name (e.g., 'Arial')
+   * @param {number} styleIdx - Style index (0=normal, 1=italic, 2=oblique)
+   * @param {number} weightIdx - Weight index (0=normal, 1=bold, or numeric weight)
+   * @param {number} size - Font size (e.g., 18 or 18.5)
+   * @param {Array} compactedData - Tier 6c compacted metrics array
+   */
+  static registerMetrics(density, fontFamily, styleIdx, weightIdx, size, compactedData) {
+    BitmapText.#ensureFontLoader();
+    const fullIDString = BitmapText.#parametersToIDString(density, fontFamily, styleIdx, weightIdx, size);
     FontLoaderBase.registerMetrics(fullIDString, compactedData, BitmapText);
   }
 
   /**
    * Register atlas from atlas-*.js file (base64 only, positioning reconstructed later)
    * Delegates to FontLoader which handles platform-specific details
-   * @param {string} idString - Font ID string
+   * @param {number} density - Pixel density (e.g., 1 or 1.5)
+   * @param {string} fontFamily - Font family name (e.g., 'Arial')
+   * @param {number} styleIdx - Style index (0=normal, 1=italic, 2=oblique)
+   * @param {number} weightIdx - Weight index (0=normal, 1=bold, or numeric weight)
+   * @param {number} size - Font size (e.g., 18 or 18.5)
    * @param {string} base64Data - Base64-encoded atlas data
    */
-  static registerAtlas(idString, base64Data) {
+  static registerAtlas(density, fontFamily, styleIdx, weightIdx, size, base64Data) {
     BitmapText.#ensureFontLoader();
-    FontLoaderBase.registerAtlas(idString, base64Data);
+    const fullIDString = BitmapText.#parametersToIDString(density, fontFamily, styleIdx, weightIdx, size);
+    FontLoaderBase.registerAtlas(fullIDString, base64Data);
   }
 
   // ============================================
@@ -1197,5 +1215,6 @@ class BitmapText {
   }
 }
 
-// TIER 6b OPTIMIZATION: Short alias for registerMetrics (saves ~15 bytes per file)
+// TIER 6b OPTIMIZATION: Short aliases for registration methods (saves ~15 bytes per file)
 BitmapText.r = BitmapText.registerMetrics;
+BitmapText.a = BitmapText.registerAtlas;
