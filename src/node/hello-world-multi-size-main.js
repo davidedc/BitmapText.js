@@ -88,13 +88,13 @@ async function main() {
       }
     }
     
-    // Create output canvas (larger to accommodate multiple text lines)
+    // Create output canvas (larger to accommodate multiple text lines and columns)
     console.log('Creating canvas and rendering...');
     const canvas = new Canvas();
-    canvas.width = 400;
+    canvas.width = 700;  // Increased to fit both black and blue text columns
     canvas.height = 200;
     const ctx = canvas.getContext('2d');
-    
+
     // White background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -144,7 +144,52 @@ async function main() {
     } else {
       console.log('⚠️ Some sizes used placeholders or failed to render');
     }
-    
+
+    // Render blue text column to demonstrate colored slow path
+    console.log('\nRendering blue text column (colored slow path)...');
+    const blueTextProperties = new TextProperties({
+      isKerningEnabled: true,
+      textBaseline: 'bottom',
+      textAlign: 'left',
+      textColor: '#0000FF'  // Blue color
+    });
+
+    let blueSuccess = true;
+    let blueGlyphsDrawn = 0;
+
+    fontPropertiesArray.forEach((fontProperties, index) => {
+      const yPosition = 50 + (index * 50); // Same y positions as black text
+      const text = `Hello World (size ${fontProperties.fontSize})`;
+
+      console.log(`Rendering blue "${text}" at x=220, y=${yPosition}`);
+
+      const blueResult = BitmapText.drawTextFromAtlas(
+        ctx,
+        text,
+        220,  // x position in CSS pixels (right column)
+        yPosition,  // y position in CSS pixels
+        fontProperties,
+        blueTextProperties
+      );
+
+      console.log(`  Blue result for size ${fontProperties.fontSize}:`, {
+        rendered: blueResult.rendered,
+        statusCode: blueResult.status.code,
+        statusName: getStatusName(blueResult.status.code)
+      });
+
+      if (blueResult.rendered && blueResult.status.code === StatusCode.SUCCESS) {
+        blueGlyphsDrawn++;
+      } else {
+        blueSuccess = false;
+      }
+    });
+
+    console.log(`Blue text rendering complete: ${blueGlyphsDrawn}/${fontSizes.length} sizes rendered`);
+    if (blueSuccess) {
+      console.log('✅ All blue text rendered successfully!');
+    }
+
     // Export to PNG
     console.log('Encoding PNG...');
     const surface = {
@@ -167,8 +212,10 @@ async function main() {
     console.log(`Generated: ${outputPath}`);
     console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
     console.log(`File size: ${fs.statSync(outputPath).size} bytes`);
-    console.log(`\nThe PNG contains "Hello World" rendered at ${fontSizes.join(', ')} sizes using bitmap fonts.`);
-    console.log(`Note: Sizes with missing atlas JS files will show black placeholder rectangles.`);
+    console.log(`\nThe PNG contains "Hello World" in two columns:`);
+    console.log(`  - Left column (x=20): Black text (fast path) at ${fontSizes.join(', ')} sizes`);
+    console.log(`  - Right column (x=220): Blue text (colored slow path) at ${fontSizes.join(', ')} sizes`);
+    console.log(`Note: Sizes with missing atlas JS files will show placeholder rectangles.`);
 
   } catch (error) {
     console.error('Error:', error.message);

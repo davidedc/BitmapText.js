@@ -62,12 +62,12 @@ async function main() {
     console.log('Creating canvas and rendering...');
     const canvas = new Canvas();
     canvas.width = 300;
-    canvas.height = 100;
+    canvas.height = 120;  // Increased to fit both black and blue text
     const ctx = canvas.getContext('2d');
-    
+
     // White background
     ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, 300, 100);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // IMPORTANT: Coordinates are ABSOLUTE from canvas origin (0,0)
     // BitmapText ignores context transforms (not applicable in Node.js canvas-mock, but good to know)
@@ -104,7 +104,36 @@ async function main() {
     } else {
       console.log('❌ Text rendering failed completely');
     }
-    
+
+    // Render blue text to demonstrate colored slow path
+    console.log('\nRendering blue text (colored slow path)...');
+    const blueTextProperties = new TextProperties({
+      isKerningEnabled: true,
+      textBaseline: 'bottom',
+      textAlign: 'left',
+      textColor: '#0000FF'  // Blue color
+    });
+
+    const blueResult = BitmapText.drawTextFromAtlas(
+      ctx,
+      "Hello World",
+      10,  // x position in CSS pixels (absolute from origin)
+      80,  // y position in CSS pixels (30px below black text)
+      fontProperties,
+      blueTextProperties
+    );
+
+    // Log blue text rendering results
+    console.log('Blue text result:', {
+      rendered: blueResult.rendered,
+      statusCode: blueResult.status.code,
+      statusName: getStatusName(blueResult.status.code)
+    });
+
+    if (blueResult.rendered && blueResult.status.code === StatusCode.SUCCESS) {
+      console.log('✅ Blue text rendered successfully!');
+    }
+
     // Export to PNG
     console.log('Encoding PNG...');
     const surface = {
@@ -127,7 +156,9 @@ async function main() {
     console.log(`Generated: ${outputPath}`);
     console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
     console.log(`File size: ${fs.statSync(outputPath).size} bytes`);
-    console.log(`\nThe PNG contains "Hello World" rendered using bitmap fonts from QOI data.`);
+    console.log(`\nThe PNG contains "Hello World" rendered twice:`);
+    console.log(`  - Black text (fast path): y=50`);
+    console.log(`  - Blue text (colored slow path): y=80`);
     
   } catch (error) {
     console.error('Error:', error.message);

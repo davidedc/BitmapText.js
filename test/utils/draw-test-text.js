@@ -202,6 +202,15 @@ function drawTestText_withStandardClass(originalFontProperties, atlasDataStore, 
 
   bitmapAtlasDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontProperties, testCopyChoiceNumber, null, null, null, null, null, textProperties, atlasDataStore, fontMetricsStore);
 
+  // Render blue text to demonstrate colored slow path
+  const blueTextProperties = new TextProperties({
+    isKerningEnabled: textProperties.isKerningEnabled,
+    textBaseline: textProperties.textBaseline,
+    textAlign: textProperties.textAlign,
+    textColor: '#0000FF'
+  });
+  bitmapAtlasDrawCrispText(linesMeasures_CSS_Px, testCopyLines, fontProperties, testCopyChoiceNumber, null, null, null, null, 'Crisp Bitmap Text Drawing (using atlas) - BLUE COLOR:', blueTextProperties, atlasDataStore, fontMetricsStore);
+
   if (originalFontProperties.pixelDensity === 2) {
     // Create new FontProperties with pixelDensity=1 (same fontSize)
     let fontPropertiesPixelDensity1 = new FontProperties(

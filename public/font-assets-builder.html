@@ -52,6 +52,9 @@
           <canvas id="tight-atlas-reconstructed" style="border: 1px solid #ccc; image-rendering: pixelated;"></canvas>
           <div id="tight-atlas-reconstructed-info" style="font-family: monospace; font-size: 12px;"></div>
           <canvas id="reconstructed-render" style="border: 1px solid #ccc; margin-top: 10px;"></canvas>
+          <div style="margin-top: 5px; font-size: 11px; color: #666;">Black text (fast path)</div>
+          <canvas id="reconstructed-render-blue" style="border: 1px solid #ccc; margin-top: 5px;"></canvas>
+          <div style="margin-top: 5px; font-size: 11px; color: #0000FF;">Blue text (colored slow path)</div>
         </div>
       </div>
 
@@ -289,6 +292,19 @@
     const testText = "Hello World!" + " █abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ß!\"#$%&€''()*+,-./:;<=>?@[\\]^_`{|}~—£°²·ÀÇàç•";
     const textProps = new TextProperties();
     BitmapText.drawTextFromAtlas(ctx, testText, 10, 50, fontProperties, textProps);
+
+    // Render blue text on second canvas (demonstrates colored slow path)
+    const blueCanvas = document.getElementById('reconstructed-render-blue');
+    if (blueCanvas) {
+      blueCanvas.width = 1600;
+      blueCanvas.height = 200;
+      const blueCtx = blueCanvas.getContext('2d');
+      blueCtx.fillStyle = 'white';
+      blueCtx.fillRect(0, 0, blueCanvas.width, blueCanvas.height);
+
+      const blueTextProps = new TextProperties({ textColor: '#0000FF' });
+      BitmapText.drawTextFromAtlas(blueCtx, testText, 10, 50, fontProperties, blueTextProps);
+    }
 
     // Restore previous atlas and metrics if they existed
     if (previousAtlas) {
