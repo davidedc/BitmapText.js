@@ -19,23 +19,27 @@ examples/node/
 
 ### `dist/hello-world.bundle.js`
 - **Purpose**: Demonstrates basic bitmap text rendering at font size 19
-- **Output**: Creates `hello-world-output.png` in current directory
+- **Output**: Creates `hello-world-output.png` (300×120) in current directory
 - **Features**:
-  - Basic "Hello World" rendering with QOI atlas loading
+  - Renders "Hello World" in black (fast path) and blue (colored slow path)
+  - QOI atlas loading for Node.js environment
   - Uses BitmapText static API for unified font loading
+  - Demonstrates performance difference between black and colored text rendering
 - **Source**: Built from `src/node/hello-world-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world.bundle.js`
-- **Size**: ~187KB standalone executable
+- **Size**: ~196KB standalone executable
 
 ### `dist/hello-world-multi-size.bundle.js`
 - **Purpose**: Demonstrates multi-size font rendering (18, 18.5, 19)
-- **Output**: Creates `hello-world-multi-size-output.png` in current directory
+- **Output**: Creates `hello-world-multi-size-output.png` (700×200) in current directory
 - **Features**:
+  - Renders text in two columns: black (fast path) and blue (colored slow path)
   - Multi-size font loading using BitmapText.loadFonts() batch API
   - Placeholder rectangle fallback for missing atlases
-  - Demonstrates graceful degradation
+  - Demonstrates graceful degradation and performance differences
 - **Source**: Built from `src/node/hello-world-multi-size-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world-multi-size.bundle.js`
+- **Size**: ~199KB standalone executable
 
 ## How to Run
 
@@ -101,8 +105,8 @@ npm run build-multi-size-demo
 - **Self-contained**: No external dependencies required (but needs font assets)
 - **Standalone**: Each file contains all necessary code
 - **Executable**: Can be run directly with `node filename.bundle.js`
-- **Size**: ~187-189KB each
-- **Lines**: ~5,156-5,203 lines each
+- **Size**: ~196-199KB each
+- **Lines**: ~5,250-5,315 lines each
 - **Format**: Concatenated JavaScript with proper module boundaries
 - **Font assets**: Expects `font-assets/` directory in same location as bundle
 
