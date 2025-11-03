@@ -46,7 +46,7 @@ while [[ $# -gt 0 ]]; do
             echo "  5. Optimize PNG files with ImageOptim"
             echo "  6. Convert PNG to WebP (lossless) and delete PNG files"
             echo "  7. Convert images (WebP and QOI) to JS wrappers"
-            echo "  8. Minify metrics files with terser"
+            echo "  8. Minify JS files (metrics + atlases) with terser"
             echo "  9. Generate font registry for test-renderer"
             echo "  10. Continue monitoring"
             echo ""
@@ -357,46 +357,98 @@ function generate_font_registry() {
 }
 
 function run_terser_minification() {
-    log "INFO" "Minifying metrics files with terser..."
+    log "INFO" "Minifying JS files with terser (metrics + atlases)..."
 
-    # Find all metrics files (excluding -full.js files)
+    # Track metrics separately
+    local metrics_count=0
+    local metrics_before=0
+    local metrics_after=0
+
+    # Track atlases separately
+    local atlas_count=0
+    local atlas_before=0
+    local atlas_after=0
+
+    # Process metrics files
+    log "INFO" "Processing metrics files..."
     local metrics_files=$(find "$DATA_DIR" -name "metrics-density-*.js" ! -name "*-full.js" -type f)
 
-    if [ -z "$metrics_files" ]; then
+    if [ -n "$metrics_files" ]; then
+        while IFS= read -r file; do
+            if [ -f "$file" ]; then
+                local before_size=$(wc -c < "$file")
+                local temp_file="${file}.tmp"
+
+                # Run terser: minify in-place with compact output
+                if terser "$file" -c -m -o "$temp_file" 2>/dev/null; then
+                    local after_size=$(wc -c < "$temp_file")
+                    mv "$temp_file" "$file"
+
+                    local saved=$((before_size - after_size))
+                    log "SUCCESS" "METRICS: $(basename "$file"): ${before_size} → ${after_size} bytes (saved ${saved} bytes)"
+
+                    metrics_count=$((metrics_count + 1))
+                    metrics_before=$((metrics_before + before_size))
+                    metrics_after=$((metrics_after + after_size))
+                else
+                    log "WARNING" "Failed to minify metrics file: $(basename "$file")"
+                    rm -f "$temp_file"
+                fi
+            fi
+        done <<< "$metrics_files"
+    else
         log "WARNING" "No metrics files found to minify"
-        return 0
     fi
 
-    local file_count=0
-    local total_before=0
-    local total_after=0
+    # Process atlas files (both webp and qoi variants)
+    log "INFO" "Processing atlas files..."
+    local atlas_files=$(find "$DATA_DIR" \( -name "atlas-density-*-webp.js" -o -name "atlas-density-*-qoi.js" \) -type f)
 
-    while IFS= read -r file; do
-        if [ -f "$file" ]; then
-            local before_size=$(wc -c < "$file")
-            local temp_file="${file}.tmp"
+    if [ -n "$atlas_files" ]; then
+        while IFS= read -r file; do
+            if [ -f "$file" ]; then
+                local before_size=$(wc -c < "$file")
+                local temp_file="${file}.tmp"
 
-            # Run terser: minify in-place with compact output
-            if terser "$file" -c -m -o "$temp_file" 2>/dev/null; then
-                local after_size=$(wc -c < "$temp_file")
-                mv "$temp_file" "$file"
+                # Run terser: minify in-place with compact output
+                if terser "$file" -c -m -o "$temp_file" 2>/dev/null; then
+                    local after_size=$(wc -c < "$temp_file")
+                    mv "$temp_file" "$file"
 
-                local saved=$((before_size - after_size))
-                log "SUCCESS" "$(basename "$file"): ${before_size} → ${after_size} bytes (saved ${saved} bytes)"
+                    local saved=$((before_size - after_size))
+                    log "SUCCESS" "ATLAS: $(basename "$file"): ${before_size} → ${after_size} bytes (saved ${saved} bytes)"
 
-                file_count=$((file_count + 1))
-                total_before=$((total_before + before_size))
-                total_after=$((total_after + after_size))
-            else
-                log "WARNING" "Failed to minify $(basename "$file")"
-                rm -f "$temp_file"
+                    atlas_count=$((atlas_count + 1))
+                    atlas_before=$((atlas_before + before_size))
+                    atlas_after=$((atlas_after + after_size))
+                else
+                    log "WARNING" "Failed to minify atlas file: $(basename "$file")"
+                    rm -f "$temp_file"
+                fi
             fi
-        fi
-    done <<< "$metrics_files"
+        done <<< "$atlas_files"
+    else
+        log "WARNING" "No atlas files found to minify"
+    fi
 
-    if [ $file_count -gt 0 ]; then
-        local total_saved=$((total_before - total_after))
-        log "SUCCESS" "Minified ${file_count} file(s): ${total_before} → ${total_after} bytes (saved ${total_saved} bytes total)"
+    # Summary statistics
+    local total_count=$((metrics_count + atlas_count))
+    local total_before=$((metrics_before + atlas_before))
+    local total_after=$((metrics_after + atlas_after))
+    local total_saved=$((total_before - total_after))
+
+    if [ $total_count -gt 0 ]; then
+        log "SUCCESS" "═══════════════════════════════════════════════════"
+        if [ $metrics_count -gt 0 ]; then
+            local metrics_saved=$((metrics_before - metrics_after))
+            log "SUCCESS" "Metrics: ${metrics_count} file(s), saved ${metrics_saved} bytes"
+        fi
+        if [ $atlas_count -gt 0 ]; then
+            local atlas_saved=$((atlas_before - atlas_after))
+            log "SUCCESS" "Atlases: ${atlas_count} file(s), saved ${atlas_saved} bytes"
+        fi
+        log "SUCCESS" "Total: ${total_count} file(s), ${total_before} → ${total_after} bytes (saved ${total_saved} bytes)"
+        log "SUCCESS" "═══════════════════════════════════════════════════"
         return 0
     else
         log "WARNING" "No files were minified"
