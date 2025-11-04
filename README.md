@@ -534,6 +534,37 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
 - If text measurement fails (missing glyphs), alignment defaults to 'left' with a warning
 - Alignment respects kerning settings (text width includes kerning when enabled)
 
+  ## Building from Source
+
+  ### Quick Reference
+
+  **Rebuild all bundles:**
+  ```bash
+  npm run build
+  ```
+
+  **Rebuild and test:**
+  ```bash
+  ./run-node-demos.sh  # Builds bundles + runs Node.js demos
+  ```
+
+  ### Build Commands
+
+  | Command | What It Builds |
+  |---------|---------------|
+  | `npm run build` | Browser + Node.js bundles |
+  | `npm run build-bundle` | Browser bundle only |
+  | `npm run build-bundle-node` | Node.js bundle only |
+  | `./scripts/build-runtime-bundle.sh --all` | Both bundles (explicit) |
+
+  ### What Gets Built
+
+  - **dist/bitmaptext.min.js** - Browser bundle (32KB)
+  - **dist/bitmaptext-node.min.js** - Node.js bundle (33KB)
+  - Source maps and unminified versions for debugging
+
+  For detailed rebuild instructions, see **[dist/README.md](dist/README.md#-rebuilding)**.
+
   ## Generating Your Own Bitmap Fonts
 
   ### Automated Pipeline (Recommended)

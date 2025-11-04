@@ -160,22 +160,67 @@ You must provide separately:
 
 ## 🔨 Rebuilding
 
-To rebuild the bundles from source:
+### Quick Reference
 
+**Rebuild everything (recommended):**
 ```bash
-# Build browser bundle only (default)
-./scripts/build-runtime-bundle.sh
-
-# Build Node.js bundle only
-./scripts/build-runtime-bundle.sh --node
-
-# Build both bundles
+npm run build
+# or
 ./scripts/build-runtime-bundle.sh --all
-
-# Using npm
-npm run build-bundle        # Browser only
-npm run build-bundle-all    # Both bundles
 ```
+
+**Rebuild specific bundles:**
+```bash
+# Browser bundle only
+./scripts/build-runtime-bundle.sh --browser
+# or
+npm run build-bundle
+
+# Node.js bundle only
+./scripts/build-runtime-bundle.sh --node
+# or
+npm run build-bundle-node
+```
+
+### What Gets Built
+
+| Command | Browser Bundle | Node.js Bundle | Output |
+|---------|---------------|----------------|---------|
+| `npm run build` | ✅ | ✅ | Both bundles + source maps |
+| `npm run build-bundle` | ✅ | ❌ | Browser only |
+| `npm run build-bundle-node` | ❌ | ✅ | Node.js only |
+| `./scripts/build-runtime-bundle.sh` | ✅ | ❌ | Browser (default) |
+| `./scripts/build-runtime-bundle.sh --all` | ✅ | ✅ | Both bundles |
+
+### Build Output
+
+Each build creates:
+- **Unminified bundle** (.js) - For debugging with readable code
+- **Minified bundle** (.min.js) - For production use (~32-33KB)
+- **Source map** (.min.js.map) - For debugging minified code
+
+### When to Rebuild
+
+Rebuild bundles after modifying any runtime source files:
+- `src/runtime/*.js` - Core runtime classes
+- `src/platform/FontLoader-*.js` - Font loading
+- `src/builder/MetricsExpander.js` - Metrics expansion
+- `lib/QOIDecode.js` - QOI decoder (Node.js only)
+
+### Testing Bundles
+
+**Browser (open in browser):**
+```bash
+npm run serve
+# Then open http://localhost:8000/public/hello-world-demo-bundled.html
+```
+
+**Node.js (run all demos):**
+```bash
+./run-node-demos.sh
+```
+
+This builds bundles, runs 4 demos, and generates PNG output to verify everything works.
 
 ---
 
