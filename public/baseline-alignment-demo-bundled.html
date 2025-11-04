@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BitmapText Baseline & Alignment Demonstration - Interactive (Bundled)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+
+    .controls-bar {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .controls-bar label {
+      margin: 0 10px 0 5px;
+      font-weight: 500;
+    }
+
+    .controls-bar select, .controls-bar button {
+      margin: 5px 10px 5px 0;
+      padding: 5px 10px;
+    }
+
+    .controls-bar input[type="radio"], .controls-bar input[type="checkbox"] {
+      margin: 0 5px 0 15px;
+    }
+
+    .size-buttons {
+      margin: 10px 0;
+    }
+
+    .size-btn {
+      width: 35px;
+      height: 35px;
+      margin: 2px;
+      padding: 0;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .size-btn:hover {
+      background: #e3f2fd;
+    }
+
+    .size-btn.selected {
+      background: #2196F3;
+      color: white;
+      font-weight: bold;
+    }
+
+    .demo-section {
+      background: white;
+      margin: 20px 0;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .baseline-header {
+      font-weight: bold;
+      font-size: 18px;
+      color: #2196F3;
+      margin-bottom: 5px;
+    }
+
+    .baseline-desc {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
+      margin: 15px 0;
+    }
+
+    .canvas-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .canvas-label {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 10px;
+      padding: 5px 15px;
+      border-radius: 4px;
+    }
+
+    .label-bitmap {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .label-native {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+
+    canvas {
+      border: 1px solid #ddd;
+      background: white;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #4CAF50;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .status.error {
+      color: #f44336;
+    }
+
+    .reference-note {
+      color: #666;
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 18px;
+      color: #2196F3;
+    }
+
+    #demos:empty:before {
+      content: 'Select font and size, then click "Render All Combinations" to compare BitmapText vs Native Canvas (36 demos total)...';
+      display: block;
+      padding: 40px;
+      text-align: center;
+      color: #999;
+    }
+
+    .bundle-info {
+      background: #e8f4f8;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 5px;
+      border-left: 4px solid #2196F3;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>BitmapText Baseline & Alignment Demonstration (Bundled)</h1>
+
+  <div class="bundle-info">
+    <strong style="color: #2196F3;">Production Bundle:</strong> This demo uses the minified runtime bundle (32KB) instead of 17 separate script tags.
+    <br>See <code>baseline-alignment-demo.html</code> for the debug version with individual source files.
+  </div>
+
+  <div class="controls-bar">
+    <div style="margin-bottom: 15px;">
+      <label>Font Family:</label>
+      <select id="font-family">
+        <option value="Arial" selected>Arial</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Times New Roman">Times New Roman</option>
+      </select>
+
+      <label>Style:</label>
+      <select id="font-style">
+        <option value="normal" selected>Normal</option>
+        <option value="italic">Italic</option>
+      </select>
+
+      <label>Weight:</label>
+      <select id="font-weight">
+        <option value="normal" selected>Normal</option>
+        <option value="bold">Bold</option>
+      </select>
+
+      <input type="checkbox" id="kerning" checked>
+      <label for="kerning">Enable Kerning</label>
+
+      <label style="margin-left: 15px;">Pixel Density:</label>
+      <input type="radio" id="density-1" name="pixel-density" value="1" checked>
+      <label for="density-1">1.0</label>
+      <input type="radio" id="density-2" name="pixel-density" value="2">
+      <label for="density-2">2.0</label>
+      <span style="font-size: 11px; color: #666;">(Retina/HiDPI)</span>
+
+      <button id="render-btn" style="margin-left: 20px; padding: 8px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Render All Combinations</button>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label>Text Sample:</label>
+      <input type="radio" id="text1" name="text-choice" value="Hello World" checked>
+      <label for="text1">Hello World</label>
+      <input type="radio" id="text2" name="text-choice" value="The quick brown fox jumps over the lazy dog">
+      <label for="text2">Quick Brown Fox</label>
+      <input type="radio" id="text3" name="text-choice" value="Sphinx of black quartz, judge my vow">
+      <label for="text3">Sphinx Quartz</label>
+    </div>
+
+    <div>
+      <label>Font Size:</label>
+      <div class="size-buttons" id="size-buttons"></div>
+    </div>
+  </div>
+
+  <div id="demos"></div>
+
+  <!-- PRODUCTION: Single minified bundle (~32KB) includes FontManifest -->
+  <script src="../dist/bitmaptext.min.js"></script>
+
+  <!-- Load font registry (external data) -->
+  <script src="../font-assets/font-registry.js"></script>
+
+  <script>
+    // Configuration
+    const isFileProtocol = window.location.href.includes("file://");
+    BitmapText.setFontDirectory('../font-assets/');
+
+    // Baseline configurations
+    const baselines = [
+      { value: 'top', desc: 'Top of em square - text hangs down', color: '#e91e63' },
+      { value: 'hanging', desc: 'Hanging baseline (Tibetan, Devanagari)', color: '#9c27b0' },
+      { value: 'middle', desc: 'Middle of em square - vertically centered', color: '#2196F3' },
+      { value: 'alphabetic', desc: 'Alphabetic baseline (HTML5 default)', color: '#4CAF50' },
+      { value: 'ideographic', desc: 'Ideographic baseline (CJK scripts)', color: '#FF9800' },
+      { value: 'bottom', desc: 'Bottom of em square (BitmapText default)', color: '#795548' }
+    ];
+
+    // Alignment configurations
+    const alignments = [
+      { value: 'left', label: 'Left Alignment', desc: 'Text starts at x', x: 80 },
+      { value: 'center', label: 'Center Alignment', desc: 'Text centered at x', x: 225 },
+      { value: 'right', label: 'Right Alignment', desc: 'Text ends at x', x: 370 }
+    ];
+
+    const referenceY = 60; // Y position for baseline reference line
+
+    // State
+    let selectedSize = 19;
+    let currentFontProps = null;
+
+    // Initialize size buttons
+    function initSizeButtons() {
+      const container = document.getElementById('size-buttons');
+      for (let size = 12; size <= 30; size++) {
+        const btn = document.createElement('button');
+        btn.className = 'size-btn' + (size === selectedSize ? ' selected' : '');
+        btn.textContent = size;
+        btn.onclick = () => selectSize(size);
+        container.appendChild(btn);
+      }
+    }
+
+    function selectSize(size) {
+      selectedSize = size;
+      document.querySelectorAll('.size-btn').forEach((btn, idx) => {
+        btn.classList.toggle('selected', idx + 12 === size);
+      });
+    }
+
+    // Get current font properties from UI
+    function getFontPropertiesFromUI() {
+      // Get pixel density from radio buttons (not window.devicePixelRatio)
+      // This allows explicit testing of different densities
+      const pixelDensity = document.getElementById('density-2').checked ? 2 : 1;
+      return new FontProperties(
+        pixelDensity,
+        document.getElementById('font-family').value,
+        document.getElementById('font-style').value,
+        document.getElementById('font-weight').value,
+        selectedSize
+      );
+    }
+
+    // Get selected text
+    function getSelectedText() {
+      const radios = document.getElementsByName('text-choice');
+      for (const radio of radios) {
+        if (radio.checked) return radio.value;
+      }
+      return 'Hello World';
+    }
+
+    // Draw reference lines and intersection marker
+    function drawReferenceLines(ctx, cssWidth, cssHeight, dpr, baselineColor, alignmentX) {
+      ctx.save();
+
+      // Draw horizontal line (baseline)
+      ctx.strokeStyle = baselineColor;
+      ctx.lineWidth = 2 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(0, referenceY * dpr);
+      ctx.lineTo(cssWidth * dpr, referenceY * dpr);
+      ctx.stroke();
+
+      // Draw vertical line (alignment anchor)
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([5 * dpr, 3 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(alignmentX * dpr, 0);
+      ctx.lineTo(alignmentX * dpr, cssHeight * dpr);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw intersection marker
+      ctx.fillStyle = baselineColor;
+      ctx.beginPath();
+      ctx.arc(alignmentX * dpr, referenceY * dpr, 4 * dpr, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Draw BitmapText with baseline and alignment
+    function drawBitmapText(ctx, text, fontProps, baseline, baselineColor, alignment, alignmentX) {
+      const dpr = fontProps.pixelDensity;
+      const cssWidth = ctx.canvas.width / dpr;
+      const cssHeight = ctx.canvas.height / dpr;
+
+      // Clear and draw reference lines
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      drawReferenceLines(ctx, cssWidth, cssHeight, dpr, baselineColor, alignmentX);
+
+      // Draw text with BitmapText
+      const textProps = new TextProperties({
+        textBaseline: baseline,
+        textAlign: alignment,
+        textColor: '#000000',
+        isKerningEnabled: document.getElementById('kerning').checked
+      });
+
+      return BitmapText.drawTextFromAtlas(ctx, text, alignmentX, referenceY, fontProps, textProps);
+    }
+
+    // Draw native HTML5 Canvas text with baseline and alignment
+    function drawNativeText(ctx, text, fontProps, baseline, baselineColor, alignment, alignmentX) {
+      const dpr = fontProps.pixelDensity;
+      const cssWidth = ctx.canvas.width / dpr;
+      const cssHeight = ctx.canvas.height / dpr;
+
+      // Clear and draw reference lines
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      drawReferenceLines(ctx, cssWidth, cssHeight, dpr, baselineColor, alignmentX);
+
+      // Reset transform and draw text
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);  // Scale context for pixel density (critical for correct text size)
+      ctx.fillStyle = 'black';
+      ctx.font = `${fontProps.fontStyle} ${fontProps.fontWeight} ${fontProps.fontSize}px ${fontProps.fontFamily}`;
+      ctx.textBaseline = baseline;
+      ctx.textAlign = alignment;
+      ctx.fillText(text, alignmentX, referenceY);  // Use CSS pixel coordinates (scaling handles conversion)
+      ctx.restore();
+    }
+
+    // Render all baseline × alignment combinations
+    async function renderAllCombinations() {
+      const demosDiv = document.getElementById('demos');
+      demosDiv.innerHTML = '<div class="loading">Loading font and rendering all 36 demos (BitmapText vs Native Canvas)...</div>';
+
+      try {
+        const fontProps = getFontPropertiesFromUI();
+        const text = getSelectedText();
+
+        // Check if font is available
+        if (!FontManifest.hasFontID(fontProps.idString)) {
+          demosDiv.innerHTML = `<div class="loading" style="color: #f44336;">Font ${fontProps.idString} is not available in the registry.</div>`;
+          return;
+        }
+
+        // Load font if not already loaded
+        console.log('Loading font:', fontProps.idString);
+        await BitmapText.loadFonts([fontProps.idString], {
+          isFileProtocol,
+          onProgress: (loaded, total) => console.log(`Loaded ${loaded}/${total}`)
+        });
+
+        currentFontProps = fontProps;
+        demosDiv.innerHTML = '';
+
+        // Render each baseline with all alignments
+        baselines.forEach(baseline => {
+          const section = document.createElement('div');
+          section.className = 'demo-section';
+
+          // Header
+          const header = document.createElement('div');
+          header.className = 'baseline-header';
+          header.innerHTML = `<span style="color: ${baseline.color};">●</span> textBaseline: "${baseline.value}"`;
+          section.appendChild(header);
+
+          const desc = document.createElement('div');
+          desc.className = 'baseline-desc';
+          desc.textContent = baseline.desc;
+          section.appendChild(desc);
+
+          // Alignment grid (3 columns)
+          const grid = document.createElement('div');
+          grid.className = 'comparison-grid';
+
+          // Render each alignment
+          alignments.forEach(alignment => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'canvas-wrapper';
+
+            // Alignment header
+            const alignHeader = document.createElement('div');
+            alignHeader.style.fontWeight = 'bold';
+            alignHeader.style.fontSize = '16px';
+            alignHeader.style.marginBottom = '10px';
+            alignHeader.style.color = '#333';
+            alignHeader.textContent = alignment.label;
+            wrapper.appendChild(alignHeader);
+
+            // BitmapText section
+            const bitmapLabel = document.createElement('div');
+            bitmapLabel.className = 'canvas-label label-bitmap';
+            bitmapLabel.textContent = 'BitmapText';
+            wrapper.appendChild(bitmapLabel);
+
+            const bitmapCanvas = document.createElement('canvas');
+            const cssWidth = 450;
+            const cssHeight = 120;
+            bitmapCanvas.width = cssWidth * fontProps.pixelDensity;
+            bitmapCanvas.height = cssHeight * fontProps.pixelDensity;
+            bitmapCanvas.style.width = cssWidth + 'px';
+            bitmapCanvas.style.height = cssHeight + 'px';
+            wrapper.appendChild(bitmapCanvas);
+
+            const bitmapResult = drawBitmapText(
+              bitmapCanvas.getContext('2d'),
+              text,
+              fontProps,
+              baseline.value,
+              baseline.color,
+              alignment.value,
+              alignment.x
+            );
+
+            const bitmapStatus = document.createElement('div');
+            bitmapStatus.className = 'status';
+            bitmapStatus.textContent = bitmapResult.status.code === 0 ? '✓ Rendered' : `⚠ Status ${bitmapResult.status.code}`;
+            if (bitmapResult.status.code !== 0) bitmapStatus.classList.add('error');
+            wrapper.appendChild(bitmapStatus);
+
+            // Native Canvas section
+            const nativeLabel = document.createElement('div');
+            nativeLabel.className = 'canvas-label label-native';
+            nativeLabel.textContent = 'Native HTML5 Canvas';
+            nativeLabel.style.marginTop = '15px';
+            wrapper.appendChild(nativeLabel);
+
+            const nativeCanvas = document.createElement('canvas');
+            nativeCanvas.width = cssWidth * fontProps.pixelDensity;
+            nativeCanvas.height = cssHeight * fontProps.pixelDensity;
+            nativeCanvas.style.width = cssWidth + 'px';
+            nativeCanvas.style.height = cssHeight + 'px';
+            wrapper.appendChild(nativeCanvas);
+
+            drawNativeText(
+              nativeCanvas.getContext('2d'),
+              text,
+              fontProps,
+              baseline.value,
+              baseline.color,
+              alignment.value,
+              alignment.x
+            );
+
+            const nativeStatus = document.createElement('div');
+            nativeStatus.className = 'status';
+            nativeStatus.textContent = '✓ Rendered';
+            wrapper.appendChild(nativeStatus);
+
+            // Alignment description
+            const alignDesc = document.createElement('div');
+            alignDesc.className = 'reference-note';
+            alignDesc.style.marginTop = '10px';
+            alignDesc.textContent = alignment.desc;
+            wrapper.appendChild(alignDesc);
+
+            grid.appendChild(wrapper);
+          });
+
+          section.appendChild(grid);
+
+          // Reference note
+          const refNote = document.createElement('div');
+          refNote.className = 'reference-note';
+          refNote.innerHTML = `<span style="color: ${baseline.color}; font-weight: bold;">━</span> Horizontal line = <strong>${baseline.value}</strong> baseline (y=${referenceY}px) &nbsp;|&nbsp; <span style="color: #666;">┋</span> Vertical dashed line = alignment anchor (x position)`;
+          section.appendChild(refNote);
+
+          demosDiv.appendChild(section);
+        });
+
+        console.log('%c✓ All 36 demos rendered (6 baselines × 3 alignments × 2 implementations)', 'color: #4CAF50; font-weight: bold;');
+        console.log('  • 18 BitmapText renderings');
+        console.log('  • 18 Native HTML5 Canvas renderings');
+
+      } catch (error) {
+        console.error('Rendering error:', error);
+        demosDiv.innerHTML = `<div class="loading" style="color: #f44336;">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Initialize
+    initSizeButtons();
+    document.getElementById('render-btn').onclick = renderAllCombinations;
+
+    // Auto-render on load with default settings
+    console.log('%cBaseline & Alignment Demo Ready', 'color: #2196F3; font-weight: bold;');
+    console.log('Click "Render All Combinations" to compare BitmapText vs Native Canvas');
+    console.log('Total demos: 36 (6 baselines × 3 alignments × 2 implementations)');
+  </script>
+</body>
+</html>

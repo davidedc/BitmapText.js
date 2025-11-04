@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js - Hello World Multi-Size Demo (Bundled)</title>
+  <style>
+    body {
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      background: white;
+      margin-top: 10px;
+    }
+
+    .info {
+      margin-top: 15px;
+      padding: 10px;
+      background: #e8f4f8;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .info strong {
+      color: #2196F3;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>BitmapText.js - Hello World Multi-Size Demo (Bundled)</h1>
+
+  <div class="info">
+    <strong>Production Bundle:</strong> This demo uses the minified runtime bundle (32KB) instead of 17 separate script tags.
+    <br>See <code>hello-world-multi-size.html</code> for the debug version with individual source files.
+  </div>
+
+  <p>This demo shows "Hello World" rendered at three different font sizes (18, 18.5, 19) to demonstrate what's required for multi-size bitmap text rendering. Each font size requires its own pre-generated bitmap font atlas.
+    This demo loads 6 files total (3 JS metrics files + 3 atlas images).</p>
+  <canvas id="demo-canvas" width="400" height="200"></canvas>
+
+  <!-- PRODUCTION: Single minified bundle (~32KB) -->
+  <script src="../dist/bitmaptext.min.js"></script>
+
+  <script>
+    // Font properties for each size - Arial normal normal with pixel density 1
+    // Pixel density 1.0 = standard display (non-Retina)
+    // For HiDPI displays, use window.devicePixelRatio (see README.md "Understanding Coordinate Systems")
+    const fontSizes = [18, 18.5, 19];
+    const fontPropertiesArray = fontSizes.map(size =>
+      new FontProperties(1, "Arial", "normal", "normal", size) // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+    );
+
+    // Text properties for rendering configuration
+    const textProperties = new TextProperties({
+      isKerningEnabled: true,      // Enable kerning for better text rendering
+      textBaseline: 'bottom',      // BitmapText uses bottom baseline positioning
+      textAlign: 'left',           // Standard left alignment
+      textColor: '#000000'         // Black color
+    });
+
+    // Canvas setup
+    const canvas = document.getElementById('demo-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Function to create IDString from font size
+    function createIDString(fontSize) {
+      // Handle fractional sizes: 18.5 becomes "18-5", whole numbers get "-0" suffix
+      const sizeStr = fontSize.toString().replace('.', '-');
+      // Add "-0" suffix for whole numbers (18 -> "18-0"), fractional already have second part (18.5 -> "18-5")
+      const finalSizeStr = sizeStr.includes('-') ? sizeStr : `${sizeStr}-0`;
+      return `density-1-0-Arial-style-normal-weight-normal-size-${finalSizeStr}`;
+    }
+
+    // Create IDStrings for all font sizes
+    const IDStrings = fontSizes.map(createIDString);
+
+    // Configure font directory (required since we're in public/ subdirectory)
+    BitmapText.setFontDirectory('../font-assets/');
+
+    // Detect if running on file:// protocol
+    const isFileProtocol = window.location.href.includes("file://");
+
+    // Load all fonts using static API
+    BitmapText.loadFonts(IDStrings, {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`Loaded ${loaded} of ${total} files`)
+    }).then(() => {
+      renderMultiSizeHelloWorld();
+    });
+
+    function renderMultiSizeHelloWorld() {
+      // Clear canvas with white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Track overall rendering status
+      let allSuccessful = true;
+      let hasPartialFailures = false;
+      let hasCompleteFailures = false;
+
+      // IMPORTANT: BitmapText ignores context transforms
+      // Coordinates are ABSOLUTE from canvas origin (0,0)
+
+      // Draw "Hello World" at each font size - API returns status info
+      fontPropertiesArray.forEach((fontProperties, index) => {
+        const yPosition = 50 + (index * 50); // Space lines 50px apart
+        const text = `Hello World (size ${fontProperties.fontSize})`;
+
+        const result = BitmapText.drawTextFromAtlas(
+          ctx,
+          text,
+          20,  // x position in CSS pixels (absolute from origin)
+          yPosition,  // y position in CSS pixels (absolute from origin)
+          fontProperties,
+          textProperties  // text rendering properties including color and kerning
+        );
+
+        // Detailed status reporting per font size
+        console.log(`\n--- Font Size ${fontProperties.fontSize} Status ---`);
+
+        if (result.rendered) {
+          if (result.status.code === StatusCode.SUCCESS) {
+            console.log(`✅ "${text}" rendered perfectly`);
+          } else {
+            allSuccessful = false;
+            hasPartialFailures = true;
+            console.warn(`⚠️ "${text}" rendered with issues:`);
+            console.warn('  Status:', getStatusDescription(result.status));
+
+            if (result.status.placeholdersUsed) {
+              console.warn('  📦 Some glyphs rendered as placeholder rectangles');
+
+              if (result.status.missingAtlasChars) {
+                console.warn('  Missing atlas chars:', [...result.status.missingAtlasChars].join(''));
+              }
+            }
+          }
+        } else {
+          allSuccessful = false;
+          hasCompleteFailures = true;
+          console.error(`❌ Failed to render "${text}"`);
+          console.error('  Status:', getStatusDescription(result.status));
+
+          if (result.status.missingChars) {
+            console.error('  Missing metrics chars:', [...result.status.missingChars].join(''));
+          }
+        }
+      });
+
+      // Overall summary
+      console.log('\n=== Multi-Size Rendering Summary ===');
+      if (allSuccessful) {
+        console.log('✅ All font sizes rendered perfectly!');
+      } else {
+        if (hasCompleteFailures) {
+          console.error('❌ Some font sizes failed completely (missing metrics)');
+        }
+        if (hasPartialFailures) {
+          console.warn('⚠️ Some font sizes used placeholder rectangles (missing atlas data)');
+        }
+        console.log('💡 This demonstrates the different failure modes in multi-font scenarios');
+      }
+    }
+  </script>
+</body>
+
+</html>

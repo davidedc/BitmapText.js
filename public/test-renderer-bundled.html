@@ -1,0 +1,128 @@
+<!--
+You'll need to serve this file from a server to avoid CORS issues, because if you open the page from filesystem
+the dynamic loading of the images seems to create security issues when you then try to read the pixels from the canvas
+where you painted the images.
+
+So use a simple server like this:
+  python -m http.server
+and then open the page from the browser at:
+  http://localhost:8000/test-renderer-bundled.html
+-->
+
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uniform Pixel Perfect JS Canvas Text Renderer (Bundled)</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #d4ffd4;
+    }
+    canvas {
+      font-smooth: never;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: none;
+      margin-left: 3px;
+    }
+    .bundle-info {
+      background: #e8f4f8;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      border-left: 4px solid #2196F3;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bundle-info">
+    <strong style="color: #2196F3;">Production Bundle:</strong> This demo uses the minified runtime bundle (32KB) instead of 17 separate script tags.
+    <br>See <code>test-renderer.html</code> for the debug version with individual source files.
+  </div>
+
+  <main>
+    <div id="selectors"></div>
+    <div id="testCopyCanvases" style="clear:both;"></div>
+  </main>
+</body>
+
+<!-- Test utilities (NOT in bundle) -->
+<script src="../src/utils/timing.js"></script>
+
+<script >
+  const maxFontSize_px = 80;
+  const fontSizeIncrement_px = 0.5;
+  let specsDefault;
+  function updatePageContent() {
+    showGlyphs();
+  }
+</script>
+
+<!-- PRODUCTION: Single minified bundle (~32KB) -->
+<script src="../dist/bitmaptext.min.js"></script>
+
+<!-- Additional test utilities (NOT in bundle) -->
+<script src="../src/utils/HashStore.js"></script>
+<script src="../test/data/reference-hashes.js"></script>
+<script src="../src/utils/canvas-extensions.js"></script>
+<script src="../test/utils/test-copy.js"></script>
+<script src="../test/utils/draw-test-text.js"></script>
+<script src="../src/utils/dom-cleanup.js"></script>
+<script src="../test/utils/show-glyphs.js"></script>
+<script src="../src/ui/components/copy-choice.js"></script>
+<script src="../src/ui/components/pixel-density.js"></script>
+<script src="../src/ui/components/font-family-dropdown.js"></script>
+<script src="../src/ui/components/font-style-dropdown.js"></script>
+<script src="../src/ui/components/font-weight-dropdown.js"></script>
+<script src="../src/ui/components/size-buttons.js"></script>
+<script src="../src/ui/base-ui.js"></script>
+
+<script src="../src/runtime/FontManifest.js"></script>
+<script src="../font-assets/font-registry.js"></script>
+
+<script>
+  // Ensure everything is loaded before starting
+  console.log("BitmapText available:", typeof BitmapText !== 'undefined');
+  console.log("FontManifest available:", typeof FontManifest !== 'undefined' && FontManifest.count() > 0);
+
+  if (typeof BitmapText === 'undefined') {
+    console.error("BitmapText is not defined. Check that BitmapText.js loaded properly.");
+  } else if (typeof FontManifest === 'undefined' || FontManifest.count() === 0) {
+    console.error("FontManifest is not available or contains no fonts. Check that FontManifest.js and font-registry.js loaded properly.");
+  } else {
+    // Load all fonts from manifest and trigger test rendering
+    startTiming('loadingFontData');
+
+    // Determine protocol for image loading
+    const isFileProtocol = window.location.href.includes("file://");
+
+    // Configure font directory (required since we're in public/ subdirectory)
+    BitmapText.setFontDirectory('../font-assets/');
+
+    // Load all fonts using static API
+    console.log("Using font registry IDs:", FontManifest.allFontIDs());
+
+    BitmapText.loadFonts(FontManifest.allFontIDs(), {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`loadedScripts: ${loaded} out of ${total}`)
+    }).then(() => {
+      console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
+      console.log("All metrics loaded to BitmapText");
+
+      startTiming('drawTestText');
+      const fontProperties = getFontPropertiesFromUI();
+      drawTestText_withStandardClass(fontProperties);
+      console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
+    }).catch(error => {
+      console.error("Font loading failed:", error);
+    });
+  }
+</script>
+
+
+</html>

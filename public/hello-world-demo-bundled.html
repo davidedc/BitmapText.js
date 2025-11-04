@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js - Hello World Demo (Bundled)</title>
+  <style>
+    body {
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .info {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #e8f4f8;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .info strong {
+      color: #2196F3;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      background: white;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>BitmapText.js - Minimal Hello World Demo (Bundled)</h1>
+
+  <div class="info">
+    <strong>Production Bundle:</strong> This demo uses the minified runtime bundle (32KB) instead of 17 separate script tags.
+    <br>See <code>hello-world-demo.html</code> for the debug version with individual source files.
+  </div>
+
+  <p>This demo shows "Hello World" rendered using pre-generated bitmap fonts for pixel-perfect consistency.</p>
+  <canvas id="demo-canvas" width="300" height="100"></canvas>
+
+  <!-- PRODUCTION: Single minified bundle (~32KB) -->
+  <script src="../dist/bitmaptext.min.js"></script>
+
+  <script>
+    // Font properties for Arial normal normal 19 with pixel density 1
+    // Pixel density 1.0 = standard display (non-Retina)
+    // For HiDPI displays, use window.devicePixelRatio (see README.md "Understanding Coordinate Systems")
+    const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19); // pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+
+    // Text properties for rendering configuration
+    const textProperties = new TextProperties({
+      isKerningEnabled: true,      // Enable kerning for better text rendering
+      textBaseline: 'bottom',      // BitmapText uses bottom baseline positioning
+      textAlign: 'left',           // Standard left alignment
+      textColor: '#000000'         // Black color
+    });
+
+    // Canvas setup
+    const canvas = document.getElementById('demo-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Configure font directory (required since we're in public/ subdirectory)
+    BitmapText.setFontDirectory('../font-assets/');
+
+    // Load font using static BitmapText API
+    const isFileProtocol = window.location.href.includes("file://");
+
+    // Load font and render when ready
+    BitmapText.loadFont(fontProperties.idString, {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`Loaded ${loaded} of ${total} files`)
+    }).then(() => {
+      renderHelloWorld();
+    });
+
+    function renderHelloWorld() {
+      // Clear canvas with white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // IMPORTANT: BitmapText ignores context transforms
+      // Coordinates (10, 50) are ABSOLUTE from canvas origin (0,0)
+      // Any ctx.scale(), ctx.translate(), ctx.rotate() are ignored
+
+      // Draw "Hello World" using bitmap text - API returns status info
+      const result = BitmapText.drawTextFromAtlas(
+        ctx,
+        "Hello World",
+        10,  // x position in CSS pixels (absolute from origin)
+        50,  // y position in CSS pixels (absolute from origin)
+        fontProperties,
+        textProperties  // text rendering properties including color and kerning
+      );
+
+      // Check rendering result and status
+      if (result.rendered) {
+        if (result.status.code === StatusCode.SUCCESS) {
+          console.log('✅ Hello World rendered successfully!');
+        } else {
+          console.warn('⚠️ Hello World rendered with issues:');
+          console.warn('Status:', getStatusDescription(result.status));
+
+          if (result.status.placeholdersUsed) {
+            console.warn('Some glyphs were rendered as placeholder rectangles');
+          }
+
+          if (result.status.missingAtlasChars) {
+            console.warn('Missing atlas data for characters:', [...result.status.missingAtlasChars].join(''));
+          }
+        }
+      } else {
+        console.error('❌ Failed to render Hello World:');
+        console.error('Status:', getStatusDescription(result.status));
+
+        if (result.status.missingChars) {
+          console.error('Missing metrics for characters:', [...result.status.missingChars].join(''));
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -238,18 +238,28 @@ function clear_data_directory() {
 
 function extract_font_assets() {
     log "INFO" "Extracting fontAssets.zip to $DATA_DIR"
-    
+
     if unzip -o "$FONT_ASSETS_FILE" -d "$DATA_DIR"; then
         log "SUCCESS" "Successfully extracted fontAssets.zip"
-        
+
         # Check if files were extracted to a fontAssets subdirectory and move them up
         if [ -d "$DATA_DIR/fontAssets" ]; then
             log "INFO" "Moving files from fontAssets/ subdirectory to font-assets/ root"
-            mv "$DATA_DIR/fontAssets"/* "$DATA_DIR/" 2>/dev/null || true
-            rmdir "$DATA_DIR/fontAssets" 2>/dev/null || true
+
+            # Move all files (including hidden files) from subdirectory
+            # Use find to handle all files including hidden ones
+            find "$DATA_DIR/fontAssets" -maxdepth 1 -mindepth 1 -exec mv {} "$DATA_DIR/" \; 2>/dev/null || true
+
+            # Remove the now-empty subdirectory
+            # Use rm -rf to handle any edge cases (should be empty by now)
+            if [ -d "$DATA_DIR/fontAssets" ]; then
+                rm -rf "$DATA_DIR/fontAssets"
+                log "SUCCESS" "Removed fontAssets/ subdirectory"
+            fi
+
             log "SUCCESS" "Files moved to font-assets/ root directory"
         fi
-        
+
         return 0
     else
         log "ERROR" "Failed to extract fontAssets.zip"
