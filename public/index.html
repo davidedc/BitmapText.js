@@ -3,33 +3,140 @@
   <head>
     <meta charset="UTF-8">
     <title>BitmapText.js</title>
-    <!--<link rel="stylesheet" type="text/css" href="font-builder.css">-->
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+        line-height: 1.6;
+      }
+      h1 {
+        color: #333;
+        border-bottom: 3px solid #4CAF50;
+        padding-bottom: 10px;
+      }
+      h2 {
+        color: #2196F3;
+        margin-top: 30px;
+        font-size: 1.3em;
+      }
+      .demo-section {
+        background: #f9f9f9;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border-left: 4px solid #4CAF50;
+      }
+      .demo-section.bundled {
+        border-left-color: #2196F3;
+        background: #e8f4f8;
+      }
+      .demo-section.tools {
+        border-left-color: #FF9800;
+        background: #fff3e0;
+      }
+      .demo-section a {
+        color: #1976D2;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .demo-section a:hover {
+        text-decoration: underline;
+      }
+      .demo-section .desc {
+        color: #666;
+        font-size: 0.95em;
+        margin-top: 5px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 0.75em;
+        border-radius: 3px;
+        margin-left: 8px;
+        font-weight: bold;
+      }
+      .badge.production {
+        background: #2196F3;
+        color: white;
+      }
+      .badge.debug {
+        background: #FF9800;
+        color: white;
+      }
+    </style>
   </head>
   <body>
-    <h1>BitmapText.js</h1>
-    <p>
-      <a href="hello-world-demo.html">Hello World Demo</a> - Minimal example showing basic usage
-    </p>
-    <p>
-      <a href="hello-world-multi-size.html">Multi-Size Demo</a> - Shows text rendering at multiple font sizes
-    </p>
-    <p>
-      <a href="hello-world-with-transforms.html">Transform Behavior Demo</a> - Shows how BitmapText ignores context transforms
-    </p>
-    <p>
-      <a href="baseline-alignment-demo.html">Baseline & Alignment Demonstration</a> - Comprehensive comparison of all baseline &times; alignment combinations (36 demos: 6 baselines &times; 3 alignments &times; 2 implementations)
-    </p>
-    <p>
-      <a href="font-assets-builder.html">Font Assets Builder</a> - Build bitmap font assets
-    </p>
-    <p>
-      <a href="test-renderer.html">Font Render Tests</a> - Full test suite and visual verification
-    </p>
-    <p>
-      <a href="../test/status-reporting-tests.html">Status Reporting Tests</a> - Test all status reporting scenarios
-    </p>
-    <p>
-      <a href="../tools/text-metrics-visualizer/simpleTextMetricsVisualisationTool.html">Text Metrics Visualizer</a> - Visualize text measurements and metrics
-    </p>
+    <h1>BitmapText.js - Demos & Examples</h1>
+    <p>Pixel-perfect bitmap text rendering for HTML5 Canvas</p>
+
+    <h2>Production Bundle Demos <span class="badge production">32KB</span></h2>
+    <p style="color: #666; font-size: 0.95em;">These demos use the minified runtime bundle (single 32KB file) for optimal production performance.</p>
+
+    <div class="demo-section bundled">
+      <a href="hello-world-demo-bundled.html">Hello World Demo (Bundled)</a>
+      <div class="desc">Minimal example showing basic usage with production bundle</div>
+    </div>
+
+    <div class="demo-section bundled">
+      <a href="hello-world-multi-size-bundled.html">Multi-Size Demo (Bundled)</a>
+      <div class="desc">Shows text rendering at multiple font sizes (18, 18.5, 19) with production bundle</div>
+    </div>
+
+    <div class="demo-section bundled">
+      <a href="baseline-alignment-demo-bundled.html">Baseline & Alignment Demo (Bundled)</a>
+      <div class="desc">Comprehensive interactive comparison of all baseline × alignment combinations with production bundle</div>
+    </div>
+
+    <div class="demo-section bundled">
+      <a href="test-renderer-bundled.html">Font Render Tests (Bundled)</a>
+      <div class="desc">Full test suite and visual verification with production bundle</div>
+    </div>
+
+    <h2>Development Demos <span class="badge debug">17 files</span></h2>
+    <p style="color: #666; font-size: 0.95em;">These demos load individual source files (17 separate files) for easier debugging and development.</p>
+
+    <div class="demo-section">
+      <a href="hello-world-demo.html">Hello World Demo</a>
+      <div class="desc">Minimal example showing basic usage with individual source files</div>
+    </div>
+
+    <div class="demo-section">
+      <a href="hello-world-multi-size.html">Multi-Size Demo</a>
+      <div class="desc">Shows text rendering at multiple font sizes with individual source files</div>
+    </div>
+
+    <div class="demo-section">
+      <a href="hello-world-with-transforms.html">Transform Behavior Demo</a>
+      <div class="desc">Shows how BitmapText ignores context transforms (translate, scale, rotate)</div>
+    </div>
+
+    <div class="demo-section">
+      <a href="baseline-alignment-demo.html">Baseline & Alignment Demo</a>
+      <div class="desc">Comprehensive interactive comparison of all baseline × alignment combinations (36 demos: 6 baselines × 3 alignments × 2 implementations)</div>
+    </div>
+
+    <div class="demo-section">
+      <a href="test-renderer.html">Font Render Tests</a>
+      <div class="desc">Full test suite and visual verification with individual source files</div>
+    </div>
+
+    <h2>Build & Test Tools</h2>
+
+    <div class="demo-section tools">
+      <a href="font-assets-builder.html">Font Assets Builder</a>
+      <div class="desc">Generate bitmap font assets from system fonts - exports metrics + atlas images</div>
+    </div>
+
+    <div class="demo-section tools">
+      <a href="../test/status-reporting-tests.html">Status Reporting Tests</a>
+      <div class="desc">Test all status reporting scenarios and error handling</div>
+    </div>
+
+    <div class="demo-section tools">
+      <a href="../tools/text-metrics-visualizer/simpleTextMetricsVisualisationTool.html">Text Metrics Visualizer</a>
+      <div class="desc">Visualize text measurements, baselines, and font metrics</div>
+    </div>
   </body>
 </html>
