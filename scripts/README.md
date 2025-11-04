@@ -365,6 +365,56 @@ cat font-assets/metrics-*-full-minified.js
 
 **Note:** Default behavior does NOT compare with production files, allowing you to freely test new minification strategies. Use `--verify-exact` only when validating the tool itself produces identical output to the browser font-assets-builder.
 
+### 10. Runtime Bundle Build Script
+```bash
+./scripts/build-runtime-bundle.sh [--browser] [--node] [--all]
+```
+
+**Options:**
+- `--browser` - Build browser bundle only (default)
+- `--node` - Build Node.js bundle only
+- `--all` - Build both bundles
+
+**Examples:**
+```bash
+./scripts/build-runtime-bundle.sh                    # Browser bundle only
+./scripts/build-runtime-bundle.sh --node            # Node.js bundle only
+./scripts/build-runtime-bundle.sh --all             # Both bundles
+npm run build-bundle                                 # Browser (via npm)
+npm run build-bundle-all                            # Both (via npm)
+```
+
+**What it does:**
+- Concatenates runtime source files in dependency order
+- Generates unminified bundles for debugging (dist/bitmaptext.js, dist/bitmaptext-node.js)
+- Minifies with terser (dist/bitmaptext.min.js, dist/bitmaptext-node.min.js)
+- Creates source maps for debugging minified code
+- Reports file sizes and compression ratios
+
+**Output:**
+- **Browser bundle:** dist/bitmaptext.js + dist/bitmaptext.min.js (32KB) + source map
+- **Node.js bundle:** dist/bitmaptext-node.js + dist/bitmaptext-node.min.js (33KB) + source map
+- **Compression:** 79% size reduction (149KB → 32KB browser, 153KB → 33KB node)
+
+**Browser bundle includes** (17 files):
+StatusCode, FontProperties, TextProperties, FontMetrics, BitmapText (with CHARACTER_SET), MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasReconstructionUtils, AtlasCellDimensions, TightAtlasReconstructor, AtlasDataStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
+
+**Node.js bundle includes** (19 files):
+All browser bundle files + QOIDecode + FontLoader-node (replaces FontLoader-browser)
+
+**Node.js bundle excludes** (user provides):
+- Canvas implementation (node-canvas, skia-canvas, etc.)
+- PNG encoder/options (image I/O not core library)
+
+**When to use:**
+- Before deploying to production (use minified bundles)
+- After modifying any runtime source files
+- When creating production-ready distribution
+
+**Usage examples:**
+See `public/*-bundled.html` demos for browser usage examples.
+See `dist/README.md` for complete bundle documentation.
+
 ---
 
 ## 📁 File Structure
@@ -379,11 +429,23 @@ scripts/
 ├── qoi-memory-calculator.js      # QOI memory usage analyzer
 ├── generate-font-registry.js     # Font registry generator
 ├── build-metrics-minifier.sh     # Builds tools/minify-metrics.js
+├── build-runtime-bundle.sh       # Builds production bundles (NEW)
+├── build-node-demo.sh            # Builds Node.js demo bundles
+├── build-node-multi-size-demo.sh # Builds Node.js multi-size demo
 ├── test-pipeline.sh              # One-time pipeline test
 └── README.md                     # This file
 
 tools/
 └── minify-metrics.js             # Generated tool for testing minification (run after build)
+
+dist/
+├── bitmaptext.js                 # Unminified browser bundle (149KB)
+├── bitmaptext.min.js             # Minified browser bundle (32KB)
+├── bitmaptext.min.js.map         # Source map for browser bundle
+├── bitmaptext-node.js            # Unminified Node.js bundle (153KB)
+├── bitmaptext-node.min.js        # Minified Node.js bundle (33KB)
+├── bitmaptext-node.min.js.map    # Source map for Node.js bundle
+└── README.md                     # Bundle documentation
 
 font-assets/
 ├── *.webp                    # WebP atlas images (browser delivery)

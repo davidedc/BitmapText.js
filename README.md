@@ -94,6 +94,56 @@
 
   **Recommendation:** Use static runtime in production and build font assets during your build process using the full toolkit.
 
+  ### Production Bundles (Recommended)
+
+  For production deployments, use the pre-built minified bundles:
+
+  **Browser (Single Script Tag):**
+  ```html
+  <!-- Single file: ~32KB minified + gzipped ~12KB -->
+  <script src="dist/bitmaptext.min.js"></script>
+
+  <script>
+    const fontProps = new FontProperties(1, "Arial", "normal", "normal", 19);
+    await BitmapText.loadFont(fontProps.idString);
+    BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProps);
+  </script>
+  ```
+
+  **Node.js (With Your Canvas):**
+  ```javascript
+  import { createCanvas } from 'node-canvas';  // or 'skia-canvas'
+  import './dist/bitmaptext-node.min.js';
+
+  BitmapText.configure({
+    fontDirectory: './font-assets/',
+    canvasFactory: () => createCanvas()
+  });
+
+  await BitmapText.loadFont(fontProps.idString);
+  BitmapText.drawTextFromAtlas(ctx, "Hello", 10, 50, fontProps);
+  ```
+
+  **Build from source:**
+  ```bash
+  ./scripts/build-runtime-bundle.sh --all
+  # or
+  npm run build-bundle-all
+  ```
+
+  **Benefits:**
+  - ✅ Single file load (32-33KB) vs 17 separate files (149KB)
+  - ✅ 79% size reduction through minification
+  - ✅ Source maps included for debugging
+  - ✅ Zero configuration in browser
+  - ✅ Minimal configuration in Node.js
+
+  **What's included:** StatusCode, FontProperties, TextProperties, BitmapText, FontLoader, Atlas/Metrics stores, MetricsExpander, TightAtlasReconstructor, and all supporting classes.
+
+  **What's excluded (Node.js):** Canvas implementation (you provide), PNG encoder (image I/O not core library).
+
+  See `dist/README.md` for complete bundle documentation.
+
   ## Quick Start
 
   ### Browser (Zero Configuration)
