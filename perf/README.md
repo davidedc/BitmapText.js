@@ -7,7 +7,9 @@ Comprehensive performance testing suite for BitmapText.js, comparing bundled/unb
 The performance testing system measures:
 - **Font loading time** - How quickly fonts are loaded and initialized
 - **Rendering performance** - How many text blocks can be rendered while maintaining 60fps
+- **Measurement performance** - How quickly text can be measured (measureText())
 - **Fast vs slow path** - Black text (optimized) vs colored text (composition)
+- **Kerning overhead** - Performance impact of kerning enabled vs disabled
 - **Bundle comparison** - Bundled vs unbundled version performance
 - **Platform differences** - Browser vs Node.js rendering characteristics
 
@@ -59,7 +61,8 @@ perf/
 │   ├── report-generator.js                # Browser report generator
 │   └── styles.css                         # Report styling
 ├── node/
-│   ├── run-benchmarks.sh                  # Runner script (builds + runs both)
+│   ├── run-rendering-benchmarks.sh        # Rendering runner script (builds + runs both)
+│   ├── run-measurement-benchmarks.sh      # Measurement runner script (builds + runs both)
 │   ├── node-report-generator.js           # Node.js HTML report generator
 │   └── dist/                              # Built executables (generated)
 │       ├── rendering-benchmark-unbundled.bundle.js
@@ -123,11 +126,11 @@ perf/browser/rendering-benchmark-bundled.html
 ### Quick Start (Recommended)
 From project root:
 ```bash
-./perf/node/run-benchmarks.sh
+./perf/node/run-rendering-benchmarks.sh
 ```
 
 This script will:
-1. Build both unbundled and bundled benchmarks
+1. Build both unbundled and bundled rendering benchmarks
 2. Run unbundled benchmark
 3. Run bundled benchmark
 4. Combine results
@@ -159,6 +162,73 @@ The benchmark generates:
 - 10 blocks (colored) - Moderate load, slow path
 - 50 blocks (black) - High load
 - 50 blocks (colored) - High load, slow path
+
+## Running Measurement Benchmarks
+
+Measurement benchmarks test `measureText()` performance - how quickly text dimensions can be calculated.
+
+### Browser Tests
+
+**Unbundled Version:**
+```
+Open: perf/browser/measurement-benchmark.html
+```
+
+**Bundled Version:**
+```
+Open: perf/browser/measurement-benchmark-bundled.html
+```
+
+**Steps:**
+1. Click "Start Benchmark" button
+2. Wait for tests to complete (~30 seconds)
+3. View inline report with tables and analysis
+
+**What's Tested:**
+- Text length scaling (5-500 characters)
+- Kerning overhead (on vs off)
+- Repeated measurements (60fps simulation)
+- Comparison with Canvas.measureText()
+
+### Node.js Tests
+
+**Quick Start:**
+```bash
+./perf/node/run-measurement-benchmarks.sh
+```
+
+This script will:
+1. Build both unbundled and bundled benchmarks
+2. Run both versions
+3. Combine results
+4. Print summary with linear scaling analysis
+
+**Manual Build & Run:**
+```bash
+# Build benchmarks
+./scripts/build-measurement-benchmark.sh
+
+# Run individual benchmarks
+node perf/node/dist/measurement-benchmark-unbundled.bundle.js
+node perf/node/dist/measurement-benchmark-bundled.js
+```
+
+**Output:**
+- `measurement-results-unbundled-[timestamp].json`
+- `measurement-results-bundled-[timestamp].json`
+- `measurement-results-combined-[timestamp].json`
+- Console summary with scaling analysis
+
+**What's Tested:**
+- Text length scaling (5-500 characters) - verify O(n) linear performance
+- Kerning overhead (quantify performance cost)
+- Repeated measurements (simulate 60fps alignment calculations)
+
+**Key Metrics:**
+- Average time per measurement (microseconds)
+- Operations per second
+- Kerning overhead percentage
+- Linear scaling confirmation
 
 ## Test Configuration
 

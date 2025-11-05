@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js Measurement Performance Benchmark (Unbundled)</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>BitmapText.js Measurement Performance Benchmark</h1>
+  <p class="subtitle">Unbundled Version - measureText() Performance Analysis</p>
+
+  <div id="controls">
+    <button id="start-benchmark">Start Benchmark</button>
+    <div id="status"></div>
+  </div>
+
+  <div id="report"></div>
+
+  <!-- Load BitmapText.js source files (unbundled) -->
+  <script src="../../src/runtime/StatusCode.js"></script>
+  <script src="../../src/runtime/FontProperties.js"></script>
+  <script src="../../src/runtime/TextProperties.js"></script>
+  <script src="../../src/runtime/FontMetrics.js"></script>
+  <script src="../../src/builder/MetricsExpander.js"></script>
+  <script src="../../src/runtime/AtlasPositioning.js"></script>
+  <script src="../../src/runtime/AtlasImage.js"></script>
+  <script src="../../src/runtime/AtlasData.js"></script>
+  <script src="../../src/builder/AtlasReconstructionUtils.js"></script>
+  <script src="../../src/utils/AtlasCellDimensions.js"></script>
+  <script src="../../src/runtime/TightAtlasReconstructor.js"></script>
+  <script src="../../src/runtime/AtlasDataStore.js"></script>
+  <script src="../../src/runtime/FontMetricsStore.js"></script>
+  <script src="../../src/runtime/FontLoaderBase.js"></script>
+  <script src="../../src/platform/FontLoader-browser.js"></script>
+  <script src="../../src/runtime/BitmapText.js"></script>
+
+  <!-- Load test data -->
+  <script src="../../src/shared/test-data.js"></script>
+
+  <script>
+    // Configure BitmapText
+    BitmapText.setFontDirectory('../../font-assets/');
+
+    // DOM elements
+    const startButton = document.getElementById('start-benchmark');
+    const statusDiv = document.getElementById('status');
+    const reportDiv = document.getElementById('report');
+
+    // Update status
+    function updateStatus(message, type = 'active') {
+      statusDiv.textContent = message;
+      statusDiv.className = type;
+    }
+
+    // Measure performance with high iteration count
+    function measurePerformance(fn, iterations = 10000) {
+      // Warm up (avoid JIT compilation effects)
+      for (let i = 0; i < 100; i++) fn();
+
+      // Actual measurement
+      const start = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        fn();
+      }
+      const elapsed = performance.now() - start;
+
+      return {
+        totalTime: elapsed,
+        avgTime: elapsed / iterations,
+        opsPerSec: (1000 * iterations) / elapsed,
+        iterations
+      };
+    }
+
+    // Run measurement tests
+    async function runTests() {
+      startButton.disabled = true;
+      updateStatus('Loading font...', 'active');
+
+      const fontProperties = new FontProperties(1, 'Arial', 'normal', 'normal', 19);
+      const isFileProtocol = window.location.href.includes("file://");
+
+      try {
+        await BitmapText.loadFont(fontProperties.idString, { isFileProtocol });
+        updateStatus('Running tests...', 'active');
+
+        const results = {
+          config: {
+            font: `${fontProperties.fontStyle} ${fontProperties.fontWeight} ${fontProperties.fontSize}px ${fontProperties.fontFamily}`,
+            pixelDensity: fontProperties.pixelDensity,
+            bundleType: 'unbundled',
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+          },
+          tests: []
+        };
+
+        // Test 1: Text Length Scaling
+        updateStatus('Test 1/4: Text length scaling...', 'active');
+        const lengths = [5, 10, 25, 50, 100, 250, 500];
+        const textPropsKerning = new TextProperties({ isKerningEnabled: true });
+
+        lengths.forEach(length => {
+          const text = TEST_LONG_LINE.substring(0, length);
+          const result = measurePerformance(() => {
+            BitmapText.measureText(text, fontProperties, textPropsKerning);
+          });
+
+          results.tests.push({
+            category: 'Text Length Scaling',
+            test: `${length} characters`,
+            method: 'BitmapText',
+            ...result
+          });
+        });
+
+        // Test 2: Kerning Overhead
+        updateStatus('Test 2/4: Kerning overhead...', 'active');
+        const testText = TEST_LONG_LINE.substring(0, 50);
+        const textPropsNoKerning = new TextProperties({ isKerningEnabled: false });
+
+        const kerningOn = measurePerformance(() => {
+          BitmapText.measureText(testText, fontProperties, textPropsKerning);
+        });
+
+        const kerningOff = measurePerformance(() => {
+          BitmapText.measureText(testText, fontProperties, textPropsNoKerning);
+        });
+
+        results.tests.push({
+          category: 'Kerning Overhead',
+          test: 'Kerning ON',
+          method: 'BitmapText',
+          ...kerningOn
+        });
+
+        results.tests.push({
+          category: 'Kerning Overhead',
+          test: 'Kerning OFF',
+          method: 'BitmapText',
+          ...kerningOff
+        });
+
+        // Test 3: Repeated Measurements (60fps pattern)
+        updateStatus('Test 3/4: Repeated measurements...', 'active');
+        const repeatText = "Hello World";
+
+        const repeated60x = measurePerformance(() => {
+          for (let i = 0; i < 60; i++) {
+            BitmapText.measureText(repeatText, fontProperties, textPropsKerning);
+          }
+        }, 1000);  // Lower outer iterations since we're doing 60 inside
+
+        results.tests.push({
+          category: 'Repeated Measurements',
+          test: '60 measurements (1 frame at 60fps)',
+          method: 'BitmapText',
+          totalTime: repeated60x.totalTime,
+          avgTime: repeated60x.avgTime,
+          opsPerSec: repeated60x.opsPerSec / 60,  // Per batch
+          iterations: repeated60x.iterations
+        });
+
+        // Test 4: Canvas Comparison
+        updateStatus('Test 4/4: Canvas comparison...', 'active');
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '19px Arial';
+
+        lengths.forEach(length => {
+          const text = TEST_LONG_LINE.substring(0, length);
+
+          const bitmapResult = measurePerformance(() => {
+            BitmapText.measureText(text, fontProperties, textPropsKerning);
+          });
+
+          const canvasResult = measurePerformance(() => {
+            ctx.measureText(text);
+          });
+
+          results.tests.push({
+            category: 'Canvas Comparison',
+            test: `${length} characters`,
+            method: 'BitmapText',
+            ...bitmapResult
+          });
+
+          results.tests.push({
+            category: 'Canvas Comparison',
+            test: `${length} characters`,
+            method: 'Canvas',
+            ...canvasResult
+          });
+        });
+
+        // Generate report
+        updateStatus('Generating report...', 'complete');
+        generateReport(results);
+        updateStatus('✅ Benchmark complete!', 'complete');
+
+      } catch (error) {
+        console.error('Benchmark error:', error);
+        updateStatus(`❌ Error: ${error.message}`, 'active');
+      } finally {
+        startButton.disabled = false;
+      }
+    }
+
+    // Generate HTML report
+    function generateReport(results) {
+      let html = '<div class="section">';
+      html += '<h2>Test Configuration</h2>';
+      html += '<table><tr><th>Property</th><th>Value</th></tr>';
+      html += `<tr><td>Font</td><td>${results.config.font}</td></tr>`;
+      html += `<tr><td>Pixel Density</td><td>${results.config.pixelDensity}</td></tr>`;
+      html += `<tr><td>Bundle Type</td><td>${results.config.bundleType}</td></tr>`;
+      html += `<tr><td>Timestamp</td><td>${new Date(results.config.timestamp).toLocaleString()}</td></tr>`;
+      html += '</table></div>';
+
+      // Group by category
+      const categories = [...new Set(results.tests.map(t => t.category))];
+
+      categories.forEach(category => {
+        const tests = results.tests.filter(t => t.category === category);
+
+        html += '<div class="section">';
+        html += `<h2>${category}</h2>`;
+        html += '<table><tr><th>Test</th><th>Method</th><th>Avg Time</th><th>Ops/Sec</th><th>Iterations</th></tr>';
+
+        tests.forEach(test => {
+          html += '<tr>';
+          html += `<td>${test.test}</td>`;
+          html += `<td>${test.method}</td>`;
+          html += `<td>${(test.avgTime * 1000).toFixed(3)}μs</td>`;
+          html += `<td>${test.opsPerSec.toFixed(0)}</td>`;
+          html += `<td>${test.iterations}</td>`;
+          html += '</tr>';
+        });
+
+        html += '</table></div>';
+
+        // Add analysis
+        if (category === 'Kerning Overhead') {
+          const on = tests.find(t => t.test === 'Kerning ON');
+          const off = tests.find(t => t.test === 'Kerning OFF');
+          const overhead = ((on.avgTime - off.avgTime) / off.avgTime * 100).toFixed(1);
+
+          html += '<div class="section">';
+          html += '<h3>Analysis</h3>';
+          html += `<p>Kerning overhead: <strong>${overhead}%</strong></p>`;
+          html += '</div>';
+        }
+
+        if (category === 'Canvas Comparison') {
+          html += '<div class="section"><h3>Analysis</h3>';
+          tests.filter(t => t.method === 'BitmapText').forEach(bitmapTest => {
+            const canvasTest = tests.find(t => t.method === 'Canvas' && t.test === bitmapTest.test);
+            const ratio = (canvasTest.avgTime / bitmapTest.avgTime).toFixed(2);
+            html += `<p>${bitmapTest.test}: Canvas is ${ratio}x ${ratio < 1 ? 'slower' : 'faster'}</p>`;
+          });
+          html += '</div>';
+        }
+      });
+
+      reportDiv.innerHTML = html;
+    }
+
+    // Event listener
+    startButton.addEventListener('click', runTests);
+  </script>
+</body>
+</html>

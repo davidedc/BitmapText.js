@@ -931,31 +931,44 @@ new TextProperties(options = {})
 
   **Performance Benchmarks**
 
-  Comprehensive performance testing suite comparing BitmapText.js against native HTML5 Canvas rendering:
+  Comprehensive performance testing suite with two benchmark types:
 
-  **Browser Tests** (Three-Phase Progressive FPS Testing):
+  **1. Rendering Benchmarks** (drawTextFromAtlas performance)
+
+  Browser tests use three-phase progressive FPS testing:
   - Open `perf/browser/rendering-benchmark.html` (unbundled) or `rendering-benchmark-bundled.html` (bundled)
-  - Click "Start Benchmark" to begin automated testing
-  - Tests use three-phase approach: coarse discovery → medium refinement → fine refinement
-  - Finds exact performance ceiling (±5 blocks accuracy)
-  - Compares BitmapText (black/colored) vs HTML5 Canvas (black/colored)
-  - Generates visual HTML report with charts and detailed metrics
+  - Finds exact performance ceiling (±5 blocks accuracy) at 60fps
+  - Compares BitmapText vs HTML5 Canvas (black/colored text)
 
-  **Node.js Tests** (Adaptive Timing):
+  Node.js tests use adaptive timing:
   ```bash
-  ./perf/node/run-benchmarks.sh
+  ./perf/node/run-rendering-benchmarks.sh
   ```
-  - Tests both bundled and unbundled versions automatically
-  - Measures render time with adaptive iteration counts
-  - Generates HTML report and JSON data files
-  - Compares performance across different block sizes and colors
+  - Tests bundled and unbundled versions
+  - Measures render time across different block sizes and colors
+  - Generates HTML reports and JSON data
+
+  **2. Measurement Benchmarks** (measureText performance)
+
+  Browser tests measure text dimension calculation speed:
+  - Open `perf/browser/measurement-benchmark.html` (unbundled) or `measurement-benchmark-bundled.html` (bundled)
+  - Tests text length scaling, kerning overhead, repeated measurements
+  - Compares with Canvas.measureText()
+
+  Node.js tests verify linear O(n) scaling:
+  ```bash
+  ./perf/node/run-measurement-benchmarks.sh
+  ```
+  - Tests 5-500 character strings
+  - Quantifies kerning overhead (~50%)
+  - Confirms sub-microsecond performance
 
   **What's Measured:**
   - Font loading performance
-  - Peak rendering capacity at 60fps (browser)
-  - Average render time per operation (Node.js)
-  - Fast path (black text) vs slow path (colored text)
-  - Bundled vs unbundled performance comparison
+  - Rendering: Peak capacity at 60fps, render time per operation
+  - Measurement: Text dimension calculation speed, kerning overhead
+  - Fast path (black) vs slow path (colored text)
+  - Bundled vs unbundled performance
 
   See `perf/README.md` for complete documentation, methodology, and interpretation guide.
 
