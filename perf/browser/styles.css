@@ -1,0 +1,239 @@
+/**
+ * Styles for BitmapText.js Performance Benchmark Reports
+ */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+  color: #333;
+  line-height: 1.6;
+}
+
+h1 {
+  color: #2c3e50;
+  border-bottom: 3px solid #3498db;
+  padding-bottom: 10px;
+  margin-top: 0;
+}
+
+h2 {
+  color: #34495e;
+  border-bottom: 2px solid #95a5a6;
+  padding-bottom: 8px;
+  margin-top: 30px;
+}
+
+h3 {
+  color: #555;
+  margin-top: 20px;
+}
+
+h4 {
+  color: #666;
+  margin: 15px 0 10px 0;
+}
+
+.subtitle {
+  color: #7f8c8d;
+  font-style: italic;
+  margin-top: -10px;
+  margin-bottom: 30px;
+}
+
+.section {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Controls */
+#controls {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#start-benchmark {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#start-benchmark:hover {
+  background-color: #2980b9;
+}
+
+#start-benchmark:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+#status {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 5px;
+  display: none;
+}
+
+#status.active {
+  display: block;
+  background-color: #e8f4f8;
+  border-left: 4px solid #3498db;
+}
+
+#status.complete {
+  display: block;
+  background-color: #d5f4e6;
+  border-left: 4px solid #27ae60;
+}
+
+/* Canvas */
+#benchmark-canvas {
+  border: 1px solid #ddd;
+  background: white;
+  margin: 20px 0;
+  display: block;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+}
+
+th {
+  background-color: #34495e;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+tr:hover {
+  background-color: #f8f9fa;
+}
+
+tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+tr:nth-child(even):hover {
+  background-color: #f0f0f0;
+}
+
+/* Charts */
+.chart-container {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.chart-container canvas {
+  border: 1px solid #ddd;
+  background: white;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Code/Pre */
+pre {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 15px;
+  border-radius: 5px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Status messages */
+.error {
+  color: #e74c3c;
+  background-color: #fadbd8;
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 4px solid #e74c3c;
+}
+
+.success {
+  color: #27ae60;
+  background-color: #d5f4e6;
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 4px solid #27ae60;
+}
+
+.warning {
+  color: #f39c12;
+  background-color: #fef5e7;
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 4px solid #f39c12;
+}
+
+.info {
+  color: #3498db;
+  background-color: #e8f4f8;
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 4px solid #3498db;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  .section {
+    padding: 15px;
+  }
+
+  table {
+    font-size: 14px;
+  }
+
+  th, td {
+    padding: 8px;
+  }
+
+  .chart-container canvas {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Loading indicator */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

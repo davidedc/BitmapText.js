@@ -1,0 +1,69 @@
+{
+  "version": "unbundled",
+  "platform": {
+    "os": "darwin",
+    "nodeVersion": "v22.15.0",
+    "arch": "arm64"
+  },
+  "timestamp": "2025-11-04T17:30:57.040Z",
+  "fontLoading": {
+    "loadTime": 10.398958,
+    "fontId": "density-1-0-Arial-style-normal-weight-normal-size-19-0"
+  },
+  "tests": [
+    {
+      "name": "Single block (black)",
+      "color": "#000000",
+      "blockCount": 1,
+      "iterations": 100,
+      "totalTime": 399.594333,
+      "avgTime": 3.9959433300000002,
+      "opsPerSecond": 250.25379926997113
+    },
+    {
+      "name": "Single block (colored)",
+      "color": "#0000FF",
+      "blockCount": 1,
+      "iterations": 100,
+      "totalTime": 237.2199579999999,
+      "avgTime": 2.372199579999999,
+      "opsPerSecond": 421.5496910255757
+    },
+    {
+      "name": "10 blocks (black)",
+      "color": "#000000",
+      "blockCount": 10,
+      "iterations": 100,
+      "totalTime": 277.2449999999999,
+      "avgTime": 2.7724499999999987,
+      "opsPerSecond": 360.69180688560675
+    },
+    {
+      "name": "10 blocks (colored)",
+      "color": "#0000FF",
+      "blockCount": 10,
+      "iterations": 100,
+      "totalTime": 427.6751669999999,
+      "avgTime": 4.276751669999999,
+      "opsPerSecond": 233.82232057443736
+    },
+    {
+      "name": "50 blocks (black)",
+      "color": "#000000",
+      "blockCount": 50,
+      "iterations": 100,
+      "totalTime": 513.7699170000001,
+      "avgTime": 5.137699170000001,
+      "opsPerSecond": 194.63965617901286
+    },
+    {
+      "name": "50 blocks (colored)",
+      "color": "#0000FF",
+      "blockCount": 50,
+      "iterations": 10,
+      "totalTime": 125.36787499999946,
+      "avgTime": 12.536787499999946,
+      "opsPerSecond": 79.76525086669965
+    }
+  ]
+}

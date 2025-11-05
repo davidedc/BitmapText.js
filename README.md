@@ -929,6 +929,36 @@ new TextProperties(options = {})
   - Multi-line text layout
   - Cross-browser compatibility
 
+  **Performance Benchmarks**
+
+  Comprehensive performance testing suite comparing BitmapText.js against native HTML5 Canvas rendering:
+
+  **Browser Tests** (Three-Phase Progressive FPS Testing):
+  - Open `perf/browser/rendering-benchmark.html` (unbundled) or `rendering-benchmark-bundled.html` (bundled)
+  - Click "Start Benchmark" to begin automated testing
+  - Tests use three-phase approach: coarse discovery → medium refinement → fine refinement
+  - Finds exact performance ceiling (±5 blocks accuracy)
+  - Compares BitmapText (black/colored) vs HTML5 Canvas (black/colored)
+  - Generates visual HTML report with charts and detailed metrics
+
+  **Node.js Tests** (Adaptive Timing):
+  ```bash
+  ./perf/node/run-benchmarks.sh
+  ```
+  - Tests both bundled and unbundled versions automatically
+  - Measures render time with adaptive iteration counts
+  - Generates HTML report and JSON data files
+  - Compares performance across different block sizes and colors
+
+  **What's Measured:**
+  - Font loading performance
+  - Peak rendering capacity at 60fps (browser)
+  - Average render time per operation (Node.js)
+  - Fast path (black text) vs slow path (colored text)
+  - Bundled vs unbundled performance comparison
+
+  See `perf/README.md` for complete documentation, methodology, and interpretation guide.
+
   ## Troubleshooting
 
   **CORS Issues**

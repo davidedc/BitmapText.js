@@ -36,6 +36,10 @@
         border-left-color: #FF9800;
         background: #fff3e0;
       }
+      .demo-section.performance {
+        border-left-color: #9C27B0;
+        background: #f3e5f5;
+      }
       .demo-section a {
         color: #1976D2;
         text-decoration: none;
@@ -120,6 +124,19 @@
     <div class="demo-section">
       <a href="test-renderer.html">Font Render Tests</a>
       <div class="desc">Full test suite and visual verification with individual source files</div>
+    </div>
+
+    <h2>Performance Benchmarks</h2>
+    <p style="color: #666; font-size: 0.95em;">Comprehensive performance testing comparing BitmapText.js vs HTML5 Canvas with progressive FPS testing and detailed reports.</p>
+
+    <div class="demo-section performance">
+      <a href="../perf/browser/rendering-benchmark.html">Rendering Performance Benchmark (Unbundled)</a>
+      <div class="desc">Progressive FPS testing with 17 individual source files - measures peak rendering capacity at 60fps</div>
+    </div>
+
+    <div class="demo-section performance">
+      <a href="../perf/browser/rendering-benchmark-bundled.html">Rendering Performance Benchmark (Bundled)</a>
+      <div class="desc">Progressive FPS testing with production bundle - compares bundled vs unbundled performance</div>
     </div>
 
     <h2>Build & Test Tools</h2>

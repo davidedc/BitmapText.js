@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js Performance Benchmark (Bundled)</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>BitmapText.js Performance Benchmark</h1>
+  <p class="subtitle">Bundled Version - Progressive FPS Testing</p>
+
+  <div id="controls">
+    <button id="start-benchmark">Start Benchmark</button>
+    <div id="status"></div>
+  </div>
+
+  <canvas id="benchmark-canvas" width="1200" height="800"></canvas>
+
+  <div id="report"></div>
+
+  <!-- Load BitmapText.js bundle (minified) -->
+  <script src="../../dist/bitmaptext.min.js"></script>
+
+  <!-- Load test data -->
+  <script src="../../src/shared/test-data.js"></script>
+
+  <!-- Load benchmark modules -->
+  <script src="fps-tester.js"></script>
+  <script src="benchmark-core.js"></script>
+  <script src="report-generator.js"></script>
+
+  <script>
+    // Configure BitmapText
+    BitmapText.setFontDirectory('../../font-assets/');
+
+    // DOM elements
+    const startButton = document.getElementById('start-benchmark');
+    const statusDiv = document.getElementById('status');
+
+    // Update status
+    function updateStatus(message, type = 'active') {
+      statusDiv.textContent = message;
+      statusDiv.className = type;
+    }
+
+    // Run benchmark
+    async function runBenchmark() {
+      startButton.disabled = true;
+      updateStatus('Initializing benchmark...', 'active');
+
+      try {
+        // Create benchmark instance
+        const benchmark = new BenchmarkCore('benchmark-canvas', {
+          fontFamily: 'Arial',
+          fontStyle: 'normal',
+          fontWeight: 'normal',
+          fontSize: 19,
+          pixelDensity: 1,
+          testBlock: TEST_BLOCK_5_LINES,
+          lineHeight: 25,
+          targetFPS: 60,
+          consecutiveFramesThreshold: 10,
+          bundleType: 'bundled'
+        });
+
+        // Progress callback
+        const progressCallback = (progress) => {
+          const messages = {
+            'font-loading': '⏳ Loading font...',
+            'bitmaptext-black': '🔤 Testing BitmapText (black text)...',
+            'bitmaptext-colored': '🎨 Testing BitmapText (colored text)...',
+            'canvas-black': '📝 Testing HTML5 Canvas (black text)...',
+            'canvas-colored': '🖌️ Testing HTML5 Canvas (colored text)...',
+            'complete': '✅ Benchmark complete!'
+          };
+          updateStatus(messages[progress.stage] || progress.message, 'active');
+        };
+
+        // Run all benchmarks
+        const results = await benchmark.runAllBenchmarks(progressCallback);
+
+        // Generate report
+        updateStatus('✅ Generating report...', 'complete');
+        const reportGenerator = new ReportGenerator(results);
+        reportGenerator.generate();
+
+        updateStatus('✅ Benchmark complete! Scroll down to see results.', 'complete');
+
+      } catch (error) {
+        console.error('Benchmark error:', error);
+        updateStatus(`❌ Error: ${error.message}`, 'active');
+      } finally {
+        startButton.disabled = false;
+      }
+    }
+
+    // Event listener
+    startButton.addEventListener('click', runBenchmark);
+
+    // Auto-start on load (optional - comment out if not desired)
+    // window.addEventListener('load', () => {
+    //   setTimeout(runBenchmark, 500);
+    // });
+  </script>
+</body>
+</html>
