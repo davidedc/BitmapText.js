@@ -1,0 +1,115 @@
+🚀 BitmapText.js Performance Benchmark (UNBUNDLED)
+Platform: linux
+Node version: v22.21.1
+Architecture: x64
+
+⏳ Loading font...
+🔍 MetricsExpander: Restored pixelDensity=1 for 204 characters
+TightAtlasReconstructor: Processing 204 characters
+🔍 TightAtlasReconstructor: pixelDensity=1, height_CssPx=21, cellHeight_PhysPx=21
+🔍 Cell dimensions (first 5):  :css=5,phys=5,x=0, !:css=5,phys=5,x=5, ":css=7,phys=7,x=10, #:css=11,phys=11,x=17, $:css=11,phys=11,x=28
+TightAtlasReconstructor: Packed 203 glyphs into 1819×21 atlas
+✅ Font loaded in 37.42ms
+
+📊 Testing: Single block (black)
+   Iterations: 10
+   Average time: 10.564ms
+   Operations/sec: 95
+
+📊 Testing: Single block (colored)
+   Iterations: 100
+   Average time: 8.377ms
+   Operations/sec: 119
+
+📊 Testing: 10 blocks (black)
+   Iterations: 100
+   Average time: 9.235ms
+   Operations/sec: 108
+
+📊 Testing: 10 blocks (colored)
+   Iterations: 10
+   Average time: 14.485ms
+   Operations/sec: 69
+
+📊 Testing: 50 blocks (black)
+   Iterations: 10
+   Average time: 16.252ms
+   Operations/sec: 62
+
+📊 Testing: 50 blocks (colored)
+   Iterations: 10
+   Average time: 60.573ms
+   Operations/sec: 17
+
+JSON_RESULTS_START
+{
+  "version": "unbundled",
+  "platform": {
+    "os": "linux",
+    "nodeVersion": "v22.21.1",
+    "arch": "x64"
+  },
+  "timestamp": "2025-11-06T23:33:53.991Z",
+  "fontLoading": {
+    "loadTime": 37.417004,
+    "fontId": "density-1-0-Arial-style-normal-weight-normal-size-19-0"
+  },
+  "tests": [
+    {
+      "name": "Single block (black)",
+      "color": "#000000",
+      "blockCount": 1,
+      "iterations": 10,
+      "totalTime": 105.64184500000002,
+      "avgTime": 10.564184500000001,
+      "opsPerSecond": 94.65945998955242
+    },
+    {
+      "name": "Single block (colored)",
+      "color": "#0000FF",
+      "blockCount": 1,
+      "iterations": 100,
+      "totalTime": 837.7240220000001,
+      "avgTime": 8.377240220000001,
+      "opsPerSecond": 119.37105463593831
+    },
+    {
+      "name": "10 blocks (black)",
+      "color": "#000000",
+      "blockCount": 10,
+      "iterations": 100,
+      "totalTime": 923.4584029999996,
+      "avgTime": 9.234584029999997,
+      "opsPerSecond": 108.28858092052039
+    },
+    {
+      "name": "10 blocks (colored)",
+      "color": "#0000FF",
+      "blockCount": 10,
+      "iterations": 10,
+      "totalTime": 144.8533749999997,
+      "avgTime": 14.485337499999968,
+      "opsPerSecond": 69.03532623937842
+    },
+    {
+      "name": "50 blocks (black)",
+      "color": "#000000",
+      "blockCount": 50,
+      "iterations": 10,
+      "totalTime": 162.51936399999977,
+      "avgTime": 16.251936399999977,
+      "opsPerSecond": 61.53112929976771
+    },
+    {
+      "name": "50 blocks (colored)",
+      "color": "#0000FF",
+      "blockCount": 50,
+      "iterations": 10,
+      "totalTime": 605.7333990000006,
+      "avgTime": 60.573339900000065,
+      "opsPerSecond": 16.508913024292376
+    }
+  ]
+}
+JSON_RESULTS_END
+✅ Benchmark complete

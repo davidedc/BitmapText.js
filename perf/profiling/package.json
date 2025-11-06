@@ -1,0 +1,16 @@
+{
+  "name": "bitmaptext-profiling",
+  "version": "1.0.0",
+  "description": "Profiling tools for BitmapText.js benchmarks",
+  "private": true,
+  "scripts": {
+    "profile:node": "bash ./profile-node-benchmarks.sh",
+    "profile:browser": "node ./profile-browser-benchmarks.js",
+    "profile:all": "npm run profile:node && npm run profile:browser && npm run generate-report",
+    "generate-report": "node ./generate-comprehensive-report.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  },
+  "devDependencies": {}
+}
