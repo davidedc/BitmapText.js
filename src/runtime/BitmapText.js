@@ -339,7 +339,7 @@ class BitmapText {
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, characterMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, characterMetrics.actualBoundingBoxDescent);
 
-      advancement_CssPx = this.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties);
+      advancement_CssPx = this.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
       width_CssPx += advancement_CssPx;
     }
 
@@ -544,11 +544,13 @@ class BitmapText {
   // This depends on both the advancement specified by the glyph of the i-th character
   // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
 
-  static calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) {
+  static calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics = null) {
     if (!textProperties) {
       textProperties = new TextProperties();
     }
-    const characterMetrics = fontMetrics.getCharacterMetrics(char);
+    if (!characterMetrics) {
+      characterMetrics = fontMetrics.getCharacterMetrics(char);
+    }
     let x_CssPx = 0;
 
     // LIMITATION: Only handles standard space (U+0020), not other Unicode space characters

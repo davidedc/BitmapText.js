@@ -207,7 +207,7 @@ class BitmapTextFAB extends BitmapText {
       }
 
       x_PhysPx +=
-        BitmapText.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties) *
+        BitmapText.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics) *
         fontProperties.pixelDensity;
     }
     // TODO: Remove debug logging before production release
