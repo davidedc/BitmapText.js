@@ -1,6 +1,6 @@
 # BitmapText.js
 
-  A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.
+  A JavaScript library for rendering pixel-identical, consistent bitmap text across all browsers and devices, for both browser (HTML5 Canvas) and node (.png or .qoi image).
   
   See [demos and examples](./public/index.html)
 
