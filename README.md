@@ -23,13 +23,79 @@
   - ✅ Dynamic atlas loading (Placeholder rectangle rendering when atlas is not loaded)
   - ✅ No dependencies
 
-  ## Limitations
+## Limitations
 
   **Compound Emoji Support**: The library operates on Unicode code points, not grapheme clusters. Basic emojis work ('😀'), but compound emojis don't ('👨‍👩‍👧' family emoji, '🏳️‍🌈' rainbow flag). See docs/ARCHITECTURE.md for details.
 
   ## Distribution & Usage Options
 
+  BitmapText.js uses a **static class architecture** with zero configuration needed for most use cases:
+
+  ### Runtime-Only Distribution (Recommended for Production)
+
+  For applications that consume pre-built bitmap fonts, simply include the static BitmapText class:
+
+  ```javascript
+  // Import only the static BitmapText class (~15-18KB)
+  import { BitmapText } from './src/runtime/BitmapText.js';
+
+  // Optional: Import helper classes for type safety and advanced usage
+  import { FontProperties } from './src/runtime/FontProperties.js';
+  import { TextProperties } from './src/runtime/TextProperties.js';
+
+  // Font data self-registers when loaded
+  // No configuration needed in browser environments
+  ```
+
+  **Best for:** Production web apps, mobile apps, games where bundle size matters
+
+  ### Node.js Distribution
+
+  For Node.js environments, minimal configuration is required:
+
+  ```javascript
+  // Import static BitmapText class
+  import { BitmapText } from './src/runtime/BitmapText.js';
+  import { Canvas } from './src/platform/canvas-mock.js';
+
+  // Configure for Node.js environment
+  BitmapText.configure({
+    fontDirectory: './font-assets/',
+    canvasFactory: () => new Canvas()
+  });
+  ```
+
+  **Best for:** Server-side rendering, CLI tools, automated image generation
+
+  ### Font Assets Building Distribution
+
+  For applications that need to generate bitmap fonts at runtime:
+
+  ```javascript
+  // Import full toolkit including font assets building tools (~55KB+)
+  import { BitmapText } from './src/runtime/BitmapText.js';
+  import { AtlasDataStore } from './src/runtime/AtlasDataStore.js';
+  import { FontMetricsStore } from './src/runtime/FontMetricsStore.js';
+  import { BitmapTextFAB } from './src/builder/BitmapTextFAB.js';
+  import { AtlasDataStoreFAB } from './src/builder/AtlasDataStoreFAB.js';
+  import { FontMetricsStoreFAB } from './src/builder/FontMetricsStoreFAB.js';
+  import { FontPropertiesFAB } from './src/builder/FontPropertiesFAB.js';
+  ```
+
+  **Best for:** Font building tools, development environments, CI/CD pipelines
+
+  ### Bundle Size Comparison
+
+  | Distribution Type | Bundle Size | Use Case |
+  |------------------|-------------|----------|
+  | **Static Runtime** | ~15-18KB | Production apps (browser & Node.js) |
+  | **Full Toolkit** | ~50KB+ | Development tools generating fonts |
+
+  **Recommendation:** Use static runtime in production and build font assets during your build process using the full toolkit.
+
   ### Production Bundles (Recommended)
+
+  For production deployments, use the pre-built minified bundles:
 
   **Browser (Single Script Tag):**
   ```html
@@ -64,94 +130,110 @@
   npm run build-bundle-all
   ```
 
+  **Benefits:**
+  - ✅ Single file load (32-33KB) vs 17 separate files (149KB)
+  - ✅ 79% size reduction through minification
+  - ✅ Source maps included for debugging
+  - ✅ Zero configuration in browser
+  - ✅ Minimal configuration in Node.js
+
+  **What's included:** StatusCode, FontProperties, TextProperties, BitmapText, FontLoader, Atlas/Metrics stores, MetricsExpander, TightAtlasReconstructor, and all supporting classes.
+
+  **What's excluded (Node.js):** Canvas implementation (you provide), PNG encoder (image I/O not core library).
+
   See `dist/README.md` for complete bundle documentation.
 
   ## Quick Start
 
-  ### Browser (Zero Configuration)
+Get up and running with the production-ready bundles in seconds.
+
+  ### Browser Usage
 
   ```html
-  <!-- Load core runtime classes (StatusCode must be loaded first) -->
-  <script src="src/runtime/StatusCode.js"></script>
-  <script src="src/runtime/FontProperties.js"></script>
-  <script src="src/runtime/TextProperties.js"></script>
-  <script src="src/runtime/AtlasDataStore.js"></script>
-  <script src="src/runtime/FontMetricsStore.js"></script>
-  <script src="src/runtime/BitmapText.js"></script>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>BitmapText Demo</title>
+  </head>
+  <body>
+    <canvas id="myCanvas" width="400" height="100"></canvas>
 
-  <!-- Load pre-generated font data (self-registers automatically) -->
-  <script src="font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-18-0.js"></script>
-  <script src="font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-18-0-webp.js"></script>
+    <!-- Single script tag - complete runtime (~32KB minified) -->
+    <script src="dist/bitmaptext.min.js"></script>
 
-  <canvas id="myCanvas" width="400" height="100"></canvas>
+    <script>
+      const canvas = document.getElementById('myCanvas');
+      const ctx = canvas.getContext('2d');
 
-  <script>
-    const canvas = document.getElementById('myCanvas');
-    const ctx = canvas.getContext('2d');
+      // IMPORTANT - Pixel Density Configuration:
+      // BitmapText requires explicit pixel density specification:
+      // - Standard displays: Use 1.0
+      // - HiDPI/Retina displays: Use window.devicePixelRatio (typically 2.0+)
+      // - No automatic detection - you must provide this value
+      // For detailed HiDPI setup, see "Understanding Coordinate Systems & Transforms" section below
 
-    // IMPORTANT - Pixel Density Configuration:
-    // BitmapText requires explicit pixel density specification:
-    // - Standard displays: Use 1.0
-    // - HiDPI/Retina displays: Use window.devicePixelRatio (typically 2.0+)
-    // - No automatic detection - you must provide this value
-    // For detailed HiDPI setup, see "Understanding Coordinate Systems & Transforms" section below
+      // Create font configuration
+      const fontProperties = new FontProperties(
+        1,          // pixelDensity (1.0 = standard, 2.0 = Retina)
+        "Arial",    // fontFamily
+        "normal",   // fontStyle
+        "normal",   // fontWeight
+        19          // fontSize in CSS pixels
+      );
 
-    // Create font configuration
-    const fontProperties = new FontProperties(
-      window.devicePixelRatio || 1, // pixelDensity (1.0 = standard, 2.0 = Retina)
-      "Arial",                      // fontFamily
-      "normal",                     // fontStyle
-      "normal",                     // fontWeight
-      18                           // fontSize in CSS pixels
-    );
+      // Optional: Configure font directory if needed
+      BitmapText.setFontDirectory('./font-assets/');
 
-    // Optional: Create text rendering configuration
-    const textProperties = new TextProperties({
-      isKerningEnabled: true,      // Enable kerning (default: true)
-      textBaseline: 'bottom',      // Baseline positioning (default: 'bottom')
-      textAlign: 'left',           // Alignment (default: 'left')
-      textColor: '#000000'         // Color (default: '#000000')
-    });
+      // Load font and render
+      BitmapText.loadFont(fontProperties.idString).then(() => {
+        // Optional: Create text rendering configuration
+        const textProperties = new TextProperties({
+          isKerningEnabled: true,      // Enable kerning (default: true)
+          textBaseline: 'bottom',      // Baseline positioning (default: 'bottom')
+          textAlign: 'left',           // Alignment (default: 'left')
+          textColor: '#000000'         // Color (default: '#000000')
+        });
 
-    // IMPORTANT: Do NOT call ctx.scale() - BitmapText handles scaling internally
-    // IMPORTANT: Coordinates are ABSOLUTE from canvas origin, transforms are ignored
+        // IMPORTANT: Do NOT call ctx.scale() - BitmapText handles scaling internally
+        // IMPORTANT: Coordinates are ABSOLUTE from canvas origin, transforms are ignored
 
-    // Render text using static API
-    BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties, textProperties);
-  </script>
+        // Render text using static API
+        BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties, textProperties);
+      });
+    </script>
+  </body>
+  </html>
   ```
 
-  ### Node.js
+  ### Node.js Usage
 
   ```javascript
-  import { BitmapText } from './src/runtime/BitmapText.js';
-  import { FontProperties } from './src/runtime/FontProperties.js';
-  import { Canvas } from './src/platform/canvas-mock.js';
-  import fs from 'fs';
+  import { createCanvas } from 'node-canvas';  // or 'skia-canvas'
+  import './dist/bitmaptext-node.min.js';
 
-  // Configure for Node.js
+  // Configure with your Canvas implementation
   BitmapText.configure({
     fontDirectory: './font-assets/',
-    canvasFactory: () => new Canvas()
+    canvasFactory: () => createCanvas()
   });
 
   // Create font configuration
   // Node.js pixel density: Use 1.0 for standard rendering, 2.0+ for HiDPI pre-rendering
   // See "Node.js Pixel Density" section below for details
-  const fontProperties = new FontProperties(1.0, "Arial", "normal", "normal", 18);
+  const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19);
 
   // Load font
   await BitmapText.loadFont(fontProperties.idString);
 
   // Create canvas and render
-  const canvas = new Canvas(400, 100);
+  const canvas = createCanvas(400, 100);
   const ctx = canvas.getContext('2d');
 
   // Coordinates are ABSOLUTE from canvas origin (0,0)
   BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties);
 
-  // Export as PNG
-  fs.writeFileSync('output.png', canvas.toPNG());
+  // Note: Image export requires separate PNG encoder (not included in bundle)
+  // See dist/README.md for details
   ```
 
   ### With Status Checking
@@ -174,6 +256,10 @@
     }
   }
   ```
+
+**See [dist/README.md](dist/README.md) for complete bundle documentation.**
+
+**For development and debugging:** See the "Development & Debugging" section below for using individual source files.
 
 ## Understanding Coordinate Systems & Transforms
 
@@ -456,6 +542,104 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
 - If text measurement fails (missing glyphs), alignment defaults to 'left' with a warning
 - Alignment respects kerning settings (text width includes kerning when enabled)
 
+  ## Development & Debugging
+
+For development with maximum debugging flexibility, you can use individual source files instead of the production bundle.
+
+### Using Individual Source Files (Browser)
+
+  ```html
+  <!-- Load core runtime classes (StatusCode must be loaded first) -->
+  <script src="src/runtime/StatusCode.js"></script>
+  <script src="src/runtime/FontProperties.js"></script>
+  <script src="src/runtime/TextProperties.js"></script>
+  <script src="src/runtime/FontMetrics.js"></script>
+  <script src="src/runtime/AtlasImage.js"></script>
+  <script src="src/runtime/AtlasPositioning.js"></script>
+  <script src="src/runtime/AtlasData.js"></script>
+  <script src="src/runtime/AtlasDataStore.js"></script>
+  <script src="src/runtime/FontMetricsStore.js"></script>
+  <script src="src/runtime/FontManifest.js"></script>
+  <script src="src/runtime/TightAtlasReconstructor.js"></script>
+  <script src="src/runtime/AtlasReconstructionUtils.js"></script>
+  <script src="src/runtime/AtlasCellDimensions.js"></script>
+  <script src="src/platform/FontLoader-browser.js"></script>
+  <script src="src/runtime/FontLoaderBase.js"></script>
+  <script src="src/builder/MetricsExpander.js"></script>
+  <script src="src/runtime/BitmapText.js"></script>
+
+  <!-- Load pre-generated font data (self-registers automatically) -->
+  <script src="font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js"></script>
+  <script src="font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-webp.js"></script>
+
+  <canvas id="myCanvas" width="400" height="100"></canvas>
+
+  <script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19);
+    const textProperties = new TextProperties();
+
+    // Render text using static API
+    BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties, textProperties);
+  </script>
+  ```
+
+**Benefits:**
+- Set breakpoints in original source files
+- See unminified, readable code
+- Easier debugging during development
+- Better error messages with full context
+
+**Trade-offs:**
+- 17 separate files (149KB total unminified)
+- Not recommended for production
+- Requires CORS-enabled server (use `python -m http.server` or `npx http-server`)
+
+**Example:** See `public/hello-world-demo.html` for a complete unbundled example.
+
+### Using Individual Source Files (Node.js)
+
+  ```javascript
+  import { BitmapText } from './src/runtime/BitmapText.js';
+  import { FontProperties } from './src/runtime/FontProperties.js';
+  import { TextProperties } from './src/runtime/TextProperties.js';
+  import { Canvas } from './src/platform/canvas-mock.js';
+
+  // Configure for Node.js
+  BitmapText.configure({
+    fontDirectory: './font-assets/',
+    canvasFactory: () => new Canvas()
+  });
+
+  const fontProperties = new FontProperties(1, "Arial", "normal", "normal", 19);
+  await BitmapText.loadFont(fontProperties.idString);
+
+  const canvas = new Canvas(400, 100);
+  const ctx = canvas.getContext('2d');
+
+  BitmapText.drawTextFromAtlas(ctx, "Hello World", 10, 50, fontProperties);
+  ```
+
+### Using Unminified Bundle
+
+For a middle ground between individual files and minified bundle, use the unminified bundle:
+
+  ```html
+  <!-- Easier to debug than minified, but still a single file -->
+  <script src="dist/bitmaptext.js"></script>
+  ```
+
+**Benefits:**
+- Single file (easier than 17 separate files)
+- Readable code (not minified)
+- No source map required
+
+**Trade-offs:**
+- Larger than minified (149KB vs 32KB)
+- All code in one file (harder to navigate than separate files)
+
   ## Building from Source
 
   ### Quick Reference
@@ -653,9 +837,25 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
 
   ### StatusCode Module
 
-  The StatusCode module provides status codes and helper functions for handling rendering results. When using BitmapText in browsers with script tags, **StatusCode.js must be loaded before BitmapText.js** because BitmapText depends on the StatusCode constants.
+  The StatusCode module provides status codes and helper functions for handling rendering results.
 
-  **Import Order (Browser):**
+  **Using Production Bundle (Recommended):**
+  ```html
+  <!-- StatusCode is included in the bundle, no special import needed -->
+  <script src="dist/bitmaptext.min.js"></script>
+
+  <script>
+    // StatusCode is automatically available globally
+    if (result.status.code === StatusCode.SUCCESS) {
+      console.log('Rendering successful');
+    }
+  </script>
+  ```
+
+  **Using Individual Source Files (Development):**
+
+  When loading individual source files in browsers with script tags, **StatusCode.js must be loaded before BitmapText.js** because BitmapText depends on the StatusCode constants.
+
   ```html
   <!-- Load StatusCode first -->
   <script src="src/runtime/StatusCode.js"></script>
@@ -663,12 +863,11 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
   <!-- Then load other runtime classes -->
   <script src="src/runtime/FontProperties.js"></script>
   <script src="src/runtime/TextProperties.js"></script>
-  <script src="src/runtime/AtlasDataStore.js"></script>
-  <script src="src/runtime/FontMetricsStore.js"></script>
+  <!-- ... other files ... -->
   <script src="src/runtime/BitmapText.js"></script>
   ```
 
-  **Import Order (ES Modules):**
+  **Using ES Modules:**
   ```javascript
   // In ES modules, imports are automatically hoisted
   import { StatusCode, isSuccess, getStatusDescription } from './src/runtime/StatusCode.js';
