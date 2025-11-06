@@ -14,15 +14,14 @@
 
   ## Features
 
-  - ✅ Pixel-identical text rendering across all browsers
+  - ✅ Pixel-identical text rendering across all browsers (hash-verifiable)
   - ✅ Pre-rendered glyphs for consistent output
-  - ✅ Advanced kerning with fine-grained control
+  - ✅ Kerning
   - ✅ Multiple pixel density support (retina displays)
   - ✅ Full textBaseline support (top, hanging, middle, alphabetic, ideographic, bottom)
-  - ✅ Hash-based verification for consistency
   - ✅ Font builder tool for generating bitmap fonts
-  - ✅ Placeholder rectangle rendering when glyphs not loaded (to support dynamic loading)
-  - ✅ Minimal runtime dependencies
+  - ✅ Dynamic atlas loading (Placeholder rectangle rendering when atlas is not loaded)
+  - ✅ No dependencies
 
   ## Limitations
 
@@ -30,73 +29,7 @@
 
   ## Distribution & Usage Options
 
-  BitmapText.js uses a **static class architecture** with zero configuration needed for most use cases:
-
-  ### Runtime-Only Distribution (Recommended for Production)
-
-  For applications that consume pre-built bitmap fonts, simply include the static BitmapText class:
-
-  ```javascript
-  // Import only the static BitmapText class (~15-18KB)
-  import { BitmapText } from './src/runtime/BitmapText.js';
-
-  // Optional: Import helper classes for type safety and advanced usage
-  import { FontProperties } from './src/runtime/FontProperties.js';
-  import { TextProperties } from './src/runtime/TextProperties.js';
-
-  // Font data self-registers when loaded
-  // No configuration needed in browser environments
-  ```
-
-  **Best for:** Production web apps, mobile apps, games where bundle size matters
-
-  ### Node.js Distribution
-
-  For Node.js environments, minimal configuration is required:
-
-  ```javascript
-  // Import static BitmapText class
-  import { BitmapText } from './src/runtime/BitmapText.js';
-  import { Canvas } from './src/platform/canvas-mock.js';
-
-  // Configure for Node.js environment
-  BitmapText.configure({
-    fontDirectory: './font-assets/',
-    canvasFactory: () => new Canvas()
-  });
-  ```
-
-  **Best for:** Server-side rendering, CLI tools, automated image generation
-
-  ### Font Assets Building Distribution
-
-  For applications that need to generate bitmap fonts at runtime:
-
-  ```javascript
-  // Import full toolkit including font assets building tools (~55KB+)
-  import { BitmapText } from './src/runtime/BitmapText.js';
-  import { AtlasDataStore } from './src/runtime/AtlasDataStore.js';
-  import { FontMetricsStore } from './src/runtime/FontMetricsStore.js';
-  import { BitmapTextFAB } from './src/builder/BitmapTextFAB.js';
-  import { AtlasDataStoreFAB } from './src/builder/AtlasDataStoreFAB.js';
-  import { FontMetricsStoreFAB } from './src/builder/FontMetricsStoreFAB.js';
-  import { FontPropertiesFAB } from './src/builder/FontPropertiesFAB.js';
-  ```
-
-  **Best for:** Font building tools, development environments, CI/CD pipelines
-
-  ### Bundle Size Comparison
-
-  | Distribution Type | Bundle Size | Use Case |
-  |------------------|-------------|----------|
-  | **Static Runtime** | ~15-18KB | Production apps (browser & Node.js) |
-  | **Full Toolkit** | ~50KB+ | Development tools generating fonts |
-
-  **Recommendation:** Use static runtime in production and build font assets during your build process using the full toolkit.
-
   ### Production Bundles (Recommended)
-
-  For production deployments, use the pre-built minified bundles:
 
   **Browser (Single Script Tag):**
   ```html
@@ -130,17 +63,6 @@
   # or
   npm run build-bundle-all
   ```
-
-  **Benefits:**
-  - ✅ Single file load (32-33KB) vs 17 separate files (149KB)
-  - ✅ 79% size reduction through minification
-  - ✅ Source maps included for debugging
-  - ✅ Zero configuration in browser
-  - ✅ Minimal configuration in Node.js
-
-  **What's included:** StatusCode, FontProperties, TextProperties, BitmapText, FontLoader, Atlas/Metrics stores, MetricsExpander, TightAtlasReconstructor, and all supporting classes.
-
-  **What's excluded (Node.js):** Canvas implementation (you provide), PNG encoder (image I/O not core library).
 
   See `dist/README.md` for complete bundle documentation.
 
