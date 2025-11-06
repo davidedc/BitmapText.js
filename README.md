@@ -1,6 +1,8 @@
 # BitmapText.js
 
-  A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices. See [demos and examples](./public/index.html)
+  A JavaScript library for rendering pixel-identical, consistent bitmap text on HTML5 Canvas across all browsers and devices.
+  
+  See [demos and examples](./public/index.html)
 
   **Documentation Navigation:**
   - **System Architecture** → See docs/ARCHITECTURE.md for detailed design information
@@ -27,11 +29,11 @@
 
   **Compound Emoji Support**: The library operates on Unicode code points, not grapheme clusters. Basic emojis work ('😀'), but compound emojis don't ('👨‍👩‍👧' family emoji, '🏳️‍🌈' rainbow flag). See docs/ARCHITECTURE.md for details.
 
-  ## Distribution & Usage Options
+## Distribution & Usage Options
 
   BitmapText.js uses a **static class architecture** with zero configuration needed for most use cases:
 
-  ### Runtime-Only Distribution (Recommended for Production)
+### Runtime-Only Distribution (Recommended for Production)
 
   For applications that consume pre-built bitmap fonts, simply include the static BitmapText class:
 
@@ -49,7 +51,7 @@
 
   **Best for:** Production web apps, mobile apps, games where bundle size matters
 
-  ### Node.js Distribution
+### Node.js Distribution
 
   For Node.js environments, minimal configuration is required:
 
@@ -67,7 +69,7 @@
 
   **Best for:** Server-side rendering, CLI tools, automated image generation
 
-  ### Font Assets Building Distribution
+### Font Assets Building Distribution
 
   For applications that need to generate bitmap fonts at runtime:
 
@@ -84,7 +86,7 @@
 
   **Best for:** Font building tools, development environments, CI/CD pipelines
 
-  ### Bundle Size Comparison
+### Bundle Size Comparison
 
   | Distribution Type | Bundle Size | Use Case |
   |------------------|-------------|----------|
@@ -93,7 +95,7 @@
 
   **Recommendation:** Use static runtime in production and build font assets during your build process using the full toolkit.
 
-  ### Production Bundles (Recommended)
+### Production Bundles (Recommended)
 
   For production deployments, use the pre-built minified bundles:
 
@@ -143,11 +145,11 @@
 
   See `dist/README.md` for complete bundle documentation.
 
-  ## Quick Start
+## Quick Start
 
 Get up and running with the production-ready bundles in seconds.
 
-  ### Browser Usage
+### Browser Usage
 
   ```html
   <!DOCTYPE html>
@@ -205,7 +207,7 @@ Get up and running with the production-ready bundles in seconds.
   </html>
   ```
 
-  ### Node.js Usage
+### Node.js Usage
 
   ```javascript
   import { createCanvas } from 'node-canvas';  // or 'skia-canvas'
@@ -236,7 +238,7 @@ Get up and running with the production-ready bundles in seconds.
   // See dist/README.md for details
   ```
 
-  ### With Status Checking
+### With Status Checking
 
   ```javascript
   // Measure text - returns { metrics, status }
@@ -542,7 +544,7 @@ See `public/baseline-alignment-demo.html` for a comprehensive visual demonstrati
 - If text measurement fails (missing glyphs), alignment defaults to 'left' with a warning
 - Alignment respects kerning settings (text width includes kerning when enabled)
 
-  ## Development & Debugging
+## Development & Debugging
 
 For development with maximum debugging flexibility, you can use individual source files instead of the production bundle.
 
@@ -640,9 +642,9 @@ For a middle ground between individual files and minified bundle, use the unmini
 - Larger than minified (149KB vs 32KB)
 - All code in one file (harder to navigate than separate files)
 
-  ## Building from Source
+## Building from Source
 
-  ### Quick Reference
+### Quick Reference
 
   **Rebuild all bundles:**
   ```bash
@@ -654,7 +656,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   ./run-node-demos.sh  # Builds bundles + runs Node.js demos
   ```
 
-  ### Build Commands
+### Build Commands
 
   | Command | What It Builds |
   |---------|---------------|
@@ -663,7 +665,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   | `npm run build-bundle-node` | Node.js bundle only |
   | `./scripts/build-runtime-bundle.sh --all` | Both bundles (explicit) |
 
-  ### What Gets Built
+### What Gets Built
 
   - **dist/bitmaptext.min.js** - Browser bundle (32KB)
   - **dist/bitmaptext-node.min.js** - Node.js bundle (33KB)
@@ -671,9 +673,9 @@ For a middle ground between individual files and minified bundle, use the unmini
 
   For detailed rebuild instructions, see **[dist/README.md](dist/README.md#-rebuilding)**.
 
-  ## Generating Your Own Bitmap Fonts
+## Generating Your Own Bitmap Fonts
 
-  ### Automated Pipeline (Recommended)
+### Automated Pipeline (Recommended)
   ```bash
   npm run watch-fonts
   # or
@@ -681,7 +683,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   ```
   Then use the font-assets-builder.html - files will be processed automatically!
 
-  ### Manual Process
+### Manual Process
   1. Open public/font-assets-builder.html in a web browser
   2. Select font family, style, weight, and size range
   3. Click "Download Font Assets" to generate QOI bitmap font atlas
@@ -690,13 +692,13 @@ For a middle ground between individual files and minified bundle, use the unmini
 
   For complete automation documentation, see `scripts/README.md`.
 
-  ## API Reference
+## API Reference
 
-  ### BitmapText Static Class
+### BitmapText Static Class
 
   All methods are static - no instantiation required.
 
-  #### Configuration (Optional)
+#### Configuration (Optional)
 
   ```javascript
   BitmapText.configure({
@@ -715,7 +717,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   - Browser: uses `document.createElement('canvas')`
   - Node.js: Must provide `() => new Canvas()` from canvas-mock
 
-  #### Loading Methods
+#### Loading Methods
 
   **loadFont(idString, options): Promise\<void\>**
 
@@ -741,7 +743,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   ], { onProgress: callback });
   ```
 
-  #### Rendering Methods
+#### Rendering Methods
 
   **measureText(text, fontProperties, textProperties)**
 
@@ -791,7 +793,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   - **fontProperties**: FontProperties instance
   - **textProperties**: TextProperties instance (optional)
 
-  #### Query Methods
+#### Query Methods
 
   **hasMetrics(idString: string): boolean** - Check if metrics are loaded for a specific font
 
@@ -806,7 +808,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   }
   ```
 
-  #### Unloading Methods
+#### Unloading Methods
 
   **unloadMetrics(idString: string): void** - Remove metrics from memory for a specific font
 
@@ -828,14 +830,14 @@ For a middle ground between individual files and minified bundle, use the unmini
   BitmapText.unloadAllAtlases();
   ```
 
-  #### Registration Methods (Called by Font Assets)
+#### Registration Methods (Called by Font Assets)
 
   **registerMetrics(idString, compactedData)**: Register font metrics
   **registerAtlas(idString, base64Data)**: Register atlas image
 
   These are called automatically when font asset files are loaded.
 
-  ### StatusCode Module
+### StatusCode Module
 
   The StatusCode module provides status codes and helper functions for handling rendering results.
 
@@ -874,7 +876,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   import { BitmapText } from './src/runtime/BitmapText.js';
   ```
 
-  ### StatusCode Constants
+### StatusCode Constants
 
   ```javascript
   StatusCode.SUCCESS = 0        // Everything worked perfectly
@@ -884,7 +886,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   StatusCode.PARTIAL_ATLAS = 4  // Some characters missing from atlas
   ```
 
-  ### Helper Functions
+### Helper Functions
 
   ```javascript
   isSuccess(status)             // Returns true if status indicates success
@@ -893,7 +895,7 @@ For a middle ground between individual files and minified bundle, use the unmini
   getStatusDescription(status)  // Returns human-readable status description
   ```
 
-  ### Usage Examples
+### Usage Examples
 
   **Basic Usage (ignoring status):**
   ```javascript
@@ -916,23 +918,23 @@ For a middle ground between individual files and minified bundle, use the unmini
   }
   ```
 
-  ## FontProperties Class
+## FontProperties Class
 
   Immutable font configuration class with pre-computed keys for performance.
 
-  ### Constructor
+### Constructor
   ```javascript
   new FontProperties(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize)
   ```
 
-  ### Parameters
+### Parameters
   - **pixelDensity**: Number (can be non-integer, e.g., 1.5 for some displays)
   - **fontFamily**: String (e.g., "Arial", "Helvetica")
   - **fontStyle**: String ("normal", "italic", "oblique")
   - **fontWeight**: String ("normal", "bold", "100"-"900")
   - **fontSize**: Number (can be non-integer, e.g., 18.5)
 
-  ### Properties
+### Properties
   - **key**: String - Pre-computed key for fast Map lookups
   - **idString**: String - Pre-computed ID string for asset file naming
 
@@ -975,23 +977,23 @@ new TextProperties(options = {})
 - **equals(other)**: Equality comparison
 - **toObject()**: Returns plain object representation
 
-  ## Internal Store Classes
+## Internal Store Classes
 
   These classes are used internally by BitmapText and also available for font-assets-builder:
 
-  ### AtlasDataStore
+### AtlasDataStore
 
   Manages atlas images - used by font-assets-builder, internal to BitmapText static class.
 
-  ### FontMetricsStore
+### FontMetricsStore
 
   Manages font metrics - used by font-assets-builder, internal to BitmapText static class.
 
   **Note**: End users of the static BitmapText API don't need to interact with these classes directly.
 
-  ## Build Instructions
+## Build Instructions
 
-  ### Development Setup
+### Development Setup
 
   ```bash
   # Clone repository
@@ -1006,13 +1008,13 @@ new TextProperties(options = {})
   http://localhost:8000/public/font-assets-builder.html
   ```
 
-  ### Building Font Data
+### Building Font Data
 
   1. Configure specs in src/specs/default-specs.js or via UI
   2. Use Font Builder to generate atlases
   3. Compressed data saved to font-assets/
 
-  ## Testing and Examples
+## Testing and Examples
 
   **Minimal Demo**
   Open `public/hello-world-demo.html` for a simple "Hello World" example showing basic usage.
@@ -1093,7 +1095,7 @@ new TextProperties(options = {})
 
   See `perf/README.md` for complete documentation, methodology, and interpretation guide.
 
-  ## Troubleshooting
+## Troubleshooting
 
   **CORS Issues**
   - Always serve files via HTTP server, not file:// protocol
@@ -1125,7 +1127,7 @@ new TextProperties(options = {})
   - BitmapText is a static class (no instances created) - pre-load fonts and cache measurements for best performance
   - Consider caching frequently used text measurements
 
-  ## Image Formats
+## Image Formats
 
   BitmapText.js uses different image formats optimized for each platform:
 
@@ -1144,7 +1146,7 @@ new TextProperties(options = {})
   - Simple browser export format
   - Pipeline converts: QOI → PNG (intermediate) → WebP (browser delivery)
 
-  ## Browser Support
+## Browser Support
 
   Modern browsers with WebP (lossless) support:
   - Chrome/Edge 90+
@@ -1154,7 +1156,7 @@ new TextProperties(options = {})
 
   **Minimum requirement: Safari 14** for WebP support
 
-  ## Project Structure
+## Project Structure
 
   ```
   /
@@ -1177,10 +1179,10 @@ new TextProperties(options = {})
   └── scripts/           # Automation and build scripts
   ```
 
-  ## Architecture
+## Architecture
 
   See docs/ARCHITECTURE.md for detailed system design information.
 
-  ## License
+## License
 
   See LICENSE file.
