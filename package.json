@@ -71,5 +71,8 @@
     "docs/",
     "LICENSE",
     "README.md"
-  ]
+  ],
+  "devDependencies": {
+    "puppeteer": "^24.29.1"
+  }
 }
