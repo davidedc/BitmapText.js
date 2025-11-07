@@ -1262,11 +1262,13 @@ class BitmapText {
     const metrics = measureResult.metrics;
 
     // Calculate scratch canvas dimensions in physical pixels
-    // Width: total text width
-    // Height: ascent + absolute value of descent (descent is negative)
+    // CRITICAL: Use FONT bounding box (not actual text bounding box)
+    // This ensures we have room for ALL characters in the font, not just those in this text
+    // Example: "hello" has small actualBoundingBoxAscent (x-height only)
+    //          but we need room for "HELLO" (cap-height) when rendering any text
     const textWidth_PhysPx = Math.ceil(metrics.width * fontProperties.pixelDensity);
     const textHeight_PhysPx = Math.ceil(
-      (metrics.actualBoundingBoxAscent + Math.abs(metrics.actualBoundingBoxDescent)) * fontProperties.pixelDensity
+      (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent) * fontProperties.pixelDensity
     );
 
     // Safety check: ensure dimensions are reasonable
@@ -1283,10 +1285,12 @@ class BitmapText {
     // Step 3: Draw ALL glyphs to scratch canvas in their original black form
     // Position relative to scratch canvas origin (not main canvas)
     const position_PhysPx = {
-      // Start at actualBoundingBoxLeft to account for glyphs that protrude left (e.g., italic 'f')
+      // Horizontal: Start at actualBoundingBoxLeft to account for glyphs that protrude left (e.g., italic 'f')
       x: metrics.actualBoundingBoxLeft * fontProperties.pixelDensity,
-      // Start at ascent from top of scratch canvas
-      y: metrics.actualBoundingBoxAscent * fontProperties.pixelDensity
+      // Vertical: Position bottom baseline at the bottom of the full em square within scratch canvas
+      // This is fontBoundingBoxAscent + fontBoundingBoxDescent from the top (i.e., at the canvas bottom)
+      // Glyphs will draw upward from here using their negative dy offsets
+      y: (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent) * fontProperties.pixelDensity
     };
 
     for (let i = 0; i < chars.length; i++) {
@@ -1337,13 +1341,17 @@ class BitmapText {
     BitmapText.#coloredGlyphCtx.globalCompositeOperation = 'source-over';
 
     // Step 5: Copy entire colored text block to main canvas ONCE
-    // Position accounts for actualBoundingBoxLeft offset
+    // POSITIONING GEOMETRY:
+    // - Main canvas: startPosition_PhysPx.y is at the bottom baseline (textBaseline='bottom')
+    // - Scratch canvas: bottom baseline is at y = textHeight_PhysPx (the canvas bottom)
+    // - To align baselines: scratch canvas top = startPosition_PhysPx.y - textHeight_PhysPx
+    // - Horizontal: account for actualBoundingBoxLeft offset (glyphs that protrude left)
     ctx.drawImage(
       BitmapText.#coloredGlyphCanvas,
       0, 0,
       textWidth_PhysPx, textHeight_PhysPx,
       Math.round(startPosition_PhysPx.x - metrics.actualBoundingBoxLeft * fontProperties.pixelDensity),
-      Math.round(startPosition_PhysPx.y - metrics.actualBoundingBoxAscent * fontProperties.pixelDensity),
+      Math.round(startPosition_PhysPx.y - textHeight_PhysPx),
       textWidth_PhysPx, textHeight_PhysPx
     );
 
