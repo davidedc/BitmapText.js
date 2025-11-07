@@ -43,7 +43,7 @@
  */
 
 // ============================================================================
-// StatusCode.js - Source: /home/user/BitmapText.js/src/runtime/StatusCode.js
+// StatusCode.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/StatusCode.js
 // ============================================================================
 
 // StatusCode - Core Runtime Constants
@@ -155,7 +155,7 @@ function getStatusDescription(status) {
   }
 }
 // ============================================================================
-// FontProperties.js - Source: /home/user/BitmapText.js/src/runtime/FontProperties.js
+// FontProperties.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/FontProperties.js
 // ============================================================================
 
 // FontProperties - Core Runtime Class  
@@ -260,7 +260,7 @@ class FontProperties {
   }
 }
 // ============================================================================
-// TextProperties.js - Source: /home/user/BitmapText.js/src/runtime/TextProperties.js
+// TextProperties.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/TextProperties.js
 // ============================================================================
 
 // TextProperties - Core Runtime Class
@@ -371,7 +371,7 @@ class TextProperties {
   }
 }
 // ============================================================================
-// FontMetrics.js - Source: /home/user/BitmapText.js/src/runtime/FontMetrics.js
+// FontMetrics.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/FontMetrics.js
 // ============================================================================
 
 // FontMetrics - Core Runtime Class
@@ -478,7 +478,7 @@ class FontMetrics {
   
 }
 // ============================================================================
-// BitmapText.js - Source: /home/user/BitmapText.js/src/runtime/BitmapText.js
+// BitmapText.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/BitmapText.js
 // ============================================================================
 
 // BitmapText - Static Core Runtime Class
@@ -1899,7 +1899,7 @@ BitmapText.r = BitmapText.registerMetrics;
 BitmapText.a = BitmapText.registerAtlas;
 
 // ============================================================================
-// MetricsExpander.js - Source: /home/user/BitmapText.js/src/builder/MetricsExpander.js
+// MetricsExpander.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/builder/MetricsExpander.js
 // ============================================================================
 
 // Static utility class for expanding minified font metrics data (runtime only)
@@ -2450,7 +2450,7 @@ class MetricsExpander {
 
 }
 // ============================================================================
-// AtlasPositioning.js - Source: /home/user/BitmapText.js/src/runtime/AtlasPositioning.js
+// AtlasPositioning.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/AtlasPositioning.js
 // ============================================================================
 
 // AtlasPositioning - Core Runtime Class
@@ -2634,7 +2634,7 @@ class AtlasPositioning {
 
 }
 // ============================================================================
-// AtlasImage.js - Source: /home/user/BitmapText.js/src/runtime/AtlasImage.js
+// AtlasImage.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/AtlasImage.js
 // ============================================================================
 
 // AtlasImage - Core Runtime Class
@@ -2779,7 +2779,7 @@ class AtlasImage {
   }
 }
 // ============================================================================
-// AtlasData.js - Source: /home/user/BitmapText.js/src/runtime/AtlasData.js
+// AtlasData.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/AtlasData.js
 // ============================================================================
 
 // AtlasData - Core Runtime Class
@@ -2913,7 +2913,7 @@ class AtlasData {
   }
 }
 // ============================================================================
-// AtlasReconstructionUtils.js - Source: /home/user/BitmapText.js/src/builder/AtlasReconstructionUtils.js
+// AtlasReconstructionUtils.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/builder/AtlasReconstructionUtils.js
 // ============================================================================
 
 // AtlasReconstructionUtils - Shared utility for image data extraction
@@ -2974,7 +2974,7 @@ class AtlasReconstructionUtils {
 }
 
 // ============================================================================
-// AtlasCellDimensions.js - Source: /home/user/BitmapText.js/src/utils/AtlasCellDimensions.js
+// AtlasCellDimensions.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/utils/AtlasCellDimensions.js
 // ============================================================================
 
 // AtlasCellDimensions - Utility for calculating atlas cell dimensions
@@ -3032,7 +3032,7 @@ class AtlasCellDimensions {
 }
 
 // ============================================================================
-// TightAtlasReconstructor.js - Source: /home/user/BitmapText.js/src/runtime/TightAtlasReconstructor.js
+// TightAtlasReconstructor.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/TightAtlasReconstructor.js
 // ============================================================================
 
 // TightAtlasReconstructor - Core Runtime Class
@@ -3395,7 +3395,7 @@ class TightAtlasReconstructor {
 }
 
 // ============================================================================
-// AtlasDataStore.js - Source: /home/user/BitmapText.js/src/runtime/AtlasDataStore.js
+// AtlasDataStore.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/AtlasDataStore.js
 // ============================================================================
 
 // AtlasDataStore - Core Runtime Static Class
@@ -3476,7 +3476,7 @@ class AtlasDataStore {
 }
 
 // ============================================================================
-// FontMetricsStore.js - Source: /home/user/BitmapText.js/src/runtime/FontMetricsStore.js
+// FontMetricsStore.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/FontMetricsStore.js
 // ============================================================================
 
 // FontMetricsStore - Core Runtime Static Class
@@ -3570,7 +3570,7 @@ class FontMetricsStore {
 }
 
 // ============================================================================
-// FontManifest.js - Source: /home/user/BitmapText.js/src/runtime/FontManifest.js
+// FontManifest.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/FontManifest.js
 // ============================================================================
 
 // FontManifest - Core Runtime Class
@@ -3639,7 +3639,7 @@ class FontManifest {
   }
 }
 // ============================================================================
-// FontLoaderBase.js - Source: /home/user/BitmapText.js/src/runtime/FontLoaderBase.js
+// FontLoaderBase.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/FontLoaderBase.js
 // ============================================================================
 
 // FontLoaderBase - Abstract Static Base Class for Font Loading
@@ -3961,7 +3961,7 @@ class FontLoaderBase {
 }
 
 // ============================================================================
-// QOIDecode.js - Source: /home/user/BitmapText.js/lib/QOIDecode.js
+// QOIDecode.js - Source: /Users/davidedellacasa/code/BitmapText.js/lib/QOIDecode.js
 // ============================================================================
 
 /**
@@ -4111,7 +4111,7 @@ function QOIDecode (arrayBuffer, byteOffset, byteLength, outputChannels) {
     };
 }
 // ============================================================================
-// FontLoader-node.js - Source: /home/user/BitmapText.js/src/platform/FontLoader-node.js
+// FontLoader-node.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/platform/FontLoader-node.js
 // ============================================================================
 
 // FontLoader - Node.js-Specific Font Loader
