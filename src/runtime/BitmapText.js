@@ -78,8 +78,6 @@ class BitmapText {
   // Rendering resources (lazy-initialized on first render)
   static #coloredGlyphCanvas = null;    // Shared scratch canvas for coloring
   static #coloredGlyphCtx = null;       // 2D context for scratch canvas
-  static #coloredGlyphCanvasWidth = 0;  // Track current canvas width to avoid expensive resizes
-  static #coloredGlyphCanvasHeight = 0; // Track current canvas height to avoid expensive resizes
 
   // Font loader (platform-specific, set at runtime)
   static #fontLoader = null;            // FontLoaderBrowser or FontLoaderNode
@@ -129,8 +127,6 @@ class BitmapText {
     // Reset canvas to use new factory on next render
     BitmapText.#coloredGlyphCanvas = null;
     BitmapText.#coloredGlyphCtx = null;
-    BitmapText.#coloredGlyphCanvasWidth = 0;
-    BitmapText.#coloredGlyphCanvasHeight = 0;
   }
 
   /**
@@ -798,22 +794,10 @@ class BitmapText {
       return { missingAtlasChars, placeholdersUsed };
     }
 
-    // Step 2: Setup scratch canvas - ONLY resize if needed (resizing is VERY expensive)
-    // Canvas resize deallocates/reallocates pixel buffer and forces GPU/CPU sync
-    // Reuse existing canvas when possible for massive performance gain
-    if (textWidth_PhysPx > BitmapText.#coloredGlyphCanvasWidth ||
-        textHeight_PhysPx > BitmapText.#coloredGlyphCanvasHeight) {
-      // Need more space - resize with 20% padding to reduce future resizes
-      BitmapText.#coloredGlyphCanvasWidth = Math.ceil(textWidth_PhysPx * 1.2);
-      BitmapText.#coloredGlyphCanvasHeight = Math.ceil(textHeight_PhysPx * 1.2);
-      BitmapText.#coloredGlyphCanvas.width = BitmapText.#coloredGlyphCanvasWidth;
-      BitmapText.#coloredGlyphCanvas.height = BitmapText.#coloredGlyphCanvasHeight;
-      // Canvas resize clears content automatically, no clearRect needed
-    } else {
-      // Reusing existing canvas - must clear the region we're about to use
-      // Only clear what we need, not the entire canvas (faster for small text)
-      BitmapText.#coloredGlyphCtx.clearRect(0, 0, textWidth_PhysPx, textHeight_PhysPx);
-    }
+    // Step 2: Setup scratch canvas sized for entire text block
+    BitmapText.#coloredGlyphCanvas.width = textWidth_PhysPx;
+    BitmapText.#coloredGlyphCanvas.height = textHeight_PhysPx;
+    BitmapText.#coloredGlyphCtx.clearRect(0, 0, textWidth_PhysPx, textHeight_PhysPx);
 
     // Step 3: Draw ALL glyphs to scratch canvas in their original black form
     // Position relative to scratch canvas origin (not main canvas)
@@ -1338,8 +1322,6 @@ class BitmapText {
     }
     BitmapText.#coloredGlyphCanvas = null;
     BitmapText.#coloredGlyphCtx = null;
-    BitmapText.#coloredGlyphCanvasWidth = 0;
-    BitmapText.#coloredGlyphCanvasHeight = 0;
     BitmapText.#canvasFactory = null;
     BitmapText.#fontLoader = null;
   }
