@@ -1,0 +1,111 @@
+═══════════════════════════════════════════════════════════════
+  BitmapText.js Node.js CPU Profile Analysis
+═══════════════════════════════════════════════════════════════
+
+Generated: 2025-11-06T23:33:59.925Z
+
+
+───────────────────────────────────────────────────────────────
+  Measurement Benchmark
+───────────────────────────────────────────────────────────────
+
+Summary:
+  Total Time:    649807.00μs
+  Total Samples: 493
+
+Category Breakdown:
+  BitmapText Core       88.86%  (22 functions)
+  Unknown/Other          5.66%  (2 functions)
+  Node.js Core           3.06%  (6 functions)
+  V8 Runtime             1.91%  (1 functions)
+  Font Loading           0.19%  (1 functions)
+
+Top 10 Hot Functions:
+   1. calculateAdvancement_CssPx                44.95%  (227 hits)
+   2. measureText                               18.54%  (90 hits)
+   3. hasGlyph                                  13.27%  (67 hits)
+   4. consoleCall                                5.50%  (26 hits)
+   5. getFontMetrics                             2.46%  (12 hits)
+   6. (anonymous)                                2.43%  (14 hits)
+   7. (anonymous)                                1.92%  (10 hits)
+   8. (garbage collector)                        1.91%  (1 hits)
+   9. getCharacterMetrics                        1.00%  (5 hits)
+  10. QOIDecode                                  0.82%  (5 hits)
+
+⚡ Performance Recommendations:
+
+  [HIGH] BitmapText Core
+      Issue:      BitmapText core operations consume 88.9% of total time
+      Suggestion: Optimize core BitmapText rendering functions
+      Functions:  calculateAdvancement_CssPx, measureText, hasGlyph
+
+  [CRITICAL] Hot Function
+      Issue:      calculateAdvancement_CssPx consumes 45.0% of total time
+      Suggestion: Optimize calculateAdvancement_CssPx - this is the #1 hottest function
+      Functions:  calculateAdvancement_CssPx
+
+  [HIGH] Hot Function
+      Issue:      measureText consumes 18.5% of total time
+      Suggestion: Optimize measureText - this is the #2 hottest function
+      Functions:  measureText
+
+  [HIGH] Hot Function
+      Issue:      hasGlyph consumes 13.3% of total time
+      Suggestion: Optimize hasGlyph - this is the #3 hottest function
+      Functions:  hasGlyph
+
+
+───────────────────────────────────────────────────────────────
+  Rendering Benchmark
+───────────────────────────────────────────────────────────────
+
+Summary:
+  Total Time:    5890258.00μs
+  Total Samples: 4523
+
+Category Breakdown:
+  BitmapText Core       98.90%  (31 functions)
+  Node.js Core           0.95%  (11 functions)
+
+Top 10 Hot Functions:
+   1. (anonymous)                               62.42%  (2786 hits)
+   2. drawImage                                 10.56%  (507 hits)
+   3. hasPositioning                             7.54%  (341 hits)
+   4. #isValidAtlas                              5.40%  (256 hits)
+   5. _updateBuffer                              3.50%  (158 hits)
+   6. #createColoredGlyph                        3.19%  (140 hits)
+   7. set height                                 2.08%  (97 hits)
+   8. #calculateCharacterAdvancement_PhysPx      0.95%  (44 hits)
+   9. drawTextFromAtlas                          0.79%  (38 hits)
+  10. #drawCharacterDirect                       0.57%  (27 hits)
+
+⚡ Performance Recommendations:
+
+  [HIGH] BitmapText Core
+      Issue:      BitmapText core operations consume 98.9% of total time
+      Suggestion: Optimize core BitmapText rendering functions
+      Functions:  (anonymous), drawImage, hasPositioning
+
+  [HIGH] Hot Function
+      Issue:      drawImage consumes 10.6% of total time
+      Suggestion: Optimize drawImage - this is the #2 hottest function
+      Functions:  drawImage
+
+═══════════════════════════════════════════════════════════════
+  Comparative Analysis
+═══════════════════════════════════════════════════════════════
+
+Performance Comparison:
+  Measurement Benchmark: 649807.00μs
+  Rendering Benchmark:   5890258.00μs
+
+Category Time Distribution:
+
+  Category             |  Measurement |    Rendering
+  ---------------------+--------------+-------------
+  BitmapText Core      |      88.86%  |      98.90% 
+  Font Loading         |       0.19%  |       0.05% 
+  Node.js Core         |       3.06%  |       0.95% 
+  V8 Runtime           |       1.91%  |       0.00% 
+  Unknown/Other        |       5.66%  |       0.08% 
+

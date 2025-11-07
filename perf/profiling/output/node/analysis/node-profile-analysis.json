@@ -1,0 +1,672 @@
+{
+  "timestamp": "2025-11-06T23:33:59.926Z",
+  "measurement": {
+    "benchmarkName": "Measurement Benchmark",
+    "profilePath": "/home/user/BitmapText.js/perf/profiling/output/node/measurement/CPU.20251106.233353.2706.0.001.cpuprofile",
+    "timestamp": "2025-11-06T23:33:59.915Z",
+    "summary": {
+      "totalTime": 649807,
+      "totalSamples": 493
+    },
+    "hotFunctions": [
+      {
+        "functionName": "calculateAdvancement_CssPx",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 292092,
+        "percentage": 44.95057763305104,
+        "hits": 227
+      },
+      {
+        "functionName": "measureText",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 120501,
+        "percentage": 18.544121562248485,
+        "hits": 90
+      },
+      {
+        "functionName": "hasGlyph",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 86220,
+        "percentage": 13.268555124829373,
+        "hits": 67
+      },
+      {
+        "functionName": "consoleCall",
+        "url": "",
+        "time": 35751,
+        "percentage": 5.5017874538132086,
+        "hits": 26
+      },
+      {
+        "functionName": "getFontMetrics",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 16008,
+        "percentage": 2.463500700977367,
+        "hits": 12
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 15774,
+        "percentage": 2.427490008571776,
+        "hits": 14
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "node:internal/main/run_main_module",
+        "time": 12505,
+        "percentage": 1.924417557828709,
+        "hits": 10
+      },
+      {
+        "functionName": "(garbage collector)",
+        "url": "",
+        "time": 12398,
+        "percentage": 1.9079511301047851,
+        "hits": 1
+      },
+      {
+        "functionName": "getCharacterMetrics",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 6479,
+        "percentage": 0.9970652824607922,
+        "hits": 5
+      },
+      {
+        "functionName": "QOIDecode",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 5338,
+        "percentage": 0.8214746840215633,
+        "hits": 5
+      },
+      {
+        "functionName": "getImageData",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 4634,
+        "percentage": 0.7131348231090154,
+        "hits": 4
+      },
+      {
+        "functionName": "get width",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 4274,
+        "percentage": 0.6577337578696444,
+        "hits": 3
+      },
+      {
+        "functionName": "_loadAtlasFromPackage",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 4235,
+        "percentage": 0.6517319758020459,
+        "hits": 3
+      },
+      {
+        "functionName": "getKerningAdjustment",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 3198,
+        "percentage": 0.49214612954307974,
+        "hits": 2
+      },
+      {
+        "functionName": "findTightBounds",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 2916,
+        "percentage": 0.44874862843890573,
+        "hits": 3
+      },
+      {
+        "functionName": "main",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 2218,
+        "percentage": 0.3413321186136807,
+        "hits": 2
+      },
+      {
+        "functionName": "set height",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 2196,
+        "percentage": 0.33794649796016357,
+        "hits": 2
+      },
+      {
+        "functionName": "setFontMetrics",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 2135,
+        "percentage": 0.3285590952390479,
+        "hits": 1
+      },
+      {
+        "functionName": "measurePerformance",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+        "time": 2135,
+        "percentage": 0.3285590952390479,
+        "hits": 1
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "node:internal/modules/cjs/loader",
+        "time": 2005,
+        "percentage": 0.3085531550137195,
+        "hits": 1
+      }
+    ],
+    "categoryBreakdown": {
+      "BitmapText Core": {
+        "time": 577390,
+        "percentage": 88.85561405155684,
+        "functionCount": 22,
+        "topFunctions": [
+          {
+            "functionName": "calculateAdvancement_CssPx",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+            "time": 292092,
+            "percentage": 44.95057763305104,
+            "hits": 227
+          },
+          {
+            "functionName": "measureText",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+            "time": 120501,
+            "percentage": 18.544121562248485,
+            "hits": 90
+          },
+          {
+            "functionName": "hasGlyph",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+            "time": 86220,
+            "percentage": 13.268555124829373,
+            "hits": 67
+          },
+          {
+            "functionName": "getFontMetrics",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+            "time": 16008,
+            "percentage": 2.463500700977367,
+            "hits": 12
+          },
+          {
+            "functionName": "(anonymous)",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/measurement-benchmark-unbundled.bundle.js",
+            "time": 15774,
+            "percentage": 2.427490008571776,
+            "hits": 14
+          }
+        ]
+      },
+      "Font Loading": {
+        "time": 1213,
+        "percentage": 0.1866708114871031,
+        "functionCount": 1,
+        "topFunctions": [
+          {
+            "functionName": "wrapModuleLoad",
+            "url": "node:internal/modules/cjs/loader",
+            "time": 1213,
+            "percentage": 0.1866708114871031,
+            "hits": 1
+          }
+        ]
+      },
+      "Atlas Operations": {
+        "time": 0,
+        "percentage": 0,
+        "functionCount": 0,
+        "topFunctions": []
+      },
+      "Canvas/Drawing": {
+        "time": 0,
+        "percentage": 0,
+        "functionCount": 0,
+        "topFunctions": []
+      },
+      "Measurement": {
+        "time": 0,
+        "percentage": 0,
+        "functionCount": 0,
+        "topFunctions": []
+      },
+      "Node.js Core": {
+        "time": 19870,
+        "percentage": 3.057831017517509,
+        "functionCount": 6,
+        "topFunctions": [
+          {
+            "functionName": "(anonymous)",
+            "url": "node:internal/main/run_main_module",
+            "time": 12505,
+            "percentage": 1.924417557828709,
+            "hits": 10
+          },
+          {
+            "functionName": "(anonymous)",
+            "url": "node:internal/modules/cjs/loader",
+            "time": 2005,
+            "percentage": 0.3085531550137195,
+            "hits": 1
+          },
+          {
+            "functionName": "get",
+            "url": "node:internal/util",
+            "time": 1909,
+            "percentage": 0.29377953761655384,
+            "hits": 1
+          },
+          {
+            "functionName": "(anonymous)",
+            "url": "node:internal/perf/performance",
+            "time": 1289,
+            "percentage": 0.1983665919265259,
+            "hits": 1
+          },
+          {
+            "functionName": "value",
+            "url": "node:internal/console/constructor",
+            "time": 1108,
+            "percentage": 0.1705121674589532,
+            "hits": 1
+          }
+        ]
+      },
+      "V8 Runtime": {
+        "time": 12398,
+        "percentage": 1.9079511301047851,
+        "functionCount": 1,
+        "topFunctions": [
+          {
+            "functionName": "(garbage collector)",
+            "url": "",
+            "time": 12398,
+            "percentage": 1.9079511301047851,
+            "hits": 1
+          }
+        ]
+      },
+      "Unknown/Other": {
+        "time": 36771,
+        "percentage": 5.6587571386580935,
+        "functionCount": 2,
+        "topFunctions": [
+          {
+            "functionName": "consoleCall",
+            "url": "",
+            "time": 35751,
+            "percentage": 5.5017874538132086,
+            "hits": 26
+          },
+          {
+            "functionName": "readFileUtf8",
+            "url": "",
+            "time": 1020,
+            "percentage": 0.15696968484488472,
+            "hits": 1
+          }
+        ]
+      }
+    },
+    "recommendations": [
+      {
+        "priority": "HIGH",
+        "category": "BitmapText Core",
+        "issue": "BitmapText core operations consume 88.9% of total time",
+        "suggestion": "Optimize core BitmapText rendering functions",
+        "functions": [
+          "calculateAdvancement_CssPx",
+          "measureText",
+          "hasGlyph"
+        ]
+      },
+      {
+        "priority": "CRITICAL",
+        "category": "Hot Function",
+        "issue": "calculateAdvancement_CssPx consumes 45.0% of total time",
+        "suggestion": "Optimize calculateAdvancement_CssPx - this is the #1 hottest function",
+        "functions": [
+          "calculateAdvancement_CssPx"
+        ]
+      },
+      {
+        "priority": "HIGH",
+        "category": "Hot Function",
+        "issue": "measureText consumes 18.5% of total time",
+        "suggestion": "Optimize measureText - this is the #2 hottest function",
+        "functions": [
+          "measureText"
+        ]
+      },
+      {
+        "priority": "HIGH",
+        "category": "Hot Function",
+        "issue": "hasGlyph consumes 13.3% of total time",
+        "suggestion": "Optimize hasGlyph - this is the #3 hottest function",
+        "functions": [
+          "hasGlyph"
+        ]
+      }
+    ]
+  },
+  "rendering": {
+    "benchmarkName": "Rendering Benchmark",
+    "profilePath": "/home/user/BitmapText.js/perf/profiling/output/node/rendering/CPU.20251106.233353.2720.0.001.cpuprofile",
+    "timestamp": "2025-11-06T23:33:59.919Z",
+    "summary": {
+      "totalTime": 5890258,
+      "totalSamples": 4523
+    },
+    "hotFunctions": [
+      {
+        "functionName": "(anonymous)",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 3676578,
+        "percentage": 62.41794502040487,
+        "hits": 2786
+      },
+      {
+        "functionName": "drawImage",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 621943,
+        "percentage": 10.558841395402375,
+        "hits": 507
+      },
+      {
+        "functionName": "hasPositioning",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 444069,
+        "percentage": 7.539041583577494,
+        "hits": 341
+      },
+      {
+        "functionName": "#isValidAtlas",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 317857,
+        "percentage": 5.396317105294878,
+        "hits": 256
+      },
+      {
+        "functionName": "_updateBuffer",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 206082,
+        "percentage": 3.49869224743636,
+        "hits": 158
+      },
+      {
+        "functionName": "#createColoredGlyph",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 187843,
+        "percentage": 3.1890453694897576,
+        "hits": 140
+      },
+      {
+        "functionName": "set height",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 122375,
+        "percentage": 2.0775830192837055,
+        "hits": 97
+      },
+      {
+        "functionName": "#calculateCharacterAdvancement_PhysPx",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 56035,
+        "percentage": 0.9513165637226756,
+        "hits": 44
+      },
+      {
+        "functionName": "drawTextFromAtlas",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 46721,
+        "percentage": 0.7931910622590725,
+        "hits": 38
+      },
+      {
+        "functionName": "#drawCharacterDirect",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 33545,
+        "percentage": 0.5694996721705569,
+        "hits": 27
+      },
+      {
+        "functionName": "debug",
+        "url": "node:internal/console/constructor",
+        "time": 30930,
+        "percentage": 0.525104333290664,
+        "hits": 24
+      },
+      {
+        "functionName": "get height",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 25988,
+        "percentage": 0.4412030848224305,
+        "hits": 19
+      },
+      {
+        "functionName": "fillRect",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 21074,
+        "percentage": 0.35777719753532017,
+        "hits": 16
+      },
+      {
+        "functionName": "(anonymous)",
+        "url": "node:internal/main/run_main_module",
+        "time": 12017,
+        "percentage": 0.20401483262702585,
+        "hits": 1
+      },
+      {
+        "functionName": "isValid",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 10008,
+        "percentage": 0.16990766788144085,
+        "hits": 8
+      },
+      {
+        "functionName": "#drawCharacter",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 9920,
+        "percentage": 0.16841367559791098,
+        "hits": 9
+      },
+      {
+        "functionName": "QOIDecode",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 9273,
+        "percentage": 0.15742943687695854,
+        "hits": 7
+      },
+      {
+        "functionName": "getPositioning",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 5619,
+        "percentage": 0.0953948027403893,
+        "hits": 5
+      },
+      {
+        "functionName": "getImageData",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 4657,
+        "percentage": 0.07906275073180156,
+        "hits": 4
+      },
+      {
+        "functionName": "set width",
+        "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+        "time": 4439,
+        "percentage": 0.07536172439305715,
+        "hits": 3
+      }
+    ],
+    "categoryBreakdown": {
+      "BitmapText Core": {
+        "time": 5825595,
+        "percentage": 98.90220428375123,
+        "functionCount": 31,
+        "topFunctions": [
+          {
+            "functionName": "(anonymous)",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+            "time": 3676578,
+            "percentage": 62.41794502040487,
+            "hits": 2786
+          },
+          {
+            "functionName": "drawImage",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+            "time": 621943,
+            "percentage": 10.558841395402375,
+            "hits": 507
+          },
+          {
+            "functionName": "hasPositioning",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+            "time": 444069,
+            "percentage": 7.539041583577494,
+            "hits": 341
+          },
+          {
+            "functionName": "#isValidAtlas",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+            "time": 317857,
+            "percentage": 5.396317105294878,
+            "hits": 256
+          },
+          {
+            "functionName": "_updateBuffer",
+            "url": "file:///home/user/BitmapText.js/perf/node/dist/rendering-benchmark-unbundled.bundle.js",
+            "time": 206082,
+            "percentage": 3.49869224743636,
+            "hits": 158
+          }
+        ]
+      },
+      "Font Loading": {
+        "time": 2826,
+        "percentage": 0.047977524923356496,
+        "functionCount": 2,
+        "topFunctions": [
+          {
+            "functionName": "wrapModuleLoad",
+            "url": "node:internal/modules/cjs/loader",
+            "time": 1742,
+            "percentage": 0.029574256339875097,
+            "hits": 1
+          },
+          {
+            "functionName": "loadSource",
+            "url": "node:internal/modules/cjs/loader",
+            "time": 1084,
+            "percentage": 0.018403268583481402,
+            "hits": 1
+          }
+        ]
+      },
+      "Atlas Operations": {
+        "time": 0,
+        "percentage": 0,
+        "functionCount": 0,
+        "topFunctions": []
+      },
+      "Canvas/Drawing": {
+        "time": 0,
+        "percentage": 0,
+        "functionCount": 0,
+        "topFunctions": []
+      },
+      "Measurement": {
+        "time": 0,
+        "percentage": 0,
+        "functionCount": 0,
+        "topFunctions": []
+      },
+      "Node.js Core": {
+        "time": 55980,
+        "percentage": 0.9503828185454696,
+        "functionCount": 11,
+        "topFunctions": [
+          {
+            "functionName": "debug",
+            "url": "node:internal/console/constructor",
+            "time": 30930,
+            "percentage": 0.525104333290664,
+            "hits": 24
+          },
+          {
+            "functionName": "(anonymous)",
+            "url": "node:internal/main/run_main_module",
+            "time": 12017,
+            "percentage": 0.20401483262702585,
+            "hits": 1
+          },
+          {
+            "functionName": "emitAfterScript",
+            "url": "node:internal/async_hooks",
+            "time": 2127,
+            "percentage": 0.036110472580318215,
+            "hits": 1
+          },
+          {
+            "functionName": "SyncWriteStream._write",
+            "url": "node:internal/fs/sync_write_stream",
+            "time": 2107,
+            "percentage": 0.035770928879515974,
+            "hits": 1
+          },
+          {
+            "functionName": "processTicksAndRejections",
+            "url": "node:internal/process/task_queues",
+            "time": 1878,
+            "percentage": 0.031883153505330324,
+            "hits": 1
+          }
+        ]
+      },
+      "V8 Runtime": {
+        "time": 0,
+        "percentage": 0,
+        "functionCount": 0,
+        "topFunctions": []
+      },
+      "Unknown/Other": {
+        "time": 4749,
+        "percentage": 0.08062465175549187,
+        "functionCount": 2,
+        "topFunctions": [
+          {
+            "functionName": "consoleCall",
+            "url": "",
+            "time": 3660,
+            "percentage": 0.0621364972468099,
+            "hits": 4
+          },
+          {
+            "functionName": "writeBuffer",
+            "url": "",
+            "time": 1089,
+            "percentage": 0.01848815450868196,
+            "hits": 1
+          }
+        ]
+      }
+    },
+    "recommendations": [
+      {
+        "priority": "HIGH",
+        "category": "BitmapText Core",
+        "issue": "BitmapText core operations consume 98.9% of total time",
+        "suggestion": "Optimize core BitmapText rendering functions",
+        "functions": [
+          "(anonymous)",
+          "drawImage",
+          "hasPositioning"
+        ]
+      },
+      {
+        "priority": "HIGH",
+        "category": "Hot Function",
+        "issue": "drawImage consumes 10.6% of total time",
+        "suggestion": "Optimize drawImage - this is the #2 hottest function",
+        "functions": [
+          "drawImage"
+        ]
+      }
+    ]
+  }
+}

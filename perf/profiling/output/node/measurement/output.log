@@ -1,0 +1,142 @@
+🚀 BitmapText.js Measurement Performance Benchmark (UNBUNDLED)
+Platform: linux
+Node version: v22.21.1
+Architecture: x64
+
+⏳ Loading font...
+🔍 MetricsExpander: Restored pixelDensity=1 for 204 characters
+TightAtlasReconstructor: Processing 204 characters
+🔍 TightAtlasReconstructor: pixelDensity=1, height_CssPx=21, cellHeight_PhysPx=21
+🔍 Cell dimensions (first 5):  :css=5,phys=5,x=0, !:css=5,phys=5,x=5, ":css=7,phys=7,x=10, #:css=11,phys=11,x=17, $:css=11,phys=11,x=28
+TightAtlasReconstructor: Packed 203 glyphs into 1819×21 atlas
+✅ Font loaded in 36.64ms
+
+📊 Test 1/3: Text length scaling
+   5 chars: 1.480μs avg, 675504 ops/sec
+   10 chars: 0.741μs avg, 1348684 ops/sec
+   25 chars: 1.781μs avg, 561479 ops/sec
+   50 chars: 3.447μs avg, 290135 ops/sec
+   100 chars: 6.957μs avg, 143748 ops/sec
+   250 chars: 16.173μs avg, 61832 ops/sec
+   500 chars: 16.327μs avg, 61248 ops/sec
+
+📊 Test 2/3: Kerning overhead
+   Kerning ON:  3.497μs avg
+   Kerning OFF: 2.231μs avg
+   Overhead: 56.7%
+
+📊 Test 3/3: Repeated measurements (60fps pattern)
+   Per frame (60 measurements): 0.045ms
+   Per measurement: 0.748μs
+   Frames per second: 22280.7 fps
+
+JSON_RESULTS_START
+{
+  "version": "unbundled",
+  "platform": {
+    "os": "linux",
+    "nodeVersion": "v22.21.1",
+    "arch": "x64"
+  },
+  "timestamp": "2025-11-06T23:33:53.257Z",
+  "fontLoading": {
+    "loadTime": 36.638200000000005,
+    "fontId": "density-1-0-Arial-style-normal-weight-normal-size-19-0"
+  },
+  "tests": [
+    {
+      "category": "Text Length Scaling",
+      "test": "5 characters",
+      "textLength": 5,
+      "totalTime": 14.803755999999993,
+      "avgTime": 0.0014803755999999993,
+      "opsPerSec": 675504.2436527598,
+      "iterations": 10000
+    },
+    {
+      "category": "Text Length Scaling",
+      "test": "10 characters",
+      "textLength": 10,
+      "totalTime": 7.414636999999999,
+      "avgTime": 0.0007414637,
+      "opsPerSec": 1348683.691460553,
+      "iterations": 10000
+    },
+    {
+      "category": "Text Length Scaling",
+      "test": "25 characters",
+      "textLength": 25,
+      "totalTime": 17.810092999999995,
+      "avgTime": 0.0017810092999999995,
+      "opsPerSec": 561479.381382231,
+      "iterations": 10000
+    },
+    {
+      "category": "Text Length Scaling",
+      "test": "50 characters",
+      "textLength": 50,
+      "totalTime": 34.466759999999994,
+      "avgTime": 0.003446675999999999,
+      "opsPerSec": 290134.6108540519,
+      "iterations": 10000
+    },
+    {
+      "category": "Text Length Scaling",
+      "test": "100 characters",
+      "textLength": 100,
+      "totalTime": 69.56616200000002,
+      "avgTime": 0.006956616200000002,
+      "opsPerSec": 143748.04808119207,
+      "iterations": 10000
+    },
+    {
+      "category": "Text Length Scaling",
+      "test": "250 characters",
+      "textLength": 250,
+      "totalTime": 161.728986,
+      "avgTime": 0.0161728986,
+      "opsPerSec": 61831.835141784664,
+      "iterations": 10000
+    },
+    {
+      "category": "Text Length Scaling",
+      "test": "500 characters",
+      "textLength": 500,
+      "totalTime": 163.26962500000002,
+      "avgTime": 0.016326962500000004,
+      "opsPerSec": 61248.37978895339,
+      "iterations": 10000
+    },
+    {
+      "category": "Kerning Overhead",
+      "test": "Kerning ON",
+      "textLength": 50,
+      "totalTime": 34.971475000000055,
+      "avgTime": 0.0034971475000000053,
+      "opsPerSec": 285947.3327905095,
+      "iterations": 10000
+    },
+    {
+      "category": "Kerning Overhead",
+      "test": "Kerning OFF",
+      "textLength": 50,
+      "totalTime": 22.313918000000058,
+      "avgTime": 0.0022313918000000056,
+      "opsPerSec": 448150.7909099592,
+      "iterations": 10000
+    },
+    {
+      "category": "Repeated Measurements",
+      "test": "60 measurements per frame",
+      "textLength": 11,
+      "totalTime": 44.88194499999997,
+      "avgTime": 0.04488194499999997,
+      "opsPerSec": 371.3445722253498,
+      "iterations": 1000,
+      "perMeasurement": 0.0007480324166666662,
+      "framesPerSecond": 22280.674333520987
+    }
+  ]
+}
+JSON_RESULTS_END
+✅ Benchmark complete

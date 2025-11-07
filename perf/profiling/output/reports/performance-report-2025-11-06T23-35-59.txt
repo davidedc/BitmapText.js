@@ -1,0 +1,148 @@
+═══════════════════════════════════════════════════════════════
+  BitmapText.js Performance Analysis Report
+  Node.js Benchmark Profiling Results
+═══════════════════════════════════════════════════════════════
+
+Generated: 2025-11-06T23:35:59.908Z
+
+Profiling Coverage:
+  ✅ Node.js Measurement Benchmark
+  ✅ Node.js Rendering Benchmark
+  ⚠️  Browser benchmarks: Manual profiling required
+     See: perf/profiling/profile-browser-manual.html
+
+═══════════════════════════════════════════════════════════════
+  RANKED PERFORMANCE IMPROVEMENTS
+═══════════════════════════════════════════════════════════════
+
+1. [CRITICAL] Hot Function
+───────────────────────────────────────────────────────────────
+
+   Impact:
+     • Maximum Impact:     0.00%
+     • Average Impact:     0.00%
+     • Occurrences:        4
+
+   Hot Functions (4):
+     • calculateAdvancement_CssPx
+     • measureText
+     • hasGlyph
+     • drawImage
+
+   Recommendations:
+     • Optimize calculateAdvancement_CssPx - this is the #1 hottest function
+     • Optimize measureText - this is the #2 hottest function
+     • Optimize hasGlyph - this is the #3 hottest function
+     • Optimize drawImage - this is the #2 hottest function
+
+   Details:
+     • measurement: calculateAdvancement_CssPx consumes 45.0% of total time
+     • measurement: measureText consumes 18.5% of total time
+     • measurement: hasGlyph consumes 13.3% of total time
+     • rendering: drawImage consumes 10.6% of total time
+
+2. [HIGH] BitmapText Core
+───────────────────────────────────────────────────────────────
+
+   Impact:
+     • Maximum Impact:     98.90%
+     • Average Impact:     93.88%
+     • Occurrences:        2
+
+   Hot Functions (6):
+     • calculateAdvancement_CssPx
+     • measureText
+     • hasGlyph
+     • (anonymous)
+     • drawImage
+     • hasPositioning
+
+   Recommendations:
+     • Optimize core BitmapText rendering functions
+
+   Details:
+     • measurement: BitmapText core operations consume 88.9% of total time
+     • rendering: BitmapText core operations consume 98.9% of total time
+
+═══════════════════════════════════════════════════════════════
+  DETAILED BENCHMARK ANALYSIS
+═══════════════════════════════════════════════════════════════
+
+Measurement Benchmark:
+  Total CPU Time:  649807.00μs
+  Total Samples:   493
+
+  Top 5 Hot Functions:
+    1. calculateAdvancement_CssPx               44.95%
+    2. measureText                              18.54%
+    3. hasGlyph                                 13.27%
+    4. consoleCall                              5.50%
+    5. getFontMetrics                           2.46%
+
+Rendering Benchmark:
+  Total CPU Time:  5890258.00μs
+  Total Samples:   4523
+
+  Top 5 Hot Functions:
+    1. (anonymous)                              62.42%
+    2. drawImage                                10.56%
+    3. hasPositioning                           7.54%
+    4. #isValidAtlas                            5.40%
+    5. _updateBuffer                            3.50%
+
+═══════════════════════════════════════════════════════════════
+  PRIORITY ACTION ITEMS
+═══════════════════════════════════════════════════════════════
+
+🔴 CRITICAL Priority:
+  1. Hot Function (0.0% impact)
+     Functions: calculateAdvancement_CssPx, measureText, hasGlyph
+
+🟠 HIGH Priority:
+  1. BitmapText Core (98.9% impact)
+     Functions: calculateAdvancement_CssPx, measureText, hasGlyph
+
+═══════════════════════════════════════════════════════════════
+  RECOMMENDATIONS
+═══════════════════════════════════════════════════════════════
+
+1. Focus on CRITICAL items first:
+   • Optimize Hot Function
+
+2. Measurement Benchmark Optimizations:
+   • calculateAdvancement_CssPx (45% of time)
+   • measureText function (18.5% of time)
+   • hasGlyph lookups (13.3% of time)
+
+3. Rendering Benchmark Optimizations:
+   • Identify anonymous function hotspot (62% of time)
+   • Optimize drawImage calls (10.6% of time)
+   • Reduce hasPositioning overhead (7.5% of time)
+
+4. Next Steps:
+   • Profile specific hot functions to understand bottlenecks
+   • Consider caching calculated values
+   • Reduce function call overhead in tight loops
+   • Profile browser benchmarks using DevTools
+   • Compare optimized vs. baseline after changes
+
+═══════════════════════════════════════════════════════════════
+  PROFILING ARTIFACTS
+═══════════════════════════════════════════════════════════════
+
+Node.js Profiles:
+  • Measurement: perf/profiling/output/node/measurement/
+  • Rendering:   perf/profiling/output/node/rendering/
+  • Analysis:    perf/profiling/output/node/analysis/
+
+To view profiles in Chrome DevTools:
+  1. Open chrome://inspect in Chrome
+  2. Click "Open dedicated DevTools for Node"
+  3. Go to Profiler tab
+  4. Load the .cpuprofile files
+
+Browser Profiling:
+  • Open: perf/profiling/profile-browser-manual.html
+  • Follow the instructions to profile with DevTools
+  • Compare with Node.js results
+
