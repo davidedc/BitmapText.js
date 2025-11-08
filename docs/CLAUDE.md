@@ -62,7 +62,11 @@
 
   ## Testing
 
-  See README.md for testing approach and instructions.
+  - **Browser tests**: `public/test-renderer.html` for hash verification
+  - **Automated screenshots**: `node scripts/screenshot-with-playwright.js` for browser render capture
+  - **Node.js rendering**: `./run-node-demos.sh` for server-side verification
+
+  See README.md for complete testing approach and docs/AUTOMATED_BROWSER_CANVAS_VERIFICATION_IN_CLAUDE_CODE_WEB.md for automated browser testing details.
 
   ## Key Invariants
 
@@ -113,6 +117,7 @@
   - Use `--remove-qoi` flag to cleanup QOI files if disk space is limited
   - Test baseline and alignment: public/baseline-alignment-demo.html shows all combinations side-by-side
   - Automated image pipeline: See scripts/README.md for QOI/PNG/WebP conversion workflow and command details
+  - Automated browser screenshots: Use `node scripts/screenshot-with-playwright.js` to capture browser renders for visual verification
   - Node.js demos: See README.md for build and run instructions
   - QOI memory analysis: Use `npm run qoi-memory` to analyze uncompressed memory usage of bitmap fonts
 

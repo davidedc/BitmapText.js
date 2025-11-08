@@ -415,6 +415,69 @@ All browser bundle files + QOIDecode + FontLoader-node (replaces FontLoader-brow
 See `public/*-bundled.html` demos for browser usage examples.
 See `dist/README.md` for complete bundle documentation.
 
+### 11. Playwright Screenshot Script
+```bash
+node scripts/screenshot-with-playwright.js [options]
+```
+
+**Options:**
+- `--url <url>` - URL to capture (default: `public/hello-world-demo.html`)
+- `--output <file>` - Output filename (default: `screenshot-playwright.png`)
+- `--canvas-only` - Screenshot only the canvas element (default: full page)
+- `--wait <ms>` - Additional wait time in ms (default: 1000)
+- `--port <port>` - HTTP server port (default: 8765)
+
+**Examples:**
+```bash
+# Basic screenshot of hello-world demo
+node scripts/screenshot-with-playwright.js
+
+# Screenshot a specific page
+node scripts/screenshot-with-playwright.js \
+  --url public/baseline-alignment-demo.html \
+  --output baseline-demo.png
+
+# Canvas-only screenshot
+node scripts/screenshot-with-playwright.js \
+  --canvas-only \
+  --output canvas-only.png
+
+# Custom wait time and port
+node scripts/screenshot-with-playwright.js \
+  --wait 2000 \
+  --port 9000 \
+  --output custom.png
+```
+
+**What it does:**
+- Launches Chromium headless browser with container-optimized flags
+- Starts embedded HTTP server automatically
+- Navigates to specified page and waits for canvas rendering
+- Captures screenshot (full page or canvas-only)
+- Cleans up server and browser automatically
+
+**Prerequisites:**
+```bash
+npm install  # Installs Playwright from package.json devDependencies
+```
+
+**When to use:**
+- Automated visual regression testing
+- CI/CD screenshot generation
+- Batch screenshot capture of multiple pages
+- Verifying rendering across different configurations
+- Documentation screenshot generation
+
+**Output example:**
+```
+✅ Screenshot captured successfully!
+📁 File: /path/to/screenshot-hello-world.png
+📊 Size: 23 KB
+🎨 Canvas: 300×100 (CSS: 300px×100px)
+```
+
+**See also:** `docs/AUTOMATED_BROWSER_CANVAS_VERIFICATION_IN_CLAUDE_CODE_WEB.md` for detailed documentation on browser-based automated testing approaches.
+
 ---
 
 ## 📁 File Structure
@@ -429,9 +492,10 @@ scripts/
 ├── qoi-memory-calculator.js      # QOI memory usage analyzer
 ├── generate-font-registry.js     # Font registry generator
 ├── build-metrics-minifier.sh     # Builds tools/minify-metrics.js
-├── build-runtime-bundle.sh       # Builds production bundles (NEW)
+├── build-runtime-bundle.sh       # Builds production bundles
 ├── build-node-demo.sh            # Builds Node.js demo bundles
 ├── build-node-multi-size-demo.sh # Builds Node.js multi-size demo
+├── screenshot-with-playwright.js # Automated browser screenshot capture
 ├── test-pipeline.sh              # One-time pipeline test
 └── README.md                     # This file
 

@@ -1052,6 +1052,15 @@ new TextProperties(options = {})
   - Multi-line text layout
   - Cross-browser compatibility
 
+  **Automated Browser Testing**
+  Capture screenshots of browser rendering using Playwright:
+  ```bash
+  node scripts/screenshot-with-playwright.js
+  node scripts/screenshot-with-playwright.js --url public/baseline-alignment-demo.html --output baseline.png
+  ```
+
+  See `docs/AUTOMATED_BROWSER_CANVAS_VERIFICATION_IN_CLAUDE_CODE_WEB.md` and `scripts/README.md` for details.
+
   **Performance Benchmarks**
 
   Comprehensive performance testing suite with two benchmark types:
