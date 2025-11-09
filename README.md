@@ -979,13 +979,15 @@ new TextProperties(options = {})
 
 ## FontSetGenerator Class
 
-The FontSetGenerator provides memory-efficient generation of font configuration sets from JSON specifications. Perfect for automated testing, systematic asset building, and CI/CD pipelines.
+The FontSetGenerator provides memory-efficient generation of font configuration sets from JSON specifications. A general-purpose utility for automated testing, asset building, sample generation, and any scenario requiring systematic font exploration.
 
 **Use Cases:**
 - Generate font assets for multiple font families, sizes, and styles
 - Comprehensive testing across font property combinations
+- Sample and demo generation for documentation or showcases
 - Automated font cache pre-population
 - CI/CD workflows requiring systematic font validation
+- Exploratory rendering across the font property space
 
 **Key Features:**
 - Define font sets as unions of cross-products
@@ -1047,12 +1049,12 @@ console.log(`Will generate ${count} font configurations`);
 ```
 
 #### iterator()
-Returns ES6-compatible iterator that yields `FontPropertiesFAB` instances one at a time.
+Returns ES6-compatible iterator that yields `FontProperties` instances one at a time.
 
 ```javascript
 for (const fontProps of generator.iterator()) {
-  console.log(fontProps.toString());
-  // Use fontProps for asset building, testing, etc.
+  console.log(fontProps.idString);
+  // Use fontProps for asset building, testing, sample generation, etc.
 }
 ```
 
@@ -1061,7 +1063,7 @@ Convenience method for iteration with progress tracking.
 
 ```javascript
 generator.forEach((fontProps, index, total) => {
-  console.log(`[${index + 1}/${total}] ${fontProps.toString()}`);
+  console.log(`[${index + 1}/${total}] ${fontProps.idString}`);
   // Process fontProps
 });
 ```
@@ -1094,9 +1096,9 @@ const generator = new FontSetGenerator(spec);
 console.log(`Total: ${generator.getCount()}`);  // 25
 
 for (const fontProps of generator.iterator()) {
-  // Each fontProps is a FontPropertiesFAB instance
+  // Each fontProps is a validated FontProperties instance
   await BitmapText.loadFont(fontProps.idString);
-  // Test rendering, generate assets, etc.
+  // Test rendering, generate assets, create samples, etc.
 }
 ```
 
@@ -1132,7 +1134,7 @@ console.log(`Total configurations: ${generator.getCount()}`);  // 36
 
 // Process each set's fonts
 for (const fontProps of generator.iterator()) {
-  console.log(fontProps.toString());
+  console.log(fontProps.idString);
 }
 ```
 
@@ -1156,7 +1158,7 @@ const generator = new FontSetGenerator(spec);
 console.log(`Testing ${generator.getCount()} weight variations`);  // 9
 
 generator.forEach((fontProps, index, total) => {
-  console.log(`[${index + 1}/${total}] Weight: ${fontProps.fontWeight}`);
+  console.log(`[${index + 1}/${total}] ${fontProps.idString}`);
 });
 ```
 
@@ -1169,7 +1171,7 @@ FontSetGenerator is designed for large-scale font generation:
 - **Range pre-expansion**: Only ranges are pre-expanded (typically small arrays)
 - **Memory usage**: O(range_values) not O(total_configurations)
 
-**Example**: Generating 10,000 font configurations uses memory proportional to the number of unique values in each property array, not 10,000 FontPropertiesFAB instances.
+**Example**: Generating 10,000 font configurations uses memory proportional to the number of unique values in each property array, not 10,000 FontProperties instances.
 
 ### Validation
 

@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Font Set Format is a JSON-based specification for defining large collections of font configurations as unions of cross-products. It's designed for automated testing, asset building, and systematic font generation workflows.
+The Font Set Format is a JSON-based specification for defining large collections of font configurations as unions of cross-products. It's designed for automated testing, asset building, sample generation, and any scenario requiring systematic font property exploration.
 
 **Key Features:**
 - Define multiple font sets and union them together
@@ -15,8 +15,10 @@ The Font Set Format is a JSON-based specification for defining large collections
 **Use Cases:**
 - Automated font asset generation for multiple font families and sizes
 - Comprehensive testing across font property combinations
+- Sample and demo generation for documentation or showcases
 - CI/CD pipelines that need to validate font rendering
 - Systematic font cache pre-population
+- Exploratory rendering across font property space
 
 ## Format Structure
 
@@ -320,8 +322,8 @@ console.log(`Total fonts: ${generator.getCount()}`);
 
 // Iterate over font configurations
 for (const fontProps of generator.iterator()) {
-  console.log(fontProps.toString());
-  // Use fontProps for testing, asset building, etc.
+  console.log(fontProps.idString);
+  // Use fontProps for testing, asset building, sample generation, etc.
 }
 ```
 

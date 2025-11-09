@@ -1,7 +1,8 @@
-// FontSetGenerator - Expands font set specifications into FontPropertiesFAB instances
+// FontSetGenerator - Expands font set specifications into FontProperties instances
 // Supports multi-set union format with range expansion and memory-efficient iteration
 //
-// Purpose: Generate large sets of font configurations for testing or asset building
+// Purpose: Generate large sets of font configurations for testing, asset building,
+// sample generation, or any scenario requiring systematic font property exploration,
 // without loading all configurations into memory at once.
 //
 // Input Format: JSON specification with "fontSets" array
@@ -10,6 +11,11 @@
 // See docs/FONT_SET_FORMAT.md for complete format documentation
 
 class FontSetGenerator {
+
+  // Validation constants (same as FontPropertiesFAB)
+  static VALID_STYLES = ['normal', 'italic', 'oblique'];
+  static VALID_WEIGHTS = ['normal', 'bold', 'bolder', 'lighter',
+                          '100', '200', '300', '400', '500', '600', '700', '800', '900'];
 
   // Internal state for iteration
   #spec;
@@ -54,7 +60,7 @@ class FontSetGenerator {
     this.#spec = spec;
 
     // Pre-expand sets for efficient iteration and counting
-    // This expands ranges but doesn't create all FontPropertiesFAB instances
+    // This expands ranges but doesn't create all FontProperties instances
     this.#expandedSets = this.#spec.fontSets.map(set => this.#expandSet(set));
 
     // Calculate total count across all sets
@@ -72,18 +78,18 @@ class FontSetGenerator {
   }
 
   /**
-   * Creates an iterator that yields FontPropertiesFAB instances one at a time
+   * Creates an iterator that yields FontProperties instances one at a time
    * Memory-efficient: generates instances on-demand rather than storing all
    *
-   * @returns {Iterator<FontPropertiesFAB>} Iterator yielding font configurations
+   * @returns {Iterator<FontProperties>} Iterator yielding font configurations
    *
    * Usage:
    * const generator = new FontSetGenerator(spec);
    * const iterator = generator.iterator();
    *
    * for (const fontProps of iterator) {
-   *   console.log(fontProps.toString());
-   *   // Use fontProps for testing, asset building, etc.
+   *   console.log(fontProps.idString);
+   *   // Use fontProps for testing, asset building, sample generation, etc.
    * }
    */
   iterator() {
@@ -92,16 +98,16 @@ class FontSetGenerator {
 
   /**
    * Convenience method to iterate over all font configurations
-   * Calls callback function for each FontPropertiesFAB instance
+   * Calls callback function for each FontProperties instance
    *
    * @param {Function} callback - Function to call for each font configuration
-   * @param {FontPropertiesFAB} callback.fontProps - Current font configuration
+   * @param {FontProperties} callback.fontProps - Current font configuration
    * @param {number} callback.index - Current index (0-based)
    * @param {number} callback.total - Total number of configurations
    *
    * Usage:
    * generator.forEach((fontProps, index, total) => {
-   *   console.log(`[${index+1}/${total}] ${fontProps.toString()}`);
+   *   console.log(`[${index+1}/${total}] ${fontProps.idString}`);
    * });
    */
   forEach(callback) {
@@ -128,7 +134,7 @@ class FontSetGenerator {
   }
 
   // ============================================================================
-  // PRIVATE METHODS - Validation and Expansion
+  // PRIVATE METHODS - Validation
   // ============================================================================
 
   /**
@@ -174,8 +180,43 @@ class FontSetGenerator {
   }
 
   /**
+   * Validates a single font property configuration
+   * Throws descriptive errors for invalid values
+   */
+  #validateFontProperties(density, family, style, weight, size, setName) {
+    // Validate pixel density
+    if (!density || density <= 0) {
+      throw new Error(`${setName}: Invalid pixelDensity: ${density} - must be positive number`);
+    }
+
+    // Validate font family
+    if (!family || typeof family !== 'string') {
+      throw new Error(`${setName}: Invalid fontFamily: ${family} - must be non-empty string`);
+    }
+
+    // Validate font style
+    if (!FontSetGenerator.VALID_STYLES.includes(style)) {
+      throw new Error(`${setName}: Invalid fontStyle: ${style} - must be one of: ${FontSetGenerator.VALID_STYLES.join(', ')}`);
+    }
+
+    // Validate font weight
+    if (!FontSetGenerator.VALID_WEIGHTS.includes(weight)) {
+      throw new Error(`${setName}: Invalid fontWeight: ${weight} - must be one of: ${FontSetGenerator.VALID_WEIGHTS.join(', ')}`);
+    }
+
+    // Validate font size
+    if (!size || size <= 0) {
+      throw new Error(`${setName}: Invalid fontSize: ${size} - must be positive number`);
+    }
+  }
+
+  // ============================================================================
+  // PRIVATE METHODS - Expansion
+  // ============================================================================
+
+  /**
    * Expands a single font set into arrays of values and calculates count
-   * Expands ranges but doesn't create FontPropertiesFAB instances yet
+   * Expands ranges but doesn't create FontProperties instances yet
    *
    * @returns {Object} Expanded set with arrays and count
    */
@@ -282,7 +323,7 @@ class FontSetGenerator {
 
   /**
    * Creates an ES6-compatible iterator
-   * Yields FontPropertiesFAB instances one at a time across all sets
+   * Yields FontProperties instances one at a time across all sets
    */
   #createIterator() {
     const expandedSets = this.#expandedSets;
@@ -325,10 +366,22 @@ class FontSetGenerator {
           const weight = set.weights[indices.weight];
           const size = set.sizes[indices.size];
 
-          // Create FontPropertiesFAB instance with validation
-          // Note: Weight values must be strings, so convert numbers
+          // Convert weight to string if it's a number
           const weightStr = typeof weight === 'number' ? String(weight) : weight;
-          const fontProps = new FontPropertiesFAB(density, family, style, weightStr, size);
+
+          // Validate before creating instance
+          const setName = set.name || `Set ${setIndex + 1}`;
+          try {
+            FontSetGenerator.prototype.#validateFontProperties.call(
+              this,
+              density, family, style, weightStr, size, setName
+            );
+          } catch (error) {
+            throw error;
+          }
+
+          // Create FontProperties instance (runtime class, no FAB)
+          const fontProps = new FontProperties(density, family, style, weightStr, size);
 
           // Increment indices (rightmost/innermost dimension first)
           indices.size++;

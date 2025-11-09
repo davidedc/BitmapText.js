@@ -1096,7 +1096,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ### Design Purpose
 
-  The FontSetGenerator provides memory-efficient generation of large font configuration sets from JSON specifications. It's designed for systematic testing, automated asset building, and CI/CD pipelines that need to process thousands of font configurations.
+  The FontSetGenerator is a general-purpose utility that provides memory-efficient generation of large font configuration sets from JSON specifications. It's designed for systematic testing, automated asset building, sample generation, exploratory rendering, and CI/CD pipelines that need to process thousands of font configurations.
 
   **Key Design Goals:**
   1. **Memory Efficiency**: Generate configurations on-demand rather than storing all instances
@@ -1106,7 +1106,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ### Component Location
 
-  - **Class**: `src/builder/FontSetGenerator.js`
+  - **Class**: `src/utils/FontSetGenerator.js` (general utility, not building-specific)
   - **Format Documentation**: `docs/FONT_SET_FORMAT.md`
   - **API Examples**: README.md (FontSetGenerator Class section)
 
@@ -1134,7 +1134,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     Pre-expanded arrays: 2 + 1 + 2 + 9 + 25 = 39 values
     Total configurations: 2 × 1 × 2 × 9 × 25 = 900 instances
 
-  Without lazy generation: 900 FontPropertiesFAB instances in memory
+  Without lazy generation: 900 FontProperties instances in memory
   With lazy generation: 39 values + iterator state + 1 current instance
   ```
 
@@ -1203,7 +1203,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       For each style:
         For each weight:
           For each size:
-            yield FontPropertiesFAB(density, family, style, weight, size)
+            yield FontProperties(density, family, style, weight, size)
   ```
 
   **Multi-Set Union:**
@@ -1237,10 +1237,11 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
      - All range elements must be numbers
 
   3. **Font Property Validation** (Iteration):
-     - Delegated to FontPropertiesFAB constructor
+     - Built-in validation using same rules as FontPropertiesFAB
      - Validates density (positive), fontFamily (non-empty string)
      - Validates style (normal/italic/oblique), weight (valid values)
      - Validates fontSize (positive)
+     - Creates FontProperties instances (runtime class) with validated values
 
   **Error Reporting:**
   Errors include set name/index and specific field for easy debugging:
@@ -1295,7 +1296,15 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
      await buildAllAssets(generator);
      ```
 
-  3. **CI/CD**: Validate font rendering across configurations
+  3. **Sample Generation**: Create demos and documentation examples
+     ```javascript
+     for (const fontProps of generator.iterator()) {
+       const canvas = await renderSample(fontProps, "Sample Text");
+       saveSample(fontProps.idString, canvas);
+     }
+     ```
+
+  4. **CI/CD**: Validate font rendering across configurations
      ```javascript
      for (const fontProps of generator.iterator()) {
        const hash = await renderAndHash(fontProps);
