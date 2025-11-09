@@ -1,9 +1,9 @@
 // FontSetGenerator - Expands font set specifications into FontProperties instances
 // Supports multi-set union format with range expansion and memory-efficient iteration
 //
-// Purpose: Generate large sets of font configurations for testing, asset building,
-// sample generation, or any scenario requiring systematic font property exploration,
-// without loading all configurations into memory at once.
+// Purpose: Generate sets of font configurations for testing, asset building,
+// sample generation, or any scenario requiring systematic font property exploration.
+// Doesn't keep configurations into memory at once.
 //
 // Input Format: JSON specification with "fontSets" array
 // Each set defines a cross-product of font properties using arrays and ranges

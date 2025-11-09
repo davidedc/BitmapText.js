@@ -1,23 +1,20 @@
 # Font Set Specification Format
 
-**Single Responsibility**: Complete reference for the JSON font set specification format used by FontSetGenerator.
-
 ## Overview
 
-The Font Set Format is a JSON-based specification for defining large collections of font configurations as unions of cross-products. It's designed for automated testing, asset building, sample generation, and any scenario requiring systematic font property exploration.
+The Font Set Format is a JSON-based specification for defining collections of font configurations as unions of cross-products. It's useful for automated testing, automated asset building, automated sample generation, and any scenario requiring systematic font property exploration.
 
 **Key Features:**
 - Define multiple font sets and union them together
 - Express cross-products of font properties (density × families × styles × weights × sizes)
 - Use ranges for numeric values (e.g., sizes 12 to 24 with step 0.5)
-- Memory-efficient iteration over thousands of font configurations
+- Memory-efficient iteration over potentially thousands of font configurations
 
 **Use Cases:**
 - Automated font asset generation for multiple font families and sizes
 - Comprehensive testing across font property combinations
 - Sample and demo generation for documentation or showcases
 - CI/CD pipelines that need to validate font rendering
-- Systematic font cache pre-population
 - Exploratory rendering across font property space
 
 ## Format Structure
