@@ -977,6 +977,223 @@ new TextProperties(options = {})
 - **equals(other)**: Equality comparison
 - **toObject()**: Returns plain object representation
 
+## FontSetGenerator Class
+
+The FontSetGenerator provides memory-efficient generation of font configuration sets from JSON specifications. A general-purpose utility for automated testing, asset building, sample generation, and any scenario requiring systematic font exploration.
+
+**Use Cases:**
+- Generate font assets for multiple font families, sizes, and styles
+- Comprehensive testing across font property combinations
+- Sample and demo generation for documentation or showcases
+- Automated font cache pre-population
+- CI/CD workflows requiring systematic font validation
+- Exploratory rendering across the font property space
+
+**Key Features:**
+- Define font sets as unions of cross-products
+- Use ranges for numeric values (sizes 12-24 with step 0.5)
+- Memory-efficient iteration (generates on-demand, doesn't store all instances)
+- Calculate total count without generating instances
+
+**Complete format specification:** See [docs/FONT_SET_FORMAT.md](docs/FONT_SET_FORMAT.md)
+
+### Constructor
+
+```javascript
+const generator = new FontSetGenerator(spec);
+```
+
+**Parameters:**
+- `spec` (Object): JSON specification with `fontSets` array
+
+### JSON Format
+
+```json
+{
+  "fontSets": [
+    {
+      "name": "Optional descriptive name",
+      "density": [1.0, 2.0],
+      "families": ["Arial", "Georgia"],
+      "styles": ["normal", "italic"],
+      "weights": ["normal", "bold", [400, 700, 100]],
+      "sizes": [[12, 24, 0.5], 48]
+    }
+  ]
+}
+```
+
+**Field Types:**
+- `density`: Array of positive numbers (e.g., `[1.0]`, `[1.0, 2.0]`)
+- `families`: Array of font family name strings
+- `styles`: Array from `["normal", "italic", "oblique"]`
+- `weights`: Array from `["normal", "bold", "bolder", "lighter", "100"-"900"]` or numeric ranges
+- `sizes`: Array of numbers (CSS pixels) or ranges
+
+**Range Format:** Three-element array `[start, stop, step]`
+- `[12, 24, 0.5]` → `[12, 12.5, 13, 13.5, ..., 24]`
+- `[100, 900, 100]` → `[100, 200, 300, ..., 900]`
+
+**Cross-Product:** Each set generates: `density_count × families_count × styles_count × weights_count × sizes_count` configurations
+
+**Multi-Set Union:** Multiple font sets combine via union (not cross-product between sets)
+
+### Methods
+
+#### getCount()
+Returns total number of font configurations without generating them (memory-efficient).
+
+```javascript
+const count = generator.getCount();
+console.log(`Will generate ${count} font configurations`);
+```
+
+#### iterator()
+Returns ES6-compatible iterator that yields `FontProperties` instances one at a time.
+
+```javascript
+for (const fontProps of generator.iterator()) {
+  console.log(fontProps.idString);
+  // Use fontProps for asset building, testing, sample generation, etc.
+}
+```
+
+#### forEach(callback)
+Convenience method for iteration with progress tracking.
+
+```javascript
+generator.forEach((fontProps, index, total) => {
+  console.log(`[${index + 1}/${total}] ${fontProps.idString}`);
+  // Process fontProps
+});
+```
+
+#### getSetsInfo()
+Returns array of set metadata without generating instances.
+
+```javascript
+const info = generator.getSetsInfo();
+// [{ name: "Arial Standard", count: 48 }, { name: "Set 2", count: 120 }]
+```
+
+### Usage Example: Simple Size Range
+
+```javascript
+const spec = {
+  fontSets: [
+    {
+      name: "Arial Size Testing",
+      density: [1.0],
+      families: ["Arial"],
+      styles: ["normal"],
+      weights: ["normal"],
+      sizes: [[12, 24, 0.5]]  // 12, 12.5, 13, ..., 24
+    }
+  ]
+};
+
+const generator = new FontSetGenerator(spec);
+console.log(`Total: ${generator.getCount()}`);  // 25
+
+for (const fontProps of generator.iterator()) {
+  // Each fontProps is a validated FontProperties instance
+  await BitmapText.loadFont(fontProps.idString);
+  // Test rendering, generate assets, create samples, etc.
+}
+```
+
+### Usage Example: Multi-Set with Different Requirements
+
+```javascript
+const spec = {
+  fontSets: [
+    {
+      name: "UI Fonts",
+      density: [1.0, 2.0],
+      families: ["Arial", "Helvetica"],
+      styles: ["normal", "italic"],
+      weights: ["normal", "bold"],
+      sizes: [[12, 18, 2]]  // 12, 14, 16, 18
+    },
+    {
+      name: "Monospace Fonts",
+      density: [1.0],
+      families: ["Courier New"],
+      styles: ["normal"],
+      weights: ["normal"],
+      sizes: [10, 12, 14, 16]
+    }
+  ]
+};
+
+const generator = new FontSetGenerator(spec);
+const info = generator.getSetsInfo();
+// [{ name: "UI Fonts", count: 32 }, { name: "Monospace Fonts", count: 4 }]
+
+console.log(`Total configurations: ${generator.getCount()}`);  // 36
+
+// Process each set's fonts
+for (const fontProps of generator.iterator()) {
+  console.log(fontProps.idString);
+}
+```
+
+### Usage Example: Weight Ranges
+
+```javascript
+const spec = {
+  fontSets: [
+    {
+      name: "Arial Weight Spectrum",
+      density: [1.0],
+      families: ["Arial"],
+      styles: ["normal"],
+      weights: [[100, 900, 100]],  // 100, 200, 300, ..., 900
+      sizes: [16]
+    }
+  ]
+};
+
+const generator = new FontSetGenerator(spec);
+console.log(`Testing ${generator.getCount()} weight variations`);  // 9
+
+generator.forEach((fontProps, index, total) => {
+  console.log(`[${index + 1}/${total}] ${fontProps.idString}`);
+});
+```
+
+### Memory Efficiency
+
+FontSetGenerator is designed for large-scale font generation:
+
+- **Lazy generation**: Font configurations created on-demand during iteration
+- **No bulk storage**: Iterator doesn't store all instances in memory
+- **Range pre-expansion**: Only ranges are pre-expanded (typically small arrays)
+- **Memory usage**: O(range_values) not O(total_configurations)
+
+**Example**: Generating 10,000 font configurations uses memory proportional to the number of unique values in each property array, not 10,000 FontProperties instances.
+
+### Validation
+
+The generator validates specifications and throws descriptive errors:
+
+```javascript
+try {
+  const generator = new FontSetGenerator(invalidSpec);
+} catch (error) {
+  console.error(error.message);
+  // "Font set specification must contain 'fontSets' array"
+  // "Set 1: Missing required field 'families'"
+  // "Invalid range: start (24) > stop (12)"
+}
+```
+
+**See [docs/FONT_SET_FORMAT.md](docs/FONT_SET_FORMAT.md) for:**
+- Complete format specification
+- More examples with calculations
+- Validation rules
+- Best practices
+
 ## Internal Store Classes
 
   These classes are used internally by BitmapText and also available for font-assets-builder:
