@@ -9,6 +9,7 @@ Each document has a **single responsibility** to avoid duplication:
 - **README.md**: Quick start, API examples, build instructions, font assets building workflow, brief testing overview
 - **docs/ARCHITECTURE.md**: System design, component organization, architectural patterns, OO design, data flow diagrams
 - **docs/CLAUDE.md**: Claude-specific development context and workflow tips ONLY
+- **docs/FONT_SET_FORMAT.md**: JSON font set specification format for FontSetGenerator
 - **scripts/README.md**: Complete automation pipeline documentation, script usage, dependency requirements
 
 ### What NOT to Include (Anti-Duplication Rules)
@@ -51,7 +52,8 @@ Each document has a **single responsibility** to avoid duplication:
 ## Quick Navigation
 
 - **Getting started** → README.md
-- **Understanding the design** → docs/ARCHITECTURE.md  
+- **Understanding the design** → docs/ARCHITECTURE.md
+- **Font set specification format** → docs/FONT_SET_FORMAT.md
 - **Script automation** → scripts/README.md
 - **Development with Claude** → docs/CLAUDE.md
 - **Font assets building** → public/font-assets-builder.html
