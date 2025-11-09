@@ -476,7 +476,7 @@ npm install  # Installs Playwright from package.json devDependencies
 🎨 Canvas: 300×100 (CSS: 300px×100px)
 ```
 
-**See also:** `docs/AUTOMATED_BROWSER_CANVAS_VERIFICATION_IN_CLAUDE_CODE_WEB.md` for detailed documentation on browser-based automated testing approaches.
+**See also:** `docs/AUTOMATED_BROWSER_SCREENSHOT.md` for detailed documentation on browser-based automated testing approaches.
 
 ---
 

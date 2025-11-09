@@ -1276,7 +1276,7 @@ try {
   node scripts/screenshot-with-playwright.js --url public/baseline-alignment-demo.html --output baseline.png
   ```
 
-  See `docs/AUTOMATED_BROWSER_CANVAS_VERIFICATION_IN_CLAUDE_CODE_WEB.md` and `scripts/README.md` for details.
+  See `docs/AUTOMATED_BROWSER_SCREENSHOT.md` and `scripts/README.md` for details.
 
   **Performance Benchmarks**
 

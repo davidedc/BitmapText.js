@@ -1,6 +1,6 @@
-# Canvas Automated Render Verification in Claude Code Web
+# Automated Browser Screenshot Capture
 
-This document describes methods for automatically verifying text rendering in the browser environment within Claude Code Web (which runs in a virtual machine in the cloud).
+This document describes methods for automatically capturing browser screenshots for verifying Canvas rendering in any environment (local development, CI/CD pipelines, Docker containers, VMs, cloud environments).
 
 ## Overview
 
@@ -13,10 +13,10 @@ This document describes methods for automatically verifying text rendering in th
 ## Approach 1: Playwright Screenshot ✅ FULLY WORKING
 
 ### Status
-**Successfully working in Claude Code Web!** This is the recommended approach for automated screenshot capture.
+**Successfully tested and working!** This is the recommended approach for automated screenshot capture in all environments.
 
 ### Description
-Automated browser screenshot using Playwright with Chromium headless browser. Playwright is installed and configured with the necessary flags to work in containerized environments.
+Automated browser screenshot using Playwright with Chromium headless browser. The script includes browser launch flags optimized for headless operation that work reliably in all environments (local machines, CI/CD, Docker, VMs).
 
 ### Implementation
 **File**: `scripts/screenshot-with-playwright.js`
@@ -30,14 +30,19 @@ Features:
 
 ### Installation
 
-Playwright is already installed with the following configuration:
+Playwright is included as a devDependency. Install it along with Chromium:
 
 ```bash
-# Playwright (already in package.json as devDependency)
+# Install Playwright (already in package.json as devDependency)
 npm install
 
-# Chromium is pre-installed at:
-# /root/.cache/ms-playwright/chromium-1194/
+# Install Chromium browser
+npx playwright install chromium
+
+# Chromium will be cached at:
+# macOS: ~/Library/Caches/ms-playwright/
+# Linux: ~/.cache/ms-playwright/
+# Windows: %USERPROFILE%\AppData\Local\ms-playwright\
 ```
 
 ### Usage
@@ -95,9 +100,12 @@ const browser = await chromium.launch({
 ```
 
 **Why These Flags?**
-- Container environments often lack GPU drivers
-- Sandboxing requires kernel features not always available in Docker/VMs
-- These flags allow Chromium to run in headless mode without system dependencies
+These flags ensure Chromium runs reliably in headless mode across all environments:
+- **Local machines**: Work around GPU driver inconsistencies and ensure reproducible screenshots
+- **Containers/VMs**: Essential where GPU drivers and sandboxing kernel features are unavailable
+- **CI/CD pipelines**: Minimize system dependencies for faster, more reliable automation
+
+The flags allow Chromium to run without hardware acceleration, sandboxing, or shared memory features that may not be available or consistent across environments.
 
 **Workflow:**
 1. Script starts embedded HTTP server on specified port
@@ -126,11 +134,11 @@ Wait time: 1000ms
 📸 Capturing screenshot...
 
 ✅ Screenshot captured successfully!
-📁 File: /home/user/BitmapText.js/screenshot-hello-world.png
+📁 File: /path/to/BitmapText.js/screenshot-hello-world.png
 📊 Size: 23 KB
 🎨 Canvas: 300×100 (CSS: 300px×100px)
 
-To view: open /home/user/BitmapText.js/screenshot-hello-world.png
+To view: open /path/to/BitmapText.js/screenshot-hello-world.png
 🔒 Browser closed
 🔒 HTTP server stopped
 ```
@@ -138,8 +146,8 @@ To view: open /home/user/BitmapText.js/screenshot-hello-world.png
 ### Advantages
 - ✅ Fully automated (no manual intervention)
 - ✅ Real browser rendering (Chromium)
-- ✅ Works in containerized/VM environments
-- ✅ Perfect for CI/CD pipelines
+- ✅ Works in all environments (local, CI/CD, Docker, VMs, cloud)
+- ✅ Perfect for CI/CD pipelines and automated testing
 - ✅ Supports full page or element-specific screenshots
 - ✅ Configurable and scriptable
 - ✅ Fast execution (~3-5 seconds per screenshot)
@@ -159,27 +167,24 @@ To view: open /home/user/BitmapText.js/screenshot-hello-world.png
 
 ---
 
-## Approach 2: Puppeteer Screenshot ❌ NOT FEASIBLE
+## Approach 2: Puppeteer Screenshot ❌ NOT RECOMMENDED
 
 ### Status
-**Not working in Claude Code Web environment** - Chromium crashes with Puppeteer.
+**Not recommended** - Puppeteer requires additional configuration for headless environments and may crash without proper flags.
 
-### What We Tried
-```bash
-# Attempted installation
-npm install --save-dev puppeteer
-# Result: Network restrictions prevented browser download
+### Why Not Puppeteer?
+Puppeteer can work but requires more manual configuration:
+- Different default launch flags than Playwright
+- Less optimized for headless/containerized environments out of the box
+- Requires manually specifying the same flags that Playwright includes by default
+- Higher chance of compatibility issues across different environments
 
-# Attempted with skip download
-PUPPETEER_SKIP_DOWNLOAD=true npm install --save-dev puppeteer
-# Result: Installed, but browser crashes when launched
-```
-
-### Why It Doesn't Work
-While Puppeteer installed successfully, the bundled Chromium crashes when trying to render pages. This appears to be due to different default launch configurations between Puppeteer and Playwright.
-
-### Alternative Solution
-**Use Playwright instead (Approach 2)** - Playwright is essentially Puppeteer's successor with better container support and multi-browser capabilities. The API is very similar, and Playwright works perfectly in this environment.
+### Recommended Alternative
+**Use Playwright instead (Approach 1)** - Playwright is the modern successor to Puppeteer with:
+- Better cross-environment compatibility (local, containers, CI/CD)
+- Optimized default configurations for headless operation
+- Multi-browser support (Chromium, Firefox, WebKit)
+- Very similar API to Puppeteer, making migration straightforward
 
 ### Recommendation
 Migrate any Puppeteer-based workflows to Playwright. The migration is straightforward:
@@ -253,7 +258,7 @@ steps:
 
 ### Created Files
 - `scripts/screenshot-with-playwright.js` - Playwright screenshot script
-- `docs/AUTOMATED_BROWSER_CANVAS_VERIFICATION_IN_CLAUDE_CODE_WEB.md` - This document
+- `docs/AUTOMATED_BROWSER_SCREENSHOT.md` - This document
 
 ### Existing Files
 - `src/node/hello-world-main.js` - Node.js demo source

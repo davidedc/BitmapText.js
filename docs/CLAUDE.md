@@ -66,7 +66,7 @@
   - **Automated screenshots**: `node scripts/screenshot-with-playwright.js` for browser render capture
   - **Node.js rendering**: `./run-node-demos.sh` for server-side verification
 
-  See README.md for complete testing approach and docs/AUTOMATED_BROWSER_CANVAS_VERIFICATION_IN_CLAUDE_CODE_WEB.md for automated browser testing details.
+  See README.md for complete testing approach and docs/AUTOMATED_BROWSER_SCREENSHOT.md for automated browser testing details.
 
   ## Key Invariants
 
