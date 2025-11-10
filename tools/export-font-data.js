@@ -16,32 +16,87 @@ function downloadFontAssets(options) {
   const zip = new JSZip();
   const folder = zip.folder("fontAssets");
 
-  // Find all available sizes by examining glyphs in atlasDataStoreFAB
+  // Find all available fonts/sizes by examining glyphs in atlasDataStoreFAB
   // We look at glyphs (not atlases) because that's what actually got built
-  const sizes = new Set();
-  const baseKeyPrefix = `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:`;
 
-  // Scan through available fonts in AtlasDataStoreFAB to find which sizes have been built
+  // Get all available font keys
   const availableFonts = AtlasDataStoreFAB.getAvailableFonts();
-  for (const fontKey of availableFonts) {
-    if (fontKey.startsWith(baseKeyPrefix)) {
-      // Extract fontSize from fontKey: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
-      const fontSize = fontKey.substring(baseKeyPrefix.length);
-      sizes.add(parseFloat(fontSize));
+
+  // If parameters are null, export ALL fonts (automation mode)
+  // Otherwise, export only fonts matching the specified parameters (UI mode)
+  const isAutomationMode = pixelDensity === null && fontFamily === null &&
+                          fontStyle === null && fontWeight === null;
+
+  let fontsToExport = [];
+
+  if (isAutomationMode) {
+    // Export ALL fonts that have been built
+    console.log('Automation mode: exporting ALL built fonts');
+
+    // Parse all available font keys to get unique configurations
+    for (const fontKey of availableFonts) {
+      // Font key format: "pixelDensity:fontFamily:fontStyle:fontWeight:fontSize"
+      const parts = fontKey.split(':');
+      if (parts.length === 5) {
+        fontsToExport.push({
+          pixelDensity: parseFloat(parts[0]),
+          fontFamily: parts[1],
+          fontStyle: parts[2],
+          fontWeight: parts[3],
+          fontSize: parseFloat(parts[4])
+        });
+      }
     }
+
+    console.log(`Found ${fontsToExport.length} font(s) to export`);
+
+  } else {
+    // UI mode: export only fonts matching specified parameters
+    const sizes = new Set();
+    const baseKeyPrefix = `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:`;
+
+    for (const fontKey of availableFonts) {
+      if (fontKey.startsWith(baseKeyPrefix)) {
+        // Extract fontSize from fontKey
+        const fontSize = fontKey.substring(baseKeyPrefix.length);
+        sizes.add(parseFloat(fontSize));
+      }
+    }
+
+    if (sizes.size === 0) {
+      alert('No fonts have been built yet. Please select a font configuration and wait for glyphs to render before downloading.');
+      return;
+    }
+
+    console.log(`Found ${sizes.size} font size(s) to export:`, Array.from(sizes));
+
+    // Convert sizes to fontsToExport format
+    sizes.forEach(size => {
+      fontsToExport.push({
+        pixelDensity,
+        fontFamily,
+        fontStyle,
+        fontWeight,
+        fontSize: size
+      });
+    });
   }
 
-  if (sizes.size === 0) {
-    alert('No fonts have been built yet. Please select a font configuration and wait for glyphs to render before downloading.');
-    return;
+  if (fontsToExport.length === 0) {
+    console.error('No fonts available to export');
+    return Promise.reject(new Error('No fonts available to export'));
   }
 
-  console.log(`Found ${sizes.size} font size(s) to export:`, Array.from(sizes));
 
-
-  sizes.forEach(size => {
-      // Create FontPropertiesFAB for this specific size
-      const fontProperties = new FontPropertiesFAB(pixelDensity, fontFamily, fontStyle, fontWeight, size);
+  fontsToExport.forEach(fontConfig => {
+      // Create FontPropertiesFAB for this specific font configuration
+      const fontProperties = new FontPropertiesFAB(
+        fontConfig.pixelDensity,
+        fontConfig.fontFamily,
+        fontConfig.fontStyle,
+        fontConfig.fontWeight,
+        fontConfig.fontSize
+      );
 
       console.log(`\n=== Exporting ${fontProperties.key} ===`);
 
@@ -234,7 +289,28 @@ function downloadFontAssets(options) {
   });
 
 
-  // Generate and download zip file
-  return zip.generateAsync({ type: "blob" })
-      .then(content => saveAs(content, "fontAssets.zip"));
+  // Generate zip file as base64 for transfer to Node.js (automation) or download (browser UI)
+  return zip.generateAsync({ type: "base64" })
+      .then(base64Content => {
+          console.log('✅ ZIP generated successfully, ready for transfer');
+
+          // In browser UI context with FileSaver available, trigger download
+          // Note: Always return base64 even if we also trigger download
+          if (typeof saveAs === 'function') {
+              // Convert base64 back to blob for FileSaver
+              const byteCharacters = atob(base64Content);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'application/zip' });
+
+              // Trigger download but don't wait for it
+              saveAs(blob, "fontAssets.zip");
+          }
+
+          // ALWAYS return base64 for automation/Playwright context
+          return base64Content;
+      });
 }

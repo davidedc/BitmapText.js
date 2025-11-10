@@ -59,6 +59,7 @@
   4. **StatusCode Loading**: In browser script tags, StatusCode.js MUST load before BitmapText.js (dependency requirement)
   5. **Transform Behavior**: BitmapText IGNORES all canvas transforms - coordinates are ABSOLUTE from canvas origin (see README.md "Transform Behavior - CRITICAL")
   6. **Short Aliases**: Generated font files use BitmapText.r (registerMetrics) and BitmapText.a (registerAtlas) for minimal file size
+  7. **Automated Font Generation (macOS)**: Use WebKit/Safari for font asset generation, not Chromium - WebKit uses Core Text (native macOS font rendering) which produces crisp text with consistent stroke widths at small sizes, while Chromium's Skia renderer produces artifacts
 
   ## Testing
 
@@ -100,7 +101,11 @@
   - **Font registry management**: src/runtime/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.js (getHash method for canvas pixel hash), src/runtime/AtlasPositioning.js (getHash method for positioning data hash)
   - **Specs parsing**: src/specs/SpecsParser.js:104 (parseSubSpec method)
+  - **Font set specification**: src/utils/FontSetGenerator.js (memory-efficient iterator over font configurations from JSON specs)
   - **Atlas generation & reconstruction**: public/font-assets-builder.html (displays Atlas source and reconstructed tight atlas side-by-side)
+  - **Automated font generation**: scripts/automated-font-builder.js (Playwright script for batch font generation from JSON specs)
+  - **Automated builder page**: public/automated-font-builder.html (stripped-down builder page for automation, no UI)
+  - **Automated builder orchestration**: src/automation/automated-builder.js (browser-side orchestration for automated font building)
 
   ## Development Tips
 

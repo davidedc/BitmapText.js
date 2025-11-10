@@ -327,6 +327,8 @@ class FontSetGenerator {
    */
   #createIterator() {
     const expandedSets = this.#expandedSets;
+    // Capture the FontSetGenerator instance for use in iterator methods
+    const generatorInstance = this;
     let setIndex = 0;
     let indices = null;
 
@@ -352,7 +354,8 @@ class FontSetGenerator {
           }
 
           // Check if current set is exhausted
-          if (indices.size >= set.sizes.length) {
+          // (either size index exceeded, or density index exceeded after cascading)
+          if (indices.size >= set.sizes.length || indices.density >= set.densities.length) {
             // Move to next set
             setIndex++;
             indices = null;
@@ -372,8 +375,9 @@ class FontSetGenerator {
           // Validate before creating instance
           const setName = set.name || `Set ${setIndex + 1}`;
           try {
-            FontSetGenerator.prototype.#validateFontProperties.call(
-              this,
+            // Call the validation method directly on the generator instance
+            // Note: Private methods can't use .call(), must invoke directly
+            generatorInstance.#validateFontProperties(
               density, family, style, weightStr, size, setName
             );
           } catch (error) {

@@ -1,0 +1,12 @@
+{
+  "fontSets": [
+    {
+      "name": "Arial Test Set",
+      "density": [1.0],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [18, 18.5, 19]
+    }
+  ]
+}

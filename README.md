@@ -675,13 +675,21 @@ For a middle ground between individual files and minified bundle, use the unmini
 
 ## Generating Your Own Bitmap Fonts
 
-### Automated Pipeline (Recommended)
+### Automated Pipeline (Recommended for Interactive Use)
   ```bash
   npm run watch-fonts
   # or
   ./scripts/watch-font-assets.sh
   ```
   Then use the font-assets-builder.html - files will be processed automatically!
+
+### Batch Generation (Recommended for Automation)
+  Generate multiple font configurations automatically from JSON specifications:
+  ```bash
+  node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
+  ```
+
+  See `docs/FONT_SET_FORMAT.md` for specification format details and `scripts/README.md` for complete usage documentation.
 
 ### Manual Process
   1. Open public/font-assets-builder.html in a web browser

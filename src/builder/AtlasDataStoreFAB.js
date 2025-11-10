@@ -67,6 +67,24 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   }
 
   /**
+   * Get all available font keys (unique font configurations that have glyphs)
+   * @returns {Array<string>} Array of font property keys (format: "density:family:style:weight:size")
+   */
+  static getAvailableFonts() {
+    const fontKeys = new Set();
+    for (const glyphKey of AtlasDataStoreFAB.#glyphs.keys()) {
+      // Glyph key format: "fontProperties.key:char"
+      // Extract font key by removing ":char" suffix
+      const lastColonIndex = glyphKey.lastIndexOf(':');
+      if (lastColonIndex !== -1) {
+        const fontKey = glyphKey.substring(0, lastColonIndex);
+        fontKeys.add(fontKey);
+      }
+    }
+    return Array.from(fontKeys);
+  }
+
+  /**
    * Build atlas for export
    * Uses glyph.canvas (variable-width cells) instead of glyph.tightCanvas
    *

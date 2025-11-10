@@ -478,6 +478,95 @@ npm install  # Installs Playwright from package.json devDependencies
 
 **See also:** `docs/AUTOMATED_BROWSER_SCREENSHOT.md` for detailed documentation on browser-based automated testing approaches.
 
+### 12. Automated Font Builder Script
+```bash
+node scripts/automated-font-builder.js --spec=<path-to-spec.json> [options]
+```
+
+**Options:**
+- `--spec <file>` - Font set specification JSON file (required)
+- `--output <dir>` - Output directory (default: `./automatically-generated-font-assets`)
+- `--port <port>` - HTTP server port (default: 8765)
+- `--include-full` - Include non-minified metrics files
+
+**Examples:**
+```bash
+# Basic usage
+node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
+
+# Custom output directory
+node scripts/automated-font-builder.js --spec=specs/font-sets/my-fonts.json --output=./output
+
+# Include full metrics for debugging
+node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json --include-full
+```
+
+**What it does:**
+- Loads font set specification from JSON (see `docs/FONT_SET_FORMAT.md`)
+- Launches headless WebKit browser (uses Core Text on macOS)
+- Navigates to `public/automated-font-builder.html`
+- Generates all font configurations from specification
+- Creates kerning tables for all fonts
+- Exports fontAssets.zip with QOI atlases and minified metrics
+- Saves to output directory automatically
+
+**Prerequisites:**
+```bash
+npm install  # Installs Playwright from package.json devDependencies
+npx playwright install webkit  # Install WebKit browser binaries
+```
+
+**Important - Browser Selection (macOS):**
+This script uses **WebKit** (not Chromium) because WebKit on macOS uses **Core Text** and produces good crisp, aliased text rendering at small sizes with no artifacts.
+
+Chromium uses its own Skia renderer which produces inferior results with rendering artifacts at small font sizes (inconsistent stroke widths, antialiasing issues).
+
+**Font Set Specification:**
+Create a JSON file defining font configurations (see `docs/FONT_SET_FORMAT.md` for complete format):
+```json
+{
+  "fontSets": [{
+    "name": "Arial Standard",
+    "density": [1.0, 2.0],
+    "families": ["Arial"],
+    "styles": ["normal", "italic"],
+    "weights": ["normal", "bold"],
+    "sizes": [[12, 24, 0.5]]
+  }]
+}
+```
+
+**Output:**
+- `fontAssets.zip` containing:
+  - `atlas-*.qoi` - QOI atlas images
+  - `metrics-*.js` - Minified metrics files
+  - Optional: `metrics-*-full.js` (with `--include-full` flag)
+
+**Post-processing:**
+Process the generated ZIP with the automated pipeline:
+```bash
+# Extract ZIP to automatically-generated-font-assets/
+# Then run the optimization pipeline:
+./scripts/watch-font-assets.sh
+# Or process manually:
+cd automatically-generated-font-assets/fontAssets
+node ../../scripts/qoi-to-png-converter.js .
+../../scripts/optimize-images.sh .
+../../scripts/convert-png-to-webp.sh .
+node ../../scripts/image-to-js-converter.js . --all
+```
+
+**When to use:**
+- Batch generation of multiple font configurations
+- CI/CD font asset pipeline
+- Systematic font size exploration
+- Automated regression testing of font rendering
+
+**Related files:**
+- `public/automated-font-builder.html` - Stripped-down builder page (no UI)
+- `src/automation/automated-builder.js` - Browser-side orchestration
+- `specs/font-sets/test-font-spec.json` - Example specification (Arial 18, 18.5, 19)
+
 ---
 
 ## 📁 File Structure
@@ -496,6 +585,7 @@ scripts/
 ├── build-node-demo.sh            # Builds Node.js demo bundles
 ├── build-node-multi-size-demo.sh # Builds Node.js multi-size demo
 ├── screenshot-with-playwright.js # Automated browser screenshot capture
+├── automated-font-builder.js     # Automated font generation from JSON specs
 ├── test-pipeline.sh              # One-time pipeline test
 └── README.md                     # This file
 
