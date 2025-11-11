@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML5 Canvas fillText - Very Small Font Sizes (0.5-12px)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+      padding-bottom: 40px;
+    }
+
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #FF9800;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }
+
+    .intro {
+      background: #fff3e0;
+      padding: 15px;
+      border-radius: 5px;
+      border-left: 4px solid #FF9800;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .intro strong {
+      color: #E65100;
+    }
+
+    .size-section {
+      background: white;
+      margin: 20px 0;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .size-header {
+      font-weight: bold;
+      font-size: 20px;
+      color: #FF9800;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #FFE0B2;
+    }
+
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 20px;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+
+    .canvas-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .canvas-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      background: white;
+
+      /* CRITICAL: Crisp rendering CSS directives */
+      image-rendering: pixelated;
+      font-smooth: never;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: none;
+    }
+
+    .metrics-display {
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 12px;
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 5px;
+      line-height: 1.8;
+    }
+
+    .metrics-display .metric-row {
+      margin: 2px 0;
+    }
+
+    .metrics-display .metric-label {
+      color: #1976D2;
+      display: inline-block;
+      width: 180px;
+    }
+
+    .metrics-display .metric-value {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .warning {
+      background: #ffebee;
+      padding: 10px;
+      border-radius: 5px;
+      border-left: 4px solid #f44336;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #c62828;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #FF9800;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: 500;
+    }
+
+    .back-link:hover {
+      background: #F57C00;
+    }
+  </style>
+</head>
+<body>
+  <h1>HTML5 Canvas fillText() at Very Small Font Sizes (0.5-12px)</h1>
+
+  <div class="intro">
+    <p>
+      This demo tests how the standard HTML5 Canvas <code>fillText()</code> method handles
+      extremely small font sizes. Each size shows:
+    </p>
+    <ul>
+      <li><strong>Original Canvas</strong> - Actual size with crisp rendering CSS applied</li>
+      <li><strong>Magnified 5x</strong> - Pixel-perfect magnification to see rendering details</li>
+      <li><strong>Measurements</strong> - All <code>measureText()</code> metrics</li>
+    </ul>
+    <p>
+      <strong>Test text:</strong> "The quick brown fox jumps over the lazy dog"<br>
+      <strong>Font:</strong> Arial<br>
+      <strong>Visualization:</strong> Red bounding box from actualBoundingBox metrics, red X at anchor point
+    </p>
+  </div>
+
+  <div id="demo-container"></div>
+
+  <a href="index.html" class="back-link">← Back to Demos Index</a>
+
+  <script>
+    // Font sizes to test (0.5px to 12px in 0.5px increments)
+    const fontSizes = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12];
+    const testText = "The quick brown fox jumps over the lazy dog";
+    const fontFamily = "Arial";
+    const magnificationScale = 5;
+
+    // Create pixel-perfect magnified canvas by copying each pixel as a larger square
+    function createMagnifiedCanvas(sourceCanvas, scale) {
+      const magnifiedCanvas = document.createElement("canvas");
+      magnifiedCanvas.width = sourceCanvas.width * scale;
+      magnifiedCanvas.height = sourceCanvas.height * scale;
+      magnifiedCanvas.style.imageRendering = "pixelated";
+
+      const sourceCtx = sourceCanvas.getContext("2d");
+      const magnifiedCtx = magnifiedCanvas.getContext("2d");
+
+      const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+      const data = imageData.data;
+
+      // Draw each pixel as a larger square
+      for (let i = 0; i < data.length; i += 4) {
+        const x = (i / 4) % sourceCanvas.width;
+        const y = Math.floor((i / 4) / sourceCanvas.width);
+
+        const x2 = x * scale;
+        const y2 = y * scale;
+
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3] / 255;
+
+        magnifiedCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
+        magnifiedCtx.fillRect(x2, y2, scale, scale);
+      }
+
+      return magnifiedCanvas;
+    }
+
+    // Render text at a specific font size
+    function renderFontSize(fontSize) {
+      const container = document.getElementById("demo-container");
+
+      // Create section for this font size
+      const section = document.createElement("div");
+      section.className = "size-section";
+
+      const header = document.createElement("div");
+      header.className = "size-header";
+      header.textContent = `Font Size: ${fontSize}px`;
+      section.appendChild(header);
+
+      // Create grid layout
+      const grid = document.createElement("div");
+      grid.className = "canvas-grid";
+
+      // ===== ORIGINAL CANVAS =====
+      const originalWrapper = document.createElement("div");
+      originalWrapper.className = "canvas-wrapper";
+
+      const originalLabel = document.createElement("div");
+      originalLabel.className = "canvas-label";
+      originalLabel.textContent = "Original (Actual Size)";
+      originalWrapper.appendChild(originalLabel);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 150;
+      canvas.height = 100;
+      canvas.style.imageRendering = "pixelated";
+
+      // CRITICAL: Canvas must be in document.body for CSS font-smoothing to apply during fillText
+      // (Setting via JavaScript doesn't work - canvas must be in DOM for CSS to apply)
+      document.body.appendChild(canvas);
+
+      const ctx = canvas.getContext("2d");
+      ctx.font = `${fontSize}px ${fontFamily}`;
+
+      // Position for text (centered vertically in canvas)
+      const textX = 10;
+      const textY = 50;
+
+      // Get metrics before drawing
+      const metrics = ctx.measureText(testText);
+
+      // Draw the text
+      ctx.fillStyle = "black";
+      ctx.fillText(testText, textX, textY);
+
+      // Draw anchor point (red X)
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 1;
+      const xSize = 3;
+      ctx.beginPath();
+      ctx.moveTo(textX - xSize, textY - xSize);
+      ctx.lineTo(textX + xSize, textY + xSize);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(textX + xSize, textY - xSize);
+      ctx.lineTo(textX - xSize, textY + xSize);
+      ctx.stroke();
+
+      // Calculate bounding box
+      const width = Math.abs(metrics.actualBoundingBoxLeft) + Math.abs(metrics.actualBoundingBoxRight);
+      const height = Math.abs(metrics.actualBoundingBoxAscent) + Math.abs(metrics.actualBoundingBoxDescent);
+
+      const bounds = {
+        top: textY - metrics.actualBoundingBoxAscent,
+        right: textX + metrics.actualBoundingBoxRight,
+        bottom: textY + metrics.actualBoundingBoxDescent,
+        left: textX - metrics.actualBoundingBoxLeft
+      };
+
+      // Draw bounding box
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bounds.left, bounds.top, width, height);
+
+      // CRITICAL: Move canvas from document.body to its final display location
+      // (All rendering is complete, CSS has applied, now move to proper parent)
+      canvas.remove();
+      originalWrapper.appendChild(canvas);
+
+      grid.appendChild(originalWrapper);
+
+      // ===== MAGNIFIED CANVAS =====
+      const magnifiedWrapper = document.createElement("div");
+      magnifiedWrapper.className = "canvas-wrapper";
+
+      const magnifiedLabel = document.createElement("div");
+      magnifiedLabel.className = "canvas-label";
+      magnifiedLabel.textContent = `Magnified ${magnificationScale}x`;
+      magnifiedWrapper.appendChild(magnifiedLabel);
+
+      const magnifiedCanvas = createMagnifiedCanvas(canvas, magnificationScale);
+      magnifiedWrapper.appendChild(magnifiedCanvas);
+
+      grid.appendChild(magnifiedWrapper);
+
+      // ===== METRICS DISPLAY =====
+      const metricsWrapper = document.createElement("div");
+
+      const metricsDiv = document.createElement("div");
+      metricsDiv.className = "metrics-display";
+
+      // Helper to create metric row
+      function addMetric(label, value) {
+        const row = document.createElement("div");
+        row.className = "metric-row";
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "metric-label";
+        labelSpan.textContent = label + ":";
+
+        const valueSpan = document.createElement("span");
+        valueSpan.className = "metric-value";
+        valueSpan.textContent = typeof value === 'number' ? value.toFixed(4) : value;
+
+        row.appendChild(labelSpan);
+        row.appendChild(valueSpan);
+        metricsDiv.appendChild(row);
+      }
+
+      addMetric("font", `${fontSize}px ${fontFamily}`);
+      addMetric("text", `"${testText}"`);
+      addMetric("width (advance)", metrics.width);
+      addMetric("actualBoundingBoxLeft", metrics.actualBoundingBoxLeft);
+      addMetric("actualBoundingBoxRight", metrics.actualBoundingBoxRight);
+      addMetric("actualBoundingBoxAscent", metrics.actualBoundingBoxAscent);
+      addMetric("actualBoundingBoxDescent", metrics.actualBoundingBoxDescent);
+      addMetric("calculated width", width);
+      addMetric("calculated height", height);
+
+      metricsWrapper.appendChild(metricsDiv);
+
+      // Check for potential issues
+      if (width === 0 || height === 0) {
+        const warning = document.createElement("div");
+        warning.className = "warning";
+        warning.textContent = "⚠️ WARNING: Bounding box has zero width or height - text may not be rendering!";
+        metricsWrapper.appendChild(warning);
+      }
+
+      if (metrics.actualBoundingBoxAscent === 0 && metrics.actualBoundingBoxDescent === 0) {
+        const warning = document.createElement("div");
+        warning.className = "warning";
+        warning.textContent = "⚠️ WARNING: No vertical metrics detected - text likely invisible!";
+        metricsWrapper.appendChild(warning);
+      }
+
+      grid.appendChild(metricsWrapper);
+
+      section.appendChild(grid);
+      container.appendChild(section);
+    }
+
+    // Render all font sizes
+    fontSizes.forEach(fontSize => {
+      renderFontSize(fontSize);
+    });
+  </script>
+</body>
+</html>
