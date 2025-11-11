@@ -190,14 +190,13 @@
     const debugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
 
     // Test setup
-    let atlasDataStore, fontMetricsStore, bitmapText;
     let testFontProperties, testTextProperties;
 
     // Initialize test environment
     function initializeTestEnvironment() {
-      atlasDataStore = new AtlasDataStore();
-      fontMetricsStore = new FontMetricsStore();
-      bitmapText = new BitmapText(atlasDataStore, fontMetricsStore);
+      // Clear any existing font data for test isolation
+      BitmapText.unloadAllFonts();
+      BitmapText.unloadAllAtlases();
 
       testFontProperties = new FontProperties(1, "Arial", "normal", "normal", 18);
       testTextProperties = new TextProperties({
@@ -285,9 +284,9 @@
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
 
-      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      FontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
-      const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+      const result = BitmapText.measureText("Hello", testFontProperties, testTextProperties);
 
       if (result.status.code === StatusCode.SUCCESS) {
         addTestResult('measure-test-results', '✅ measureText SUCCESS: Returned success status', 'success');
@@ -303,7 +302,7 @@
       initializeTestEnvironment();
 
       // Don't set any font metrics
-      const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+      const result = BitmapText.measureText("Hello", testFontProperties, testTextProperties);
 
       if (result.status.code === StatusCode.NO_METRICS) {
         addTestResult('measure-test-results', '✅ measureText NO_METRICS: Returned correct status', 'success');
@@ -335,9 +334,9 @@
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
 
-      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      FontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
-      const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+      const result = BitmapText.measureText("Hello", testFontProperties, testTextProperties);
 
       if (result.status.code === StatusCode.PARTIAL_METRICS) {
         addTestResult('measure-test-results', '✅ measureText PARTIAL_METRICS: Returned correct status', 'success');
@@ -361,7 +360,7 @@
       clearTestResults('measure-test-results');
       initializeTestEnvironment();
 
-      const result = bitmapText.measureText("", testFontProperties, testTextProperties);
+      const result = BitmapText.measureText("", testFontProperties, testTextProperties);
 
       if (result.status.code === StatusCode.SUCCESS) {
         addTestResult('measure-test-results', '✅ measureText Empty: Returned success status', 'success');
@@ -398,7 +397,7 @@
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
 
-      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      FontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
       // Create mock atlas with visible test glyphs
       const mockCanvas = document.createElement('canvas');
@@ -410,7 +409,7 @@
       mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
       mockCtx.fillStyle = 'blue';
       mockCtx.fillRect(10, 0, 2, 13); // 'i' glyph
-      atlasDataStore.setAtlasData(testFontProperties, mockCanvas);
+      AtlasDataStore.setAtlasData(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
@@ -418,7 +417,7 @@
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
+      const result = BitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
 
       if (result.rendered && result.status.code === StatusCode.SUCCESS) {
         addTestResult('draw-test-results', '✅ drawText SUCCESS: Rendered with success status', 'success');
@@ -439,7 +438,7 @@
       ctx.fillStyle = '#ffe6e6';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
+      const result = BitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
 
       if (!result.rendered && result.status.code === StatusCode.NO_METRICS) {
         addTestResult('draw-test-results', '✅ drawText NO_METRICS: Correctly returned rendered=false and NO_METRICS status', 'success');
@@ -466,7 +465,7 @@
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
 
-      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      FontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
@@ -474,7 +473,7 @@
       ctx.fillStyle = '#fff3e0';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
+      const result = BitmapText.drawTextFromAtlas(ctx, "Hi", 10, 50, testFontProperties, testTextProperties);
 
       if (!result.rendered && result.status.code === StatusCode.PARTIAL_METRICS) {
         addTestResult('draw-test-results', '✅ drawText PARTIAL_METRICS: Correctly returned rendered=false and PARTIAL_METRICS status', 'success');
@@ -512,7 +511,7 @@
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
 
-      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      FontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
       // Don't set atlas - this will trigger NO_ATLAS scenario
 
       const canvas = document.getElementById('draw-canvas');
@@ -521,7 +520,7 @@
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 100, testFontProperties, testTextProperties);
+      const result = BitmapText.drawTextFromAtlas(ctx, "Hi", 10, 100, testFontProperties, testTextProperties);
 
       if (result.rendered && result.status.code === StatusCode.NO_ATLAS) {
         addTestResult('draw-test-results', '✅ drawText NO_ATLAS: Correctly returned rendered=true (placeholders) and NO_ATLAS status', 'success');
@@ -559,7 +558,7 @@
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
 
-      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      FontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
       // Create mock atlas with 'H' but not 'i'
       const mockCanvas = document.createElement('canvas');
@@ -569,7 +568,7 @@
       // Draw only 'H' glyph (green for visibility)
       mockCtx.fillStyle = 'green';
       mockCtx.fillRect(0, 0, 10, 13); // 'H' glyph
-      atlasDataStore.setAtlasData(testFontProperties, mockCanvas);
+      AtlasDataStore.setAtlasData(testFontProperties, mockCanvas);
 
       const canvas = document.getElementById('draw-canvas');
       const ctx = canvas.getContext('2d');
@@ -577,7 +576,7 @@
       ctx.fillStyle = '#e6f3ff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const result = bitmapText.drawTextFromAtlas(ctx, "Hi", 10, 150, testFontProperties, testTextProperties);
+      const result = BitmapText.drawTextFromAtlas(ctx, "Hi", 10, 150, testFontProperties, testTextProperties);
 
       if (result.rendered && result.status.code === StatusCode.PARTIAL_ATLAS) {
         addTestResult('draw-test-results', '✅ drawText PARTIAL_ATLAS: Correctly returned rendered=true and PARTIAL_ATLAS status', 'success');
@@ -615,14 +614,14 @@
         spaceAdvancementOverrideForSmallSizesInPx: null
       });
 
-      fontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
+      FontMetricsStore.setFontMetrics(testFontProperties, mockFontMetrics);
 
       // Performance test for success path
       const iterations = 10000;
       const startTime = performance.now();
 
       for (let i = 0; i < iterations; i++) {
-        const result = bitmapText.measureText("Hello", testFontProperties, testTextProperties);
+        const result = BitmapText.measureText("Hello", testFontProperties, testTextProperties);
         // Check that we're reusing SUCCESS_STATUS object for performance
         if (result.status !== SUCCESS_STATUS) {
           addTestResult('performance-test-results', '❌ Performance: Not reusing SUCCESS_STATUS object', 'error');
