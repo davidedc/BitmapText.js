@@ -134,6 +134,10 @@
 <body>
   <h1>HTML5 Canvas fillText() at Very Small Font Sizes (0.5-12px)</h1>
 
+  <div id="selectors" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <label style="font-weight: 500; margin-right: 10px;">Font:</label>
+  </div>
+
   <div class="intro">
     <p>
       This demo tests how the standard HTML5 Canvas <code>fillText()</code> method handles
@@ -146,7 +150,6 @@
     </ul>
     <p>
       <strong>Test text:</strong> "The quick brown fox jumps over the lazy dog"<br>
-      <strong>Font:</strong> Arial<br>
       <strong>Visualization:</strong> Red bounding box from actualBoundingBox metrics, red X at anchor point
     </p>
   </div>
@@ -155,12 +158,42 @@
 
   <a href="index.html" class="back-link">← Back to Demos Index</a>
 
+  <script src="../src/ui/components/font-family-dropdown.js"></script>
+  <script src="../src/ui/components/font-style-dropdown.js"></script>
+  <script src="../src/ui/components/font-weight-dropdown.js"></script>
+
   <script>
     // Font sizes to test (0.5px to 12px in 0.5px increments)
     const fontSizes = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12];
     const testText = "The quick brown fox jumps over the lazy dog";
-    const fontFamily = "Arial";
     const magnificationScale = 5;
+
+    // Dropdown references
+    let fontFamilySelect;
+    let fontStyleSelect;
+    let fontWeightSelect;
+
+    // Initialize dropdowns
+    function initializeDropdowns() {
+      fontFamilySelect = addDropdownWithFontFamilies();
+      fontStyleSelect = addFontStyleDropdown();
+      fontWeightSelect = addFontWeightDropdown();
+
+      // Set default to Arial to match original behavior
+      fontFamilySelect.value = 'Arial';
+    }
+
+    // Get current font specification string
+    function getCurrentFont(fontSize) {
+      return `${fontStyleSelect.value} ${fontWeightSelect.value} ${fontSize}px ${fontFamilySelect.value}`;
+    }
+
+    // Re-render all content when dropdowns change (required callback for dropdown event handlers)
+    function updatePageContent() {
+      const container = document.getElementById("demo-container");
+      container.innerHTML = "";
+      fontSizes.forEach(fontSize => renderFontSize(fontSize));
+    }
 
     // Create pixel-perfect magnified canvas by copying each pixel as a larger square
     function createMagnifiedCanvas(sourceCanvas, scale) {
@@ -231,7 +264,7 @@
       document.body.appendChild(canvas);
 
       const ctx = canvas.getContext("2d");
-      ctx.font = `${fontSize}px ${fontFamily}`;
+      ctx.font = getCurrentFont(fontSize);
 
       // Position for text (centered vertically in canvas)
       const textX = 10;
@@ -318,7 +351,7 @@
         metricsDiv.appendChild(row);
       }
 
-      addMetric("font", `${fontSize}px ${fontFamily}`);
+      addMetric("font", getCurrentFont(fontSize));
       addMetric("text", `"${testText}"`);
       addMetric("width (advance)", metrics.width);
       addMetric("actualBoundingBoxLeft", metrics.actualBoundingBoxLeft);
@@ -351,10 +384,9 @@
       container.appendChild(section);
     }
 
-    // Render all font sizes
-    fontSizes.forEach(fontSize => {
-      renderFontSize(fontSize);
-    });
+    // Initialize dropdowns and render all font sizes
+    initializeDropdowns();
+    updatePageContent();
   </script>
 </body>
 </html>
