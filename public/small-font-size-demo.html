@@ -136,20 +136,31 @@
 
   <div id="selectors" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
     <label style="font-weight: 500; margin-right: 10px;">Font:</label>
+    <!-- Font dropdowns will be inserted here by JavaScript -->
+
+    <label style="margin-left: 15px; font-weight: 500;">Pixel Density:</label>
+    <input type="radio" id="density-1" name="pixel-density" value="1" checked>
+    <label for="density-1">1x</label>
+    <input type="radio" id="density-2" name="pixel-density" value="2" style="margin-left: 10px;">
+    <label for="density-2">2x</label>
+    <input type="radio" id="density-4" name="pixel-density" value="4" style="margin-left: 10px;">
+    <label for="density-4">4x</label>
+    <span style="font-size: 11px; color: #666; margin-left: 5px;">(High-DPI Simulation)</span>
   </div>
 
   <div class="intro">
     <p>
       This demo tests how the standard HTML5 Canvas <code>fillText()</code> method handles
-      extremely small font sizes. Each size shows:
+      extremely small font sizes at different pixel densities. Each size shows:
     </p>
     <ul>
       <li><strong>Original Canvas</strong> - Actual size with crisp rendering CSS applied</li>
-      <li><strong>Magnified 5x</strong> - Pixel-perfect magnification to see rendering details</li>
+      <li><strong>Magnified 5x</strong> - Constant 750×500px view for easy comparison across densities</li>
       <li><strong>Measurements</strong> - All <code>measureText()</code> metrics</li>
     </ul>
     <p>
       <strong>Test text:</strong> "The quick brown fox jumps over the lazy dog"<br>
+      <strong>Pixel Density:</strong> Simulates high-DPI rendering (1x = standard, 2x = Retina, 4x = ultra-high-DPI)<br>
       <strong>Visualization:</strong> Red bounding box from actualBoundingBox metrics, red X at anchor point
     </p>
   </div>
@@ -188,6 +199,13 @@
       return `${fontStyleSelect.value} ${fontWeightSelect.value} ${fontSize}px ${fontFamilySelect.value}`;
     }
 
+    // Get selected pixel density from radio buttons
+    function getPixelDensity() {
+      if (document.getElementById('density-4').checked) return 4;
+      if (document.getElementById('density-2').checked) return 2;
+      return 1;
+    }
+
     // Re-render all content when dropdowns change (required callback for dropdown event handlers)
     function updatePageContent() {
       const container = document.getElementById("demo-container");
@@ -195,23 +213,39 @@
       fontSizes.forEach(fontSize => renderFontSize(fontSize));
     }
 
-    // Create pixel-perfect magnified canvas by copying each pixel as a larger square
-    function createMagnifiedCanvas(sourceCanvas, scale) {
+    // Create magnified canvas with constant 750×500 output size
+    // For high-DPI canvases, downsamples to CSS-equivalent 150×100 pixels first, then magnifies 5×
+    function createMagnifiedCanvas(sourceCanvas, scale, pixelDensity) {
+      // Target CSS-equivalent size (what we want to magnify)
+      const cssEquivWidth = 150;
+      const cssEquivHeight = 100;
+
+      // Create temporary canvas at CSS-equivalent size
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = cssEquivWidth;
+      tempCanvas.height = cssEquivHeight;
+      const tempCtx = tempCanvas.getContext("2d");
+
+      // Draw source canvas scaled down to CSS-equivalent size
+      // This effectively downsamples high-DPI canvases to show CSS pixel equivalents
+      tempCtx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height,
+                                       0, 0, cssEquivWidth, cssEquivHeight);
+
+      // Now magnify the CSS-equivalent canvas
       const magnifiedCanvas = document.createElement("canvas");
-      magnifiedCanvas.width = sourceCanvas.width * scale;
-      magnifiedCanvas.height = sourceCanvas.height * scale;
+      magnifiedCanvas.width = cssEquivWidth * scale;
+      magnifiedCanvas.height = cssEquivHeight * scale;
       magnifiedCanvas.style.imageRendering = "pixelated";
 
-      const sourceCtx = sourceCanvas.getContext("2d");
       const magnifiedCtx = magnifiedCanvas.getContext("2d");
 
-      const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+      const imageData = tempCtx.getImageData(0, 0, cssEquivWidth, cssEquivHeight);
       const data = imageData.data;
 
       // Draw each pixel as a larger square
       for (let i = 0; i < data.length; i += 4) {
-        const x = (i / 4) % sourceCanvas.width;
-        const y = Math.floor((i / 4) / sourceCanvas.width);
+        const x = (i / 4) % cssEquivWidth;
+        const y = Math.floor((i / 4) / cssEquivWidth);
 
         const x2 = x * scale;
         const y2 = y * scale;
@@ -251,12 +285,19 @@
 
       const originalLabel = document.createElement("div");
       originalLabel.className = "canvas-label";
-      originalLabel.textContent = "Original (Actual Size)";
+      const pixelDensity = getPixelDensity();
+      originalLabel.textContent = `Original (Actual Size) - ${pixelDensity}x Density`;
       originalWrapper.appendChild(originalLabel);
 
+      // Canvas sizing: physical pixels vs CSS pixels
+      const cssWidth = 150;
+      const cssHeight = 100;
+
       const canvas = document.createElement("canvas");
-      canvas.width = 150;
-      canvas.height = 100;
+      canvas.width = cssWidth * pixelDensity;      // Physical pixels
+      canvas.height = cssHeight * pixelDensity;    // Physical pixels
+      canvas.style.width = cssWidth + 'px';        // CSS display size
+      canvas.style.height = cssHeight + 'px';      // CSS display size
       canvas.style.imageRendering = "pixelated";
 
       // CRITICAL: Canvas must be in document.body for CSS font-smoothing to apply during fillText
@@ -264,9 +305,16 @@
       document.body.appendChild(canvas);
 
       const ctx = canvas.getContext("2d");
+
+      // Scale context for pixel density
+      // All coordinates below are in CSS pixels; scaling handles conversion to physical pixels
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(pixelDensity, pixelDensity);
+
       ctx.font = getCurrentFont(fontSize);
 
-      // Position for text (centered vertically in canvas)
+      // Position for text (in CSS pixels - centered vertically in canvas)
       const textX = 10;
       const textY = 50;
 
@@ -306,6 +354,9 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(bounds.left, bounds.top, width, height);
 
+      // Restore context transform
+      ctx.restore();
+
       // CRITICAL: Move canvas from document.body to its final display location
       // (All rendering is complete, CSS has applied, now move to proper parent)
       canvas.remove();
@@ -319,10 +370,10 @@
 
       const magnifiedLabel = document.createElement("div");
       magnifiedLabel.className = "canvas-label";
-      magnifiedLabel.textContent = `Magnified ${magnificationScale}x`;
+      magnifiedLabel.textContent = `Magnified ${magnificationScale}x (${canvas.width}×${canvas.height} physical pixels)`;
       magnifiedWrapper.appendChild(magnifiedLabel);
 
-      const magnifiedCanvas = createMagnifiedCanvas(canvas, magnificationScale);
+      const magnifiedCanvas = createMagnifiedCanvas(canvas, magnificationScale, pixelDensity);
       magnifiedWrapper.appendChild(magnifiedCanvas);
 
       grid.appendChild(magnifiedWrapper);
@@ -353,6 +404,9 @@
 
       addMetric("font", getCurrentFont(fontSize));
       addMetric("text", `"${testText}"`);
+      addMetric("pixel density", `${pixelDensity}x`);
+      addMetric("canvas (physical)", `${canvas.width}×${canvas.height} px`);
+      addMetric("canvas (CSS)", `${cssWidth}×${cssHeight} px`);
       addMetric("width (advance)", metrics.width);
       addMetric("actualBoundingBoxLeft", metrics.actualBoundingBoxLeft);
       addMetric("actualBoundingBoxRight", metrics.actualBoundingBoxRight);
@@ -387,6 +441,11 @@
     // Initialize dropdowns and render all font sizes
     initializeDropdowns();
     updatePageContent();
+
+    // Add event listeners for pixel density radio buttons
+    document.querySelectorAll('input[name="pixel-density"]').forEach(radio => {
+      radio.addEventListener('change', updatePageContent);
+    });
   </script>
 </body>
 </html>
