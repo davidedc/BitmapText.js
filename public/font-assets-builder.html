@@ -75,6 +75,7 @@
 
 <script >
   const maxFontSize_px = 80;
+  const minFontSize_px = 8.5;  // Building context: sizes < 8.5px cannot be built
   const fontSizeIncrement_px = 0.5;
   let specsDefault;
   function updatePageContent() {
@@ -92,6 +93,7 @@
 <script src="../src/runtime/TextProperties.js"></script>
 <script src="../src/builder/FontPropertiesFAB.js"></script>
 <script src="../src/runtime/FontMetrics.js"></script>
+<script src="../src/runtime/InterpolatedFontMetrics.js"></script>
 <script src="../src/builder/FontMetricsFAB.js"></script>
 <script src="../src/runtime/AtlasPositioning.js"></script>
 <script src="../src/builder/AtlasPositioningFAB.js"></script>
@@ -149,6 +151,15 @@
 <script>
   function runAtlasGenerationAndDisplay() {
     const currentFontProperties = getFontPropertiesFromUI();
+
+    // Validate font size (sizes < 8.5px not supported for building)
+    if (currentFontProperties.fontSize < 8.5) {
+      const errorMessage = `Font size ${currentFontProperties.fontSize}px is not supported for building. Sizes < 8.5px render using interpolated 8.5px metrics at runtime. Please build size 8.5px instead.`;
+      console.error('❌ Validation error:', errorMessage);
+      const detailsDiv = document.getElementById('atlas-details');
+      detailsDiv.innerHTML = `<div style="color: #c62828; padding: 15px; background: #ffebee; border-left: 4px solid #c62828;"><strong>ERROR:</strong> ${errorMessage}</div>`;
+      return;
+    }
 
     console.group(`🔬 Atlas Generation: ${currentFontProperties.idString}`);
     console.log(`Font: ${currentFontProperties.fontSize}px ${currentFontProperties.fontFamily} ${currentFontProperties.fontStyle} ${currentFontProperties.fontWeight}`);

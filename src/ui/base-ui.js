@@ -146,9 +146,8 @@ function setupGlyphUI() {
     // button to automatically scan through all the sizes of a particular triplet (font family, style, weight)
     const buildAllSizesButton = createElement('button', 'build-all-sizes-button', 'Build and Show Glyphs at All Sizes', selectorsDiv);
     buildAllSizesButton.addEventListener('click', function() {
-        let i = 3;
         setTimeout(() => {
-            let i = 3;
+            let i = minFontSize_px;
             const interval = setInterval(() => {
                 if (i > maxFontSize_px) {
                     clearInterval(interval);
@@ -157,7 +156,7 @@ function setupGlyphUI() {
                 selectedFontSize = hoverFontSize = i;
 
                 // un-highlight all the buttons
-                for (let j = 0; j <= maxFontSize_px; j += fontSizeIncrement_px) {
+                for (let j = minFontSize_px; j <= maxFontSize_px; j += fontSizeIncrement_px) {
                     const button = document.getElementById('button-size-' + j);
                     button.style.backgroundColor = 'white';
                 }

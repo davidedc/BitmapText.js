@@ -107,6 +107,8 @@ class Context2D {
   constructor(canvas) {
     this.canvas = canvas;
     this.fillStyle = '#000000';
+    this.strokeStyle = '#000000';
+    this.lineWidth = 1;
     this.globalCompositeOperation = 'source-over';
 
     // Transform stack for save/restore (minimal implementation)
@@ -236,6 +238,77 @@ class Context2D {
           data[i+2] = b;
           data[i+3] = 255;
         }
+      }
+    }
+  }
+
+  /**
+   * Stroke a rectangular outline with the current strokeStyle
+   *
+   * Draws a 1-pixel-wide rectangle outline using strokeStyle.
+   * This is a minimal implementation for basic measurement box visualization.
+   *
+   * @param {number} x - X coordinate of rectangle top-left corner
+   * @param {number} y - Y coordinate of rectangle top-left corner
+   * @param {number} w - Rectangle width
+   * @param {number} h - Rectangle height
+   */
+  strokeRect(x, y, w, h) {
+    if (!this.canvas.data) return;
+
+    const data = this.canvas.data;
+    const canvasWidth = this.canvas.width;
+    const canvasHeight = this.canvas.height;
+    const [r, g, b] = this._parseColor(this.strokeStyle);
+    const lineWidth = Math.max(1, Math.floor(this.lineWidth));
+
+    // Clamp to canvas bounds
+    const x0 = Math.max(0, Math.floor(x));
+    const y0 = Math.max(0, Math.floor(y));
+    const x1 = Math.min(canvasWidth, Math.floor(x + w));
+    const y1 = Math.min(canvasHeight, Math.floor(y + h));
+
+    // Draw top edge
+    for (let py = y0; py < Math.min(y0 + lineWidth, y1); py++) {
+      for (let px = x0; px < x1; px++) {
+        const i = (py * canvasWidth + px) * 4;
+        data[i] = r;
+        data[i+1] = g;
+        data[i+2] = b;
+        data[i+3] = 255;
+      }
+    }
+
+    // Draw bottom edge
+    for (let py = Math.max(y1 - lineWidth, y0); py < y1; py++) {
+      for (let px = x0; px < x1; px++) {
+        const i = (py * canvasWidth + px) * 4;
+        data[i] = r;
+        data[i+1] = g;
+        data[i+2] = b;
+        data[i+3] = 255;
+      }
+    }
+
+    // Draw left edge
+    for (let py = y0; py < y1; py++) {
+      for (let px = x0; px < Math.min(x0 + lineWidth, x1); px++) {
+        const i = (py * canvasWidth + px) * 4;
+        data[i] = r;
+        data[i+1] = g;
+        data[i+2] = b;
+        data[i+3] = 255;
+      }
+    }
+
+    // Draw right edge
+    for (let py = y0; py < y1; py++) {
+      for (let px = Math.max(x1 - lineWidth, x0); px < x1; px++) {
+        const i = (py * canvasWidth + px) * 4;
+        data[i] = r;
+        data[i+1] = g;
+        data[i+2] = b;
+        data[i+3] = 255;
       }
     }
   }

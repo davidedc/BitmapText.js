@@ -30,6 +30,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/FontProperties.js"
   "$SRC_DIR/runtime/TextProperties.js"
   "$SRC_DIR/runtime/FontMetrics.js"
+  "$SRC_DIR/runtime/InterpolatedFontMetrics.js"
   "$SRC_DIR/builder/MetricsExpander.js"
   "$SRC_DIR/runtime/AtlasPositioning.js"
   "$SRC_DIR/runtime/AtlasImage.js"
@@ -131,6 +132,14 @@ echo "// FONT METRICS CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/FontMetrics.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate InterpolatedFontMetrics class
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// INTERPOLATED FONT METRICS CLASS" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/InterpolatedFontMetrics.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate BitmapText (includes CHARACTER_SET required by MetricsExpander)

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js - Small Text Rendering Demo (Bundled)</title>
+  <style>
+    body {
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .info {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #e8f4f8;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .info strong {
+      color: #2196F3;
+    }
+
+    .info-box {
+      background-color: #e8f4f8;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .info-box h3 {
+      margin-top: 0;
+      color: #1976D2;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      background: white;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    .canvas-label {
+      font-weight: bold;
+      margin-top: 20px;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>BitmapText.js - Small Text Rendering Demo (Bundled)</h1>
+
+  <div class="info">
+    <strong>Production Bundle:</strong> This demo uses the minified runtime bundle (32KB) instead of 17 separate script tags.
+    <br>See <code>small-text-rendering-demo.html</code> for the debug version with individual source files.
+  </div>
+
+  <div class="info-box">
+    <h3>Small Font Size Interpolation</h3>
+    <p>Font sizes &lt; 8.5px use <strong>interpolated metrics</strong> from size 8.5px and render as <strong>placeholder rectangles</strong>.</p>
+    <ul>
+      <li>Only <strong>one set of assets</strong> (8.5px) is needed for all small sizes</li>
+      <li>Metrics are scaled down proportionally: <code>size / 8.5</code></li>
+      <li>Atlases are never loaded - placeholder mode is always used</li>
+      <li>Text measurements work correctly with scaled metrics</li>
+    </ul>
+  </div>
+
+  <div class="canvas-label">Sizes 0px through 8.5px:</div>
+  <canvas id="small-sizes-canvas" width="1000" height="520"></canvas>
+
+  <div class="canvas-label">Measurements for All Sizes:</div>
+  <canvas id="measurement-canvas" width="1000" height="550"></canvas>
+
+  <!-- PRODUCTION: Single minified bundle (~32KB) -->
+  <script src="../dist/bitmaptext.min.js"></script>
+
+  <script>
+    // Configure font directory
+    BitmapText.setFontDirectory('../font-assets/');
+    const isFileProtocol = window.location.href.includes("file://");
+
+    // Load only size 8.5px - all small sizes will interpolate from this
+    const fontProps8_5 = new FontProperties(1, "Arial", "normal", "normal", 8.5);
+    const textProps = new TextProperties({
+      isKerningEnabled: true,
+      textBaseline: 'bottom',
+      textAlign: 'left',
+      textColor: '#000000'
+    });
+
+    console.log('Loading size 8.5px metrics (used for all sizes < 8.5px)...');
+
+    BitmapText.loadFont(fontProps8_5.idString, {
+      isFileProtocol,
+      onProgress: (loaded, total) => console.log(`Loaded ${loaded} of ${total} files`)
+    }).then(() => {
+      console.log('✅ Size 8.5px loaded successfully');
+      renderDemos();
+    }).catch((error) => {
+      console.error('❌ Failed to load fonts:', error);
+    });
+
+    function renderDemos() {
+      renderSmallSizes();
+      renderMeasurementDemo();
+    }
+
+    function renderSmallSizes() {
+      const canvas = document.getElementById('small-sizes-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Clear with white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Test various small sizes plus 8.5
+      const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.4, 8.5];
+      const testText = "The quick brown fox jumps over the lazy dog.";
+      let yPos = 40;
+
+      testSizes.forEach(size => {
+        const fontProps = new FontProperties(1, "Arial", "normal", "normal", size);
+
+        // Draw size label
+        ctx.fillStyle = '#666';
+        ctx.font = '14px Arial';
+        ctx.fillText(`Size ${size}px:`, 10, yPos);
+
+        // Draw text using BitmapText
+        const result = BitmapText.drawTextFromAtlas(
+          ctx,
+          testText,
+          120,
+          yPos + 10,
+          fontProps,
+          textProps
+        );
+
+        // Log status and draw annotation
+        if (result.rendered) {
+          if (size === 8.5) {
+            console.log(`✅ Size ${size}px rendered from atlas`);
+            ctx.fillStyle = '#4CAF50';
+            ctx.font = '12px Arial';
+            ctx.fillText('(✓ rendered from atlas)', 300, yPos + 5);
+          } else {
+            console.log(`✅ Size ${size}px rendered (placeholder mode)`);
+            if (result.status.placeholdersUsed) {
+              ctx.fillStyle = '#4CAF50';
+              ctx.font = '12px Arial';
+              ctx.fillText('(placeholders)', 300, yPos + 5);
+            }
+          }
+        } else {
+          console.error(`❌ Size ${size}px failed:`, getStatusDescription(result.status));
+          ctx.fillStyle = '#F44336';
+          ctx.font = '12px Arial';
+          ctx.fillText(`Error: ${getStatusDescription(result.status)}`, 300, yPos + 5);
+        }
+
+        yPos += 45;
+      });
+    }
+
+    function renderMeasurementDemo() {
+      const canvas = document.getElementById('measurement-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Clear with white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Test various small sizes plus 8.5
+      const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.4, 8.5];
+      const testText = "The quick brown fox jumps over the lazy dog.";
+      let yPos = 40;
+
+      testSizes.forEach(size => {
+        const fontProps = new FontProperties(1, "Arial", "normal", "normal", size);
+
+        // Draw size label
+        ctx.fillStyle = '#666';
+        ctx.font = '14px Arial';
+        ctx.fillText(`Size ${size}px:`, 10, yPos);
+
+        // Measure text
+        const measureResult = BitmapText.measureText(testText, fontProps, textProps);
+
+        if (measureResult.status.code === StatusCode.SUCCESS) {
+          const metrics = measureResult.metrics;
+          console.log(`📏 Size ${size}px measurements:`, metrics);
+
+          // Draw the text
+          const xPos = 120;
+          const result = BitmapText.drawTextFromAtlas(
+            ctx,
+            testText,
+            xPos,
+            yPos + 10,
+            fontProps,
+            textProps
+          );
+
+          // Draw measurement box
+          ctx.strokeStyle = '#2196F3';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            xPos,
+            yPos + 10 - metrics.fontBoundingBoxAscent,
+            metrics.width,
+            metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent
+          );
+
+          // Draw measurements on the same line (third column)
+          ctx.fillStyle = '#1976D2';
+          ctx.font = '11px Arial';
+          const metricsText = `width: ${metrics.width.toFixed(2)}px  ascent: ${metrics.fontBoundingBoxAscent.toFixed(2)}px  descent: ${metrics.fontBoundingBoxDescent.toFixed(2)}px`;
+          ctx.fillText(metricsText, 500, yPos + 5);
+        } else {
+          console.error(`❌ Size ${size}px measurement failed:`, getStatusDescription(measureResult.status));
+          ctx.fillStyle = '#F44336';
+          ctx.font = '12px Arial';
+          ctx.fillText(`Error: ${getStatusDescription(measureResult.status)}`, 120, yPos + 5);
+        }
+
+        yPos += 45;
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -65,7 +65,11 @@
 
   - **Browser tests**: `public/test-renderer.html` for hash verification
   - **Automated screenshots**: `node scripts/screenshot-with-playwright.js` for browser render capture
-  - **Node.js rendering**: `./run-node-demos.sh` for server-side verification
+  - **Node.js demos**:
+    - `npm run demo` - Build everything and run all 6 Node.js demos (3 standalone + 3 bundled)
+    - `npm run build-node-demos` - Build all Node.js demos only
+    - `npm run run-node-demos` - Run all Node.js demos with summary
+    - Individual scripts: `./scripts/build-node-demo.sh`, `./scripts/build-node-multi-size-demo.sh`, `./scripts/build-node-small-sizes-demo.sh`
 
   See README.md for complete testing approach and docs/AUTOMATED_BROWSER_SCREENSHOT.md for automated browser testing details.
 
@@ -106,6 +110,8 @@
   - **Automated font generation**: scripts/automated-font-builder.js (Playwright script for batch font generation from JSON specs)
   - **Automated builder page**: public/automated-font-builder.html (stripped-down builder page for automation, no UI)
   - **Automated builder orchestration**: src/automation/automated-builder.js (browser-side orchestration for automated font building)
+  - **Small font size interpolation**: src/runtime/InterpolatedFontMetrics.js (extends FontMetrics to scale metrics from 8.5px base for sizes < 8.5px)
+  - **Small text demos**: public/small-text-rendering-demo.html (browser), src/node/small-sizes-main.js (Node.js standalone), src/node/small-sizes-bundled-main.js (Node.js bundled)
 
   ## Development Tips
 

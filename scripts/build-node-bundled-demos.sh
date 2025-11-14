@@ -120,9 +120,10 @@ EOF
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ ${demo_name} complete: ${file_kb}KB"
 }
 
-# Build both demos
+# Build all demos
 build_bundled_demo "hello-world-bundled" "$SRC_DIR/node/hello-world-bundled-main.js"
 build_bundled_demo "hello-world-multi-size-bundled" "$SRC_DIR/node/hello-world-multi-size-bundled-main.js"
+build_bundled_demo "small-sizes-bundled" "$SRC_DIR/node/small-sizes-bundled-main.js"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] ================================================"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Runtime-bundle demos built successfully! ✅"
@@ -131,6 +132,7 @@ echo ""
 echo "Output files:"
 echo "  - examples/node/dist/hello-world-bundled.js"
 echo "  - examples/node/dist/hello-world-multi-size-bundled.js"
+echo "  - examples/node/dist/small-sizes-bundled.js"
 echo ""
 echo "These demos:"
 echo "  - Include Canvas mock + PNG encoder (concatenated, no require)"

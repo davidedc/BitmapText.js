@@ -39,7 +39,10 @@
     "build-bundle": "./scripts/build-runtime-bundle.sh --browser",
     "build-bundle-node": "./scripts/build-runtime-bundle.sh --node",
     "build-bundle-all": "./scripts/build-runtime-bundle.sh --all",
-    "build": "npm run build-bundle-all"
+    "build": "npm run build-bundle-all",
+    "build-node-demos": "./scripts/build-all-node-demos.sh",
+    "run-node-demos": "./scripts/run-all-node-demos.sh",
+    "demo": "npm run build && npm run build-node-demos && npm run run-node-demos"
   },
   "keywords": [
     "canvas",

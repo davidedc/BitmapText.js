@@ -95,6 +95,9 @@ function getStatusDescription(status) {
     case StatusCode.SUCCESS:
       return 'Success';
     case StatusCode.NO_METRICS:
+      if (status.requiresMinSize) {
+        return `Font size ${status.requestedSize}px requires size ${status.minSize}px metrics for interpolation. Please load size ${status.minSize}px font assets.`;
+      }
       return 'No font metrics available';
     case StatusCode.PARTIAL_METRICS:
       return `Missing metrics for characters: ${status.missingChars ? [...status.missingChars].join('') : 'unknown'}`;

@@ -280,6 +280,27 @@ BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
     - `getSpaceAdvancementOverride()`: Get space override value (for small sizes)
   - Used by: BitmapText.measureText(), BitmapText.drawTextFromAtlas()
 
+  **InterpolatedFontMetrics**
+  - Purpose: Memory-efficient font metrics for sizes < 8.5px via automatic interpolation
+  - Architecture: Extends FontMetrics with lazy metric scaling from size 8.5px base
+  - Key insight: Rendering very small text (< 8.5px) as pixel-perfect bitmaps provides minimal visual benefit while consuming significant memory. Instead, interpolate metrics from 8.5px and render as placeholder rectangles.
+  - Behavior:
+    - Sizes < 8.5px: Creates InterpolatedFontMetrics wrapping 8.5px base metrics, scales all measurements by (requestedSize / 8.5)
+    - Size 8.5px and above: Uses regular FontMetrics (no interpolation)
+    - Atlases never loaded for interpolated sizes (placeholder mode always used)
+  - Benefits:
+    - Memory savings: Only one metrics file needed (8.5px) instead of separate files for 0, 0.5, 1, 1.5, ..., 8px
+    - Accurate measurements: Text width/height calculations work correctly with scaled metrics
+    - Graceful rendering: Placeholder rectangles show correct text bounds even at tiny sizes
+  - Methods (same interface as FontMetrics):
+    - `getCharacterMetrics(char)`: Returns scaled metrics (width, ascent, descent all multiplied by scale factor)
+    - `getKerningAdjustment(leftChar, rightChar)`: Returns scaled kerning values
+    - `hasGlyph(char)`: Delegates to base metrics
+    - `getAvailableCharacters()`: Delegates to base metrics
+    - `getSpaceAdvancementOverride()`: Returns scaled space override
+  - Usage: Created automatically by FontMetricsStore when size < 8.5px is requested
+  - File: `src/runtime/InterpolatedFontMetrics.js`
+
   **TextProperties**
   - Purpose: Text rendering configuration management
   - Responsibilities:

@@ -8,11 +8,16 @@ The files in this directory are **generated/bundled executables**, not source co
 
 ```
 examples/node/
-├── README.md                           # This file
-├── dist/                              # Built/bundled demo files
-│   ├── hello-world.bundle.js          # Single-size demo (~187KB)
-│   └── hello-world-multi-size.bundle.js  # Multi-size demo (~189KB)
-└── [source examples would go here]    # Future: Simple source examples
+├── README.md                              # This file
+├── dist/                                 # Built/bundled demo files
+│   ├── hello-world.bundle.js             # Single-size demo (~205KB)
+│   ├── hello-world-multi-size.bundle.js  # Multi-size demo (~207KB)
+│   ├── small-sizes.bundle.js             # Small sizes interpolation demo (~214KB)
+│   ├── hello-world-bundled.js            # Single-size with runtime bundle (~43KB)
+│   ├── hello-world-multi-size-bundled.js # Multi-size with runtime bundle (~45KB)
+│   ├── small-sizes-bundled.js            # Small sizes with runtime bundle (~46KB)
+│   └── font-assets/                      # Font data files (copied from root)
+└── [source examples would go here]       # Future: Simple source examples
 ```
 
 ## Built Demos
@@ -39,7 +44,30 @@ examples/node/
   - Demonstrates graceful degradation and performance differences
 - **Source**: Built from `src/node/hello-world-multi-size-main.js` + core library files
 - **Usage**: `node examples/node/dist/hello-world-multi-size.bundle.js`
-- **Size**: ~199KB standalone executable
+- **Size**: ~207KB standalone executable
+
+### `dist/small-sizes.bundle.js`
+- **Purpose**: Demonstrates small font size interpolation (sizes 0-8.5px)
+- **Output**: Creates `small-sizes-output.png` (800×1100) in current directory
+- **Features**:
+  - Loads only 8.5px metrics - all smaller sizes interpolate automatically
+  - Two sections: visual rendering (placeholder rectangles) and measurements with boxes
+  - Shows accurate text measurements work with interpolated metrics
+  - Console output provides detailed size labels, status, and measurements
+  - Demonstrates that no atlas/metrics needed for sizes < 8.5px
+- **Source**: Built from `src/node/small-sizes-main.js` + core library files
+- **Usage**: `node examples/node/dist/small-sizes.bundle.js`
+- **Size**: ~214KB standalone executable
+
+### Runtime-Bundle Versions
+
+The `*-bundled.js` versions use the production runtime bundle (`dist/bitmaptext-node.min.js`) instead of concatenating all source files. They demonstrate the production pattern where users provide Canvas/PNG encoder and the library provides rendering.
+
+- **`hello-world-bundled.js`**: Single-size demo with runtime bundle (~43KB)
+- **`hello-world-multi-size-bundled.js`**: Multi-size demo with runtime bundle (~45KB)
+- **`small-sizes-bundled.js`**: Small sizes demo with runtime bundle (~46KB)
+
+Each bundled version has identical functionality to its standalone counterpart but with smaller file size (~78% reduction) by sharing the common runtime bundle.
 
 ## How to Run
 
@@ -47,12 +75,22 @@ examples/node/
 # From project root directory
 cd /path/to/BitmapText.js
 
-# Build, set up font assets, and run both demos automatically (RECOMMENDED)
-./run-node-demos.sh
+# Build everything and run all demos (RECOMMENDED)
+npm run demo
+# This runs: npm run build && npm run build-node-demos && npm run run-node-demos
 
-# Or run manually (after setting up font assets):
+# Or step-by-step:
+npm run build              # Build runtime bundles
+npm run build-node-demos   # Build all Node.js demos (standalone + bundled)
+npm run run-node-demos     # Run all 6 demos with summary
+
+# Or run individual demos manually (after building):
 node examples/node/dist/hello-world.bundle.js
 node examples/node/dist/hello-world-multi-size.bundle.js
+node examples/node/dist/small-sizes.bundle.js
+node examples/node/dist/hello-world-bundled.js
+node examples/node/dist/hello-world-multi-size-bundled.js
+node examples/node/dist/small-sizes-bundled.js
 ```
 
 ### Font Asset Setup
@@ -85,19 +123,30 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 3. **Core rendering**: Same as above
 4. **Other components**: Same as above
 
+### For the small-sizes demo:
+1. **Main logic**: `src/node/small-sizes-main.js` (standalone), `src/node/small-sizes-bundled-main.js` (bundled)
+2. **Font interpolation**: `src/runtime/InterpolatedFontMetrics.js` (automatically interpolates metrics for sizes < 8.5px)
+3. **Canvas mock**: `src/platform/canvas-mock.js` (includes `strokeRect()` for measurement boxes)
+4. **Other components**: Same as above
+
 ## How to Rebuild
 
 ```bash
-# Rebuild single-size demo
-./scripts/build-node-demo.sh
-
-# Rebuild multi-size demo
-./scripts/build-node-multi-size-demo.sh
+# Build all Node.js demos (RECOMMENDED)
+npm run build-node-demos
 # or
-npm run build-multi-size-demo
+./scripts/build-all-node-demos.sh
 
-# Build both at once
-./run-node-demos.sh
+# Build individual standalone demos:
+./scripts/build-node-demo.sh                # hello-world.bundle.js
+./scripts/build-node-multi-size-demo.sh     # hello-world-multi-size.bundle.js
+./scripts/build-node-small-sizes-demo.sh    # small-sizes.bundle.js
+
+# Build all bundled versions:
+./scripts/build-node-bundled-demos.sh       # Builds all 3 bundled versions
+
+# Build and run everything:
+npm run demo
 ```
 
 ## Bundle Characteristics

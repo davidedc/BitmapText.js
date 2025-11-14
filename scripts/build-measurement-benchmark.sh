@@ -36,6 +36,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/FontProperties.js"
   "$SRC_DIR/runtime/TextProperties.js"
   "$SRC_DIR/runtime/FontMetrics.js"
+  "$SRC_DIR/runtime/InterpolatedFontMetrics.js"
   "$SRC_DIR/builder/MetricsExpander.js"
   "$SRC_DIR/runtime/AtlasPositioning.js"
   "$SRC_DIR/runtime/AtlasImage.js"
@@ -113,6 +114,12 @@ echo "// =======================================================================
 echo "// FONT METRICS CLASS" >> "$UNBUNDLED_OUTPUT"
 echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"
 cat "$SRC_DIR/runtime/FontMetrics.js" >> "$UNBUNDLED_OUTPUT"
+echo "" >> "$UNBUNDLED_OUTPUT"
+
+echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"
+echo "// INTERPOLATED FONT METRICS CLASS" >> "$UNBUNDLED_OUTPUT"
+echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"
+cat "$SRC_DIR/runtime/InterpolatedFontMetrics.js" >> "$UNBUNDLED_OUTPUT"
 echo "" >> "$UNBUNDLED_OUTPUT"
 
 echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"

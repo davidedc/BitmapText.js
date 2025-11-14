@@ -30,6 +30,9 @@ class FontPropertiesFAB extends FontProperties {
     if (!fontSize || fontSize <= 0) {
       throw new Error(`Invalid fontSize: ${fontSize} - must be positive number`);
     }
+    if (fontSize < 8.5) {
+      throw new Error(`Invalid fontSize: ${fontSize} - font sizes < 8.5px are not supported for building. These sizes render using interpolated 8.5px metrics at runtime. Please build size 8.5px instead.`);
+    }
   }
   
   // Factory method from plain object (common in UI and loading)

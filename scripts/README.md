@@ -93,30 +93,53 @@ brew install trash         # Safe file deletion
 
 ### 3. Node.js Demo Build Scripts
 ```bash
-# Single-size demo
-./scripts/build-node-demo.sh
-
-# Multi-size demo
-./scripts/build-node-multi-size-demo.sh
+# Build all Node.js demos (RECOMMENDED)
+npm run build-node-demos
 # or
-npm run build-multi-size-demo
+./scripts/build-all-node-demos.sh
+
+# Individual standalone demos:
+./scripts/build-node-demo.sh                # hello-world.bundle.js
+./scripts/build-node-multi-size-demo.sh     # hello-world-multi-size.bundle.js
+./scripts/build-node-small-sizes-demo.sh    # small-sizes.bundle.js
+
+# All bundled versions (use runtime bundle):
+./scripts/build-node-bundled-demos.sh       # Builds 3 bundled versions
+
+# Build and run all demos:
+npm run demo
 ```
 
 **Single-size demo (`build-node-demo.sh`):**
 - Concatenates existing source files into a single Node.js executable
 - Includes Canvas mock, utilities, image libraries, and core classes
-- Creates `examples/node/dist/hello-world.bundle.js` with proper permissions
+- Creates `examples/node/dist/hello-world.bundle.js` (~205KB) with proper permissions
 - Uses `src/node/hello-world-main.js` - renders "Hello World" at size 19
 
 **Multi-size demo (`build-node-multi-size-demo.sh`):**
 - Same build process as single-size demo
-- Creates `examples/node/dist/hello-world-multi-size.bundle.js`
+- Creates `examples/node/dist/hello-world-multi-size.bundle.js` (~207KB)
 - Uses `src/node/hello-world-multi-size-main.js` - renders at sizes 18, 18.5, 19
 - Demonstrates placeholder rectangle fallback for missing atlases
 
+**Small-sizes demo (`build-node-small-sizes-demo.sh`):**
+- Same build process as above demos
+- Creates `examples/node/dist/small-sizes.bundle.js` (~214KB)
+- Uses `src/node/small-sizes-main.js` - tests sizes 0-8.5px
+- Demonstrates automatic metric interpolation for sizes < 8.5px
+- Two sections: visual rendering (placeholders) + measurements with boxes
+- Shows only 8.5px metrics needed for all small sizes
+
+**Bundled versions (`build-node-bundled-demos.sh`):**
+- Builds 3 demos that use production runtime bundle (dist/bitmaptext-node.min.js)
+- Creates `*-bundled.js` versions (~43-46KB each)
+- Demonstrates production pattern: user provides Canvas/PNG, library provides rendering
+- 78% smaller than standalone versions by sharing runtime bundle
+
 **Common source files used:**
-- `src/platform/canvas-mock.js` - Minimal Canvas implementation
+- `src/platform/canvas-mock.js` - Minimal Canvas implementation (includes strokeRect for measurement boxes)
 - `src/runtime/BitmapText.js` - Core rendering class (includes CHARACTER_SET constant)
+- `src/runtime/InterpolatedFontMetrics.js` - Automatic metric scaling for sizes < 8.5px
 - `src/builder/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/runtime/FontLoaderBase.js` - Abstract base class for font loading (shared logic)
@@ -124,9 +147,10 @@ npm run build-multi-size-demo
 - `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js` - Storage classes
 
 **Output:**
-- Self-contained executables: `examples/node/dist/hello-world.bundle.js`, `examples/node/dist/hello-world-multi-size.bundle.js`
-- File size: ~52-58KB, ~1450-1600 lines each
-- No external dependencies required
+- Standalone executables: 3 `*.bundle.js` files (~205-214KB each)
+- Bundled versions: 3 `*-bundled.js` files (~43-46KB each, require runtime bundle)
+- No external dependencies required (but need font assets)
+- See `examples/node/README.md` for usage details
 
 ### 4. Image to JS Converter Script
 ```bash
@@ -582,8 +606,12 @@ scripts/
 ├── generate-font-registry.js     # Font registry generator
 ├── build-metrics-minifier.sh     # Builds tools/minify-metrics.js
 ├── build-runtime-bundle.sh       # Builds production bundles
-├── build-node-demo.sh            # Builds Node.js demo bundles
-├── build-node-multi-size-demo.sh # Builds Node.js multi-size demo
+├── build-node-demo.sh            # Builds hello-world.bundle.js
+├── build-node-multi-size-demo.sh # Builds hello-world-multi-size.bundle.js
+├── build-node-small-sizes-demo.sh# Builds small-sizes.bundle.js
+├── build-node-bundled-demos.sh   # Builds all 3 bundled demos (*-bundled.js)
+├── build-all-node-demos.sh       # Builds all 6 Node.js demos
+├── run-all-node-demos.sh         # Runs all 6 Node.js demos with summary
 ├── screenshot-with-playwright.js # Automated browser screenshot capture
 ├── automated-font-builder.js     # Automated font generation from JSON specs
 ├── test-pipeline.sh              # One-time pipeline test

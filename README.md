@@ -1247,26 +1247,39 @@ try {
   **Multi-Size Demo**
   Open `public/hello-world-multi-size.html` to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
 
+  **Small Text Rendering Demo**
+  Open `public/small-text-rendering-demo.html` to see small font size interpolation in action. Demonstrates sizes 0px through 8.5px, where sizes < 8.5px automatically interpolate metrics from 8.5px and render as placeholder rectangles. Shows both visual rendering and measurement accuracy across all sizes. See also `public/small-text-rendering-demo-bundled.html` for the production bundle version.
+
   **Baseline & Alignment Demo**
   Open `public/baseline-alignment-demo.html` for an interactive demonstration of all baseline and alignment combinations, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
 
   **Node.js Usage**
   ```bash
-  # Build and run single-size demo
-  ./scripts/build-node-demo.sh
-  node examples/node/dist/hello-world.bundle.js
-  
-  # Build and run multi-size demo (demonstrates placeholder rectangles for missing atlases)
-  npm run build-multi-size-demo
-  node examples/node/dist/hello-world-multi-size.bundle.js
-  
-  # Or build and run both demos at once
-  ./run-node-demos.sh
+  # Build all demos and runtime bundles, then run all Node.js demos (RECOMMENDED)
+  npm run demo
+
+  # Or step-by-step:
+  # 1. Build runtime bundles
+  npm run build
+
+  # 2. Build all Node.js demos (standalone + bundled)
+  npm run build-node-demos
+
+  # 3. Run all Node.js demos
+  npm run run-node-demos
+
+  # Individual demos:
+  node examples/node/dist/hello-world.bundle.js           # Single-size demo
+  node examples/node/dist/hello-world-multi-size.bundle.js # Multi-size demo
+  node examples/node/dist/small-sizes.bundle.js            # Small sizes interpolation
   ```
-  
-  **Single-size demo**: Renders "Hello World" at size 19 using QOI atlases and exports as PNG.
-  
-  **Multi-size demo**: Renders "Hello World" at sizes 18, 18.5, and 19. Demonstrates multi-size font loading and placeholder rectangle fallback for missing atlases. Self-contained scripts with no npm dependencies, built from modular source files.
+
+  **Demo descriptions:**
+  - **Single-size demo**: Renders "Hello World" at size 19 using QOI atlases, exports as PNG
+  - **Multi-size demo**: Renders at sizes 18, 18.5, and 19. Demonstrates multi-size font loading and placeholder fallback
+  - **Small-sizes demo**: Tests sizes 0-8.5px. Demonstrates automatic metric interpolation for sizes < 8.5px, renders two sections (visual + measurements), shows that only 8.5px metrics needed for all small sizes
+
+  All demos are self-contained scripts with no npm dependencies, built from modular source files. See `examples/node/README.md` for details.
 
   **Full Test Suite**
   Open `public/test-renderer.html` to run visual tests and hash verification.

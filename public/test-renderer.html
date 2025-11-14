@@ -42,6 +42,7 @@ and then open the page from the browser at:
 
 <script >
   const maxFontSize_px = 80;
+  const minFontSize_px = 0;  // Rendering/testing context: can test interpolated sizes from 0px
   const fontSizeIncrement_px = 0.5;
   let specsDefault;
   function updatePageContent() {
@@ -53,6 +54,7 @@ and then open the page from the browser at:
 <script src="../src/runtime/FontProperties.js"></script>
 <script src="../src/runtime/TextProperties.js"></script>
 <script src="../src/runtime/FontMetrics.js"></script>
+<script src="../src/runtime/InterpolatedFontMetrics.js"></script>
 <script src="../src/runtime/AtlasPositioning.js"></script>
 <script src="../src/runtime/AtlasImage.js"></script>
 <script src="../src/runtime/AtlasData.js"></script>
