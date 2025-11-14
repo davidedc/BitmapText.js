@@ -99,7 +99,12 @@ function generateFontRegistry() {
   }
 
   // Filter for metrics-*.js files and extract IDs
-  const metricsFiles = files.filter(file => file.startsWith('metrics-') && file.endsWith('.js'));
+  // Exclude "*-full.js" files (non-minified metrics for debugging only, incompatible with runtime)
+  const metricsFiles = files.filter(file =>
+    file.startsWith('metrics-') &&
+    file.endsWith('.js') &&
+    !file.endsWith('-full.js')
+  );
   logVerbose(`Found ${metricsFiles.length} metrics files`);
 
   if (isVerbose && metricsFiles.length > 0) {
