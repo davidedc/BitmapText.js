@@ -143,6 +143,9 @@ function getStatusDescription(status) {
     case StatusCode.SUCCESS:
       return 'Success';
     case StatusCode.NO_METRICS:
+      if (status.requiresMinSize) {
+        return `Font size ${status.requestedSize}px requires size ${status.minSize}px metrics for interpolation. Please load size ${status.minSize}px font assets.`;
+      }
       return 'No font metrics available';
     case StatusCode.PARTIAL_METRICS:
       return `Missing metrics for characters: ${status.missingChars ? [...status.missingChars].join('') : 'unknown'}`;
@@ -478,6 +481,113 @@ class FontMetrics {
   
 }
 // ============================================================================
+// InterpolatedFontMetrics.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/InterpolatedFontMetrics.js
+// ============================================================================
+
+// InterpolatedFontMetrics - Wrapper for FontMetrics that scales metric values
+//
+// This is a RUNTIME class used by BitmapText to support font sizes < 8.5px.
+//
+// USAGE:
+// - Font sizes < 8.5px interpolate metrics from size 8.5px
+// - All metric values (widths, kerning, baselines) are scaled proportionally
+// - Marker property `isInterpolatedMetrics` enables conditional rounding in BitmapText
+//
+// ARCHITECTURE:
+// - Wraps a FontMetrics instance (typically size 8.5px)
+// - Scales all metric values by interpolationFactor = targetSize / 8.5
+// - Delegates glyph checking and kerning table access to base metrics
+// - Used exclusively for rendering placeholder rectangles (atlases never loaded)
+//
+// DEPENDENCIES:
+// - Requires FontMetrics.js to be loaded first
+// - Used by BitmapText.js for sizes < MIN_RENDERABLE_SIZE (8.5px)
+//
+/**
+ * InterpolatedFontMetrics - Wrapper for FontMetrics that scales all values
+ *
+ * Used for font sizes < 8.5px which interpolate metrics from size 8.5px.
+ * All metric values (widths, kerning, baselines) are scaled proportionally.
+ *
+ * Marker property `isInterpolatedMetrics` enables conditional rounding in
+ * calculateAdvancement_CssPx() to preserve linear scaling behavior.
+ */
+class InterpolatedFontMetrics {
+  constructor(baseFontMetrics, targetSize) {
+    this.baseFontMetrics = baseFontMetrics;
+    this.targetSize = targetSize;
+    this.interpolationFactor = targetSize / 8.5;  // MIN_RENDERABLE_SIZE constant value
+
+    // Marker for detection in calculateAdvancement_CssPx()
+    // Enables float positioning instead of integer rounding
+    this.isInterpolatedMetrics = true;
+  }
+
+  // Interpolate character metrics by scaling all values
+  getCharacterMetrics(char) {
+    const origMetrics = this.baseFontMetrics.getCharacterMetrics(char);
+    if (!origMetrics) return null;
+
+    return {
+      actualBoundingBoxLeft: origMetrics.actualBoundingBoxLeft * this.interpolationFactor,
+      actualBoundingBoxRight: origMetrics.actualBoundingBoxRight * this.interpolationFactor,
+      actualBoundingBoxAscent: origMetrics.actualBoundingBoxAscent * this.interpolationFactor,
+      actualBoundingBoxDescent: origMetrics.actualBoundingBoxDescent * this.interpolationFactor,
+      fontBoundingBoxAscent: origMetrics.fontBoundingBoxAscent * this.interpolationFactor,
+      fontBoundingBoxDescent: origMetrics.fontBoundingBoxDescent * this.interpolationFactor,
+      width: origMetrics.width * this.interpolationFactor
+    };
+  }
+
+  // Delegate glyph checking to base metrics
+  hasGlyph(char) {
+    return this.baseFontMetrics.hasGlyph(char);
+  }
+
+  // Interpolate kerning adjustment by scaling
+  getKerningAdjustment(leftChar, rightChar) {
+    const origKerning = this.baseFontMetrics.getKerningAdjustment(leftChar, rightChar);
+    return origKerning * this.interpolationFactor;
+  }
+
+  // Delegate kerning table getter to base metrics
+  getKerningTable() {
+    return this.baseFontMetrics.getKerningTable();
+  }
+
+  // Interpolate space advancement override if present
+  getSpaceAdvancementOverride() {
+    const override = this.baseFontMetrics.getSpaceAdvancementOverride();
+    return override !== null ? override * this.interpolationFactor : null;
+  }
+
+  // Property getters
+  get fontSize() {
+    return this.targetSize;
+  }
+
+  get alphabeticBaseline_ab() {
+    return this.baseFontMetrics.alphabeticBaseline_ab * this.interpolationFactor;
+  }
+
+  get hangingBaseline_ab() {
+    return this.baseFontMetrics.hangingBaseline_ab * this.interpolationFactor;
+  }
+
+  get ideographicBaseline_ab() {
+    return this.baseFontMetrics.ideographicBaseline_ab * this.interpolationFactor;
+  }
+
+  get middleBaseline_ab() {
+    return this.baseFontMetrics.middleBaseline_ab * this.interpolationFactor;
+  }
+
+  get topBaseline_ab() {
+    return this.baseFontMetrics.topBaseline_ab * this.interpolationFactor;
+  }
+}
+
+// ============================================================================
 // BitmapText.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/BitmapText.js
 // ============================================================================
 
@@ -530,6 +640,9 @@ class BitmapText {
 
   // Kerning unit divisor (kerning measured in 1/1000 em units)
   static KERNING_UNIT_DIVISOR = 1000;
+
+  // Minimum renderable font size (sizes < 8.5 use interpolated metrics from 8.5)
+  static MIN_RENDERABLE_SIZE = 8.5;
 
   // Font asset naming conventions
   static METRICS_PREFIX = 'metrics-';
@@ -663,6 +776,76 @@ class BitmapText {
     BitmapText.#fontLoader = FontLoader;
   }
 
+  /**
+   * Check if font size requires minimum size redirection
+   * @param {number} fontSize - Font size in CSS pixels
+   * @returns {boolean} True if size < 8.5 and should use interpolated metrics
+   * @private
+   */
+  static #shouldUseMinSize(fontSize) {
+    return fontSize < BitmapText.MIN_RENDERABLE_SIZE;
+  }
+
+  /**
+   * Create FontProperties with minimum renderable size (8.5)
+   * @param {FontProperties} fontProperties - Original font properties
+   * @returns {FontProperties} New FontProperties with size 8.5
+   * @private
+   */
+  static #createFontPropsAtMinSize(fontProperties) {
+    return new FontProperties(
+      fontProperties.pixelDensity,
+      fontProperties.fontFamily,
+      fontProperties.fontStyle,
+      fontProperties.fontWeight,
+      BitmapText.MIN_RENDERABLE_SIZE
+    );
+  }
+
+  /**
+   * Create interpolated FontMetrics wrapper for sizes < 8.5
+   * Returns a wrapper object that interpolates all metric values proportionally
+   * @param {FontMetrics} metricsAt8_5 - Font metrics at size 8.5
+   * @param {number} targetSize - Desired font size (< 8.5)
+   * @returns {InterpolatedFontMetrics} Interpolated metrics wrapper with FontMetrics-compatible interface
+   * @private
+   */
+  static #createInterpolatedFontMetrics(metricsAt8_5, targetSize) {
+    return new InterpolatedFontMetrics(metricsAt8_5, targetSize);
+  }
+
+  /**
+   * Redirect idString for sizes < 8.5 to size 8.5
+   * @param {string} idString - Original font ID string
+   * @param {boolean} silent - If true, suppress console warning
+   * @returns {{redirected: boolean, idString: string, originalSize: number}} Redirection result
+   * @private
+   */
+  static #redirectIdStringIfNeeded(idString, silent = false) {
+    const fontProps = FontProperties.fromIDString(idString);
+
+    if (BitmapText.#shouldUseMinSize(fontProps.fontSize)) {
+      const minSizeProps = BitmapText.#createFontPropsAtMinSize(fontProps);
+      if (!silent) {
+        console.warn(
+          `BitmapText: Font size ${fontProps.fontSize}px requested. Redirecting to size ${BitmapText.MIN_RENDERABLE_SIZE}px ` +
+          `(minimum supported size). Sizes < ${BitmapText.MIN_RENDERABLE_SIZE}px render using interpolated placeholder rectangles.`
+        );
+      }
+      return {
+        redirected: true,
+        idString: minSizeProps.idString,
+        originalSize: fontProps.fontSize
+      };
+    }
+
+    return {
+      redirected: false,
+      idString: idString,
+      originalSize: fontProps.fontSize
+    };
+  }
+
   // ============================================
   // Registration API (called by asset files)
   // ============================================
@@ -777,8 +960,28 @@ class BitmapText {
     }
 
     // Check if FontMetrics exists at all
-    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
-    if (!fontMetrics) {
+    let fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
+
+    // If metrics not found and size < 8.5, try interpolating from size 8.5
+    if (!fontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const minSizeProps = BitmapText.#createFontPropsAtMinSize(fontProperties);
+      const metricsAt8_5 = FontMetricsStore.getFontMetrics(minSizeProps);
+
+      if (metricsAt8_5) {
+        // Create interpolated metrics wrapper
+        fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt8_5, fontProperties.fontSize);
+      } else {
+        // Even 8.5 metrics don't exist
+        return {
+          metrics: null,
+          status: createErrorStatus(StatusCode.NO_METRICS, {
+            requiresMinSize: true,
+            requestedSize: fontProperties.fontSize,
+            minSize: BitmapText.MIN_RENDERABLE_SIZE
+          })
+        };
+      }
+    } else if (!fontMetrics) {
       return {
         metrics: null,
         status: createErrorStatus(StatusCode.NO_METRICS)
@@ -889,8 +1092,31 @@ class BitmapText {
     }
 
     // Check FontMetrics availability first
-    const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
-    if (!fontMetrics) {
+    let fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
+    let forceInvalidAtlas = false;
+
+    // For sizes < 8.5, always use interpolated metrics from 8.5 and force placeholder mode
+    if (BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const minSizeProps = BitmapText.#createFontPropsAtMinSize(fontProperties);
+      const metricsAt8_5 = FontMetricsStore.getFontMetrics(minSizeProps);
+
+      if (!metricsAt8_5) {
+        // Size 8.5 metrics don't exist - can't render
+        return {
+          rendered: false,
+          status: createErrorStatus(StatusCode.NO_METRICS, {
+            requiresMinSize: true,
+            requestedSize: fontProperties.fontSize,
+            minSize: BitmapText.MIN_RENDERABLE_SIZE
+          })
+        };
+      }
+
+      // Create interpolated metrics wrapper and force placeholder mode
+      fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt8_5, fontProperties.fontSize);
+      forceInvalidAtlas = true; // Always use placeholders for sizes < 8.5
+    } else if (!fontMetrics) {
+      // Normal size but metrics not found
       return {
         rendered: false,
         status: createErrorStatus(StatusCode.NO_METRICS)
@@ -914,9 +1140,9 @@ class BitmapText {
       };
     }
 
-    // Check atlas data availability
-    const atlasData = AtlasDataStore.getAtlasData(fontProperties);
-    const atlasValid = BitmapText.#isValidAtlas(atlasData);
+    // Check atlas data availability (force invalid for sizes < 8.5)
+    let atlasData = forceInvalidAtlas ? null : AtlasDataStore.getAtlasData(fontProperties);
+    const atlasValid = forceInvalidAtlas ? false : BitmapText.#isValidAtlas(atlasData);
 
     // Track which glyphs are missing from atlas (for partial atlas status)
     const missingAtlasChars = new Set();
@@ -1087,10 +1313,13 @@ class BitmapText {
     // maintaining precision in the stored kerning values.
     x_CssPx -= fontProperties.fontSize * kerningCorrection / BitmapText.KERNING_UNIT_DIVISOR;
 
-    // since we might want to actually _place_ a glyph,
-    // following this measurement, we want to return an
-    // integer coordinate here
-    return Math.round(x_CssPx);
+    // For interpolated metrics (sizes < 8.5), preserve float precision for linear scaling
+    // For normal metrics (sizes ≥ 8.5), round to integers for crisp pixel-aligned rendering
+    if (fontMetrics.isInterpolatedMetrics) {
+      return x_CssPx;  // Float positioning for placeholder rectangles
+    } else {
+      return Math.round(x_CssPx);  // Integer positioning for crisp atlas glyphs
+    }
   }
 
   static #getKerningCorrection(fontMetrics, char, nextChar, textProperties) {
@@ -1553,7 +1782,9 @@ class BitmapText {
    */
   static async loadFont(idString, options = {}) {
     BitmapText.#ensureFontLoader();
-    return BitmapText.#fontLoader.loadFont(idString, options, BitmapText);
+    // Redirect sizes < 8.5 to size 8.5
+    const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
+    return BitmapText.#fontLoader.loadFont(redirection.idString, options, BitmapText);
   }
 
   /**
@@ -1568,7 +1799,12 @@ class BitmapText {
    */
   static async loadFonts(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    return BitmapText.#fontLoader.loadFonts(idStrings, options, BitmapText);
+    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    const redirectedIdStrings = idStrings.map(idString => {
+      const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
+      return redirection.idString;
+    });
+    return BitmapText.#fontLoader.loadFonts(redirectedIdStrings, options, BitmapText);
   }
 
   /**
@@ -1579,7 +1815,12 @@ class BitmapText {
    */
   static async loadMetrics(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    return BitmapText.#fontLoader.loadMetrics(idStrings, options, BitmapText);
+    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    const redirectedIdStrings = idStrings.map(idString => {
+      const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
+      return redirection.idString;
+    });
+    return BitmapText.#fontLoader.loadMetrics(redirectedIdStrings, options, BitmapText);
   }
 
   /**
@@ -1590,7 +1831,12 @@ class BitmapText {
    */
   static async loadAtlases(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    return BitmapText.#fontLoader.loadAtlases(idStrings, options, BitmapText);
+    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    const redirectedIdStrings = idStrings.map(idString => {
+      const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
+      return redirection.idString;
+    });
+    return BitmapText.#fontLoader.loadAtlases(redirectedIdStrings, options, BitmapText);
   }
 
   // ============================================
@@ -1705,6 +1951,7 @@ class BitmapText {
 
   /**
    * Check if font is fully loaded (both metrics and atlas)
+   * For sizes < 8.5, checks if size 8.5 metrics exist (atlas always false for < 8.5)
    * @param {string} idString - Font ID string
    * @returns {boolean} True if both metrics and atlas are loaded
    */
@@ -1714,21 +1961,31 @@ class BitmapText {
 
   /**
    * Check if metrics are loaded for a font
+   * For sizes < 8.5, checks if size 8.5 metrics exist
    * @param {string} idString - Font ID string
    * @returns {boolean} True if metrics are loaded
    */
   static hasMetrics(idString) {
-    const fontProperties = FontProperties.fromIDString(idString);
+    // Redirect sizes < 8.5 to check for 8.5 metrics (silent to avoid log spam)
+    const redirection = BitmapText.#redirectIdStringIfNeeded(idString, true);
+    const fontProperties = FontProperties.fromIDString(redirection.idString);
     return FontMetricsStore.hasFontMetrics(fontProperties);
   }
 
   /**
    * Check if atlas is loaded for a font
+   * For sizes < 8.5, always returns false (these sizes use placeholder mode)
    * @param {string} idString - Font ID string
    * @returns {boolean} True if atlas is loaded
    */
   static hasAtlas(idString) {
     const fontProperties = FontProperties.fromIDString(idString);
+
+    // Sizes < 8.5 never have atlases (always use placeholder mode)
+    if (BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      return false;
+    }
+
     const atlasData = AtlasDataStore.getAtlasData(fontProperties);
     return atlasData && BitmapText.#isValidAtlas(atlasData);
   }
