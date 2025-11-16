@@ -1495,10 +1495,42 @@ class BitmapText {
     // This ensures we have room for ALL characters in the font, not just those in this text
     // Example: "hello" has small actualBoundingBoxAscent (x-height only)
     //          but we need room for "HELLO" (cap-height) when rendering any text
-    const textWidth_PhysPx = Math.ceil(metrics.width * fontProperties.pixelDensity);
-    const textHeight_PhysPx = Math.ceil(
-      (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent) * fontProperties.pixelDensity
+    //
+    // CRITICAL: Calculate VISUAL width (actual pixel span) not typographic width (advancement)
+    //
+    // Canvas API Semantics:
+    // - metrics.width = sum of character advancements (includes kerning, represents "cursor advancement")
+    // - metrics.actualBoundingBoxLeft = distance from text start to leftmost pixel
+    // - metrics.actualBoundingBoxRight = distance from text start to rightmost pixel
+    // - Visual width = actualBoundingBoxLeft + actualBoundingBoxRight (actual pixels occupied)
+    //
+    // WIDTH DIMENSION ROUNDING: Use Math.ceil on physical pixels for visual width
+    // Canvas width must accommodate all pixels including those at fractional positions.
+    // Math.ceil ensures glyphs drawing at rounded-up positions won't be clipped.
+    // Example: visualWidth=24.4 → Math.ceil(24.4)=25 → canvas [0-24] → glyph at px 24 fits ✓
+    const visualWidth_CssPx = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
+    const textWidth_PhysPx = Math.ceil(visualWidth_CssPx * fontProperties.pixelDensity);
+
+    // HEIGHT DIMENSION ROUNDING: MUST match GlyphFAB.js calculation EXACTLY
+    // CRITICAL: GlyphFAB.js (lines 247-252) uses Math.round on CSS pixels, then multiplies by pixelDensity
+    // The dy offsets in atlas were calculated based on THIS EXACT canvas height
+    const fontBoundingBoxHeight_CssPx = Math.round(
+      metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent
     );
+    const textHeight_PhysPx = fontBoundingBoxHeight_CssPx * fontProperties.pixelDensity;
+
+    // Pre-round position offset values for consistent positioning throughout
+    // CRITICAL: These values are used both for positioning glyphs inside scratch canvas
+    // and for positioning the final scratch canvas copy to main canvas
+    // Using the SAME rounded values prevents 1-pixel misalignment from float rounding discrepancies
+    const actualBoundingBoxLeft_PhysPx = Math.round(metrics.actualBoundingBoxLeft * fontProperties.pixelDensity);
+
+    // CRITICAL: Baseline position must match GlyphFAB.js (GlyphFAB.js:288)
+    // GlyphFAB positions baseline at "canvas.height / pixelDensity - 1" in CSS pixels
+    // In physical pixels: baseline_y = canvas.height - pixelDensity
+    // The dy offsets in atlas are calculated relative to THIS baseline position
+    // Missing this offset causes descender clipping (bottom row of j, y, g, p, q cut off)
+    const baselineY_PhysPx = textHeight_PhysPx - fontProperties.pixelDensity;
 
     // Safety check: ensure dimensions are reasonable
     if (textWidth_PhysPx <= 0 || textHeight_PhysPx <= 0 || textWidth_PhysPx > 32000 || textHeight_PhysPx > 32000) {
@@ -1515,11 +1547,15 @@ class BitmapText {
     // Position relative to scratch canvas origin (not main canvas)
     const position_PhysPx = {
       // Horizontal: Start at actualBoundingBoxLeft to account for glyphs that protrude left (e.g., italic 'f')
-      x: metrics.actualBoundingBoxLeft * fontProperties.pixelDensity,
-      // Vertical: Position bottom baseline at the bottom of the full em square within scratch canvas
-      // This is fontBoundingBoxAscent + fontBoundingBoxDescent from the top (i.e., at the canvas bottom)
-      // Glyphs will draw upward from here using their negative dy offsets
-      y: (metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent) * fontProperties.pixelDensity
+      // CRITICAL: Use pre-rounded value (line 950) for consistency with final copy (line 1017+)
+      x: actualBoundingBoxLeft_PhysPx,
+      // Vertical: Position baseline to match GlyphFAB.js rendering (GlyphFAB.js:288)
+      // Baseline is at "canvas.height / pixelDensity - 1" in CSS pixels
+      // which equals "canvas.height - pixelDensity" in physical pixels
+      // NOT at canvas bottom, but one pixel-row above it
+      // Glyphs draw upward/downward from here using their dy offsets from atlas
+      // CRITICAL: Must match glyph building baseline or dy offsets will be wrong (descenders clip)
+      y: baselineY_PhysPx
     };
 
     for (let i = 0; i < chars.length; i++) {
@@ -1572,15 +1608,16 @@ class BitmapText {
     // Step 5: Copy entire colored text block to main canvas ONCE
     // POSITIONING GEOMETRY:
     // - Main canvas: startPosition_PhysPx.y is at the bottom baseline (textBaseline='bottom')
-    // - Scratch canvas: bottom baseline is at y = textHeight_PhysPx (the canvas bottom)
-    // - To align baselines: scratch canvas top = startPosition_PhysPx.y - textHeight_PhysPx
+    // - Scratch canvas: baseline is at y = baselineY_PhysPx (textHeight - pixelDensity, NOT at canvas bottom)
+    // - To align baselines: scratch canvas top = startPosition_PhysPx.y - baselineY_PhysPx
     // - Horizontal: account for actualBoundingBoxLeft offset (glyphs that protrude left)
+    // CRITICAL: Use baselineY_PhysPx (line 957) not textHeight_PhysPx to account for baseline offset
     ctx.drawImage(
       BitmapText.#coloredGlyphCanvas,
       0, 0,
       textWidth_PhysPx, textHeight_PhysPx,
-      Math.round(startPosition_PhysPx.x - metrics.actualBoundingBoxLeft * fontProperties.pixelDensity),
-      Math.round(startPosition_PhysPx.y - textHeight_PhysPx),
+      Math.round(startPosition_PhysPx.x) - actualBoundingBoxLeft_PhysPx,
+      Math.round(startPosition_PhysPx.y) - baselineY_PhysPx,
       textWidth_PhysPx, textHeight_PhysPx
     );
 
