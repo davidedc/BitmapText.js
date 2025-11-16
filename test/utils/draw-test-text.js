@@ -383,8 +383,11 @@ function bitmapAtlasDrawCrispText(linesMeasures, testCopyLines, fontProperties, 
 
   if (!drawOverExistingCanvas) {
     let hashMatchInfo = '';
-    if (checkTheHashes !== false && !drawCheckeredBackgrounds)
-      hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "atlas testCopyChoiceNumber " + testCopyChoiceNumber);
+    if (checkTheHashes !== false && !drawCheckeredBackgrounds) {
+      // Detect if this is blue text by checking the text color
+      const isBlueText = textProperties && textProperties.textColor === '#0000FF';
+      hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "atlas testCopyChoiceNumber " + testCopyChoiceNumber, isBlueText);
+    }
 
     addCanvasInfoToDOM(canvas, hashMatchInfo);
     addElementToDOM(document.createElement('br'));
@@ -484,16 +487,39 @@ function addCanvasInfoToDOM(canvas, additionalInfo = '') {
   addElementToDOM(infoDiv);
 }
 
-function getHashMatchInfo(ctx, fontProperties, hashSuffix = '') {
-  const hashKey = calculateFontPropertiesHashKey(fontProperties, hashSuffix);
-  const crispTextHashString = ctx.getHashString();
-  const result = hashStore.compareHash(hashKey, crispTextHashString);
-  
-  if (result.status === 'mismatch') {
+function getHashMatchInfo(ctx, fontProperties, hashSuffix = '', isBlueText = false) {
+  let message = '';
+
+  if (isBlueText) {
+    // For blue text: use a different key for the colored hash to avoid false mismatch
+    const blueHashKey = calculateFontPropertiesHashKey(fontProperties, hashSuffix + '-blue-color');
+    const blueTextHashString = ctx.getHashString();
+    const blueResult = hashStore.compareHash(blueHashKey, blueTextHashString);
+    message += 'Blue text hash: ' + blueTextHashString + ' ' + blueResult.message;
+
+    // Calculate black-and-white hash (all non-white pixels converted to black)
+    const blackAndWhiteHashString = ctx.getBlackAndWhiteHashString();
+    const originalHashKey = calculateFontPropertiesHashKey(fontProperties, hashSuffix);
+    const blackAndWhiteResult = hashStore.compareHash(originalHashKey, blackAndWhiteHashString);
+    message += '\nBlack-and-white hash: ' + blackAndWhiteHashString + ' ' + blackAndWhiteResult.message;
+
+    // Only turn page red if black-and-white hash mismatches (indicates real rendering problem)
+    if (blackAndWhiteResult.status === 'mismatch') {
       document.body.style.backgroundColor = '#FFC0CB';
+    }
+  } else {
+    // Standard black text: original behavior
+    const hashKey = calculateFontPropertiesHashKey(fontProperties, hashSuffix);
+    const crispTextHashString = ctx.getHashString();
+    const result = hashStore.compareHash(hashKey, crispTextHashString);
+    message = result.message;
+
+    if (result.status === 'mismatch') {
+      document.body.style.backgroundColor = '#FFC0CB';
+    }
   }
-  
-  return result.message;
+
+  return message;
 }
 
 function calculateFontPropertiesHashKey(fontProperties, hashSuffix = '') {
