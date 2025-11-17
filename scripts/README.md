@@ -500,7 +500,7 @@ npm install  # Installs Playwright from package.json devDependencies
 🎨 Canvas: 300×100 (CSS: 300px×100px)
 ```
 
-**See also:** `docs/AUTOMATED_BROWSER_SCREENSHOT.md` for detailed documentation on browser-based automated testing approaches.
+**See also:** `docs/PLAYWRIGHT_AUTOMATION.md` for detailed documentation on Playwright automation (screenshots, font generation, hash generation).
 
 ### 12. Automated Font Builder Script
 ```bash

@@ -71,7 +71,7 @@
     - `npm run run-node-demos` - Run all Node.js demos with summary
     - Individual scripts: `./scripts/build-node-demo.sh`, `./scripts/build-node-multi-size-demo.sh`, `./scripts/build-node-small-sizes-demo.sh`
 
-  See README.md for complete testing approach and docs/AUTOMATED_BROWSER_SCREENSHOT.md for automated browser testing details.
+  See README.md for complete testing approach and docs/PLAYWRIGHT_AUTOMATION.md for Playwright automation details.
 
   ## Key Invariants
 
