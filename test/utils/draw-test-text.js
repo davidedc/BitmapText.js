@@ -270,7 +270,7 @@ function drawTestTextViaIndividualCanvasesNotViaAtlas(linesMeasures, testCopyLin
 
   let hashMatchInfo = '';
   if (!drawCheckeredBackgrounds)
-    hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "individual canvases testCopyChoiceNumber " + testCopyChoiceNumber);
+    hashMatchInfo = getHashMatchInfo(ctx, fontProperties, "atlas testCopyChoiceNumber " + testCopyChoiceNumber);
 
   addCanvasInfoToDOM(canvas, hashMatchInfo);
   addElementToDOM(document.createElement('br'));
