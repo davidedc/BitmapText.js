@@ -281,3 +281,11 @@ steps:
 - **Browser Examples**: `public/` directory
 - **Test Renderer**: `public/test-renderer.html` - Hash verification
 - **Performance Benchmarks**: `perf/` directory
+
+## Related Playwright Automation
+
+The project uses Playwright for several automation tasks beyond screenshots:
+
+- **Automated Font Generation**: `scripts/automated-font-builder.js` - Batch font asset generation from JSON specifications
+- **Automated Hash Generation**: `scripts/generate-reference-hashes.js` - Reference hash generation for regression testing
+- **Scripts Documentation**: `scripts/README.md` - Complete guide for all automation scripts

@@ -591,6 +591,95 @@ node ../../scripts/image-to-js-converter.js . --all
 - `src/automation/automated-builder.js` - Browser-side orchestration
 - `specs/font-sets/test-font-spec.json` - Example specification (Arial 18, 18.5, 19)
 
+### 13. Reference Hash Generator Script
+```bash
+node scripts/generate-reference-hashes.js --spec=<path-to-spec.json> [options]
+```
+
+**Options:**
+- `--spec <file>` - Font set specification JSON file (required)
+- `--output <file>` - Output file (default: `test/data/reference-hashes.js`)
+- `--port <port>` - HTTP server port (default: 8765)
+- `--merge` - Merge with existing hashes instead of overwriting
+
+**Examples:**
+```bash
+# Generate hashes for a font set
+node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+
+# Merge with existing reference hashes
+node scripts/generate-reference-hashes.js --spec=specs/font-sets/my-fonts.json --merge
+
+# Custom output location
+node scripts/generate-reference-hashes.js --spec=my-fonts.json --output=./my-hashes.js
+```
+
+**What it does:**
+- Loads font set specification from JSON (see `docs/FONT_SET_FORMAT.md`)
+- Launches headless WebKit browser (uses Core Text on macOS)
+- Navigates to `public/automated-hash-generator.html`
+- Generates all font configurations from specification
+- Builds atlases and renders test text for hash calculation
+- Calculates reference hashes for all hash check types:
+  - Atlas source hash (variable-width cells)
+  - Tight atlas hash (reconstructed)
+  - Positioning metadata hash
+  - Text rendering hashes (3 test copies)
+  - Blue text color hashes (2 per test copy: colored + black-and-white)
+- Formats and saves to `test/data/reference-hashes.js`
+
+**Prerequisites:**
+```bash
+npm install  # Installs Playwright from package.json devDependencies
+npx playwright install webkit  # Install WebKit browser binaries
+```
+
+**Hash Types Generated (per font):**
+For each font configuration, generates ~12 hashes:
+1. Atlas source (variable-width cells) - `"${idString} atlas"`
+2. Tight atlas (reconstructed) - `"${idString} tight atlas"`
+3. Positioning hash - stored as comment (metadata)
+4-6. Black text rendering - `"${idString} atlas testCopyChoiceNumber X"` (X=1,2,3)
+7-9. Blue text color hash - `"${idString} atlas testCopyChoiceNumber X-blue-color"`
+10-12. Blue text B&W validation - validates against black text hashes
+
+**Output Format:**
+```javascript
+// Auto-generated reference hashes for BitmapText.js
+// Generated: 2025-11-17T10:40:29.092Z
+// Spec: specs/font-sets/test-font-spec.json
+
+// Positioning hashes (metadata, not pixel hashes):
+// density-1-0-Arial-style-normal-weight-normal-size-18-0 positioning: 632fe3
+
+const storedReferenceCrispTextRendersHashes = {
+ "density-1-0-Arial-style-normal-weight-normal-size-18-0 atlas":"f1df9bd",
+ "density-1-0-Arial-style-normal-weight-normal-size-18-0 atlas testCopyChoiceNumber 1":"60233af",
+ // ... more hashes
+};
+
+const hashStore = new HashStore(storedReferenceCrispTextRendersHashes);
+```
+
+**When to use:**
+- Generating reference hashes after font changes
+- Creating test fixtures for new font configurations
+- Updating hash database incrementally (with `--merge`)
+- CI/CD hash generation pipeline
+- Validating font rendering consistency
+
+**Merge mode:**
+When `--merge` flag is used:
+- Reads existing `test/data/reference-hashes.js`
+- Merges new hashes with existing ones (new hashes override)
+- Useful for incremental hash updates without regenerating everything
+
+**Related files:**
+- `public/automated-hash-generator.html` - Hash generation page (no UI)
+- `src/automation/automated-hash-generator.js` - Browser-side orchestration
+- `test/data/reference-hashes.js` - Reference hash database
+- `test/utils/test-copy.js` - Test text definitions (3 variants)
+
 ---
 
 ## 📁 File Structure
@@ -614,6 +703,7 @@ scripts/
 ├── run-all-node-demos.sh         # Runs all 6 Node.js demos with summary
 ├── screenshot-with-playwright.js # Automated browser screenshot capture
 ├── automated-font-builder.js     # Automated font generation from JSON specs
+├── generate-reference-hashes.js  # Automated reference hash generation
 ├── test-pipeline.sh              # One-time pipeline test
 └── README.md                     # This file
 

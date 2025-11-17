@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automated Hash Generator</title>
+  <style>
+    body {
+      padding: 20px;
+      margin: 0;
+      background-color: #f0f0f0;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    canvas {
+      font-smooth: never;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: none;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Automated Hash Generator</h1>
+  <p>This page is controlled by Playwright automation.</p>
+  <p id="status">Initializing...</p>
+</body>
+
+<!-- Utilities -->
+<script src="../src/utils/timing.js"></script>
+
+<!-- Global variables needed by glyph rendering -->
+<script>
+  // drawCrisply controls whether canvases are attached to DOM for CSS font-smoothing
+  // Set to true for crisp rendering (requires DOM attachment)
+  let drawCrisply = true;
+
+  // truncateMetrics controls whether metrics are truncated to integer values
+  // Set to true for more compact metrics (default behavior)
+  let truncateMetrics = true;
+</script>
+
+<!-- Runtime classes -->
+<script src="../src/runtime/StatusCode.js"></script>
+<script src="../src/runtime/FontProperties.js"></script>
+<script src="../src/runtime/TextProperties.js"></script>
+<script src="../src/runtime/FontMetrics.js"></script>
+<script src="../src/runtime/InterpolatedFontMetrics.js"></script>
+<script src="../src/runtime/AtlasPositioning.js"></script>
+<script src="../src/runtime/AtlasImage.js"></script>
+<script src="../src/runtime/AtlasData.js"></script>
+<script src="../src/runtime/TightAtlasReconstructor.js"></script>
+<script src="../src/runtime/AtlasDataStore.js"></script>
+<script src="../src/runtime/FontMetricsStore.js"></script>
+<script src="../src/runtime/FontLoaderBase.js"></script>
+<script src="../src/platform/FontLoader-browser.js"></script>
+<script src="../src/runtime/BitmapText.js"></script>
+
+<!-- Builder (FAB) classes -->
+<script src="../src/builder/FontPropertiesFAB.js"></script>
+<script src="../src/builder/FontMetricsFAB.js"></script>
+<script src="../src/builder/AtlasPositioningFAB.js"></script>
+<script src="../src/builder/AtlasImageFAB.js"></script>
+<script src="../src/builder/AtlasDataStoreFAB.js"></script>
+<script src="../src/builder/FontMetricsStoreFAB.js"></script>
+<script src="../src/builder/BitmapTextFAB.js"></script>
+<script src="../src/builder/GlyphFAB.js"></script>
+<script src="../src/builder/AtlasBuilder.js"></script>
+<script src="../src/builder/KerningCalculator.js"></script>
+
+<!-- Atlas generation utilities -->
+<script src="../src/utils/AtlasCellDimensions.js"></script>
+<script src="../src/utils/canvas-extensions.js"></script>
+<script src="../src/utils/HashStore.js"></script>
+<script src="../src/builder/AtlasReconstructionUtils.js"></script>
+
+<!-- Specs system -->
+<script src="../src/specs/Specs.js"></script>
+<script src="../src/specs/SpecsParser.js"></script>
+<script src="../src/specs/default-specs.js"></script>
+
+<!-- Glyph creation -->
+<script src="../src/builder/create-glyphs.js"></script>
+
+<!-- Font set generator -->
+<script src="../src/utils/FontSetGenerator.js"></script>
+
+<!-- Test copy text (required for hash generation) -->
+<script src="../test/utils/test-copy.js"></script>
+
+<!-- Hash generation orchestration -->
+<script src="../src/automation/automated-hash-generator.js"></script>
+
+<script>
+  // Update status display
+  const statusEl = document.getElementById('status');
+  if (statusEl) {
+    statusEl.textContent = 'Ready for automation commands';
+  }
+
+  console.log('='.repeat(60));
+  console.log('Automated Hash Generator - Ready');
+  console.log('='.repeat(60));
+  console.log('All dependencies loaded successfully');
+  console.log('Waiting for Playwright to provide font specification...');
+</script>
+
+</html>
