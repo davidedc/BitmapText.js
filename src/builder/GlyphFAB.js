@@ -477,8 +477,9 @@ class GlyphFAB {
 
     // print out the character, and the bounding box width and height
     // if both objects are not null
-    if (topLeftCorner !== null && bottomRightCorner !== null)
-      console.log(this.char + " " + (bottomRightCorner.x - topLeftCorner.x + 1) + " " + (bottomRightCorner.y - topLeftCorner.y + 1));
+    // NOTE: Commented out to reduce log verbosity during automated font generation
+    // if (topLeftCorner !== null && bottomRightCorner !== null)
+    //   console.log(this.char + " " + (bottomRightCorner.x - topLeftCorner.x + 1) + " " + (bottomRightCorner.y - topLeftCorner.y + 1));
 
     // return the bounding box
     return {
