@@ -103,21 +103,44 @@ for PNG_FILE in "${PNG_FILES[@]}"; do
     if cwebp -lossless -z 9 -m 6 -mt "$PNG_FILE" -o "$WEBP_FILE" > /dev/null 2>&1; then
         # Get WebP file size
         WEBP_SIZE=$(stat -f%z "$WEBP_FILE" 2>/dev/null || stat -c%s "$WEBP_FILE" 2>/dev/null)
-        TOTAL_WEBP_SIZE=$((TOTAL_WEBP_SIZE + WEBP_SIZE))
 
-        # Calculate savings
-        SAVINGS=$((PNG_SIZE - WEBP_SIZE))
-        PERCENT=$(awk "BEGIN {printf \"%.1f\", ($SAVINGS / $PNG_SIZE) * 100}")
+        # Check for zero-byte WebP file (indicates silent conversion failure)
+        if [ "$WEBP_SIZE" -eq 0 ]; then
+            log_warning "WebP conversion produced zero-byte file for: $BASENAME.png"
+            log_warning "This typically happens when image dimensions exceed WebP's 16383px limit"
+            log_warning "Keeping original PNG file instead"
+            rm "$WEBP_FILE"
+            FAILED=$((FAILED + 1))
+        else
+            TOTAL_WEBP_SIZE=$((TOTAL_WEBP_SIZE + WEBP_SIZE))
 
-        log_success "Converted: $PNG_SIZE bytes → $WEBP_SIZE bytes (saved $SAVINGS bytes, ${PERCENT}%)"
+            # Calculate savings
+            SAVINGS=$((PNG_SIZE - WEBP_SIZE))
+            PERCENT=$(awk "BEGIN {printf \"%.1f\", ($SAVINGS / $PNG_SIZE) * 100}")
 
-        # Delete source PNG file
-        rm "$PNG_FILE"
-        log_success "Deleted source PNG: $PNG_FILE"
+            log_success "Converted: $PNG_SIZE bytes → $WEBP_SIZE bytes (saved $SAVINGS bytes, ${PERCENT}%)"
 
-        CONVERTED=$((CONVERTED + 1))
+            # Delete source PNG file
+            rm "$PNG_FILE"
+            log_success "Deleted source PNG: $PNG_FILE"
+
+            CONVERTED=$((CONVERTED + 1))
+        fi
     else
-        log_error "Failed to convert: $PNG_FILE"
+        # Check if a zero-byte WebP file was created despite the error
+        if [ -f "$WEBP_FILE" ]; then
+            WEBP_SIZE=$(stat -f%z "$WEBP_FILE" 2>/dev/null || stat -c%s "$WEBP_FILE" 2>/dev/null)
+            if [ "$WEBP_SIZE" -eq 0 ]; then
+                log_warning "WebP conversion failed and produced zero-byte file for: $BASENAME.png"
+                log_warning "This typically happens when image dimensions exceed WebP's 16383px limit"
+                log_warning "Keeping original PNG file and removing invalid WebP"
+                rm "$WEBP_FILE"
+            else
+                log_error "Failed to convert: $PNG_FILE (but WebP file exists with size $WEBP_SIZE)"
+            fi
+        else
+            log_error "Failed to convert: $PNG_FILE"
+        fi
         FAILED=$((FAILED + 1))
     fi
 
