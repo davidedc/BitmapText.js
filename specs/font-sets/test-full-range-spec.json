@@ -1,0 +1,36 @@
+{
+  "fontSets": [
+    {
+      "name": "Arial Part 1 - Density 1.0 (8.5-44.0)",
+      "density": [1.0],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[8.5, 44.0, 0.5]]
+    },
+    {
+      "name": "Arial Part 2 - Density 1.0 (44.5-80.0)",
+      "density": [1.0],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[44.5, 80.0, 0.5]]
+    },
+    {
+      "name": "Arial Part 1 - Density 2.0 (8.5-44.0)",
+      "density": [2.0],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[8.5, 44.0, 0.5]]
+    },
+    {
+      "name": "Arial Part 2 - Density 2.0 (44.5-80.0)",
+      "density": [2.0],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[44.5, 80.0, 0.5]]
+    }
+  ]
+}

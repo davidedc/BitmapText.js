@@ -21,6 +21,7 @@
  *   --output <dir>       Output directory (default: ./font-assets-output)
  *   --port <port>        HTTP server port (default: 8765)
  *   --include-full       Include non-minified metrics (default: false)
+ *   --batch-size <n>     Max fonts per batch for memory management (default: 144)
  *
  * Examples:
  *   node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
@@ -35,6 +36,8 @@ const { webkit } = require('playwright');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { execSync } = require('child_process');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -60,7 +63,8 @@ const config = {
   specFile: getArg('spec', null),
   outputDir: getArg('output', './automatically-generated-font-assets'),
   port: parseInt(getArg('port', '8765')),
-  includeFullMetrics: hasFlag('include-full')
+  includeFullMetrics: hasFlag('include-full'),
+  batchSize: parseInt(getArg('batch-size', '72'))  // Reduced from 144 to avoid canvas/memory issues
 };
 
 // Validate required arguments
@@ -129,6 +133,43 @@ function startServer(port, rootDir) {
       }
     });
   });
+}
+
+/**
+ * Merge multiple ZIP files into one using native zip/unzip commands
+ * @param {string[]} batchPaths - Array of batch ZIP file paths
+ * @param {string} outputPath - Final merged ZIP output path
+ */
+function mergeZips(batchPaths, outputPath) {
+  const mergeTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'font-merge-'));
+
+  try {
+    console.log(`\n📦 Merging ${batchPaths.length} batch ZIP(s)...`);
+
+    // Extract all batch ZIPs to temp directory
+    for (let i = 0; i < batchPaths.length; i++) {
+      const batchPath = batchPaths[i];
+      console.log(`   Extracting batch ${i + 1}/${batchPaths.length}...`);
+      execSync(`unzip -q "${batchPath}" -d "${mergeTempDir}"`, {
+        stdio: 'pipe'
+      });
+    }
+
+    // Create final merged ZIP
+    console.log(`   Creating merged ZIP...`);
+    const absoluteOutputPath = path.resolve(outputPath);
+    execSync(`cd "${mergeTempDir}" && zip -q -r "${absoluteOutputPath}" .`, {
+      stdio: 'pipe'
+    });
+
+    console.log(`✅ Merged ZIP created: ${outputPath}`);
+
+  } catch (error) {
+    throw new Error(`Failed to merge ZIPs: ${error.message}`);
+  } finally {
+    // Clean up merge temp directory
+    fs.rmSync(mergeTempDir, { recursive: true, force: true });
+  }
 }
 
 async function buildFonts() {
@@ -244,56 +285,164 @@ async function buildFonts() {
     // Wait for page to be ready
     await page.waitForTimeout(500);
 
-    console.log('✅ Page loaded, starting font generation...');
+    console.log('✅ Page loaded, calculating font counts...');
     console.log('');
 
-    // Pass font spec to page, build fonts, and get base64 ZIP
-    console.log('⏳ Generating ZIP file...');
+    // Step 1: Get font counts for each set from browser
+    const setCounts = await page.evaluate(async ({ spec }) => {
+      // Use FontSetGenerator to calculate counts (available in browser context)
+      const counts = [];
+      for (let i = 0; i < spec.fontSets.length; i++) {
+        const set = spec.fontSets[i];
+        const generator = new FontSetGenerator({ fontSets: [set] });
+        counts.push({
+          index: i,
+          name: set.name || `Set ${i + 1}`,
+          count: generator.getCount()
+        });
+      }
+      return counts;
+    }, { spec: fontSpec });
 
-    const zipBase64 = await page.evaluate(async ({ spec, includeFullMetrics }) => {
-      // Call the automation function and return base64 ZIP
-      return await window.buildAndExportFonts(spec, {
-        includeNonMinifiedMetrics: includeFullMetrics
-      });
-    }, { spec: fontSpec, includeFullMetrics: config.includeFullMetrics });
+    // Calculate total fonts
+    const totalFonts = setCounts.reduce((sum, sc) => sum + sc.count, 0);
+    console.log(`📊 Total fonts to generate: ${totalFonts}`);
+    console.log(`📦 Batch size: ${config.batchSize} fonts`);
+    console.log('');
 
-    // Validate received data
-    if (!zipBase64 || typeof zipBase64 !== 'string') {
-      throw new Error('Failed to receive ZIP data from browser');
+    // Display set breakdown
+    console.log('Font sets:');
+    setCounts.forEach(sc => {
+      console.log(`   ${sc.name}: ${sc.count} fonts`);
+    });
+    console.log('');
+
+    // Step 2: Partition fontSets into batches based on font counts
+    const batches = [];
+    let currentBatch = { fontSets: [], totalCount: 0, setIndices: [] };
+
+    for (const sc of setCounts) {
+      // Check if adding this set would exceed limit
+      if (currentBatch.totalCount + sc.count > config.batchSize && currentBatch.fontSets.length > 0) {
+        batches.push(currentBatch);
+        currentBatch = { fontSets: [], totalCount: 0, setIndices: [] };
+      }
+
+      // Check if single set exceeds limit (error case)
+      if (sc.count > config.batchSize) {
+        throw new Error(
+          `FontSet "${sc.name}" generates ${sc.count} fonts, ` +
+          `which exceeds batch limit of ${config.batchSize}. ` +
+          `Please split this fontSet into smaller sets or increase --batch-size.`
+        );
+      }
+
+      currentBatch.fontSets.push(fontSpec.fontSets[sc.index]);
+      currentBatch.totalCount += sc.count;
+      currentBatch.setIndices.push(sc.index);
     }
 
-    console.log('');
-    console.log('✅ ZIP received from browser');
-    console.log(`📦 Estimated size: ${Math.round(zipBase64.length * 0.75 / 1024)} KB`);
-    console.log('💾 Saving to disk...');
+    // Add final batch
+    if (currentBatch.fontSets.length > 0) {
+      batches.push(currentBatch);
+    }
 
-    // Decode base64 to buffer and save
-    const filename = 'fontAssets.zip';
-    const destPath = path.join(outputDir, filename);
+    console.log(`📦 Split into ${batches.length} batch(es):`);
+    batches.forEach((batch, idx) => {
+      console.log(`   Batch ${idx + 1}: ${batch.totalCount} fonts (sets: ${batch.setIndices.map(i => setCounts[i].name).join(', ')})`);
+    });
+    console.log('');
+
+    // Step 3: Process each batch
+    const tempDir = path.join(os.tmpdir(), `font-batches-${Date.now()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+    console.log(`📁 Temp directory: ${tempDir}`);
+    console.log('');
+
+    const batchZipPaths = [];
 
     try {
-      const zipBuffer = Buffer.from(zipBase64, 'base64');
-      fs.writeFileSync(destPath, zipBuffer);
-    } catch (err) {
-      throw new Error(`Failed to decode or save ZIP data: ${err.message}`);
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        const batchNum = i + 1;
+
+        console.log(`⏳ Processing batch ${batchNum}/${batches.length} (${batch.totalCount} fonts)...`);
+        console.log('─'.repeat(60));
+
+        // Generate fonts for this batch
+        const batchSpec = { fontSets: batch.fontSets };
+        const zipBase64 = await page.evaluate(async ({ spec, includeFullMetrics }) => {
+          return await window.buildAndExportFonts(spec, {
+            includeNonMinifiedMetrics: includeFullMetrics
+          });
+        }, { spec: batchSpec, includeFullMetrics: config.includeFullMetrics });
+
+        // Validate received data
+        if (!zipBase64 || typeof zipBase64 !== 'string') {
+          throw new Error(`Batch ${batchNum} failed: No ZIP data received from browser`);
+        }
+
+        // Save batch ZIP to temp
+        const batchPath = path.join(tempDir, `batch-${batchNum}.zip`);
+        const zipBuffer = Buffer.from(zipBase64, 'base64');
+        fs.writeFileSync(batchPath, zipBuffer);
+        batchZipPaths.push(batchPath);
+
+        const batchSizeKB = (zipBuffer.length / 1024).toFixed(1);
+        console.log('');
+        console.log(`✅ Batch ${batchNum} saved: ${batchSizeKB} KB`);
+
+        // Reload page for memory cleanup (unless last batch)
+        if (i < batches.length - 1) {
+          console.log(`🔄 Reloading page for memory cleanup...`);
+          await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+          await page.waitForTimeout(500);  // Wait for page ready
+          console.log('');
+        }
+      }
+
+      console.log('');
+      console.log('─'.repeat(60));
+
+      // Step 4: Merge all batch ZIPs into final fontAssets.zip
+      const filename = 'fontAssets.zip';
+      const destPath = path.join(outputDir, filename);
+
+      if (batchZipPaths.length === 1) {
+        // Single batch - just copy it
+        console.log('📦 Single batch - copying to output...');
+        fs.copyFileSync(batchZipPaths[0], destPath);
+      } else {
+        // Multiple batches - merge them
+        mergeZips(batchZipPaths, destPath);
+      }
+
+      // Get file stats
+      const stats = fs.statSync(destPath);
+      const sizeKB = Math.round(stats.size / 1024);
+
+      console.log('');
+      console.log('─'.repeat(60));
+      console.log('✅ Font assets generated successfully!');
+      console.log('');
+      console.log(`📁 Output: ${destPath}`);
+      console.log(`📊 Size: ${sizeKB} KB`);
+      console.log(`📦 Total fonts: ${totalFonts}`);
+      console.log(`📋 Batches processed: ${batches.length}`);
+      console.log('');
+      console.log('Next steps:');
+      console.log('  1. Extract the ZIP file');
+      console.log('  2. Process with: ./scripts/watch-font-assets.sh');
+      console.log('     (converts QOI→PNG→WebP, optimizes, creates JS wrappers)');
+      console.log('');
+
+    } finally {
+      // Clean up temp directory
+      if (fs.existsSync(tempDir)) {
+        console.log('🧹 Cleaning up temporary files...');
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
     }
-
-    // Get file stats
-    const stats = fs.statSync(destPath);
-    const sizeKB = Math.round(stats.size / 1024);
-
-    console.log('');
-    console.log('─'.repeat(60));
-    console.log('✅ Font assets generated successfully!');
-    console.log('');
-    console.log(`📁 Output: ${destPath}`);
-    console.log(`📊 Size: ${sizeKB} KB`);
-    console.log('');
-    console.log('Next steps:');
-    console.log('  1. Extract the ZIP file');
-    console.log('  2. Process with: ./scripts/watch-font-assets.sh');
-    console.log('     (converts QOI→PNG→WebP, optimizes, creates JS wrappers)');
-    console.log('');
 
   } catch (error) {
     console.error('');
