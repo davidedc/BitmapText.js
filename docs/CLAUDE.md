@@ -111,6 +111,8 @@
   - **Automated builder page**: public/automated-font-builder.html (stripped-down builder page for automation, no UI)
   - **Automated builder orchestration**: src/automation/automated-builder.js (browser-side orchestration for automated font building)
   - **Automated hash generation**: scripts/generate-reference-hashes.js (Playwright script for reference hash generation from JSON specs)
+  - **Automated hash verification**: scripts/verify-reference-hashes.js (Playwright script for verifying hashes against reference for CI/CD)
+  - **Hash utilities**: scripts/hash-utils.js (shared utilities for hash generation and verification - HTTP server, spec loading, hash parsing)
   - **Automated hash generator page**: public/automated-hash-generator.html (hash generation page for automation, no UI)
   - **Automated hash generator orchestration**: src/automation/automated-hash-generator.js (browser-side orchestration for hash generation)
   - **Reference hash database**: test/data/reference-hashes.js (auto-generated reference hashes for regression testing)

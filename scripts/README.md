@@ -500,7 +500,7 @@ npm install  # Installs Playwright from package.json devDependencies
 🎨 Canvas: 300×100 (CSS: 300px×100px)
 ```
 
-**See also:** `docs/PLAYWRIGHT_AUTOMATION.md` for detailed documentation on Playwright automation (screenshots, font generation, hash generation).
+**See also:** `docs/PLAYWRIGHT_AUTOMATION.md` for detailed documentation on Playwright automation (screenshots, font generation, hash generation, hash verification).
 
 ### 12. Automated Font Builder Script
 ```bash
@@ -677,6 +677,189 @@ When `--merge` flag is used:
 **Related files:**
 - `public/automated-hash-generator.html` - Hash generation page (no UI)
 - `src/automation/automated-hash-generator.js` - Browser-side orchestration
+- `scripts/hash-utils.js` - Shared utilities (HTTP server, spec loading, hash parsing)
+- `test/data/reference-hashes.js` - Reference hash database
+- `test/utils/test-copy.js` - Test text definitions (3 variants)
+
+---
+
+### 14. Reference Hash Verification Script
+```bash
+node scripts/verify-reference-hashes.js --spec=<path-to-spec.json> [options]
+```
+
+**Options:**
+- `--spec <file>` - Font set specification JSON file (required)
+- `--hashes <file>` - Reference hash file (default: `test/data/reference-hashes.js`)
+- `--port <port>` - HTTP server port (default: 8765)
+- `--verbose` - Show all fonts, not just mismatches
+- `--ci` - CI mode: minimal output, exit code only
+- `--fail-fast` - Exit on first mismatch
+- `--filter <types>` - Comma-separated hash types to check (e.g., "atlas,tight atlas")
+- `--json` - Output results as JSON
+
+**Examples:**
+```bash
+# Basic verification
+node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+
+# CI mode (minimal output, proper exit codes)
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --ci
+
+# Verbose mode (show all fonts, not just failures)
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --verbose
+
+# JSON output for programmatic parsing
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --json > report.json
+
+# Custom reference hash file
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --hashes=./my-hashes.js
+
+# Filter specific hash types
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --filter="atlas,tight atlas"
+
+# Fail fast on first mismatch
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --fail-fast
+```
+
+**What it does:**
+- Loads font set specification from JSON
+- Launches headless WebKit browser
+- Generates hashes for all font configurations
+- Compares generated hashes against reference file (`test/data/reference-hashes.js`)
+- Reports matches, mismatches, and missing hashes
+- Exits with appropriate code (0=pass, 1=fail, 2=error)
+
+**Prerequisites:**
+```bash
+npm install  # Installs Playwright from package.json devDependencies
+npx playwright install webkit  # Install WebKit browser binaries
+```
+
+**Exit Codes:**
+- **0**: All hashes match (success)
+- **1**: Hash mismatches found (failure)
+- **2**: Errors during execution (error)
+
+**Output Modes:**
+
+**Default Mode** - Shows summary and fonts with mismatches:
+```
+HASH VERIFICATION RESULTS
+────────────────────────────────────────────────────────────────────────────────
+
+Summary:
+  Total fonts checked: 4
+  Total hashes: 36
+  Matches: 36 (100.0%)
+
+────────────────────────────────────────────────────────────────────────────────
+✅ SUCCESS: All hashes match!
+────────────────────────────────────────────────────────────────────────────────
+```
+
+**Verbose Mode** (`--verbose`) - Shows all fonts including matches:
+```
+✅ PASS density-1-0-Arial-style-normal-weight-normal-size-18-0 (9 hashes)
+  ✓ Matches: 9
+
+❌ FAIL density-1-0-Arial-style-normal-weight-normal-size-20-0 (9 hashes)
+  ✗ Mismatches: 2
+    - atlas
+      Expected: 4dbd881
+      Actual:   5ecc992
+    - tight atlas
+      Expected: a801187
+      Actual:   b912298
+```
+
+**CI Mode** (`--ci`) - Minimal output for CI/CD pipelines:
+```
+============================================================
+HASH VERIFICATION RESULT
+============================================================
+Total fonts: 4
+Total hashes: 36
+Matches: 36
+Mismatches: 0
+============================================================
+✅ PASS: All hashes match
+```
+
+**JSON Mode** (`--json`) - Machine-readable output:
+```json
+{
+  "totalFonts": 4,
+  "totalHashes": 36,
+  "matches": 36,
+  "mismatches": 0,
+  "missingInReference": 0,
+  "missingInGenerated": 0,
+  "details": { ... }
+}
+```
+
+**When to use:**
+- CI/CD regression testing pipelines
+- Verifying font rendering after code changes
+- Validating font asset generation consistency
+- Automated quality assurance
+- Cross-environment rendering verification
+
+**Use Cases:**
+
+**1. CI/CD Integration**
+```yaml
+# GitHub Actions example
+steps:
+  - name: Install dependencies
+    run: npm install
+
+  - name: Install Playwright
+    run: npx playwright install webkit
+
+  - name: Verify font hashes
+    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --ci
+
+  - name: Upload report on failure
+    if: failure()
+    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --json > hash-report.json
+
+  - uses: actions/upload-artifact@v3
+    if: failure()
+    with:
+      name: hash-verification-report
+      path: hash-report.json
+```
+
+**2. Development Workflow**
+```bash
+# After making font rendering changes, verify no regressions:
+node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json --verbose
+
+# If intentional changes detected, regenerate reference hashes:
+node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+```
+
+**3. Subset Verification**
+```bash
+# Verify only atlas hashes (skip text rendering)
+node scripts/verify-reference-hashes.js \
+  --spec=my-fonts.json \
+  --filter="atlas,tight atlas" \
+  --verbose
+```
+
+**Comparison Results:**
+- **Matches**: Generated hash equals reference hash (expected)
+- **Mismatches**: Generated hash differs from reference (regression detected)
+- **Missing in reference**: Hash exists in generated but not in reference file (new font)
+- **Missing in generated**: Hash exists in reference but not in generated (font removed)
+
+**Related files:**
+- `scripts/hash-utils.js` - Shared utilities (HTTP server, spec loading, hash parsing)
+- `public/automated-hash-generator.html` - Hash generation page (no UI)
+- `src/automation/automated-hash-generator.js` - Browser-side orchestration
 - `test/data/reference-hashes.js` - Reference hash database
 - `test/utils/test-copy.js` - Test text definitions (3 variants)
 
@@ -704,6 +887,8 @@ scripts/
 ├── screenshot-with-playwright.js # Automated browser screenshot capture
 ├── automated-font-builder.js     # Automated font generation from JSON specs
 ├── generate-reference-hashes.js  # Automated reference hash generation
+├── verify-reference-hashes.js    # Automated reference hash verification
+├── hash-utils.js                 # Shared utilities for hash scripts
 ├── test-pipeline.sh              # One-time pipeline test
 └── README.md                     # This file
 

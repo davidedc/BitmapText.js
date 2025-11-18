@@ -32,35 +32,23 @@
  */
 
 const { webkit } = require('playwright');
-const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const {
+  parseArgs,
+  startServer,
+  loadFontSpec,
+  parseReferenceHashFile,
+  calculateFontCount
+} = require('./hash-utils');
 
 // Parse command line arguments
-const args = process.argv.slice(2);
-function getArg(name, defaultValue) {
-  const index = args.indexOf(`--${name}`);
-  if (index !== -1 && args[index + 1]) {
-    return args[index + 1];
-  }
-
-  // Also check --name=value format
-  const prefixArg = args.find(arg => arg.startsWith(`--${name}=`));
-  if (prefixArg) {
-    return prefixArg.split('=')[1];
-  }
-
-  return defaultValue;
-}
-function hasFlag(name) {
-  return args.includes(`--${name}`);
-}
-
+const argParser = parseArgs(process.argv);
 const config = {
-  specFile: getArg('spec', null),
-  outputFile: getArg('output', './test/data/reference-hashes.js'),
-  port: parseInt(getArg('port', '8765')),
-  merge: hasFlag('merge')
+  specFile: argParser.getArg('spec', null),
+  outputFile: argParser.getArg('output', './test/data/reference-hashes.js'),
+  port: parseInt(argParser.getArg('port', '8765')),
+  merge: argParser.hasFlag('merge')
 };
 
 // Validate required arguments
@@ -73,62 +61,6 @@ if (!config.specFile) {
   console.error('Example:');
   console.error('  node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json');
   process.exit(1);
-}
-
-// Simple HTTP server
-function startServer(port, rootDir) {
-  return new Promise((resolve, reject) => {
-    const server = http.createServer((req, res) => {
-      // Parse URL and handle query strings
-      const url = new URL(req.url, `http://localhost:${port}`);
-      let filePath = path.join(rootDir, url.pathname);
-
-      // Default to index.html for directories
-      if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
-        filePath = path.join(filePath, 'index.html');
-      }
-
-      // Read and serve file
-      fs.readFile(filePath, (err, data) => {
-        if (err) {
-          res.writeHead(404, { 'Content-Type': 'text/plain' });
-          res.end('Not found: ' + url.pathname);
-          return;
-        }
-
-        // Set content type based on file extension
-        const ext = path.extname(filePath);
-        const contentTypes = {
-          '.html': 'text/html',
-          '.js': 'application/javascript',
-          '.css': 'text/css',
-          '.json': 'application/json',
-          '.png': 'image/png',
-          '.jpg': 'image/jpeg',
-          '.webp': 'image/webp',
-          '.qoi': 'application/octet-stream'
-        };
-        const contentType = contentTypes[ext] || 'application/octet-stream';
-
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(data);
-      });
-    });
-
-    server.listen(port, () => {
-      console.log(`✅ HTTP server started on http://localhost:${port}`);
-      resolve(server);
-    });
-
-    server.on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.log(`⚠️  Port ${port} is already in use, assuming server is running...`);
-        resolve(null); // Server already running, continue anyway
-      } else {
-        reject(err);
-      }
-    });
-  });
 }
 
 /**
@@ -205,26 +137,8 @@ function mergeWithExistingHashes(filePath, newHashes) {
   console.log('📖 Reading existing hashes...');
 
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
-
-    // Extract hash object using regex
-    const match = content.match(/const storedReferenceCrispTextRendersHashes = \{([^}]*)\}/s);
-
-    if (!match) {
-      console.warn('⚠️  Could not parse existing hash file, overwriting');
-      return newHashes;
-    }
-
-    const hashBlock = match[1];
-    const existingHashes = {};
-
-    // Parse each hash entry
-    const hashRegex = /"([^"]+)":"([^"]+)"/g;
-    let hashMatch;
-
-    while ((hashMatch = hashRegex.exec(hashBlock)) !== null) {
-      existingHashes[hashMatch[1]] = hashMatch[2];
-    }
+    // Use shared utility to parse hash file
+    const existingHashes = parseReferenceHashFile(filePath);
 
     console.log(`✅ Loaded ${Object.keys(existingHashes).length} existing hashes`);
 
@@ -263,25 +177,12 @@ async function generateHashes() {
 
     // Load and validate font spec
     console.log('📄 Loading font specification...');
-    const specPath = path.resolve(config.specFile);
-    if (!fs.existsSync(specPath)) {
-      throw new Error(`Font specification file not found: ${specPath}`);
-    }
+    const fontSpec = loadFontSpec(config.specFile);
+    const fontCount = calculateFontCount(fontSpec);
 
-    const specContent = fs.readFileSync(specPath, 'utf8');
-    let fontSpec;
-    try {
-      fontSpec = JSON.parse(specContent);
-    } catch (e) {
-      throw new Error(`Invalid JSON in font specification: ${e.message}`);
-    }
-
-    if (!fontSpec.fontSets || !Array.isArray(fontSpec.fontSets)) {
-      throw new Error('Font specification must contain a "fontSets" array');
-    }
-
-    console.log(`✅ Loaded specification from: ${specPath}`);
+    console.log(`✅ Loaded specification from: ${config.specFile}`);
     console.log(`   Sets: ${fontSpec.fontSets.length}`);
+    console.log(`   Font configurations: ${fontCount}`);
     console.log('');
 
     // Determine output file path
@@ -390,18 +291,7 @@ async function generateHashes() {
     console.log('');
     console.log('💾 Formatting and saving...');
 
-    // Calculate font count from spec
-    let fontCount = 0;
-    for (const set of fontSpec.fontSets) {
-      const densities = Array.isArray(set.density) ? set.density.length : 1;
-      const families = Array.isArray(set.families) ? set.families.length : 1;
-      const styles = Array.isArray(set.styles) ? set.styles.length : 1;
-      const weights = Array.isArray(set.weights) ? set.weights.length : 1;
-      const sizes = Array.isArray(set.sizes) ? set.sizes.length : 1;
-      fontCount += densities * families * styles * weights * sizes;
-    }
-
-    // Format as JavaScript
+    // Format as JavaScript (using fontCount calculated earlier)
     const output = formatHashesForOutput(finalHashes, {
       specFile: config.specFile,
       fontCount: fontCount

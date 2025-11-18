@@ -4,13 +4,14 @@ This document describes automated browser-based workflows using Playwright for t
 
 ## Overview
 
-The project uses Playwright for three main automation workflows:
+The project uses Playwright for four main automation workflows:
 
 1. **📸 Screenshot Capture** - Automated visual verification of Canvas rendering
 2. **🔠 Font Asset Generation** - Batch generation of bitmap fonts from JSON specifications
 3. **🔐 Reference Hash Generation** - Automated generation of test fixtures for regression testing
+4. **✅ Reference Hash Verification** - Automated verification of font hashes for CI/CD regression testing
 
-All three systems share common infrastructure (HTTP server, headless browser, progress reporting) and can be used independently or as part of CI/CD pipelines.
+All four systems share common infrastructure (HTTP server, headless browser, progress reporting) and can be used independently or as part of CI/CD pipelines.
 
 ---
 
@@ -303,6 +304,161 @@ For each font configuration, generates:
 
 ---
 
+## 4. Automated Hash Verification
+
+### Description
+Automated verification of font rendering hashes against reference hashes for regression testing. The system generates hashes for a font set and compares them against saved reference hashes to detect rendering changes.
+
+### Implementation
+**File**: `scripts/verify-reference-hashes.js`
+
+**Features:**
+- Loads font set specifications from JSON
+- Launches headless WebKit browser
+- Generates hashes for all font configurations
+- Compares generated hashes against reference file
+- Multiple output modes (default, verbose, CI, JSON)
+- Detailed font-by-font comparison reporting
+- Filter option to check specific hash types
+- Proper exit codes for CI/CD integration (0=pass, 1=fail, 2=error)
+
+### Usage
+
+```bash
+# Basic usage
+node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+
+# CI mode (minimal output, exit code only)
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --ci
+
+# Verbose mode (shows all fonts, not just mismatches)
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --verbose
+
+# JSON output for programmatic parsing
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --json > report.json
+
+# Custom reference hash file
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --hashes=./my-hashes.js
+
+# Filter specific hash types
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --filter="atlas,tight atlas"
+
+# Fail fast on first mismatch
+node scripts/verify-reference-hashes.js --spec=my-fonts.json --fail-fast
+```
+
+**Options:**
+- `--spec <file>` - Font set specification JSON file (required)
+- `--hashes <file>` - Reference hash file (default: `test/data/reference-hashes.js`)
+- `--port <port>` - HTTP server port (default: 8765)
+- `--verbose` - Show all fonts, not just mismatches
+- `--ci` - CI mode: minimal output, exit code only
+- `--fail-fast` - Exit on first mismatch
+- `--filter <types>` - Comma-separated hash types to check (e.g., "atlas,tight atlas")
+- `--json` - Output results as JSON
+
+### Exit Codes
+- **0**: All hashes match (success)
+- **1**: Hash mismatches found (failure)
+- **2**: Errors during execution (error)
+
+### Output Modes
+
+#### Default Mode
+Shows summary statistics and fonts with mismatches:
+```
+HASH VERIFICATION RESULTS
+────────────────────────────────────────────────────────────────────────────────
+
+Summary:
+  Total fonts checked: 4
+  Total hashes: 36
+  Matches: 36 (100.0%)
+
+────────────────────────────────────────────────────────────────────────────────
+✅ SUCCESS: All hashes match!
+────────────────────────────────────────────────────────────────────────────────
+```
+
+#### Verbose Mode
+Shows all fonts including matches:
+```
+✅ PASS density-1-0-Arial-style-normal-weight-normal-size-18-0 (9 hashes)
+  ✓ Matches: 9
+
+❌ FAIL density-1-0-Arial-style-normal-weight-normal-size-20-0 (9 hashes)
+  ✗ Mismatches: 2
+    - atlas
+      Expected: 4dbd881
+      Actual:   5ecc992
+    - tight atlas
+      Expected: a801187
+      Actual:   b912298
+```
+
+#### CI Mode
+Minimal output suitable for CI/CD pipelines:
+```
+============================================================
+HASH VERIFICATION RESULT
+============================================================
+Total fonts: 4
+Total hashes: 36
+Matches: 36
+Mismatches: 0
+============================================================
+✅ PASS: All hashes match
+```
+
+#### JSON Mode
+Machine-readable output for programmatic parsing:
+```json
+{
+  "totalFonts": 4,
+  "totalHashes": 36,
+  "matches": 36,
+  "mismatches": 0,
+  "missingInReference": 0,
+  "missingInGenerated": 0,
+  "details": { ... }
+}
+```
+
+### Use Cases
+- CI/CD regression testing pipelines
+- Verifying font rendering after code changes
+- Validating font asset generation consistency
+- Automated quality assurance
+- Cross-environment rendering verification
+
+### CI/CD Integration
+**Example GitHub Actions workflow:**
+```yaml
+steps:
+  - name: Install dependencies
+    run: npm install
+
+  - name: Install Playwright browsers
+    run: npx playwright install webkit
+
+  - name: Verify font hashes
+    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --ci
+
+  - name: Upload report on failure
+    if: failure()
+    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --json > hash-report.json
+
+  - uses: actions/upload-artifact@v3
+    if: failure()
+    with:
+      name: hash-verification-report
+      path: hash-report.json
+```
+
+**For detailed documentation**, see `scripts/README.md` section 14.
+
+---
+
 ## Common Setup
 
 ### Installation
@@ -384,6 +540,8 @@ const page = await browser.newPage();
 - `scripts/screenshot-with-playwright.js` - Screenshot capture
 - `scripts/automated-font-builder.js` - Font asset generation
 - `scripts/generate-reference-hashes.js` - Reference hash generation
+- `scripts/verify-reference-hashes.js` - Reference hash verification
+- `scripts/hash-utils.js` - Shared utilities for hash scripts
 
 ### Automation Pages (Headless)
 - `public/automated-font-builder.html` - Font generation page (no UI)
