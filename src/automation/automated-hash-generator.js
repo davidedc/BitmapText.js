@@ -28,6 +28,14 @@ async function buildFont(fontProperties) {
 
   // Build kerning table
   BitmapTextFAB.buildKerningTableIfDoesntExist(fontProperties);
+
+  // Clean up DOM canvases to prevent WebKit memory exhaustion
+  // Remove canvases from DOM but preserve data for hash calculations
+  // Canvas data persists in GlyphFAB instances (this.tightCanvas, this.canvasCopy)
+  const canvases = document.querySelectorAll('canvas');
+  canvases.forEach(c => {
+    c.remove();  // Remove from DOM but keep data intact
+  });
 }
 
 /**
