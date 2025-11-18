@@ -21,7 +21,7 @@
  *   --output <dir>       Output directory (default: ./font-assets-output)
  *   --port <port>        HTTP server port (default: 8765)
  *   --include-full       Include non-minified metrics (default: false)
- *   --batch-size <n>     Max fonts per batch for memory management (default: 144)
+ *   --batch-size <n>     Max fonts per batch for memory management (default: 72)
  *
  * Examples:
  *   node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
@@ -64,7 +64,7 @@ const config = {
   outputDir: getArg('output', './automatically-generated-font-assets'),
   port: parseInt(getArg('port', '8765')),
   includeFullMetrics: hasFlag('include-full'),
-  batchSize: parseInt(getArg('batch-size', '72'))  // Reduced from 144 to avoid canvas/memory issues
+  batchSize: parseInt(getArg('batch-size', '72'))
 };
 
 // Validate required arguments
