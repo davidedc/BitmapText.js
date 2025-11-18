@@ -42,6 +42,14 @@ async function buildFont(fontProperties) {
   // This calculates kerning adjustments for character pairs
   BitmapTextFAB.buildKerningTableIfDoesntExist(fontProperties);
 
+  // 3. Clean up DOM canvases to prevent WebKit memory exhaustion
+  // Remove canvases from DOM but preserve dimensions/data for later export
+  // Canvas data persists in GlyphFAB instances (this.tightCanvas, this.canvasCopy)
+  const canvases = document.querySelectorAll('canvas');
+  canvases.forEach(c => {
+    c.remove();  // Remove from DOM but keep data intact
+  });
+
   const duration = (performance.now() - startTime).toFixed(0);
   console.log(`✓ Built ${fontProperties.idString} in ${duration}ms`);
 }

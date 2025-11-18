@@ -296,7 +296,8 @@ function downloadFontAssets(options) {
 
           // In browser UI context with FileSaver available, trigger download
           // Note: Always return base64 even if we also trigger download
-          if (typeof saveAs === 'function') {
+          // Don't trigger download in automation mode to avoid page reload conflicts
+          if (typeof saveAs === 'function' && !isAutomationMode) {
               // Convert base64 back to blob for FileSaver
               const byteCharacters = atob(base64Content);
               const byteNumbers = new Array(byteCharacters.length);
