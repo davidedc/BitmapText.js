@@ -9,10 +9,15 @@
 // - Reconstructs tight atlas + positioning data from atlas image
 //
 // ARCHITECTURE:
-// - Takes atlas image (variable-width cells) and FontMetrics
+// - Takes atlas image (square-ish grid layout) and FontMetrics
 // - Scans each character cell to find tight bounding box
-// - Repacks into tight atlas
+// - Repacks into tight atlas (single row)
 // - Calculates positioning data (dx, dy) using EXACT formulas from AtlasPositioningFAB
+//
+// GRID LAYOUT:
+// - Input atlas: Grid dimensions: ceil(sqrt(N)) columns (matches AtlasBuilder)
+// - Characters arranged: row = floor(charIndex / columns), col = charIndex % columns
+// - Output tight atlas: Single row (backward compatible)
 //
 // CRITICAL REQUIREMENTS:
 // - MUST use sorted character order (same as AtlasBuilder)
@@ -64,28 +69,62 @@ class TightAtlasReconstructor {
 
     console.debug(`🔍 TightAtlasReconstructor: pixelDensity=${pixelDensity}, height_CssPx=${height_CssPx}, cellHeight_PhysPx=${cellHeight_PhysPx}`);
 
-    // 4. Scan each cell to find tight bounds within the atlas cell
-    let cellX_PhysPx = 0;
-    const tightBounds = {};
-    const cellDebugInfo = []; // Track first 5 chars for debugging
+    // 4. Calculate optimal grid dimensions based on character count (must match AtlasBuilder)
+    const gridDims = BitmapText.calculateOptimalGridDimensions(characters.length);
+    const GRID_COLUMNS = gridDims.columns;
+    const GRID_ROWS = gridDims.rows;
 
-    for (const char of characters) {
+    // 5. Calculate grid layout (matching AtlasBuilder)
+    // First pass: Calculate cell widths and column max widths
+    const cellWidths_PhysPx = [];
+    const columnMaxWidths_PhysPx = new Array(GRID_COLUMNS).fill(0);
+
+    for (let charIndex = 0; charIndex < characters.length; charIndex++) {
+      const char = characters[charIndex];
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
       // Cell width is variable per character (scale CSS pixels to physical pixels)
       const width_CssPx = AtlasCellDimensions.getWidth(charMetrics);
       const cellWidth_PhysPx = Math.round(width_CssPx * pixelDensity);
 
+      cellWidths_PhysPx[charIndex] = cellWidth_PhysPx;
+
+      // Track maximum width for this column
+      const col = charIndex % GRID_COLUMNS;
+      columnMaxWidths_PhysPx[col] = Math.max(columnMaxWidths_PhysPx[col], cellWidth_PhysPx);
+    }
+
+    // Calculate column X positions (cumulative sum of max widths)
+    const columnXPositions_PhysPx = [0];
+    for (let col = 0; col < GRID_COLUMNS - 1; col++) {
+      columnXPositions_PhysPx.push(columnXPositions_PhysPx[col] + columnMaxWidths_PhysPx[col]);
+    }
+
+    // 6. Scan each cell to find tight bounds within the atlas cell (grid layout)
+    const tightBounds = {};
+    const cellDebugInfo = []; // Track first 5 chars for debugging
+
+    for (let charIndex = 0; charIndex < characters.length; charIndex++) {
+      const char = characters[charIndex];
+      const cellWidth_PhysPx = cellWidths_PhysPx[charIndex];
+
+      // Calculate grid position
+      const col = charIndex % GRID_COLUMNS;
+      const row = Math.floor(charIndex / GRID_COLUMNS);
+
+      const cellX_PhysPx = columnXPositions_PhysPx[col];
+      const cellY_PhysPx = row * cellHeight_PhysPx;
+
       // Debug first few characters
       if (cellDebugInfo.length < 5) {
-        cellDebugInfo.push(`${char}:css=${width_CssPx},phys=${cellWidth_PhysPx},x=${cellX_PhysPx}`);
+        cellDebugInfo.push(`${char}:w=${cellWidth_PhysPx},r=${row},c=${col},x=${cellX_PhysPx},y=${cellY_PhysPx}`);
       }
 
       // Find tight bounds within this cell using 4-step optimized algorithm
       const bounds = this.findTightBounds(
         imageData,
         cellX_PhysPx,
-        0,
+        cellY_PhysPx,
         cellWidth_PhysPx,
         cellHeight_PhysPx
       );
@@ -93,20 +132,21 @@ class TightAtlasReconstructor {
       if (bounds) {
         tightBounds[char] = bounds;
       }
-
-      cellX_PhysPx += cellWidth_PhysPx;
     }
 
-    console.debug(`🔍 Cell dimensions (first 5): ${cellDebugInfo.join(', ')}`);
+    console.debug(`🔍 Cell dimensions (first 5): ${cellDebugInfo.join(', ')} [Grid: ${GRID_COLUMNS}×${GRID_ROWS}]`);
 
-    // 5. Repack into tight atlas with positioning data
+    // 7. Repack into tight atlas with positioning data
     return this.packTightAtlas(
       fontMetrics,
       tightBounds,
       characters,
       atlasImage,
       pixelDensity,
-      cellHeight_PhysPx
+      cellHeight_PhysPx,
+      cellWidths_PhysPx,
+      columnXPositions_PhysPx,
+      GRID_COLUMNS
     );
   }
 
@@ -209,9 +249,12 @@ class TightAtlasReconstructor {
    * @param {Image|Canvas} sourceAtlasImage - Source Atlas image for extraction
    * @param {number} pixelDensity - Pixel density multiplier for positioning calculations
    * @param {number} cellHeight_PhysPx - Cell height in physical pixels (for distanceBetweenBottomAndBottomOfCanvas calculation)
+   * @param {Array<number>} cellWidths_PhysPx - Width of each character cell in physical pixels
+   * @param {Array<number>} columnXPositions_PhysPx - X position of each column in grid
+   * @param {number} GRID_COLUMNS - Number of columns in grid layout (for calculating row/col from charIndex)
    * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
    */
-  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx) {
+  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx, cellWidths_PhysPx, columnXPositions_PhysPx, GRID_COLUMNS) {
     // Calculate tight atlas dimensions (all in physical pixels)
     let totalWidth_PhysPx = 0;
     let maxHeight_PhysPx = 0;
@@ -236,25 +279,26 @@ class TightAtlasReconstructor {
       tightHeight: {},
       dx: {},
       dy: {},
-      xInAtlas: {}
+      xInAtlas: {},
+      yInAtlas: {}
     };
 
     // Extract and pack each tight glyph
-    let cellX_PhysPx = 0;
-
-    for (const char of characters) {
+    for (let charIndex = 0; charIndex < characters.length; charIndex++) {
+      const char = characters[charIndex];
       const charMetrics = fontMetrics.getCharacterMetrics(char);
 
-      // Calculate cell width in physical pixels (CSS pixels * pixelDensity)
-      // MUST be calculated for ALL characters to track cellX_PhysPx correctly
-      const width_CssPx = AtlasCellDimensions.getWidth(charMetrics);
-      const cellWidth_PhysPx = Math.round(width_CssPx * pixelDensity);
-      // cellHeight_PhysPx is passed as parameter (already in physical pixels)
+      // Calculate grid position for source atlas
+      const col = charIndex % GRID_COLUMNS;
+      const row = Math.floor(charIndex / GRID_COLUMNS);
+
+      const cellX_PhysPx = columnXPositions_PhysPx[col];
+      const cellY_PhysPx = row * cellHeight_PhysPx;
+      const cellWidth_PhysPx = cellWidths_PhysPx[charIndex];
 
       const bounds = tightBounds[char];
       if (!bounds) {
-        // No visible pixels, but still need to advance cellX_PhysPx for next character
-        cellX_PhysPx += cellWidth_PhysPx;
+        // No visible pixels, skip to next character
         continue;
       }
 
@@ -264,9 +308,9 @@ class TightAtlasReconstructor {
       tempCanvas.height = bounds.height;
       const tempCtx = tempCanvas.getContext('2d');
 
-      // Copy tight region from atlas to temp canvas
+      // Copy tight region from atlas to temp canvas (using grid position)
       const srcX_PhysPx = Math.floor(cellX_PhysPx + bounds.left);
-      const srcY_PhysPx = Math.floor(bounds.top);
+      const srcY_PhysPx = Math.floor(cellY_PhysPx + bounds.top);
       const srcWidth_PhysPx = Math.floor(bounds.width);
       const srcHeight_PhysPx = Math.floor(bounds.height);
 
@@ -331,6 +375,7 @@ class TightAtlasReconstructor {
       positioning.tightWidth[char] = bounds.width;    // Physical pixels
       positioning.tightHeight[char] = bounds.height;  // Physical pixels
       positioning.xInAtlas[char] = xInTightAtlas_PhysPx;  // Physical pixels
+      positioning.yInAtlas[char] = 0;  // Tight atlas is single row
 
       // EXACT dx formula from AtlasPositioningFAB.js:91 (physical pixels)
       positioning.dx[char] =
@@ -344,7 +389,6 @@ class TightAtlasReconstructor {
         + 1 * pixelDensity;
 
       xInTightAtlas_PhysPx += bounds.width;
-      cellX_PhysPx += cellWidth_PhysPx;
     }
 
     // Create domain objects

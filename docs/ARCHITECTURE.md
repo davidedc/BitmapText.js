@@ -225,10 +225,11 @@ BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
     - `_tightHeight`: Glyph height
     - `_dx`, `_dy`: Position offsets relative to text cursor
     - `_xInAtlas`: Horizontal positions in atlas
+    - `_yInAtlas`: Vertical positions in atlas
   - Current Export Format:
     - NO positioning data serialized (100% reconstruction at runtime)
-    - All 5 properties reconstructed by TightAtlasReconstructor from Atlas image
-    - Atlas format (variable-width cells) provides all information needed for reconstruction
+    - All 6 properties reconstructed by TightAtlasReconstructor from Atlas image
+    - Atlas format (variable-width cells in grid layout) provides all information needed for reconstruction
     - Reconstruction uses pixel scanning + FontMetrics for cell dimensions
     - All positioning data stored in memory for O(1) access during rendering
   - Methods:
@@ -533,12 +534,15 @@ To support compound emojis would require:
   **AtlasBuilder**
   - Builds atlases from glyph canvases (variable-width cells format)
   - Uses variable-width cells (actualBoundingBox) × constant height (fontBoundingBox)
+  - Grid layout with dynamic dimensions calculated from character count (sqrt-based for square-ish shape)
+  - Grid prevents exceeding WebP 16,384px dimension limit for large fonts at high pixel densities
   - Maintains sorted character order for determinism
   - Used by font-assets-builder.html to generate atlas source for reconstruction
   - API: `buildAtlas(fontMetrics, glyphs)` - fontMetrics first for consistency
 
   **TightAtlasReconstructor**
   - Runtime class for reconstructing tight atlases from Atlas format via pixel scanning
+  - Scans grid-layout atlas cells to extract tight glyph bounds
   - Uses 4-step optimized tight bounds detection (bottom→top, top→bottom, left→right, right→left)
   - Calculates positioning data using exact formulas from AtlasPositioningFAB
   - Integrated into FontLoader for automatic Atlas → Tight Atlas conversion at load time

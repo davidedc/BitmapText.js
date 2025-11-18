@@ -36,10 +36,11 @@ class AtlasPositioning {
     this._tightHeight = data.tightHeight || {};
     this._dx = data.dx || {};
     this._dy = data.dy || {};
-    // NOTE: xInAtlas is reconstructed from tightWidth during deserialization (not serialized to reduce file size)
+    // NOTE: xInAtlas and yInAtlas are reconstructed from tightWidth during deserialization (not serialized to reduce file size)
     // At build time: populated by AtlasPositioningFAB during atlas packing
     // At runtime: reconstructed by TightAtlasReconstructor during atlas loading
     this._xInAtlas = data.xInAtlas || {};
+    this._yInAtlas = data.yInAtlas || {};
 
     // Freeze for immutability (safe to use as value object)
     // Skip freezing if this is for font assets building (FAB)
@@ -49,6 +50,7 @@ class AtlasPositioning {
       Object.freeze(this._dx);
       Object.freeze(this._dy);
       Object.freeze(this._xInAtlas);
+      Object.freeze(this._yInAtlas);
       Object.freeze(this);
     }
   }
@@ -56,11 +58,12 @@ class AtlasPositioning {
   /**
    * Get positioning metrics for glyph rendering from atlas
    * @param {string} char - Character (code point) to get positioning for
-   * @returns {Object} Object with xInAtlas, tightWidth, tightHeight, dx, dy
+   * @returns {Object} Object with xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy
    */
   getPositioning(char) {
     return {
       xInAtlas: this._xInAtlas[char],
+      yInAtlas: this._yInAtlas[char],
       tightWidth: this._tightWidth[char],
       tightHeight: this._tightHeight[char],
       dx: this._dx[char],
@@ -75,17 +78,19 @@ class AtlasPositioning {
    */
   hasPositioning(char) {
     return this._xInAtlas[char] !== undefined &&
+           this._yInAtlas[char] !== undefined &&
            this._tightWidth[char] !== undefined &&
            this._tightHeight[char] !== undefined;
   }
 
   /**
-   * Check if atlas position (xInAtlas) exists for a character
+   * Check if atlas position (xInAtlas, yInAtlas) exists for a character
    * @param {string} char - Character (code point) to check
    * @returns {boolean} True if atlas position exists
    */
   hasAtlasPosition(char) {
-    return this._xInAtlas[char] !== undefined;
+    return this._xInAtlas[char] !== undefined &&
+           this._yInAtlas[char] !== undefined;
   }
 
   /**
@@ -121,6 +126,15 @@ class AtlasPositioning {
    */
   getXInAtlas(char) {
     return this._xInAtlas[char];
+  }
+
+  /**
+   * Get Y position in atlas for a character
+   * @param {string} char - Character (code point) to get Y position for
+   * @returns {number|undefined} Y position in atlas or undefined if not found
+   */
+  getYInAtlas(char) {
+    return this._yInAtlas[char];
   }
 
   /**
@@ -161,7 +175,8 @@ class AtlasPositioning {
         `h${pos.tightHeight}` +
         `x${pos.dx}` +
         `y${pos.dy}` +
-        `a${pos.xInAtlas}`
+        `ax${pos.xInAtlas}` +
+        `ay${pos.yInAtlas}`
       );
     }
 

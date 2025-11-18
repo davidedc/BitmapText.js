@@ -67,6 +67,27 @@ class BitmapText {
   // ALL font files must contain exactly these 204 characters in this order.
   static CHARACTER_SET = BitmapText.#generateCharacterSet();
 
+  /**
+   * Calculate optimal grid dimensions for atlas layout
+   * Uses square-ish approach (ceil(sqrt(N))) to minimize max dimension
+   *
+   * For 204 characters: 15 columns × 14 rows (6 empty cells)
+   *
+   * @param {number} characterCount - Number of characters to arrange
+   * @returns {{columns: number, rows: number}} Grid dimensions
+   */
+  static calculateOptimalGridDimensions(characterCount) {
+    if (characterCount <= 0) {
+      throw new Error('BitmapText: Character count must be positive');
+    }
+
+    // Square-ish grid: minimizes max dimension while keeping layout simple
+    const columns = Math.ceil(Math.sqrt(characterCount));
+    const rows = Math.ceil(characterCount / columns);
+
+    return { columns, rows };
+  }
+
   // ============================================
   // Static Storage & Configuration
   // ============================================
@@ -984,12 +1005,12 @@ class BitmapText {
       if (currentChar !== ' ' && atlasData.hasPositioning(currentChar)) {
         const atlasPositioning = atlasData.atlasPositioning.getPositioning(currentChar);
         const atlasImage = atlasData.atlasImage.image;
-        const { xInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
+        const { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
 
         // Draw original glyph (black) to scratch canvas at correct position
         BitmapText.#coloredGlyphCtx.drawImage(
           atlasImage,
-          xInAtlas, 0,
+          xInAtlas, yInAtlas,
           tightWidth, tightHeight,
           Math.round(position_PhysPx.x + dx),
           Math.round(position_PhysPx.y + dy),
@@ -1067,7 +1088,7 @@ class BitmapText {
   }
 
   static #createColoredGlyph(atlasImage, atlasPositioning, textColor) {
-    const { xInAtlas, tightWidth, tightHeight } = atlasPositioning;
+    const { xInAtlas, yInAtlas, tightWidth, tightHeight } = atlasPositioning;
 
     // Setup temporary canvas, same size as the glyph
     BitmapText.#coloredGlyphCanvas.width = tightWidth;
@@ -1078,7 +1099,7 @@ class BitmapText {
     BitmapText.#coloredGlyphCtx.globalCompositeOperation = 'source-over';
     BitmapText.#coloredGlyphCtx.drawImage(
       atlasImage,
-      xInAtlas, 0,
+      xInAtlas, yInAtlas,
       tightWidth, tightHeight,
       0, 0,
       tightWidth, tightHeight
@@ -1119,7 +1140,7 @@ class BitmapText {
 
     const atlasPositioning = atlasData.atlasPositioning.getPositioning(char);
     const atlasImage = atlasData.atlasImage.image;
-    const { xInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
+    const { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
 
     // Single drawImage operation: atlas → main canvas
     // Round coordinates at draw stage for crisp, pixel-aligned rendering
@@ -1127,7 +1148,7 @@ class BitmapText {
     // draw coordinates must be integers to prevent subpixel antialiasing
     ctx.drawImage(
       atlasImage,
-      xInAtlas, 0,
+      xInAtlas, yInAtlas,
       tightWidth, tightHeight,
       Math.round(position_PhysPx.x + dx),
       Math.round(position_PhysPx.y + dy),

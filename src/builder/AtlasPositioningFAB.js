@@ -40,7 +40,8 @@ class AtlasPositioningFAB extends AtlasPositioning {
       tightHeight: { ...this._tightHeight },
       dx: { ...this._dx },
       dy: { ...this._dy },
-      xInAtlas: { ...this._xInAtlas }
+      xInAtlas: { ...this._xInAtlas },
+      yInAtlas: { ...this._yInAtlas }
     });
   }
 
@@ -107,9 +108,11 @@ class AtlasPositioningFAB extends AtlasPositioning {
    * Set glyph position in atlas after atlas is built
    * @param {string} char - Character to set position for
    * @param {number} xPosition_PhysPx - X position in atlas (physical pixels)
+   * @param {number} yPosition_PhysPx - Y position in atlas (physical pixels, defaults to 0 for backward compatibility)
    */
-  setGlyphPositionInAtlas(char, xPosition_PhysPx) {
+  setGlyphPositionInAtlas(char, xPosition_PhysPx, yPosition_PhysPx = 0) {
     this._xInAtlas[char] = xPosition_PhysPx;
+    this._yInAtlas[char] = yPosition_PhysPx;
   }
 
   /**
@@ -138,6 +141,7 @@ class AtlasPositioningFAB extends AtlasPositioning {
     this._dx = {};
     this._dy = {};
     this._xInAtlas = {};
+    this._yInAtlas = {};
   }
 
   /**
