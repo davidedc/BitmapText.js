@@ -1,36 +1,68 @@
 {
   "fontSets": [
     {
-      "name": "Arial Part 1 - Density 1.0 (8.5-44.0)",
-      "density": [1.0],
+      "name": "Arial Part 1 - Density 1 (0-20)",
+      "density": [1],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[8.5, 44.0, 0.5]]
+      "sizes": [[0,20,0.5]]
     },
     {
-      "name": "Arial Part 2 - Density 1.0 (44.5-80.0)",
-      "density": [1.0],
+      "name": "Arial Part 2 - Density 1 (20.5-40)",
+      "density": [1],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[44.5, 80.0, 0.5]]
+      "sizes": [[20.5,40,0.5]]
     },
     {
-      "name": "Arial Part 1 - Density 2.0 (8.5-44.0)",
-      "density": [2.0],
+      "name": "Arial Part 3 - Density 1 (40.5-60)",
+      "density": [1],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[8.5, 44.0, 0.5]]
+      "sizes": [[40.5,60,0.5]]
     },
     {
-      "name": "Arial Part 2 - Density 2.0 (44.5-80.0)",
-      "density": [2.0],
+      "name": "Arial Part 4 - Density 1 (60.5-80)",
+      "density": [1],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[44.5, 80.0, 0.5]]
+      "sizes": [[60.5,80,0.5]]
+    },
+    {
+      "name": "Arial Part 1 - Density 2 (0-20)",
+      "density": [2],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[0,20,0.5]]
+    },
+    {
+      "name": "Arial Part 2 - Density 2 (20.5-40)",
+      "density": [2],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[20.5,40,0.5]]
+    },
+    {
+      "name": "Arial Part 3 - Density 2 (40.5-60)",
+      "density": [2],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[40.5,60,0.5]]
+    },
+    {
+      "name": "Arial Part 4 - Density 2 (60.5-80)",
+      "density": [2],
+      "families": ["Arial"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[60.5,80,0.5]]
     }
   ]
 }
