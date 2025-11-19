@@ -25,12 +25,12 @@
       "sizes": [[40.5,60,0.5]]
     },
     {
-      "name": "Arial Part 4 - Density 1 (60.5-80)",
+      "name": "Arial Part 4 - Density 1 (60.5-96)",
       "density": [1],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[60.5,80,0.5]]
+      "sizes": [[60.5,96,0.5]]
     },
     {
       "name": "Arial Part 1 - Density 2 (8.5-20)",
@@ -57,12 +57,12 @@
       "sizes": [[40.5,60,0.5]]
     },
     {
-      "name": "Arial Part 4 - Density 2 (60.5-80)",
+      "name": "Arial Part 4 - Density 2 (60.5-96)",
       "density": [2],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[60.5,80,0.5]]
+      "sizes": [[60.5,96,0.5]]
     }
   ]
 }
