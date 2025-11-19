@@ -1,12 +1,12 @@
 {
   "fontSets": [
     {
-      "name": "Arial Part 1 - Density 1 (0-20)",
+      "name": "Arial Part 1 - Density 1 (8.5-20)",
       "density": [1],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[0,20,0.5]]
+      "sizes": [[8.5,20,0.5]]
     },
     {
       "name": "Arial Part 2 - Density 1 (20.5-40)",
@@ -33,12 +33,12 @@
       "sizes": [[60.5,80,0.5]]
     },
     {
-      "name": "Arial Part 1 - Density 2 (0-20)",
+      "name": "Arial Part 1 - Density 2 (8.5-20)",
       "density": [2],
       "families": ["Arial"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[0,20,0.5]]
+      "sizes": [[8.5,20,0.5]]
     },
     {
       "name": "Arial Part 2 - Density 2 (20.5-40)",
