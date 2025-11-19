@@ -142,9 +142,14 @@ function setupGlyphUI() {
     addCopyChoiceRadioButtons();
     addPixelDensityChoiceRadioButtons();
 
+    // Detect page type for UI customization
+    const isBuilderPage = typeof BitmapTextFAB !== 'undefined';
+    const scanButtonLabel = isBuilderPage
+        ? 'Build and Show Glyphs at All Sizes'
+        : 'Check hashes for all sizes';
 
     // button to automatically scan through all the sizes of a particular triplet (font family, style, weight)
-    const buildAllSizesButton = createElement('button', 'build-all-sizes-button', 'Build and Show Glyphs at All Sizes', selectorsDiv);
+    const buildAllSizesButton = createElement('button', 'build-all-sizes-button', scanButtonLabel, selectorsDiv);
     buildAllSizesButton.addEventListener('click', function() {
         setTimeout(() => {
             let i = minFontSize_px;
@@ -180,11 +185,13 @@ function setupGlyphUI() {
 
     selectorsDiv.appendChild(document.createElement('br'));
 
-    // Add settings textarea
-    settingsTextarea = createElement('textarea', 'settings-textarea', null, selectorsDiv);
-    // value is specsDefault variable if it exists, otherwise it is an empty string
-    settingsTextarea.value = specsDefault || '';
-    settingsTextarea.style.cssText = 'float: left; height: 200px; width: 333px;';
+    // Add settings textarea (only for builder page)
+    if (isBuilderPage) {
+        settingsTextarea = createElement('textarea', 'settings-textarea', null, selectorsDiv);
+        // value is specsDefault variable if it exists, otherwise it is an empty string
+        settingsTextarea.value = specsDefault || '';
+        settingsTextarea.style.cssText = 'float: left; height: 200px; width: 333px;';
+    }
 
     // Add size buttons
     hoverFontSize = addSizeButtons();
