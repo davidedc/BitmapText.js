@@ -41,6 +41,40 @@ function hasFlag(name) {
   return args.includes(`--${name}`);
 }
 
+// Check for help flag
+const showHelp = hasFlag('help') || args.includes('-h');
+
+if (showHelp) {
+  console.log('Screenshot Capture Script using Playwright');
+  console.log('');
+  console.log('Uses Playwright to start a local HTTP server, navigate to an HTML page');
+  console.log('with BitmapText rendering, and capture screenshot(s).');
+  console.log('');
+  console.log('Usage:');
+  console.log('  node scripts/screenshot-with-playwright.js [options]');
+  console.log('');
+  console.log('Options:');
+  console.log('  --url <url>          URL to capture');
+  console.log('                       (default: public/hello-world-demo.html)');
+  console.log('  --output <file>      Output filename (default: screenshot-playwright.png)');
+  console.log('  --canvas-only        Screenshot only canvas element (default: full page)');
+  console.log('  --wait <ms>          Additional wait time in ms (default: 1000)');
+  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log('  --help, -h           Show this help message');
+  console.log('');
+  console.log('Examples:');
+  console.log('  # Capture full page');
+  console.log('  node scripts/screenshot-with-playwright.js');
+  console.log('');
+  console.log('  # Capture only canvas element');
+  console.log('  node scripts/screenshot-with-playwright.js --canvas-only --output canvas.png');
+  console.log('');
+  console.log('  # Capture specific page');
+  console.log('  node scripts/screenshot-with-playwright.js --url public/baseline-alignment-demo.html');
+  console.log('');
+  process.exit(0);
+}
+
 const config = {
   url: getArg('url', 'public/hello-world-demo.html'),
   output: getArg('output', 'screenshot-playwright.png'),

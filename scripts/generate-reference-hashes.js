@@ -44,6 +44,54 @@ const {
 
 // Parse command line arguments
 const argParser = parseArgs(process.argv);
+
+// Check for help flag (both --help and -h)
+const showHelp = argParser.hasFlag('help') || process.argv.includes('-h');
+
+if (showHelp) {
+  console.log('Automated Reference Hash Generator');
+  console.log('');
+  console.log('Generates reference hashes for font rendering regression testing.');
+  console.log('Uses Playwright to render fonts and calculate hash values.');
+  console.log('');
+  console.log('Usage:');
+  console.log('  node scripts/generate-reference-hashes.js --spec=<file> [options]');
+  console.log('');
+  console.log('Required:');
+  console.log('  --spec <file>        Font set specification JSON file');
+  console.log('                       (See docs/FONT_SET_FORMAT.md for format)');
+  console.log('');
+  console.log('Options:');
+  console.log('  --output <file>      Output file');
+  console.log('                       (default: test/data/reference-hashes.js)');
+  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log('  --merge              Merge with existing hashes instead of overwriting');
+  console.log('  --help, -h           Show this help message');
+  console.log('');
+  console.log('Examples:');
+  console.log('  # Generate hashes for a font set');
+  console.log('  node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json');
+  console.log('');
+  console.log('  # Merge with existing hashes');
+  console.log('  node scripts/generate-reference-hashes.js --spec=my-fonts.json --merge');
+  console.log('');
+  console.log('  # Custom output location');
+  console.log('  node scripts/generate-reference-hashes.js --spec=my-fonts.json --output=./hashes.js');
+  console.log('');
+  console.log('Hash Types Generated (per font):');
+  console.log('  - Atlas source hash (variable-width cells)');
+  console.log('  - Tight atlas hash (reconstructed)');
+  console.log('  - Positioning metadata hash');
+  console.log('  - Text rendering hashes (3 test copies)');
+  console.log('  - Color rendering hashes (blue text variants)');
+  console.log('');
+  console.log('Prerequisites:');
+  console.log('  npm install                      # Install Playwright');
+  console.log('  npx playwright install webkit    # Install WebKit browser');
+  console.log('');
+  process.exit(0);
+}
+
 const config = {
   specFile: argParser.getArg('spec', null),
   outputFile: argParser.getArg('output', './test/data/reference-hashes.js'),
@@ -55,11 +103,7 @@ const config = {
 if (!config.specFile) {
   console.error('❌ Error: --spec argument is required');
   console.error('');
-  console.error('Usage:');
-  console.error('  node scripts/generate-reference-hashes.js --spec=<path-to-spec.json> [options]');
-  console.error('');
-  console.error('Example:');
-  console.error('  node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json');
+  console.error('Run \'node scripts/generate-reference-hashes.js --help\' for usage information');
   process.exit(1);
 }
 

@@ -16,6 +16,46 @@
 const fs = require('fs');
 const path = require('path');
 
+// Check for help flag first (before processing directory argument)
+const allArgs = process.argv.slice(2);
+if (allArgs.includes('--help') || allArgs.includes('-h')) {
+  console.log('Image to JS Converter');
+  console.log('');
+  console.log('Converts WebP, PNG, and QOI files to JavaScript files containing base64 data.');
+  console.log('Solves cross-origin issues when loading images from the filesystem.');
+  console.log('');
+  console.log('Usage:');
+  console.log('  node scripts/image-to-js-converter.js [directory] [options]');
+  console.log('');
+  console.log('Arguments:');
+  console.log('  directory          Target directory (default: font-assets)');
+  console.log('');
+  console.log('Options:');
+  console.log('  --webp             Process WebP files only');
+  console.log('  --png              Process PNG files only');
+  console.log('  --qoi              Process QOI files only');
+  console.log('  --all              Process WebP and QOI files (default)');
+  console.log('  --help, -h         Show this help message');
+  console.log('');
+  console.log('Examples:');
+  console.log('  # Process all WebP and QOI files');
+  console.log('  node scripts/image-to-js-converter.js font-assets --all');
+  console.log('');
+  console.log('  # Process only WebP files');
+  console.log('  node scripts/image-to-js-converter.js font-assets --webp');
+  console.log('');
+  console.log('  # Process only QOI files');
+  console.log('  node scripts/image-to-js-converter.js font-assets --qoi');
+  console.log('');
+  console.log('Notes:');
+  console.log('  - Generated JS files call BitmapText.registerAtlas()');
+  console.log('  - Positioning data is NOT included (reconstructed at runtime)');
+  console.log('  - WebP files: Best for browsers (lossless, smaller than PNG)');
+  console.log('  - QOI files: Best for Node.js usage');
+  console.log('');
+  process.exit(0);
+}
+
 // Get directory parameter or default to 'font-assets'
 const targetDir = process.argv[2] || 'font-assets';
 
@@ -43,23 +83,6 @@ for (const arg of args) {
     case '--all':
       processQOI = true;
       processWebP = true;
-      break;
-    case '--help':
-    case '-h':
-      console.log('Usage: node image-to-js-converter.js [directory] [options]');
-      console.log('');
-      console.log('Options:');
-      console.log('  --webp             Process WebP files only');
-      console.log('  --png              Process PNG files only');
-      console.log('  --qoi              Process QOI files only');
-      console.log('  --all              Process WebP and QOI files (default)');
-      console.log('  --help             Show this help message');
-      console.log('');
-      console.log('Examples:');
-      console.log('  node image-to-js-converter.js font-assets --all');
-      console.log('  node image-to-js-converter.js font-assets --webp');
-      console.log('  node image-to-js-converter.js font-assets --qoi');
-      process.exit(0);
       break;
     default:
       console.error(`Unknown option: ${arg}`);

@@ -12,8 +12,49 @@
 const fs = require('fs');
 const path = require('path');
 
-// Get directory parameter or default to 'data'
-const targetDir = process.argv[2] || 'font-assets';
+// Parse command line arguments
+const args = process.argv.slice(2);
+
+// Check for help flag
+const showHelp = args.includes('--help') || args.includes('-h');
+
+if (showHelp) {
+  console.log('PNG to JS Converter');
+  console.log('');
+  console.log('Converts PNG atlas images to JavaScript files containing base64 data.');
+  console.log('Solves CORS issues when loading images from the filesystem.');
+  console.log('');
+  console.log('Usage:');
+  console.log('  node scripts/png-to-js-converter.js [directory] [options]');
+  console.log('');
+  console.log('Arguments:');
+  console.log('  directory            Target directory (default: font-assets)');
+  console.log('');
+  console.log('Options:');
+  console.log('  --help, -h           Show this help message');
+  console.log('');
+  console.log('Examples:');
+  console.log('  node scripts/png-to-js-converter.js');
+  console.log('  node scripts/png-to-js-converter.js data/');
+  console.log('  node scripts/png-to-js-converter.js /path/to/pngs/');
+  console.log('');
+  console.log('Notes:');
+  console.log('  - Only processes files named "*.png"');
+  console.log('  - Generates JS files that call FontLoader.registerTempAtlasData()');
+  console.log('  - Output files are named {input}-png.js');
+  console.log('  - Enables pixel reading from canvas for hash verification');
+  console.log('');
+  process.exit(0);
+}
+
+// Get directory parameter (first non-flag argument) or default
+let targetDir = 'font-assets';
+for (const arg of args) {
+  if (!arg.startsWith('--') && !arg.startsWith('-')) {
+    targetDir = arg;
+    break;
+  }
+}
 
 function log(message) {
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);

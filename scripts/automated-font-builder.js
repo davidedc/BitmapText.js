@@ -59,6 +59,47 @@ function hasFlag(name) {
   return args.includes(`--${name}`);
 }
 
+// Check for help flag
+const showHelp = hasFlag('help') || args.includes('-h');
+
+if (showHelp) {
+  console.log('Automated Font Asset Builder');
+  console.log('');
+  console.log('Automates font asset generation using Playwright and headless WebKit.');
+  console.log('Loads font specifications from JSON and generates complete font atlases.');
+  console.log('');
+  console.log('Usage:');
+  console.log('  node scripts/automated-font-builder.js --spec=<file> [options]');
+  console.log('');
+  console.log('Required:');
+  console.log('  --spec <file>        Font set specification JSON file');
+  console.log('                       (See docs/FONT_SET_FORMAT.md for format)');
+  console.log('');
+  console.log('Options:');
+  console.log('  --output <dir>       Output directory');
+  console.log('                       (default: ./automatically-generated-font-assets)');
+  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log('  --include-full       Include non-minified metrics files');
+  console.log('  --batch-size <n>     Max fonts per batch for memory management (default: 72)');
+  console.log('  --help, -h           Show this help message');
+  console.log('');
+  console.log('Examples:');
+  console.log('  node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json');
+  console.log('  node scripts/automated-font-builder.js --spec=my-fonts.json --output=./fonts');
+  console.log('  node scripts/automated-font-builder.js --spec=large-set.json --batch-size=50 --include-full');
+  console.log('');
+  console.log('Next Steps:');
+  console.log('  After generation, process the output with:');
+  console.log('    ./scripts/watch-font-assets.sh');
+  console.log('  This converts QOI→PNG→WebP and creates optimized JS wrappers.');
+  console.log('');
+  console.log('Prerequisites:');
+  console.log('  npm install                      # Install Playwright');
+  console.log('  npx playwright install webkit    # Install WebKit browser');
+  console.log('');
+  process.exit(0);
+}
+
 const config = {
   specFile: getArg('spec', null),
   outputDir: getArg('output', './automatically-generated-font-assets'),
@@ -71,11 +112,7 @@ const config = {
 if (!config.specFile) {
   console.error('❌ Error: --spec argument is required');
   console.error('');
-  console.error('Usage:');
-  console.error('  node scripts/automated-font-builder.js --spec=<path-to-spec.json> [options]');
-  console.error('');
-  console.error('Example:');
-  console.error('  node scripts/automated-font-builder.js --spec=test-font-spec.json');
+  console.error('Run \'node scripts/automated-font-builder.js --help\' for usage information');
   process.exit(1);
 }
 

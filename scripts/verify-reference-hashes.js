@@ -42,6 +42,55 @@ const {
 
 // Parse CLI arguments
 const argParser = parseArgs(process.argv);
+
+// Check for help flag (both --help and -h)
+const showHelp = argParser.hasFlag('help') || process.argv.includes('-h');
+
+if (showHelp) {
+  console.log('Reference Hash Verification Script');
+  console.log('');
+  console.log('Verifies that generated hashes match reference hashes for regression testing.');
+  console.log('Generates hashes for a font set and compares them against saved references.');
+  console.log('');
+  console.log('Usage:');
+  console.log('  node scripts/verify-reference-hashes.js --spec=<file> [options]');
+  console.log('');
+  console.log('Required:');
+  console.log('  --spec <file>        Font set specification JSON file');
+  console.log('');
+  console.log('Options:');
+  console.log('  --hashes <file>      Reference hash file');
+  console.log('                       (default: test/data/reference-hashes.js)');
+  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log('  --verbose            Show all fonts, not just mismatches');
+  console.log('  --ci                 CI mode: minimal output, exit code only');
+  console.log('  --fail-fast          Exit on first mismatch');
+  console.log('  --filter <types>     Comma-separated hash types to check');
+  console.log('                       (e.g., "atlas,tight atlas")');
+  console.log('  --json               Output results as JSON');
+  console.log('  --help, -h           Show this help message');
+  console.log('');
+  console.log('Exit Codes:');
+  console.log('  0 - All hashes match');
+  console.log('  1 - Hash mismatches found');
+  console.log('  2 - Errors during execution');
+  console.log('');
+  console.log('Examples:');
+  console.log('  # Basic verification');
+  console.log('  node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json');
+  console.log('');
+  console.log('  # CI mode (minimal output)');
+  console.log('  node scripts/verify-reference-hashes.js --spec=my-fonts.json --ci');
+  console.log('');
+  console.log('  # Verbose with JSON output');
+  console.log('  node scripts/verify-reference-hashes.js --spec=my-fonts.json --verbose --json > report.json');
+  console.log('');
+  console.log('  # Filter specific hash types');
+  console.log('  node scripts/verify-reference-hashes.js --spec=my-fonts.json --filter="atlas,tight atlas"');
+  console.log('');
+  process.exit(0);
+}
+
 const config = {
   specFile: argParser.getArg('spec', null),
   hashesFile: argParser.getArg('hashes', './test/data/reference-hashes.js'),
@@ -57,11 +106,7 @@ const config = {
 if (!config.specFile) {
   console.error('❌ Error: --spec argument is required');
   console.error('');
-  console.error('Usage:');
-  console.error('  node scripts/verify-reference-hashes.js --spec=<path-to-spec.json> [options]');
-  console.error('');
-  console.error('Example:');
-  console.error('  node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json');
+  console.error('Run \'node scripts/verify-reference-hashes.js --help\' for usage information');
   process.exit(2);
 }
 
