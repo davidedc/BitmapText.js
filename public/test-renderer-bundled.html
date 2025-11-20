@@ -36,10 +36,49 @@ and then open the page from the browser at:
       border-left: 4px solid #2196F3;
       font-size: 14px;
     }
+    .progress-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+    .progress-container.complete {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4CAF50, #45a049);
+      transition: width 0.2s ease-out;
+    }
+    .progress-text {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11px;
+      color: #333;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 2px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
   </style>
 </head>
 
 <body>
+  <div id="loadingProgressBar" class="progress-container">
+    <div class="progress-fill"></div>
+    <div class="progress-text">Loading fonts: 0/0 (0%)</div>
+  </div>
+
   <div class="bundle-info">
     <strong style="color: #2196F3;">Production Bundle:</strong> This demo uses the minified runtime bundle (32KB) instead of 17 separate script tags.
     <br>See <code>test-renderer.html</code> for the debug version with individual source files.
@@ -55,7 +94,7 @@ and then open the page from the browser at:
 <script src="../src/utils/timing.js"></script>
 
 <script >
-  const maxFontSize_px = 80;
+  const maxFontSize_px = 96;
   const minFontSize_px = 0;  // Rendering/testing context: can test interpolated sizes from 0px
   const fontSizeIncrement_px = 0.5;
   let specsDefault;
@@ -110,10 +149,29 @@ and then open the page from the browser at:
 
     BitmapText.loadFonts(FontManifest.allFontIDs(), {
       isFileProtocol,
-      onProgress: (loaded, total) => console.log(`loadedScripts: ${loaded} out of ${total}`)
+      onProgress: (loaded, total) => {
+        const progressBar = document.getElementById('loadingProgressBar');
+        if (progressBar) {
+          const percentage = Math.round((loaded / total) * 100);
+          const progressFill = progressBar.querySelector('.progress-fill');
+          const progressText = progressBar.querySelector('.progress-text');
+
+          if (progressFill) progressFill.style.width = percentage + '%';
+          if (progressText) progressText.textContent = `Loading fonts: ${loaded}/${total} (${percentage}%)`;
+        }
+        console.log(`loadedScripts: ${loaded} out of ${total}`);
+      }
     }).then(() => {
       console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
       console.log("All metrics loaded to BitmapText");
+
+      // Hide progress bar with fade-out animation
+      const progressBar = document.getElementById('loadingProgressBar');
+      if (progressBar) {
+        progressBar.classList.add('complete');
+        // Remove from DOM after fade-out completes
+        setTimeout(() => progressBar.remove(), 600);
+      }
 
       startTiming('drawTestText');
       const fontProperties = getFontPropertiesFromUI();
@@ -121,6 +179,14 @@ and then open the page from the browser at:
       console.log("⏱️ drawTestText took " + stopTiming('drawTestText') + " milliseconds");
     }).catch(error => {
       console.error("Font loading failed:", error);
+
+      // Show error state in progress bar
+      const progressBar = document.getElementById('loadingProgressBar');
+      if (progressBar) {
+        progressBar.querySelector('.progress-fill').style.background = '#f44336';
+        progressBar.querySelector('.progress-text').textContent = 'Loading failed - check console';
+        progressBar.querySelector('.progress-text').style.color = '#f44336';
+      }
     });
   }
 </script>
