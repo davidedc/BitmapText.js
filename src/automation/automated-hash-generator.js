@@ -138,7 +138,7 @@ async function generateHashesForFont(fontProperties) {
   hashes[`${idString} tight atlas`] = tightAtlasCtx.getHashString();
 
   // 3. Positioning Hash (stored as comment in output)
-  const positioningHash = tightData.atlasPositioning.getHash();
+  const positioningHash = AtlasPositioningFAB.getHash(tightData.atlasPositioning);
   hashes[`${idString} positioning`] = positioningHash;
 
   // 4-6. Black text rendering for 3 test copies

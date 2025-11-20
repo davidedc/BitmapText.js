@@ -244,8 +244,8 @@
 
     // Add positioning hash if available
     let positioningHashInfo = '';
-    if (atlasPositioning && typeof atlasPositioning.getHash === 'function') {
-      const posHash = atlasPositioning.getHash();
+    if (atlasPositioning) {
+      const posHash = AtlasPositioningFAB.getHash(atlasPositioning);
       positioningHashInfo = ` pos: ${posHash}`;
     }
 
@@ -265,7 +265,7 @@
     const tightAtlasSize = reconstructedAtlasData.atlasImage.width * reconstructedAtlasData.atlasImage.height * 4;
     const tightSizeKB = (tightAtlasSize / 1024).toFixed(2);
     const estimatedPngKB = (atlasSize * 0.015 / 1024).toFixed(2);
-    const positioningHash = reconstructedAtlasData.atlasPositioning.getHash();
+    const positioningHash = AtlasPositioningFAB.getHash(reconstructedAtlasData.atlasPositioning);
 
     detailsDiv.innerHTML = `
       <div><strong>Character Count:</strong> ${charCount} glyphs</div>

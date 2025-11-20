@@ -155,41 +155,4 @@ class AtlasPositioning {
     return this._dy[char];
   }
 
-  /**
-   * Generate a deterministic hash of the positioning data
-   * Uses a simple but stable algorithm that works cross-browser/cross-platform
-   * @returns {string} 6-character hex hash
-   */
-  getHash() {
-    // Get sorted characters for deterministic ordering
-    const chars = this.getAvailableCharacters().sort();
-
-    // Build deterministic string representation
-    const parts = [];
-    for (const char of chars) {
-      const pos = this.getPositioning(char);
-      // Use fixed-precision to avoid floating point variations
-      parts.push(
-        `${char}:` +
-        `w${pos.tightWidth}` +
-        `h${pos.tightHeight}` +
-        `x${pos.dx}` +
-        `y${pos.dy}` +
-        `ax${pos.xInAtlas}` +
-        `ay${pos.yInAtlas}`
-      );
-    }
-
-    // Simple hash function (FNV-1a variant)
-    const str = parts.join('|');
-    let hash = 2166136261; // FNV offset basis
-    for (let i = 0; i < str.length; i++) {
-      hash ^= str.charCodeAt(i);
-      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
-    }
-
-    // Return as 6-character hex (24 bits)
-    return (hash >>> 0).toString(16).substring(0, 6).padStart(6, '0');
-  }
-
 }
