@@ -129,7 +129,7 @@ class AtlasImageFAB extends AtlasImage {
   toCanvas() {
     // If already a canvas, return it
     if (this.getImageType() === 'canvas') {
-      return this._image;
+      return this.image;
     }
 
     // Create new canvas and draw the image onto it
@@ -137,7 +137,7 @@ class AtlasImageFAB extends AtlasImage {
     canvas.width = this.width;
     canvas.height = this.height;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(this._image, 0, 0);
+    ctx.drawImage(this.image, 0, 0);
     return canvas;
   }
 
@@ -193,7 +193,7 @@ class AtlasImageFAB extends AtlasImage {
     // Set image smoothing based on resize method
     ctx.imageSmoothingEnabled = method !== 'nearest';
 
-    ctx.drawImage(this._image, 0, 0, newWidth, newHeight);
+    ctx.drawImage(this.image, 0, 0, newWidth, newHeight);
     return new AtlasImageFAB(canvas);
   }
 
