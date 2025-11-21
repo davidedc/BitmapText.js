@@ -1,0 +1,1 @@
+BitmapText.r(1,"BitmapTextSymbols",0,0,18,[[],{},[15,5,14.9854,0,-5.4053,1],"APIE7Bq6ArgChD2qB/LIBbQYoNgCzrMCoEnAKd4fuAKYIsQK1gHoA6QNtmvSDpgiwt4D","IgIwESYCGA0iAhwJIgIgBSICGgcmAioDIgIoCyYrIiMmLSIfIi8iHSYVIg8mEw==","AgcICQMKAA4ACwEEDAENBQYP",null,0]);
