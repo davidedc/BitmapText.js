@@ -191,9 +191,10 @@ function downloadFontAssets(options) {
           return;
       }
 
-      // REQUIRED: ALL 204 characters from BitmapText.CHARACTER_SET must be included
+      // REQUIRED: ALL 204 characters from BitmapText.CHARACTER_SET must be included for standard fonts
+      // For custom character set fonts, only the custom characters are included
       // Create metrics for all 204 characters in BitmapText.CHARACTER_SET order
-      const characterMetrics = {};
+      let characterMetrics = {};
 
       // Get baseline metrics from first generated character for fallback
       const firstChar = Object.keys(generatedMetrics)[0];
@@ -214,30 +215,49 @@ function downloadFontAssets(options) {
           pixelDensity: fallbackMetrics.pixelDensity
       });
 
-      // Add all 204 characters from BitmapText.CHARACTER_SET
-      for (const char of BitmapText.CHARACTER_SET) {
-          if (generatedMetrics[char]) {
-              // Use generated metrics if available
-              characterMetrics[char] = generatedMetrics[char];
-          } else {
-              // Use placeholder for missing characters
-              characterMetrics[char] = createPlaceholderMetrics();
+      // Check if this font has a custom character set
+      const customCharSet = CharacterSetRegistry.getDisplayCharacterSet(fontProperties.fontFamily);
+      const hasCustomCharSet = !!customCharSet;
+
+      if (hasCustomCharSet) {
+          // For custom character set fonts (e.g., BitmapTextSymbols):
+          // Only include characters that are in the custom character set
+          // (generatedMetrics may include extra characters from BitmapText.CHARACTER_SET)
+          characterMetrics = {};
+          for (const char of customCharSet) {
+              if (generatedMetrics[char]) {
+                  characterMetrics[char] = generatedMetrics[char];
+              } else {
+                  console.warn(`⚠️  Custom character '${char}' not found in generated metrics, skipping`);
+              }
           }
-      }
+          console.log(`📝 Font has custom character set, exporting ${Object.keys(characterMetrics).length} characters: ${Array.from(customCharSet).join('')}`);
+      } else {
+          // For standard fonts: Add all 204 characters from BitmapText.CHARACTER_SET
+          for (const char of BitmapText.CHARACTER_SET) {
+              if (generatedMetrics[char]) {
+                  // Use generated metrics if available
+                  characterMetrics[char] = generatedMetrics[char];
+              } else {
+                  // Use placeholder for missing characters
+                  characterMetrics[char] = createPlaceholderMetrics();
+              }
+          }
 
-      // Warn about missing characters (should not happen in normal operation)
-      const missingChars = Array.from(BitmapText.CHARACTER_SET).filter(char => !generatedMetrics[char]);
-      if (missingChars.length > 0) {
-          console.warn(`⚠️  Generated placeholder metrics for ${missingChars.length} missing characters: ${missingChars.slice(0, 10).join('')}${missingChars.length > 10 ? '...' : ''}`);
-      }
+          // Warn about missing characters (should not happen in normal operation)
+          const missingChars = Array.from(BitmapText.CHARACTER_SET).filter(char => !generatedMetrics[char]);
+          if (missingChars.length > 0) {
+              console.warn(`⚠️  Generated placeholder metrics for ${missingChars.length} missing characters: ${missingChars.slice(0, 10).join('')}${missingChars.length > 10 ? '...' : ''}`);
+          }
 
-      // Verify no extra characters outside BitmapText.CHARACTER_SET
-      const extraChars = Object.keys(generatedMetrics).filter(char => !BitmapText.CHARACTER_SET.includes(char));
-      if (extraChars.length > 0) {
-          throw new Error(
-              `Font contains ${extraChars.length} characters not in BitmapText.CHARACTER_SET: ${extraChars.join(', ')}\n` +
-              `Please update BitmapText.CHARACTER_SET in src/runtime/BitmapText.js to include these characters.`
-          );
+          // Verify no extra characters outside BitmapText.CHARACTER_SET
+          const extraChars = Object.keys(generatedMetrics).filter(char => !BitmapText.CHARACTER_SET.includes(char));
+          if (extraChars.length > 0) {
+              throw new Error(
+                  `Font contains ${extraChars.length} characters not in BitmapText.CHARACTER_SET: ${extraChars.join(', ')}\n` +
+                  `Please update BitmapText.CHARACTER_SET in src/runtime/BitmapText.js to include these characters.`
+              );
+          }
       }
 
       // Metrics data (positioning data NO LONGER exported - reconstructed at runtime)
@@ -247,10 +267,46 @@ function downloadFontAssets(options) {
           spaceAdvancementOverrideForSmallSizesInPx: fontMetrics._spaceAdvancementOverride
       };
 
-      // Minify with automatic roundtrip verification
-      // This catches compression bugs immediately during build
-      // Will throw error if characterMetrics is not in BitmapText.CHARACTER_SET order
-      const minified = MetricsMinifier.minifyWithVerification(metricsData);
+      // Minify with automatic roundtrip verification (only for standard fonts)
+      // Custom character set fonts skip minification as MetricsMinifier requires BitmapText.CHARACTER_SET order
+      let minified;
+      if (hasCustomCharSet) {
+          console.log(`📝 Creating uncompressed 8-element array for custom character set font`);
+          // Create a minimal 8-element array that MetricsExpander can handle
+          // Array format: [kv, k, b, v, t, g, s, cl]
+          // For custom character sets, we use the old object format in a wrapper array
+          // Element 0: kerningValueLookup (empty for now)
+          // Element 1: kerningTable (use object format directly)
+          // Element 2: baseline metrics (extract from first character)
+          const firstChar = Object.keys(characterMetrics)[0];
+          const firstMetrics = characterMetrics[firstChar];
+          const baselineArray = [
+              firstMetrics.fontBoundingBoxAscent,
+              firstMetrics.fontBoundingBoxDescent,
+              firstMetrics.hangingBaseline,
+              firstMetrics.alphabeticBaseline,
+              firstMetrics.ideographicBaseline,
+              firstMetrics.pixelDensity
+          ];
+          // Element 3: characterMetrics (use object format directly - MetricsExpander will handle it)
+          // Element 4-5: empty strings (no tuplet compression for custom character sets)
+          // Element 6: spaceAdvancementOverride
+          // Element 7: 0 (no common left index for custom character sets)
+          minified = [
+              [],                                      // 0: kv - empty kerning value lookup
+              metricsData.kerningTable,                // 1: k - kerning table (object format)
+              baselineArray,                           // 2: b - baseline metrics
+              characterMetrics,                        // 3: v - characterMetrics (object format, not compressed)
+              '',                                      // 4: t - empty tuplets
+              '',                                      // 5: g - empty glyph indices
+              metricsData.spaceAdvancementOverrideForSmallSizesInPx,  // 6: s - space override
+              0                                        // 7: cl - common left index
+          ];
+      } else {
+          // This catches compression bugs immediately during build
+          // Will throw error if characterMetrics is not in BitmapText.CHARACTER_SET order
+          minified = MetricsMinifier.minifyWithVerification(metricsData);
+      }
 
       // TIER 6b: Decompose font ID for multi-parameter format
       const parts = IDString.split('-');

@@ -1,0 +1,13 @@
+{
+  "fontSets": [
+    {
+      "name": "BitmapTextSymbols Monospaced Symbols",
+      "density": [1.0, 2.0],
+      "families": ["BitmapTextSymbols"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[8.5, 72, 0.5]],
+      "characters": "☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗"
+    }
+  ]
+}

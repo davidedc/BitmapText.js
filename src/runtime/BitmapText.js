@@ -67,6 +67,30 @@ class BitmapText {
   // ALL font files must contain exactly these 204 characters in this order.
   static CHARACTER_SET = BitmapText.#generateCharacterSet();
 
+  // ============================================
+  // Symbol Auto-Redirect Configuration
+  // ============================================
+
+  // Symbol characters that auto-redirect to BitmapTextSymbols font
+  // These 18 Unicode symbols render using monospaced Courier New metrics
+  // regardless of the font specified in FontProperties
+  static SYMBOL_CHARACTERS_STRING = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
+
+  // Font family name for symbols (rendered internally using Courier New)
+  static SYMBOLS_FONT_FAMILY = 'BitmapTextSymbols';
+
+  /**
+   * Fast symbol detection helper
+   * Uses string.includes() for ~1-2ns lookup performance
+   *
+   * @private
+   * @param {string} char - Character to check
+   * @returns {boolean} True if character is a special symbol
+   */
+  static #isSymbolCharacter(char) {
+    return BitmapText.SYMBOL_CHARACTERS_STRING.includes(char);
+  }
+
   /**
    * Calculate optimal grid dimensions for atlas layout
    * Uses square-ish approach (ceil(sqrt(N))) to minimize max dimension
@@ -416,11 +440,43 @@ class BitmapText {
       };
     }
 
+    // PRE-CREATE symbols font properties ONCE for potential auto-redirect
+    const symbolsFontProps = new FontProperties(
+      fontProperties.pixelDensity,
+      BitmapText.SYMBOLS_FONT_FAMILY,
+      'normal',
+      'normal',
+      fontProperties.fontSize
+    );
+
+    // PRE-FETCH symbols font data
+    let symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+
+    // If symbols font not found and size < 8.5, try interpolating from size 8.5
+    if (!symbolsFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const symbolsMinSizeProps = BitmapText.#createFontPropsAtMinSize(symbolsFontProps);
+      const symbolsMetricsAt8_5 = FontMetricsStore.getFontMetrics(symbolsMinSizeProps);
+
+      if (symbolsMetricsAt8_5) {
+        // Create interpolated metrics wrapper for symbols font
+        symbolsFontMetrics = BitmapText.#createInterpolatedFontMetrics(symbolsMetricsAt8_5, fontProperties.fontSize);
+      }
+    }
+
+    const hasSymbolsFont = symbolsFontMetrics !== null;
+
     // Scan text for missing glyphs (excluding spaces which are handled specially)
+    // Check each character against the appropriate font (base or symbols)
     const missingChars = new Set();
     for (const char of text) {
-      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
-        missingChars.add(char);
+      if (char !== ' ') {
+        // Determine which font should handle this character
+        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
+        const checkFontMetrics = isSymbol ? symbolsFontMetrics : fontMetrics;
+
+        if (!checkFontMetrics.hasGlyph(char)) {
+          missingChars.add(char);
+        }
       }
     }
 
@@ -437,7 +493,13 @@ class BitmapText {
     // SUCCESS PATH: Calculate metrics normally
     const chars = [...text];
     let width_CssPx = 0;
-    let characterMetrics = fontMetrics.getCharacterMetrics(chars[0]);
+
+    // Determine font for first character
+    const firstCharIsSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(chars[0]);
+    let currentFontMetrics = firstCharIsSymbol ? symbolsFontMetrics : fontMetrics;
+    let currentFontProps = firstCharIsSymbol ? symbolsFontProps : fontProperties;
+
+    let characterMetrics = currentFontMetrics.getCharacterMetrics(chars[0]);
     const actualBoundingBoxLeft_CssPx = characterMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -448,12 +510,22 @@ class BitmapText {
       const char = chars[i];
       const nextChar = chars[i + 1];
 
-      characterMetrics = fontMetrics.getCharacterMetrics(char);
+      // FAST CHECK: Is this a symbol? Switch fonts if needed
+      const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
+      if (isSymbol && currentFontProps !== symbolsFontProps) {
+        currentFontMetrics = symbolsFontMetrics;
+        currentFontProps = symbolsFontProps;
+      } else if (!isSymbol && currentFontProps !== fontProperties) {
+        currentFontMetrics = fontMetrics;
+        currentFontProps = fontProperties;
+      }
+
+      characterMetrics = currentFontMetrics.getCharacterMetrics(char);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, characterMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, characterMetrics.actualBoundingBoxDescent);
 
-      advancement_CssPx = this.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
+      advancement_CssPx = this.calculateAdvancement_CssPx(currentFontMetrics, currentFontProps, char, nextChar, textProperties, characterMetrics);
       width_CssPx += advancement_CssPx;
     }
 
@@ -551,11 +623,44 @@ class BitmapText {
       };
     }
 
+    // PRE-CREATE symbols font properties ONCE (not per-character!)
+    // This avoids object allocation in hot rendering loop
+    const symbolsFontProps = new FontProperties(
+      fontProperties.pixelDensity,
+      BitmapText.SYMBOLS_FONT_FAMILY,
+      'normal',  // Always normal style for symbols
+      'normal',  // Always normal weight for symbols
+      fontProperties.fontSize
+    );
+
+    // PRE-FETCH symbols font data ONCE
+    let symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+
+    // If symbols font not found and size < 8.5, try interpolating from size 8.5
+    if (!symbolsFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const symbolsMinSizeProps = BitmapText.#createFontPropsAtMinSize(symbolsFontProps);
+      const symbolsMetricsAt8_5 = FontMetricsStore.getFontMetrics(symbolsMinSizeProps);
+
+      if (symbolsMetricsAt8_5) {
+        // Create interpolated metrics wrapper for symbols font
+        symbolsFontMetrics = BitmapText.#createInterpolatedFontMetrics(symbolsMetricsAt8_5, fontProperties.fontSize);
+      }
+    }
+
+    const hasSymbolsFont = symbolsFontMetrics !== null;
+
     // Scan for missing metrics (can't render without metrics)
+    // Check each character against the appropriate font (base or symbols)
     const missingMetricsChars = new Set();
     for (const char of text) {
-      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
-        missingMetricsChars.add(char);
+      if (char !== ' ') {
+        // Determine which font should handle this character
+        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
+        const checkFontMetrics = isSymbol ? symbolsFontMetrics : fontMetrics;
+
+        if (!checkFontMetrics.hasGlyph(char)) {
+          missingMetricsChars.add(char);
+        }
       }
     }
 
@@ -571,6 +676,17 @@ class BitmapText {
     // Check atlas data availability (force invalid for sizes < 8.5)
     let atlasData = forceInvalidAtlas ? null : AtlasDataStore.getAtlasData(fontProperties);
     const atlasValid = forceInvalidAtlas ? false : BitmapText.#isValidAtlas(atlasData);
+
+    const symbolsAtlasData = symbolsFontMetrics ?
+      AtlasDataStore.getAtlasData(symbolsFontProps) : null;
+    const symbolsAtlasValid = symbolsFontMetrics ?
+      BitmapText.#isValidAtlas(symbolsAtlasData) : false;
+
+    // Track current font to minimize redundant lookups
+    let currentFontProps = fontProperties;
+    let currentFontMetrics = fontMetrics;
+    let currentAtlasData = atlasData;
+    let currentAtlasValid = atlasValid;
 
     // Track which glyphs are missing from atlas (for partial atlas status)
     const missingAtlasChars = new Set();
@@ -644,24 +760,43 @@ class BitmapText {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
 
+        // FAST CHECK: Is this a symbol? (string.includes on 18 chars = ~1-2ns)
+        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(currentChar);
+
+        // Switch font ONLY if needed (avoids redundant assignments)
+        if (isSymbol && currentFontProps !== symbolsFontProps) {
+          currentFontProps = symbolsFontProps;
+          currentFontMetrics = symbolsFontMetrics;
+          currentAtlasData = symbolsAtlasData;
+          currentAtlasValid = symbolsAtlasValid;
+        } else if (!isSymbol && currentFontProps !== fontProperties) {
+          // Switch back to base font
+          currentFontProps = fontProperties;
+          currentFontMetrics = fontMetrics;
+          currentAtlasData = atlasData;
+          currentAtlasValid = atlasValid;
+        }
+
         // Check if atlas has a glyph for this character (excluding spaces)
         if (currentChar !== ' ') {
-          if (!atlasValid || !atlasData.hasPositioning(currentChar)) {
+          if (!currentAtlasValid || !currentAtlasData.hasPositioning(currentChar)) {
             missingAtlasChars.add(currentChar);
             placeholdersUsed = true;
           }
         }
 
-        // Draw (either real glyph or placeholder)
+        // Draw using appropriate font (either real glyph or placeholder)
         BitmapText.#drawCharacter(ctx,
           currentChar,
           position_PhysPx,
-          atlasData,
-          fontMetrics,
+          currentAtlasData,
+          currentFontMetrics,
           textColor
         );
 
-        position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties);
+        // Calculate advancement using current font's metrics
+        position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
+          currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
       }
     }
 
@@ -918,6 +1053,26 @@ class BitmapText {
 
     const metrics = measureResult.metrics;
 
+    // PRE-CREATE symbols font properties ONCE
+    const symbolsFontProps = new FontProperties(
+      fontProperties.pixelDensity,
+      BitmapText.SYMBOLS_FONT_FAMILY,
+      'normal',
+      'normal',
+      fontProperties.fontSize
+    );
+
+    // PRE-FETCH symbols font data
+    const symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+    const symbolsAtlasData = symbolsFontMetrics ?
+      AtlasDataStore.getAtlasData(symbolsFontProps) : null;
+    const hasSymbolsFont = symbolsFontMetrics !== null;
+
+    // Track current font to minimize lookups
+    let currentFontProps = fontProperties;
+    let currentFontMetrics = fontMetrics;
+    let currentAtlasData = atlasData;
+
     // Calculate scratch canvas dimensions in physical pixels
     // CRITICAL: Use FONT bounding box (not actual text bounding box)
     // This ensures we have room for ALL characters in the font, not just those in this text
@@ -990,21 +1145,36 @@ class BitmapText {
       const currentChar = chars[i];
       const nextChar = chars[i + 1];
 
+      // FAST CHECK: Is this a symbol? (string.includes on 18 chars = ~1-2ns)
+      const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(currentChar);
+
+      // Switch font ONLY if needed (avoids redundant assignments)
+      if (isSymbol && currentFontProps !== symbolsFontProps) {
+        currentFontProps = symbolsFontProps;
+        currentFontMetrics = symbolsFontMetrics;
+        currentAtlasData = symbolsAtlasData;
+      } else if (!isSymbol && currentFontProps !== fontProperties) {
+        // Switch back to base font
+        currentFontProps = fontProperties;
+        currentFontMetrics = fontMetrics;
+        currentAtlasData = atlasData;
+      }
+
       // Track missing characters
-      if (currentChar !== ' ' && !atlasData.hasPositioning(currentChar)) {
+      if (currentChar !== ' ' && !currentAtlasData.hasPositioning(currentChar)) {
         missingAtlasChars.add(currentChar);
         placeholdersUsed = true;
         // Advance position even for missing characters to maintain layout
         position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
-          fontMetrics, fontProperties, currentChar, nextChar, textProperties
+          currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties
         );
         continue;
       }
 
       // Draw glyph to scratch canvas (skip spaces, they have no visual)
-      if (currentChar !== ' ' && atlasData.hasPositioning(currentChar)) {
-        const atlasPositioning = atlasData.atlasPositioning.getPositioning(currentChar);
-        const atlasImage = atlasData.atlasImage.image;
+      if (currentChar !== ' ' && currentAtlasData.hasPositioning(currentChar)) {
+        const atlasPositioning = currentAtlasData.atlasPositioning.getPositioning(currentChar);
+        const atlasImage = currentAtlasData.atlasImage.image;
         const { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
 
         // Draw original glyph (black) to scratch canvas at correct position
@@ -1020,7 +1190,7 @@ class BitmapText {
 
       // Advance position for next character
       position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
-        fontMetrics, fontProperties, currentChar, nextChar, textProperties
+        currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties
       );
     }
 

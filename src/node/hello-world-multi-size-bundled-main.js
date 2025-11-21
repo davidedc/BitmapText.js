@@ -85,15 +85,26 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Create IDStrings for all font configurations
-    const IDStrings = fontPropertiesArray.map(fp => fp.idString);
+    // Create IDStrings for all font configurations (Arial + BitmapTextSymbols for automatic symbol fallback)
+    const arialIDStrings = fontPropertiesArray.map(fp => fp.idString);
+
+    // Create BitmapTextSymbols IDStrings for each size
+    const symbolIDStrings = fontSizes.map(size => {
+      const normalizedSize = size.toString().replace('.', '-') + (size.toString().includes('.') ? '' : '-0');
+      return `density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-${normalizedSize}`;
+    });
+
+    // Combine Arial and BitmapTextSymbols fonts
+    const allIDStrings = [...arialIDStrings, ...symbolIDStrings];
+
     console.log('Font sizes:', fontSizes);
-    console.log('IDStrings:', IDStrings);
+    console.log('Arial IDStrings:', arialIDStrings);
+    console.log('Symbol IDStrings:', symbolIDStrings);
 
-    // Load all fonts using static API
-    console.log(`Loading ${fontSizes.length} fonts...`);
+    // Load all fonts using static API (3 Arial + 3 BitmapTextSymbols = 6 fonts)
+    console.log(`Loading ${allIDStrings.length} fonts (${fontSizes.length} Arial + ${fontSizes.length} BitmapTextSymbols)...`);
 
-    await BitmapText.loadFonts(IDStrings, {
+    await BitmapText.loadFonts(allIDStrings, {
       onProgress: (loaded, total) => console.log(`Loading progress: ${loaded}/${total}`)
     });
 
@@ -103,7 +114,7 @@ async function main() {
     console.log('\nFont loading summary:');
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
-      const idString = IDStrings[i];
+      const idString = arialIDStrings[i];
 
       const hasMetrics = BitmapText.hasMetrics(idString);
       const hasAtlas = BitmapText.hasAtlas(idString);
@@ -136,7 +147,7 @@ async function main() {
     for (let i = 0; i < fontPropertiesArray.length; i++) {
       const fontProps = fontPropertiesArray[i];
       const yPosition = 50 + (i * 50);
-      const text = `Hello World (size ${fontProps.fontSize})`;
+      const text = `Hello ☺ World (size ${fontProps.fontSize}) ✔`;
 
       const result = BitmapText.drawTextFromAtlas(
         ctx,
@@ -168,7 +179,7 @@ async function main() {
     for (let i = 0; i < fontPropertiesArray.length; i++) {
       const fontProps = fontPropertiesArray[i];
       const yPosition = 50 + (i * 50);
-      const text = `Hello World (size ${fontProps.fontSize})`;
+      const text = `Hello ☺ World (size ${fontProps.fontSize}) ✔`;
 
       const result = BitmapText.drawTextFromAtlas(
         ctx,

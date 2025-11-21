@@ -2,11 +2,46 @@
   "fontSets": [
     {
       "name": "Arial Test Set",
-      "density": [1.0],
-      "families": ["Arial"],
-      "styles": ["normal"],
-      "weights": ["normal"],
-      "sizes": [8.5, 18, 18.5, 19]
+      "density": [
+        1
+      ],
+      "families": [
+        "Arial"
+      ],
+      "styles": [
+        "normal"
+      ],
+      "weights": [
+        "normal"
+      ],
+      "sizes": [
+        8.5,
+        18,
+        18.5,
+        19
+      ]
+    },
+    {
+      "name": "BitmapTextSymbols Monospaced Symbols",
+      "density": [
+        1
+      ],
+      "families": [
+        "BitmapTextSymbols"
+      ],
+      "styles": [
+        "normal"
+      ],
+      "weights": [
+        "normal"
+      ],
+      "sizes": [
+        8.5,
+        18,
+        18.5,
+        19
+      ],
+      "characters": "☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗"
     }
   ]
 }

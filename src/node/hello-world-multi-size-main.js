@@ -55,16 +55,27 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Create IDStrings for all font configurations
-    const IDStrings = fontPropertiesArray.map(createIDString);
-    console.log('Font sizes:', fontSizes);
-    console.log('IDStrings:', IDStrings);
+    // Create IDStrings for all font configurations (Arial + BitmapTextSymbols for automatic symbol fallback)
+    const arialIDStrings = fontPropertiesArray.map(createIDString);
 
-    // Load all fonts using static API
-    console.log(`Loading ${fontSizes.length} fonts...`);
+    // Create BitmapTextSymbols IDStrings for each size
+    const symbolIDStrings = fontSizes.map(size => {
+      const normalizedSize = size.toString().replace('.', '-') + (size.toString().includes('.') ? '' : '-0');
+      return `density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-${normalizedSize}`;
+    });
+
+    // Combine Arial and BitmapTextSymbols fonts
+    const allIDStrings = [...arialIDStrings, ...symbolIDStrings];
+
+    console.log('Font sizes:', fontSizes);
+    console.log('Arial IDStrings:', arialIDStrings);
+    console.log('Symbol IDStrings:', symbolIDStrings);
+
+    // Load all fonts using static API (3 Arial + 3 BitmapTextSymbols = 6 fonts)
+    console.log(`Loading ${allIDStrings.length} fonts (${fontSizes.length} Arial + ${fontSizes.length} BitmapTextSymbols)...`);
 
     // Wait for all fonts to load
-    await BitmapText.loadFonts(IDStrings, {
+    await BitmapText.loadFonts(allIDStrings, {
       onProgress: (loaded, total) => console.log(`Loading progress: ${loaded}/${total}`)
     });
 
@@ -74,7 +85,7 @@ async function main() {
     console.log('\nFont loading summary:');
     for (let i = 0; i < fontSizes.length; i++) {
       const fontSize = fontSizes[i];
-      const idString = IDStrings[i];
+      const idString = arialIDStrings[i];
 
       const hasMetrics = BitmapText.hasMetrics(idString);
       const hasAtlas = BitmapText.hasAtlas(idString);
@@ -108,7 +119,7 @@ async function main() {
 
     fontPropertiesArray.forEach((fontProperties, index) => {
       const yPosition = 50 + (index * 50); // Space lines 50px apart
-      const text = `Hello World (size ${fontProperties.fontSize})`;
+      const text = `Hello ☺ World (size ${fontProperties.fontSize}) ✔`;
 
       console.log(`Rendering "${text}" at y=${yPosition}`);
 
@@ -159,7 +170,7 @@ async function main() {
 
     fontPropertiesArray.forEach((fontProperties, index) => {
       const yPosition = 50 + (index * 50); // Same y positions as black text
-      const text = `Hello World (size ${fontProperties.fontSize})`;
+      const text = `Hello ☺ World (size ${fontProperties.fontSize}) ✔`;
 
       console.log(`Rendering blue "${text}" at x=220, y=${yPosition}`);
 

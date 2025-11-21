@@ -32,11 +32,9 @@ async function buildFont(fontProperties) {
 
   console.log(`Building ${fontProperties.idString}...`);
 
-  // 1. Create glyphs for all 204 characters in CHARACTER_SET
+  // 1. Create glyphs - includes both standard 204 chars + custom character set if defined
   // This is the most time-consuming step (canvas rendering)
-  for (const char of BitmapText.CHARACTER_SET) {
-    AtlasDataStoreFAB.addGlyph(new GlyphFAB(char, fontProperties));
-  }
+  createGlyphsAndAddToFullStore(fontProperties);
 
   // 2. Build kerning table if it doesn't exist
   // This calculates kerning adjustments for character pairs
@@ -119,11 +117,25 @@ async function buildAndExportFonts(fontSetSpec, exportOptions = {}) {
     // 1. Initialize specs and set as global (required by GlyphFAB)
     window.specs = initializeSpecs();
 
-    // 2. Reconstruct FontSetGenerator from the plain spec object
+    // 2. Initialize CharacterSetRegistry from font set spec
+    // Register custom character sets for fonts that define them
+    if (fontSetSpec && fontSetSpec.fontSets) {
+      for (const set of fontSetSpec.fontSets) {
+        if (set.characters && set.families) {
+          // Register custom character set for each family in this set
+          for (const family of set.families) {
+            CharacterSetRegistry.setDisplayCharacterSet(family, set.characters);
+            console.log(`Registered custom character set for ${family}: ${set.characters}`);
+          }
+        }
+      }
+    }
+
+    // 3. Reconstruct FontSetGenerator from the plain spec object
     // (necessary because spec comes from Playwright page.evaluate serialization)
     const reconstructedSpec = JSON.parse(JSON.stringify(fontSetSpec));
 
-    // 3. Process all fonts in the set
+    // 4. Process all fonts in the set
     await processFontSet(reconstructedSpec, (current, total, idString) => {
       // Report progress as structured JSON for Playwright to parse
       const percent = (current / total * 100).toFixed(1);
@@ -141,7 +153,7 @@ async function buildAndExportFonts(fontSetSpec, exportOptions = {}) {
       console.log(`[${current}/${total}] ${percent}% - ${idString}`);
     });
 
-    // 3. Export all fonts to .zip
+    // 5. Export all fonts to .zip
     console.log('\n=== Exporting Font Assets ===');
     console.log('Creating .zip file...');
 

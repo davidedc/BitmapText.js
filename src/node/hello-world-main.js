@@ -47,12 +47,13 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Load font using static API
+    // Load fonts using static API (Arial + BitmapTextSymbols for automatic symbol fallback)
     const expectedIDString = fontProperties.idString;
-    console.log(`Loading font: ${expectedIDString}...`);
+    const symbolsIDString = 'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-19-0';
+    console.log(`Loading fonts: ${expectedIDString} + ${symbolsIDString}...`);
 
     // Wait for font loading to complete
-    await BitmapText.loadFont(expectedIDString, {
+    await BitmapText.loadFonts([expectedIDString, symbolsIDString], {
       onProgress: (loaded, total) => console.log(`Loading progress: ${loaded}/${total}`)
     });
 
@@ -75,7 +76,7 @@ async function main() {
     // Render "Hello World" using bitmap text - API returns status info
     const result = BitmapText.drawTextFromAtlas(
       ctx,
-      "Hello World",
+      "Hello ☺ World ✔",
       10,  // x position in CSS pixels (absolute from origin)
       50,  // y position in CSS pixels (absolute from origin)
       fontProperties,
@@ -116,7 +117,7 @@ async function main() {
 
     const blueResult = BitmapText.drawTextFromAtlas(
       ctx,
-      "Hello World",
+      "Hello ☺ World ✔",
       10,  // x position in CSS pixels (absolute from origin)
       80,  // y position in CSS pixels (30px below black text)
       fontProperties,

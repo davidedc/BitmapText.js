@@ -84,10 +84,12 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Load only size 8.5px - all smaller sizes will interpolate from this
-    console.log('Loading size 8.5px metrics (used for all sizes < 8.5px)...');
+    // Load only size 8.5px - all smaller sizes will interpolate from this (Arial + BitmapTextSymbols for automatic symbol fallback)
+    const arialIDString = fontProps8_5.idString;
+    const symbolsIDString = 'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-8-5';
+    console.log(`Loading size 8.5px fonts: ${arialIDString} + ${symbolsIDString}...`);
 
-    await BitmapText.loadFont(fontProps8_5.idString, {
+    await BitmapText.loadFonts([arialIDString, symbolsIDString], {
       onProgress: (loaded, total) => console.log(`Loading progress: ${loaded}/${total}`)
     });
 
@@ -119,7 +121,7 @@ async function main() {
     // SECTION 1: Visual rendering of small sizes
     console.log('\n=== Section 1: Visual Rendering ===\n');
 
-    const testText = "The quick brown fox jumps over the lazy dog.";
+    const testText = "The quick brown ☺ fox jumps over the lazy dog. ✔";
     let yPos = 40;
     let renderedCount = 0;
 

@@ -120,38 +120,55 @@ class MetricsExpander {
     // Extract values from Tier 6c/7 array format
     let [kv, k, b, v, t, g, s, cl] = minified;
 
-    // Convert integer values back to floats (divide by 10000)
-    kv = this.#convertIntegersToValues(kv);
+    // Check if this is an uncompressed custom character set font
+    // Custom character sets have v as an object (characterMetrics), not an array or string
+    const isCustomCharacterSet = typeof v === 'object' && !Array.isArray(v) && v !== null;
 
-    // TIER 7: Handle value lookup array - can be array (Tier 6c) or base64 string (Tier 7)
-    if (typeof v === 'string') {
-      // Tier 7: Decompress from delta-encoded base64
-      v = this.#decompressValueArray(v);
-      v = this.#convertIntegersToValues(v);
-    } else if (Array.isArray(v)) {
-      // Tier 6c: Already an array of integers
-      v = this.#convertIntegersToValues(v);
+    let expandedData;
+
+    if (isCustomCharacterSet) {
+      // Custom character set: v is already the characterMetrics object
+      console.debug(`🔍 MetricsExpander: Detected uncompressed custom character set font`);
+      expandedData = {
+        kerningTable: k,  // Already in object format
+        characterMetrics: v,  // Already in object format
+        spaceAdvancementOverrideForSmallSizesInPx: s
+      };
     } else {
-      throw new Error('Invalid value lookup format - expected array or string');
+      // Standard 204-character font: use full decompression
+      // Convert integer values back to floats (divide by 10000)
+      kv = this.#convertIntegersToValues(kv);
+
+      // TIER 7: Handle value lookup array - can be array (Tier 6c) or base64 string (Tier 7)
+      if (typeof v === 'string') {
+        // Tier 7: Decompress from delta-encoded base64
+        v = this.#decompressValueArray(v);
+        v = this.#convertIntegersToValues(v);
+      } else if (Array.isArray(v)) {
+        // Tier 6c: Already an array of integers
+        v = this.#convertIntegersToValues(v);
+      } else {
+        throw new Error('Invalid value lookup format - expected array or string');
+      }
+
+      // Unflatten baseline array to object
+      b = this.#unflattenBaseline(b);
+
+      // Decode base64-encoded binary data
+      // t = VarInt+zigzag encoded flattened tuplets
+      // g = byte-encoded tuplet indices
+      t = this.#decodeVarInts(t);
+      g = this.#decodeFromBase64Bytes(g);
+
+      // Unflatten tuplet data from negative-delimiter format
+      t = this.#unflattenTuplets(t);
+
+      expandedData = {
+        kerningTable: this.#expandKerningTable(k, kv),
+        characterMetrics: this.#expandCharacterMetrics(g, b, v, t, cl),
+        spaceAdvancementOverrideForSmallSizesInPx: s
+      };
     }
-
-    // Unflatten baseline array to object
-    b = this.#unflattenBaseline(b);
-
-    // Decode base64-encoded binary data
-    // t = VarInt+zigzag encoded flattened tuplets
-    // g = byte-encoded tuplet indices
-    t = this.#decodeVarInts(t);
-    g = this.#decodeFromBase64Bytes(g);
-
-    // Unflatten tuplet data from negative-delimiter format
-    t = this.#unflattenTuplets(t);
-
-    const expandedData = {
-      kerningTable: this.#expandKerningTable(k, kv),
-      characterMetrics: this.#expandCharacterMetrics(g, b, v, t, cl),
-      spaceAdvancementOverrideForSmallSizesInPx: s
-    };
 
     // Verify pixelDensity was preserved
     const firstChar = Object.keys(expandedData.characterMetrics)[0];

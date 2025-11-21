@@ -21,10 +21,9 @@ function initializeSpecs() {
  * @param {FontProperties} fontProperties - Font configuration
  */
 async function buildFont(fontProperties) {
-  // Create glyphs for all 204 characters in CHARACTER_SET
-  for (const char of BitmapText.CHARACTER_SET) {
-    AtlasDataStoreFAB.addGlyph(new GlyphFAB(char, fontProperties));
-  }
+  // Create glyphs - includes both standard 204 chars + custom character set if defined
+  // This ensures symbol fonts like BitmapTextSymbols have the actual symbols rendered
+  createGlyphsAndAddToFullStore(fontProperties);
 
   // Build kerning table
   BitmapTextFAB.buildKerningTableIfDoesntExist(fontProperties);
@@ -158,7 +157,7 @@ async function generateHashesForFont(fontProperties) {
     }
   }
 
-  // 7-12. Blue text rendering (2 hashes per test copy: colored + black-and-white)
+  // 8-15. Blue text rendering (2 hashes per test copy: colored + black-and-white)
   const blueTextProps = new TextProperties({ textColor: '#0000FF' });
 
   for (let testCopyNum = 1; testCopyNum <= 4; testCopyNum++) {
@@ -264,10 +263,24 @@ async function generateAndExportHashes(fontSetSpec) {
     // 1. Initialize specs
     window.specs = initializeSpecs();
 
-    // 2. Reconstruct FontSetGenerator from plain spec object
+    // 2. Initialize CharacterSetRegistry from font set spec
+    // Register custom character sets for fonts that define them
+    if (fontSetSpec && fontSetSpec.fontSets) {
+      for (const set of fontSetSpec.fontSets) {
+        if (set.characters && set.families) {
+          // Register custom character set for each family in this set
+          for (const family of set.families) {
+            CharacterSetRegistry.setDisplayCharacterSet(family, set.characters);
+            console.log(`Registered custom character set for ${family}: ${set.characters}`);
+          }
+        }
+      }
+    }
+
+    // 3. Reconstruct FontSetGenerator from plain spec object
     const reconstructedSpec = JSON.parse(JSON.stringify(fontSetSpec));
 
-    // 3. Process all fonts and generate hashes
+    // 4. Process all fonts and generate hashes
     const allHashes = await processFontSet(reconstructedSpec, (current, total, idString) => {
       const percent = (current / total * 100).toFixed(1);
 
