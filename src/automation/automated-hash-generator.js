@@ -40,7 +40,7 @@ async function buildFont(fontProperties) {
 
 /**
  * Create canvas and render test text for hash calculation
- * @param {number} testCopyNumber - Test copy choice (1, 2, or 3)
+ * @param {number} testCopyNumber - Test copy choice (1, 2, 3, or 4)
  * @param {FontProperties} fontProperties - Font configuration
  * @param {TextProperties} textProperties - Text rendering properties
  * @returns {HTMLCanvasElement} Canvas with rendered text
@@ -57,6 +57,9 @@ function renderTestCopyToCanvas(testCopyNumber, fontProperties, textProperties) 
       break;
     case 3:
       testCopy = kernKingCopyPart2;
+      break;
+    case 4:
+      testCopy = testCopy4;
       break;
     default:
       throw new Error(`Invalid testCopyNumber: ${testCopyNumber}`);
@@ -141,10 +144,10 @@ async function generateHashesForFont(fontProperties) {
   const positioningHash = AtlasPositioningFAB.getHash(tightData.atlasPositioning);
   hashes[`${idString} positioning`] = positioningHash;
 
-  // 4-6. Black text rendering for 3 test copies
+  // 4-7. Black text rendering for 4 test copies
   const blackTextProps = new TextProperties({ textColor: '#000000' });
 
-  for (let testCopyNum = 1; testCopyNum <= 3; testCopyNum++) {
+  for (let testCopyNum = 1; testCopyNum <= 4; testCopyNum++) {
     try {
       const canvas = renderTestCopyToCanvas(testCopyNum, fontProperties, blackTextProps);
       const ctx = canvas.getContext('2d');
@@ -158,7 +161,7 @@ async function generateHashesForFont(fontProperties) {
   // 7-12. Blue text rendering (2 hashes per test copy: colored + black-and-white)
   const blueTextProps = new TextProperties({ textColor: '#0000FF' });
 
-  for (let testCopyNum = 1; testCopyNum <= 3; testCopyNum++) {
+  for (let testCopyNum = 1; testCopyNum <= 4; testCopyNum++) {
     try {
       const canvas = renderTestCopyToCanvas(testCopyNum, fontProperties, blueTextProps);
       const ctx = canvas.getContext('2d');

@@ -77,7 +77,8 @@ function getTestCopyChoiceAndText() {
   const options = [
     { id: 'test-copy-1-radio-button', text: testCopy1, number: 1 },
     { id: 'kern-king-copy-part-1-radio-button', text: kernKingCopyPart1, number: 2 },
-    { id: 'kern-king-copy-part-2-radio-button', text: kernKingCopyPart2, number: 3 }
+    { id: 'kern-king-copy-part-2-radio-button', text: kernKingCopyPart2, number: 3 },
+    { id: 'test-copy-4-radio-button', text: testCopy4, number: 4 }
   ];
   for (const option of options) {
     if (document.getElementById(option.id).checked) {

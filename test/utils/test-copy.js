@@ -55,4 +55,7 @@ const kernKingCopyPart2 = 'Aaron Abraham Adam Aeneas Agfa Ahoy Aileen Akbar Alan
   'Twice Tyler Tzean Ua Udder Ue Uf Ugh Uh Ui Uk Ul Um Unkempt Uo Up Uq Ursula Use Utmost Uvula' + "\n" +
   'Uw Uxurious Uzßai Valerie Velour Vh Vicky Volvo Vs Water Were Where With World Wt. Wulk Wyler' + "\n" +
   'Xavier Xerox Xi Xylophone Yaboe Year Yipes Yo Ypsilant Ys Yu Zabar’s Zero Zhane Zizi Zorro Zu' + "\n" +
-  'Zy Don’t I’ll I’m I’se'
+  'Zy Don’t I’ll I’m I’se';
+
+// Test copy 4 - Mixed text and symbols
+const testCopy4 = 'Hello ☺ World ✔';

@@ -82,7 +82,7 @@ if (showHelp) {
   console.log('  - Atlas source hash (variable-width cells)');
   console.log('  - Tight atlas hash (reconstructed)');
   console.log('  - Positioning metadata hash');
-  console.log('  - Text rendering hashes (3 test copies)');
+  console.log('  - Text rendering hashes (4 test copies)');
   console.log('  - Color rendering hashes (blue text variants)');
   console.log('');
   console.log('Prerequisites:');
