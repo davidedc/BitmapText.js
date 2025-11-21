@@ -37,6 +37,14 @@
   4. Test: `./tools/minify-metrics.js` (performs automatic roundtrip verification)
   5. See scripts/README.md for detailed workflow
 
+  ### Working with Symbol Fonts
+  1. Symbol font (BitmapTextSymbols) uses custom character set (18 symbols)
+  2. Build-time: `create-glyphs.js` selects character set based on font family
+  3. Runtime: Fast symbol detection using `string.includes()` (~1-2ns per character)
+  4. Font specification: `specs/font-sets/bitmap-text-symbols.json` defines symbol character set
+  5. Rendering override: GlyphFAB.js uses Courier New for BitmapTextSymbols (monospacing)
+  6. Auto-redirect: Symbols automatically use BitmapTextSymbols regardless of base font
+
   ### Debugging Rendering Issues
   - Check hash mismatches in src/utils/HashStore
   - Use src/utils/canvas-extensions.js debugging methods
@@ -78,6 +86,8 @@
   1. Position tracking uses floats (avoids rounding error accumulation), but final draw coordinates are integers (crisp, pixel-aligned rendering)
   2. Temporary canvases must be cleared between operations
   3. Kerning values are in 1/1000 em units
+  4. Symbol characters (18 Unicode symbols) auto-redirect to BitmapTextSymbols font during rendering
+  5. Symbol font uses Courier New for rendering to ensure monospacing
 
   ## Where to Find Things
 
@@ -98,6 +108,12 @@
   - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
   - **Tight atlas reconstruction**: src/runtime/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
   - **Character set constant**: BitmapText.CHARACTER_SET static property (204 characters - ASCII, CP-1252 subset, Latin-1 Supplement; used by both build-time and runtime)
+  - **Symbol font configuration**: BitmapText.SYMBOL_CHARACTERS_STRING static property (18 symbols), BitmapText.SYMBOLS_FONT_FAMILY constant ('BitmapTextSymbols')
+  - **Symbol detection**: src/runtime/BitmapText.js lines 94-96 (#isSymbolCharacter fast detection helper)
+  - **Symbol auto-redirect**: src/runtime/BitmapText.js lines 447-469 (measureText), lines 630-654, 767-782 (drawTextFromAtlas)
+  - **Symbol glyph creation**: src/builder/create-glyphs.js (character set selection based on font family)
+  - **Symbol font rendering override**: src/builder/GlyphFAB.js lines 67-69 (Courier New for monospacing)
+  - **Symbol font specification**: specs/font-sets/bitmap-text-symbols.json
   - **Glyph creation utilities**: src/builder/create-glyphs.js (creates glyphs for all characters in character set)
   - **Glyph rendering**: src/builder/GlyphFAB.js (6-step pipeline: canvas setup, measurement, corrections, dimensions, rendering, preservation)
   - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)

@@ -52,6 +52,7 @@ Each object in the `fontSets` array defines a cross-product of font properties.
 | `styles` | Array | Yes | Font styles: `"normal"`, `"italic"`, `"oblique"` |
 | `weights` | Array | Yes | Font weights (see Weight Values below) |
 | `sizes` | Array | Yes | Font sizes in CSS pixels (numbers or ranges) |
+| `characters` | String | No | Optional custom character set (see Custom Character Sets below) |
 
 ### Array Value Types
 
@@ -113,6 +114,33 @@ Arrays can contain three types of values:
   [[12, 24, 0.5]]               // Range: 12 to 24 with 0.5 steps
   [[12, 24, 1], 48, 64]         // Range plus specific sizes
   ```
+
+### Custom Character Sets
+
+The optional `characters` field allows you to specify a custom set of characters for a font family, overriding the default 204-character set.
+
+#### `characters` (Optional)
+
+Custom character set for this font family. When specified, only these characters are generated during font building.
+
+**Type**: String of Unicode characters
+
+**Usage**:
+- Symbol fonts: Specify the exact symbols to render
+- Special character fonts: Limit to subset of characters
+- Standard fonts: Omit this field to use default 204-character set
+
+**Example**:
+```json
+{
+  "families": ["BitmapTextSymbols"],
+  "characters": "☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗"
+}
+```
+
+**Default**: If omitted, uses `BitmapText.CHARACTER_SET` (204 standard characters: ASCII printable, CP-1252 subset, Latin-1 Supplement, full block character)
+
+**Note**: This affects build-time glyph generation only. Runtime behavior (symbol auto-redirect) is independent of this field.
 
 ## Cross-Product Calculation
 
@@ -291,6 +319,35 @@ Creating assets for both standard and high-DPI displays:
 ```
 
 **Total**: 2 × 3 × 3 × 7 × 49 = **6,174 configurations**
+
+### Example 6: Symbol Font Specification
+
+Creating a custom symbol font with specific characters:
+
+```json
+{
+  "fontSets": [
+    {
+      "name": "BitmapTextSymbols Monospaced Symbols",
+      "density": [1.0, 2.0],
+      "families": ["BitmapTextSymbols"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[8.5, 72, 0.5]],
+      "characters": "☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗"
+    }
+  ]
+}
+```
+
+**Details**:
+- Generates BitmapTextSymbols font with 18 Unicode symbols (not 204 standard characters)
+- Size range 8.5px to 72px in 0.5px increments
+- Both standard (1.0) and HiDPI (2.0) pixel densities
+- Renders using Courier New for monospacing (handled internally by GlyphFAB.js)
+- Symbols auto-redirect at runtime regardless of base font specified
+
+**Total**: 2 × 1 × 1 × 1 × 128 = **256 configurations**
 
 ## Usage with FontSetGenerator
 
