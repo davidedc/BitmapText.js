@@ -178,7 +178,7 @@ class MetricsExpander {
 
     return new FontMetrics(expandedData);
   }
-  
+
   /**
    * Expands kerning table with range notation support
    * TIER 3 OPTIMIZATION: Two-dimensional expansion (reverse order of compression)
@@ -346,7 +346,7 @@ class MetricsExpander {
 
     return chars;
   }
-  
+
   /**
    * Expands glyph metrics from arrays back to full objects
    * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using BitmapText.CHARACTER_SET

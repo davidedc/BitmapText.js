@@ -1334,9 +1334,9 @@ class BitmapText {
     if (char === ' ') return;
 
     if (characterMetrics.actualBoundingBoxLeft === undefined ||
-        characterMetrics.actualBoundingBoxRight === undefined ||
-        characterMetrics.actualBoundingBoxAscent === undefined ||
-        characterMetrics.actualBoundingBoxDescent === undefined) {
+      characterMetrics.actualBoundingBoxRight === undefined ||
+      characterMetrics.actualBoundingBoxAscent === undefined ||
+      characterMetrics.actualBoundingBoxDescent === undefined) {
       console.warn(`Missing bounding box metrics for character '${char}'`);
       return;
     }

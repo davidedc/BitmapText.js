@@ -285,7 +285,7 @@ class FontLoaderBase {
 
     if (!fontMetrics) {
       // Store atlas for later reconstruction when metrics become available
-      FontLoaderBase._pendingAtlases.set(idString, {atlasImage, bitmapTextClass});
+      FontLoaderBase._pendingAtlases.set(idString, { atlasImage, bitmapTextClass });
       return false;
     }
 
@@ -317,7 +317,7 @@ class FontLoaderBase {
       return;
     }
 
-    const {atlasImage, bitmapTextClass} = FontLoaderBase._pendingAtlases.get(idString);
+    const { atlasImage, bitmapTextClass } = FontLoaderBase._pendingAtlases.get(idString);
     FontLoaderBase._pendingAtlases.delete(idString);
 
     // Try to load the atlas now that metrics are available

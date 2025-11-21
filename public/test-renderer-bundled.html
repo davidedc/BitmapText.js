@@ -22,12 +22,14 @@ and then open the page from the browser at:
       margin: 0;
       background-color: #d4ffd4;
     }
+
     canvas {
       font-smooth: never;
       -webkit-font-smoothing: none;
       -moz-osx-font-smoothing: none;
       margin-left: 3px;
     }
+
     .bundle-info {
       background: #e8f4f8;
       padding: 10px;
@@ -36,6 +38,7 @@ and then open the page from the browser at:
       border-left: 4px solid #2196F3;
       font-size: 14px;
     }
+
     .progress-container {
       position: fixed;
       top: 0;
@@ -46,16 +49,19 @@ and then open the page from the browser at:
       z-index: 9999;
       transition: opacity 0.5s ease-out;
     }
+
     .progress-container.complete {
       opacity: 0;
       pointer-events: none;
     }
+
     .progress-fill {
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, #4CAF50, #45a049);
       transition: width 0.2s ease-out;
     }
+
     .progress-text {
       position: absolute;
       top: 6px;
@@ -80,7 +86,8 @@ and then open the page from the browser at:
   </div>
 
   <div class="bundle-info">
-    <strong style="color: #2196F3;">Production Bundle:</strong> This demo uses the minified runtime bundle (32KB) instead of 17 separate script tags.
+    <strong style="color: #2196F3;">Production Bundle:</strong> This demo uses the minified runtime bundle (32KB)
+    instead of 17 separate script tags.
     <br>See <code>test-renderer.html</code> for the debug version with individual source files.
   </div>
 
@@ -93,7 +100,7 @@ and then open the page from the browser at:
 <!-- Test utilities (NOT in bundle) -->
 <script src="../src/utils/timing.js"></script>
 
-<script >
+<script>
   const maxFontSize_px = 96;
   const minFontSize_px = 0;  // Rendering/testing context: can test interpolated sizes from 0px
   const fontSizeIncrement_px = 0.5;
@@ -116,6 +123,7 @@ and then open the page from the browser at:
 <script src="../test/utils/show-glyphs.js"></script>
 <script src="../src/ui/components/copy-choice.js"></script>
 <script src="../src/ui/components/pixel-density.js"></script>
+
 <script src="../src/ui/components/font-family-dropdown.js"></script>
 <script src="../src/ui/components/font-style-dropdown.js"></script>
 <script src="../src/ui/components/font-weight-dropdown.js"></script>

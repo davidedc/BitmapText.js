@@ -7,7 +7,7 @@ class MetricsMinifier {
   constructor() {
     throw new Error('MetricsMinifier cannot be instantiated - use static methods');
   }
-  
+
   /**
    * Compresses font ID string from verbose format to compact format
    * TIER 6 OPTIMIZATION: Font ID compression
@@ -365,7 +365,7 @@ class MetricsMinifier {
       pd: firstGlyph.pixelDensity                // pixelDensity (CRITICAL for atlas reconstruction)
     };
   }
-  
+
   /**
    * Finds the most common left bounding box value across all glyphs
    * TIER 6b OPTIMIZATION: 2-element tuplet compression requires common left value
@@ -662,7 +662,7 @@ class MetricsMinifier {
       ];
     });
   }
-  
+
   /**
    * Minifies kerning table using two-dimensional range notation
    * TIER 3 OPTIMIZATION: Two-pass compression
