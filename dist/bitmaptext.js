@@ -660,6 +660,34 @@ class BitmapText {
   // ALL font files must contain exactly these 204 characters in this order.
   static CHARACTER_SET = BitmapText.#generateCharacterSet();
 
+  // ============================================
+  // Symbol Auto-Redirect Configuration
+  // ============================================
+
+  // Symbol characters that auto-redirect to BitmapTextSymbols font
+  // These 18 Unicode symbols render using monospaced Courier New metrics
+  // regardless of the font specified in FontProperties
+  static SYMBOL_CHARACTERS_STRING = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
+
+  // Symbol set constant (18 characters)
+  // Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
+  static SYMBOL_SET = Array.from(BitmapText.SYMBOL_CHARACTERS_STRING);
+
+  // Font family name for symbols (rendered internally using Courier New)
+  static SYMBOLS_FONT_FAMILY = 'BitmapTextSymbols';
+
+  /**
+   * Fast symbol detection helper
+   * Uses string.includes() for ~1-2ns lookup performance
+   *
+   * @private
+   * @param {string} char - Character to check
+   * @returns {boolean} True if character is a special symbol
+   */
+  static #isSymbolCharacter(char) {
+    return BitmapText.SYMBOL_CHARACTERS_STRING.includes(char);
+  }
+
   /**
    * Calculate optimal grid dimensions for atlas layout
    * Uses square-ish approach (ceil(sqrt(N))) to minimize max dimension
@@ -1009,11 +1037,43 @@ class BitmapText {
       };
     }
 
+    // PRE-CREATE symbols font properties ONCE for potential auto-redirect
+    const symbolsFontProps = new FontProperties(
+      fontProperties.pixelDensity,
+      BitmapText.SYMBOLS_FONT_FAMILY,
+      'normal',
+      'normal',
+      fontProperties.fontSize
+    );
+
+    // PRE-FETCH symbols font data
+    let symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+
+    // If symbols font not found and size < 8.5, try interpolating from size 8.5
+    if (!symbolsFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const symbolsMinSizeProps = BitmapText.#createFontPropsAtMinSize(symbolsFontProps);
+      const symbolsMetricsAt8_5 = FontMetricsStore.getFontMetrics(symbolsMinSizeProps);
+
+      if (symbolsMetricsAt8_5) {
+        // Create interpolated metrics wrapper for symbols font
+        symbolsFontMetrics = BitmapText.#createInterpolatedFontMetrics(symbolsMetricsAt8_5, fontProperties.fontSize);
+      }
+    }
+
+    const hasSymbolsFont = symbolsFontMetrics !== null;
+
     // Scan text for missing glyphs (excluding spaces which are handled specially)
+    // Check each character against the appropriate font (base or symbols)
     const missingChars = new Set();
     for (const char of text) {
-      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
-        missingChars.add(char);
+      if (char !== ' ') {
+        // Determine which font should handle this character
+        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
+        const checkFontMetrics = isSymbol ? symbolsFontMetrics : fontMetrics;
+
+        if (!checkFontMetrics.hasGlyph(char)) {
+          missingChars.add(char);
+        }
       }
     }
 
@@ -1030,7 +1090,13 @@ class BitmapText {
     // SUCCESS PATH: Calculate metrics normally
     const chars = [...text];
     let width_CssPx = 0;
-    let characterMetrics = fontMetrics.getCharacterMetrics(chars[0]);
+
+    // Determine font for first character
+    const firstCharIsSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(chars[0]);
+    let currentFontMetrics = firstCharIsSymbol ? symbolsFontMetrics : fontMetrics;
+    let currentFontProps = firstCharIsSymbol ? symbolsFontProps : fontProperties;
+
+    let characterMetrics = currentFontMetrics.getCharacterMetrics(chars[0]);
     const actualBoundingBoxLeft_CssPx = characterMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -1041,12 +1107,22 @@ class BitmapText {
       const char = chars[i];
       const nextChar = chars[i + 1];
 
-      characterMetrics = fontMetrics.getCharacterMetrics(char);
+      // FAST CHECK: Is this a symbol? Switch fonts if needed
+      const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
+      if (isSymbol && currentFontProps !== symbolsFontProps) {
+        currentFontMetrics = symbolsFontMetrics;
+        currentFontProps = symbolsFontProps;
+      } else if (!isSymbol && currentFontProps !== fontProperties) {
+        currentFontMetrics = fontMetrics;
+        currentFontProps = fontProperties;
+      }
+
+      characterMetrics = currentFontMetrics.getCharacterMetrics(char);
 
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, characterMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, characterMetrics.actualBoundingBoxDescent);
 
-      advancement_CssPx = this.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
+      advancement_CssPx = this.calculateAdvancement_CssPx(currentFontMetrics, currentFontProps, char, nextChar, textProperties, characterMetrics);
       width_CssPx += advancement_CssPx;
     }
 
@@ -1144,11 +1220,44 @@ class BitmapText {
       };
     }
 
+    // PRE-CREATE symbols font properties ONCE (not per-character!)
+    // This avoids object allocation in hot rendering loop
+    const symbolsFontProps = new FontProperties(
+      fontProperties.pixelDensity,
+      BitmapText.SYMBOLS_FONT_FAMILY,
+      'normal',  // Always normal style for symbols
+      'normal',  // Always normal weight for symbols
+      fontProperties.fontSize
+    );
+
+    // PRE-FETCH symbols font data ONCE
+    let symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+
+    // If symbols font not found and size < 8.5, try interpolating from size 8.5
+    if (!symbolsFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const symbolsMinSizeProps = BitmapText.#createFontPropsAtMinSize(symbolsFontProps);
+      const symbolsMetricsAt8_5 = FontMetricsStore.getFontMetrics(symbolsMinSizeProps);
+
+      if (symbolsMetricsAt8_5) {
+        // Create interpolated metrics wrapper for symbols font
+        symbolsFontMetrics = BitmapText.#createInterpolatedFontMetrics(symbolsMetricsAt8_5, fontProperties.fontSize);
+      }
+    }
+
+    const hasSymbolsFont = symbolsFontMetrics !== null;
+
     // Scan for missing metrics (can't render without metrics)
+    // Check each character against the appropriate font (base or symbols)
     const missingMetricsChars = new Set();
     for (const char of text) {
-      if (char !== ' ' && !fontMetrics.hasGlyph(char)) {
-        missingMetricsChars.add(char);
+      if (char !== ' ') {
+        // Determine which font should handle this character
+        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
+        const checkFontMetrics = isSymbol ? symbolsFontMetrics : fontMetrics;
+
+        if (!checkFontMetrics.hasGlyph(char)) {
+          missingMetricsChars.add(char);
+        }
       }
     }
 
@@ -1164,6 +1273,17 @@ class BitmapText {
     // Check atlas data availability (force invalid for sizes < 8.5)
     let atlasData = forceInvalidAtlas ? null : AtlasDataStore.getAtlasData(fontProperties);
     const atlasValid = forceInvalidAtlas ? false : BitmapText.#isValidAtlas(atlasData);
+
+    const symbolsAtlasData = symbolsFontMetrics ?
+      AtlasDataStore.getAtlasData(symbolsFontProps) : null;
+    const symbolsAtlasValid = symbolsFontMetrics ?
+      BitmapText.#isValidAtlas(symbolsAtlasData) : false;
+
+    // Track current font to minimize redundant lookups
+    let currentFontProps = fontProperties;
+    let currentFontMetrics = fontMetrics;
+    let currentAtlasData = atlasData;
+    let currentAtlasValid = atlasValid;
 
     // Track which glyphs are missing from atlas (for partial atlas status)
     const missingAtlasChars = new Set();
@@ -1237,24 +1357,43 @@ class BitmapText {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
 
+        // FAST CHECK: Is this a symbol? (string.includes on 18 chars = ~1-2ns)
+        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(currentChar);
+
+        // Switch font ONLY if needed (avoids redundant assignments)
+        if (isSymbol && currentFontProps !== symbolsFontProps) {
+          currentFontProps = symbolsFontProps;
+          currentFontMetrics = symbolsFontMetrics;
+          currentAtlasData = symbolsAtlasData;
+          currentAtlasValid = symbolsAtlasValid;
+        } else if (!isSymbol && currentFontProps !== fontProperties) {
+          // Switch back to base font
+          currentFontProps = fontProperties;
+          currentFontMetrics = fontMetrics;
+          currentAtlasData = atlasData;
+          currentAtlasValid = atlasValid;
+        }
+
         // Check if atlas has a glyph for this character (excluding spaces)
         if (currentChar !== ' ') {
-          if (!atlasValid || !atlasData.hasPositioning(currentChar)) {
+          if (!currentAtlasValid || !currentAtlasData.hasPositioning(currentChar)) {
             missingAtlasChars.add(currentChar);
             placeholdersUsed = true;
           }
         }
 
-        // Draw (either real glyph or placeholder)
+        // Draw using appropriate font (either real glyph or placeholder)
         BitmapText.#drawCharacter(ctx,
           currentChar,
           position_PhysPx,
-          atlasData,
-          fontMetrics,
+          currentAtlasData,
+          currentFontMetrics,
           textColor
         );
 
-        position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties);
+        // Calculate advancement using current font's metrics
+        position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
+          currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
       }
     }
 
@@ -1511,6 +1650,26 @@ class BitmapText {
 
     const metrics = measureResult.metrics;
 
+    // PRE-CREATE symbols font properties ONCE
+    const symbolsFontProps = new FontProperties(
+      fontProperties.pixelDensity,
+      BitmapText.SYMBOLS_FONT_FAMILY,
+      'normal',
+      'normal',
+      fontProperties.fontSize
+    );
+
+    // PRE-FETCH symbols font data
+    const symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+    const symbolsAtlasData = symbolsFontMetrics ?
+      AtlasDataStore.getAtlasData(symbolsFontProps) : null;
+    const hasSymbolsFont = symbolsFontMetrics !== null;
+
+    // Track current font to minimize lookups
+    let currentFontProps = fontProperties;
+    let currentFontMetrics = fontMetrics;
+    let currentAtlasData = atlasData;
+
     // Calculate scratch canvas dimensions in physical pixels
     // CRITICAL: Use FONT bounding box (not actual text bounding box)
     // This ensures we have room for ALL characters in the font, not just those in this text
@@ -1583,21 +1742,36 @@ class BitmapText {
       const currentChar = chars[i];
       const nextChar = chars[i + 1];
 
+      // FAST CHECK: Is this a symbol? (string.includes on 18 chars = ~1-2ns)
+      const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(currentChar);
+
+      // Switch font ONLY if needed (avoids redundant assignments)
+      if (isSymbol && currentFontProps !== symbolsFontProps) {
+        currentFontProps = symbolsFontProps;
+        currentFontMetrics = symbolsFontMetrics;
+        currentAtlasData = symbolsAtlasData;
+      } else if (!isSymbol && currentFontProps !== fontProperties) {
+        // Switch back to base font
+        currentFontProps = fontProperties;
+        currentFontMetrics = fontMetrics;
+        currentAtlasData = atlasData;
+      }
+
       // Track missing characters
-      if (currentChar !== ' ' && !atlasData.hasPositioning(currentChar)) {
+      if (currentChar !== ' ' && !currentAtlasData.hasPositioning(currentChar)) {
         missingAtlasChars.add(currentChar);
         placeholdersUsed = true;
         // Advance position even for missing characters to maintain layout
         position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
-          fontMetrics, fontProperties, currentChar, nextChar, textProperties
+          currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties
         );
         continue;
       }
 
       // Draw glyph to scratch canvas (skip spaces, they have no visual)
-      if (currentChar !== ' ' && atlasData.hasPositioning(currentChar)) {
-        const atlasPositioning = atlasData.atlasPositioning.getPositioning(currentChar);
-        const atlasImage = atlasData.atlasImage.image;
+      if (currentChar !== ' ' && currentAtlasData.hasPositioning(currentChar)) {
+        const atlasPositioning = currentAtlasData.atlasPositioning.getPositioning(currentChar);
+        const atlasImage = currentAtlasData.atlasImage.image;
         const { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
 
         // Draw original glyph (black) to scratch canvas at correct position
@@ -1613,7 +1787,7 @@ class BitmapText {
 
       // Advance position for next character
       position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
-        fontMetrics, fontProperties, currentChar, nextChar, textProperties
+        currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties
       );
     }
 
@@ -1753,9 +1927,9 @@ class BitmapText {
     if (char === ' ') return;
 
     if (characterMetrics.actualBoundingBoxLeft === undefined ||
-        characterMetrics.actualBoundingBoxRight === undefined ||
-        characterMetrics.actualBoundingBoxAscent === undefined ||
-        characterMetrics.actualBoundingBoxDescent === undefined) {
+      characterMetrics.actualBoundingBoxRight === undefined ||
+      characterMetrics.actualBoundingBoxAscent === undefined ||
+      characterMetrics.actualBoundingBoxDescent === undefined) {
       console.warn(`Missing bounding box metrics for character '${char}'`);
       return;
     }
@@ -2319,10 +2493,11 @@ class MetricsExpander {
    *
    * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
    *   - v can be array (Tier 6c) or base64 string (Tier 7)
+   * @param {Array<string>} [characterSet=BitmapText.CHARACTER_SET] - Character set to use for expansion
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
-  static expand(minified) {
+  static expand(minified, characterSet = BitmapText.CHARACTER_SET) {
     // Check if FontMetrics class is available
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
@@ -2339,38 +2514,55 @@ class MetricsExpander {
     // Extract values from Tier 6c/7 array format
     let [kv, k, b, v, t, g, s, cl] = minified;
 
-    // Convert integer values back to floats (divide by 10000)
-    kv = this.#convertIntegersToValues(kv);
+    // Check if this is an uncompressed custom character set font
+    // Custom character sets have v as an object (characterMetrics), not an array or string
+    const isCustomCharacterSet = typeof v === 'object' && !Array.isArray(v) && v !== null;
 
-    // TIER 7: Handle value lookup array - can be array (Tier 6c) or base64 string (Tier 7)
-    if (typeof v === 'string') {
-      // Tier 7: Decompress from delta-encoded base64
-      v = this.#decompressValueArray(v);
-      v = this.#convertIntegersToValues(v);
-    } else if (Array.isArray(v)) {
-      // Tier 6c: Already an array of integers
-      v = this.#convertIntegersToValues(v);
+    let expandedData;
+
+    if (isCustomCharacterSet) {
+      // Custom character set: v is already the characterMetrics object
+      console.debug(`🔍 MetricsExpander: Detected uncompressed custom character set font`);
+      expandedData = {
+        kerningTable: k,  // Already in object format
+        characterMetrics: v,  // Already in object format
+        spaceAdvancementOverrideForSmallSizesInPx: s
+      };
     } else {
-      throw new Error('Invalid value lookup format - expected array or string');
+      // Standard 204-character font: use full decompression
+      // Convert integer values back to floats (divide by 10000)
+      kv = this.#convertIntegersToValues(kv);
+
+      // TIER 7: Handle value lookup array - can be array (Tier 6c) or base64 string (Tier 7)
+      if (typeof v === 'string') {
+        // Tier 7: Decompress from delta-encoded base64
+        v = this.#decompressValueArray(v);
+        v = this.#convertIntegersToValues(v);
+      } else if (Array.isArray(v)) {
+        // Tier 6c: Already an array of integers
+        v = this.#convertIntegersToValues(v);
+      } else {
+        throw new Error('Invalid value lookup format - expected array or string');
+      }
+
+      // Unflatten baseline array to object
+      b = this.#unflattenBaseline(b);
+
+      // Decode base64-encoded binary data
+      // t = VarInt+zigzag encoded flattened tuplets
+      // g = byte-encoded tuplet indices
+      t = this.#decodeVarInts(t);
+      g = this.#decodeFromBase64Bytes(g);
+
+      // Unflatten tuplet data from negative-delimiter format
+      t = this.#unflattenTuplets(t);
+
+      expandedData = {
+        kerningTable: this.#expandKerningTable(k, kv, characterSet),
+        characterMetrics: this.#expandCharacterMetrics(g, b, v, t, cl, characterSet),
+        spaceAdvancementOverrideForSmallSizesInPx: s
+      };
     }
-
-    // Unflatten baseline array to object
-    b = this.#unflattenBaseline(b);
-
-    // Decode base64-encoded binary data
-    // t = VarInt+zigzag encoded flattened tuplets
-    // g = byte-encoded tuplet indices
-    t = this.#decodeVarInts(t);
-    g = this.#decodeFromBase64Bytes(g);
-
-    // Unflatten tuplet data from negative-delimiter format
-    t = this.#unflattenTuplets(t);
-
-    const expandedData = {
-      kerningTable: this.#expandKerningTable(k, kv),
-      characterMetrics: this.#expandCharacterMetrics(g, b, v, t, cl),
-      spaceAdvancementOverrideForSmallSizesInPx: s
-    };
 
     // Verify pixelDensity was preserved
     const firstChar = Object.keys(expandedData.characterMetrics)[0];
@@ -2379,7 +2571,7 @@ class MetricsExpander {
 
     return new FontMetrics(expandedData);
   }
-  
+
   /**
    * Expands kerning table with range notation support
    * TIER 3 OPTIMIZATION: Two-dimensional expansion (reverse order of compression)
@@ -2390,17 +2582,17 @@ class MetricsExpander {
    * Always uses BitmapText.CHARACTER_SET for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
    * @param {Object} minified - Minified kerning table with indexed values
-   * @param {Array} kerningValueLookup - Value lookup table for kerning values
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @private
    */
-  static #expandKerningTable(minified, kerningValueLookup) {
+  static #expandKerningTable(minified, kerningValueLookup, characterSet) {
     // PASS 1: Expand left side (characters that come before)
-    const leftExpanded = this.#expandLeftSide(minified);
+    const leftExpanded = this.#expandLeftSide(minified, characterSet);
 
     // PASS 2: Expand right side (characters that follow)
     const rangeExpanded = {};
     for (const [leftChar, pairs] of Object.entries(leftExpanded)) {
-      rangeExpanded[leftChar] = this.#expandKerningPairs(pairs);
+      rangeExpanded[leftChar] = this.#expandKerningPairs(pairs, characterSet);
     }
 
     // PASS 3 (TIER 4): Replace all indices with actual values from lookup table
@@ -2420,11 +2612,11 @@ class MetricsExpander {
    * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
    * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
    * Always uses BitmapText.CHARACTER_SET for range expansion
-   * @param {Object} minified - Minified kerning table with potential left-side ranges
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Left-expanded kerning table
    * @private
    */
-  static #expandLeftSide(minified) {
+  static #expandLeftSide(minified, characterSet) {
     const expanded = {};
 
     // Process entries in order so later entries can override earlier ones
@@ -2437,13 +2629,13 @@ class MetricsExpander {
 
         // Check if both start and end are single characters in the character set
         if (startChar.length === 1 && endChar.length === 1) {
-          const startIndex = BitmapText.CHARACTER_SET.indexOf(startChar);
-          const endIndex = BitmapText.CHARACTER_SET.indexOf(endChar);
+          const startIndex = characterSet.indexOf(startChar);
+          const endIndex = characterSet.indexOf(endChar);
 
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
             // Valid range, expand it
             for (let i = startIndex; i <= endIndex; i++) {
-              expanded[BitmapText.CHARACTER_SET[i]] = rightSideObj;
+              expanded[characterSet[i]] = rightSideObj;
             }
             continue;
           }
@@ -2467,17 +2659,17 @@ class MetricsExpander {
    * - Ranges: a, c-e (c,d,e), g, j-s (j,k,l,m,n,o,p,q,r,s)
    *
    * Always uses BitmapText.CHARACTER_SET for range expansion
-   * @param {Object} pairs - Compressed pairs like {"-,.:;ac-egj-s":20}
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Expanded pairs like {"-":20,",":20,".":20,...,"s":20}
    * @private
    */
-  static #expandKerningPairs(pairs) {
+  static #expandKerningPairs(pairs, characterSet) {
     const expanded = {};
 
     // Process entries in order so later entries can override earlier ones
     for (const [key, value] of Object.entries(pairs)) {
       // Parse the compact string notation
-      const chars = this.#parseCompactCharString(key);
+      const chars = this.#parseCompactCharString(key, characterSet);
 
       // Assign value to all parsed characters
       for (const char of chars) {
@@ -2499,10 +2691,11 @@ class MetricsExpander {
    * - "-,.:;ac-egj-s" → dash, comma, dot, colon, semicolon, a, c-e range, g, j-s range
    *
    * @param {string} compactStr - Compact string like "-,.:;ac-egj-s"
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {string[]} Array of individual characters
    * @private
    */
-  static #parseCompactCharString(compactStr) {
+  static #parseCompactCharString(compactStr, characterSet) {
     const chars = [];
     let i = 0;
 
@@ -2522,14 +2715,14 @@ class MetricsExpander {
         const startChar = currentChar;
         const endChar = compactStr[i + 2];
 
-        // Verify it's a valid range in BitmapText.CHARACTER_SET
-        const startIndex = BitmapText.CHARACTER_SET.indexOf(startChar);
-        const endIndex = BitmapText.CHARACTER_SET.indexOf(endChar);
+        // Verify it's a valid range in the character set
+        const startIndex = characterSet.indexOf(startChar);
+        const endIndex = characterSet.indexOf(endChar);
 
         if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
           // Valid range - expand it
           for (let j = startIndex; j <= endIndex; j++) {
-            chars.push(BitmapText.CHARACTER_SET[j]);
+            chars.push(characterSet[j]);
           }
           i += 3; // Skip X, -, Y
         } else {
@@ -2546,7 +2739,7 @@ class MetricsExpander {
 
     return chars;
   }
-  
+
   /**
    * Expands glyph metrics from arrays back to full objects
    * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using BitmapText.CHARACTER_SET
@@ -2568,13 +2761,14 @@ class MetricsExpander {
    * @param {Array} valueLookup - Value lookup table mapping indices to actual values
    * @param {Array} tupletLookup - Tuplet lookup table mapping tuplet indices to index arrays
    * @param {number} [commonLeftIndex] - Common left bounding box index (Tier 6b, optional)
+   * @param {Array<string>} characterSet - Character set to use for expansion
    * @private
    */
-  static #expandCharacterMetrics(tupletIndices, metricsCommonToAllCharacters, valueLookup, tupletLookup, commonLeftIndex) {
+  static #expandCharacterMetrics(tupletIndices, metricsCommonToAllCharacters, valueLookup, tupletLookup, commonLeftIndex, characterSet) {
     const expanded = {};
 
-    // Convert BitmapText.CHARACTER_SET string to array of characters
-    const chars = Array.from(BitmapText.CHARACTER_SET);
+    // Convert character set to array if it isn't already (though it should be)
+    const chars = Array.isArray(characterSet) ? characterSet : Array.from(characterSet);
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {
@@ -4088,7 +4282,16 @@ class FontLoaderBase {
     }
 
     const fontProperties = FontProperties.fromIDString(idString);
-    const fontMetrics = MetricsExpander.expand(compactedData);
+
+    // Determine character set based on font family
+    // If it's the symbols font, use the symbol set
+    // Otherwise, pass undefined to let MetricsExpander default to standard set
+    let characterSet;
+    if (bitmapTextClass && fontProperties.fontFamily === bitmapTextClass.SYMBOLS_FONT_FAMILY) {
+      characterSet = bitmapTextClass.SYMBOL_SET;
+    }
+
+    const fontMetrics = MetricsExpander.expand(compactedData, characterSet);
 
     // Store metrics directly in FontMetricsStore
     FontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
@@ -4257,7 +4460,7 @@ class FontLoaderBase {
 
     if (!fontMetrics) {
       // Store atlas for later reconstruction when metrics become available
-      FontLoaderBase._pendingAtlases.set(idString, {atlasImage, bitmapTextClass});
+      FontLoaderBase._pendingAtlases.set(idString, { atlasImage, bitmapTextClass });
       return false;
     }
 
@@ -4289,7 +4492,7 @@ class FontLoaderBase {
       return;
     }
 
-    const {atlasImage, bitmapTextClass} = FontLoaderBase._pendingAtlases.get(idString);
+    const { atlasImage, bitmapTextClass } = FontLoaderBase._pendingAtlases.get(idString);
     FontLoaderBase._pendingAtlases.delete(idString);
 
     // Try to load the atlas now that metrics are available
