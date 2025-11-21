@@ -157,18 +157,19 @@ class MetricsMinifier {
    * TIER 6c OPTIMIZATION: Binary encoding for tuplet indices and flattened tuplets
    * TIER 7 OPTIMIZATION: Delta encoding + base64 for value lookup array
    *
-   * REQUIRES: metricsData.characterMetrics must contain ALL 204 characters from BitmapText.CHARACTER_SET
+   * REQUIRES: metricsData.characterMetrics must contain ALL characters from the provided characterSet
    *
    * @param {Object} metricsData - Full metrics object containing kerningTable, characterMetrics, etc.
+   * @param {Array<string>} [characterSet=BitmapText.CHARACTER_SET] - Character set to use for minification
    * @returns {Array} Minified metrics as array (Tier 7: element [3] is now base64 string)
-   * @throws {Error} If not all 204 characters are present
+   * @throws {Error} If not all characters are present
    */
-  static minify(metricsData) {
-    // Validate that ALL 204 characters from BitmapText.CHARACTER_SET are present
+  static minify(metricsData, characterSet = BitmapText.CHARACTER_SET) {
+    // Validate that ALL characters from the character set are present
     // Note: We DON'T use Object.keys() because JavaScript reorders numeric keys
-    // Instead, we iterate through BitmapText.CHARACTER_SET and check each character exists
+    // Instead, we iterate through the character set and check each character exists
     const missingChars = [];
-    for (const char of BitmapText.CHARACTER_SET) {
+    for (const char of characterSet) {
       if (!(char in metricsData.characterMetrics)) {
         missingChars.push(char);
       }
@@ -176,31 +177,32 @@ class MetricsMinifier {
 
     if (missingChars.length > 0) {
       throw new Error(
-        `MetricsMinifier requires ALL 204 characters from BitmapText.CHARACTER_SET.\n` +
+        `MetricsMinifier requires ALL ${characterSet.length} characters from the provided character set.\n` +
         `Missing ${missingChars.length} characters: ${missingChars.slice(0, 10).join(', ')}${missingChars.length > 10 ? '...' : ''}\n` +
-        `Please ensure font-assets-builder generates ALL 204 characters.`
+        `Please ensure font-assets-builder generates ALL required characters.`
       );
     }
 
-    // Check for extra characters not in BitmapText.CHARACTER_SET
+    // Check for extra characters not in the character set
     const extraChars = Object.keys(metricsData.characterMetrics).filter(
-      char => !BitmapText.CHARACTER_SET.includes(char)
+      char => !characterSet.includes(char)
     );
 
     if (extraChars.length > 0) {
       throw new Error(
-        `Font contains ${extraChars.length} characters not in BitmapText.CHARACTER_SET: ${extraChars.join(', ')}\n` +
-        `Please update BitmapText.CHARACTER_SET in src/runtime/BitmapText.js to include these characters.`
+        `Font contains ${extraChars.length} characters not in the provided character set: ${extraChars.join(', ')}\n` +
+        `Please update the character set or remove these characters.`
       );
     }
 
     // TIER 6b: Find most common left bounding box value for 2-element tuplet compression
-    const commonLeftValue = this.#findCommonLeftValue(metricsData.characterMetrics);
+    const commonLeftValue = this.#findCommonLeftValue(metricsData.characterMetrics, characterSet);
 
     // TIER 4+6b: Create value lookup table and indexed glyph arrays with 2-element compression
     const { valueLookup, indexedGlyphs, commonLeftIndex } = this.#createValueLookupTable(
       metricsData.characterMetrics,
-      commonLeftValue
+      commonLeftValue,
+      characterSet
     );
 
     // TIER 4: Create kerning value lookup table and indexed kerning table
@@ -219,7 +221,7 @@ class MetricsMinifier {
 
     // TIER 6: Flatten baseline object to array
     const baselineArray = this.#flattenBaseline(
-      this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics)
+      this.#extractMetricsCommonToAllCharacters(metricsData.characterMetrics, characterSet)
     );
 
     // TIER 6: Flatten tuplet lookup arrays to negative-delimiter format
@@ -269,9 +271,9 @@ class MetricsMinifier {
    * @returns {Object} Minified metrics with verified integrity
    * @throws {Error} If roundtrip verification fails
    */
-  static minifyWithVerification(metricsData) {
+  static minifyWithVerification(metricsData, characterSet = BitmapText.CHARACTER_SET) {
     // Step 1: Minify
-    const minified = this.minify(metricsData);
+    const minified = this.minify(metricsData, characterSet);
 
     // Step 2: Check if MetricsExpander is available
     if (typeof MetricsExpander === 'undefined') {
@@ -280,7 +282,7 @@ class MetricsMinifier {
     }
 
     // Step 3: Expand back
-    const expanded = MetricsExpander.expand(minified);
+    const expanded = MetricsExpander.expand(minified, characterSet);
 
     // Step 4: Verify kerning table
     const originalKerning = metricsData.kerningTable;
@@ -349,9 +351,9 @@ class MetricsMinifier {
    * Extract these from the first character in BitmapText.CHARACTER_SET (space)
    * @private
    */
-  static #extractMetricsCommonToAllCharacters(characterMetrics) {
-    // Use first character from BitmapText.CHARACTER_SET (space character)
-    const firstChar = BitmapText.CHARACTER_SET[0];
+  static #extractMetricsCommonToAllCharacters(characterMetrics, characterSet) {
+    // Use first character from the provided character set (space character for standard set)
+    const firstChar = characterSet[0];
     const firstGlyph = characterMetrics[firstChar];
 
     return {
@@ -375,11 +377,11 @@ class MetricsMinifier {
    * @returns {number} Most common left bounding box value
    * @private
    */
-  static #findCommonLeftValue(characterMetrics) {
+  static #findCommonLeftValue(characterMetrics, characterSet) {
     // Count frequency of each left value
     const leftValueCounts = new Map();
 
-    for (const char of BitmapText.CHARACTER_SET) {
+    for (const char of characterSet) {
       const leftValue = characterMetrics[char].actualBoundingBoxLeft;
       leftValueCounts.set(leftValue, (leftValueCounts.get(leftValue) || 0) + 1);
     }
@@ -395,7 +397,7 @@ class MetricsMinifier {
       }
     }
 
-    console.debug(`🔍 Common left value: ${mostCommonValue} (appears in ${maxCount}/${BitmapText.CHARACTER_SET.length} glyphs, ${(maxCount/BitmapText.CHARACTER_SET.length*100).toFixed(1)}%)`);
+    console.debug(`🔍 Common left value: ${mostCommonValue} (appears in ${maxCount}/${characterSet.length} glyphs, ${(maxCount / characterSet.length * 100).toFixed(1)}%)`);
 
     return mostCommonValue;
   }
@@ -421,11 +423,11 @@ class MetricsMinifier {
    * @returns {Object} Object with valueLookup array, indexedGlyphs array, and commonLeftIndex
    * @private
    */
-  static #createValueLookupTable(characterMetrics, commonLeftValue) {
+  static #createValueLookupTable(characterMetrics, commonLeftValue, characterSet) {
     // Step 1: Collect all unique values
     const uniqueValues = new Set();
 
-    for (const char of BitmapText.CHARACTER_SET) {
+    for (const char of characterSet) {
       const glyph = characterMetrics[char];
       uniqueValues.add(glyph.width);
       uniqueValues.add(glyph.actualBoundingBoxLeft);
@@ -454,7 +456,7 @@ class MetricsMinifier {
     console.debug(`🔍 Common left index after value mapping: ${commonLeftIndex}`);
 
     // Step 5: Convert glyph arrays to indices and compress tuplets (TIER 5+6b)
-    const indexedGlyphs = Array.from(BitmapText.CHARACTER_SET).map(char => {
+    const indexedGlyphs = Array.from(characterSet).map(char => {
       const glyph = characterMetrics[char];
       const indices = [
         valueToIndex.get(glyph.width),                      // 0: width
@@ -537,7 +539,7 @@ class MetricsMinifier {
 
     // Step 2: Calculate scores and sort by savings potential
     // Score = JSON_length × occurrences (higher = more savings from short index)
-    const tupletScores = Array.from(tupletOccurrences.values()).map(({tuplet, count}) => {
+    const tupletScores = Array.from(tupletOccurrences.values()).map(({ tuplet, count }) => {
       const stringLength = JSON.stringify(tuplet).length;
       const score = stringLength * count;
       return { tuplet, count, stringLength, score };

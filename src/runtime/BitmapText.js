@@ -76,6 +76,10 @@ class BitmapText {
   // regardless of the font specified in FontProperties
   static SYMBOL_CHARACTERS_STRING = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
 
+  // Symbol set constant (18 characters)
+  // Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
+  static SYMBOL_SET = Array.from(BitmapText.SYMBOL_CHARACTERS_STRING);
+
   // Font family name for symbols (rendered internally using Courier New)
   static SYMBOLS_FONT_FAMILY = 'BitmapTextSymbols';
 

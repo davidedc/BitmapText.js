@@ -111,6 +111,31 @@
   console.log('='.repeat(60));
   console.log('All dependencies loaded successfully');
   console.log('Waiting for Playwright to provide font specification...');
+
+  // Explicitly expose BitmapText on window for Playwright access
+  // In WebKit, class declarations in global scope may not be enumerable on window
+  // page.evaluate() from Playwright needs explicit window reference
+  window.BitmapText = BitmapText;
+  window.BitmapTextFAB = BitmapTextFAB;
+  window.AtlasDataStoreFAB = AtlasDataStoreFAB;
+  window.FontMetricsStoreFAB = FontMetricsStoreFAB;
+  window.GlyphFAB = GlyphFAB;
+  window.FontSetGenerator = FontSetGenerator;
+
+  // Signal that all scripts are loaded and BitmapText is fully initialized
+  // This is checked by automated-font-builder.js after page reloads to ensure
+  // static fields like BitmapText.CHARACTER_SET are ready before font generation
+  window.bitmapTextReady = true;
+  console.log('✅ BitmapText static fields initialized:', {
+    CHARACTER_SET: !!BitmapText.CHARACTER_SET,
+    SYMBOL_CHARACTERS_STRING: !!BitmapText.SYMBOL_CHARACTERS_STRING,
+    characterSetLength: BitmapText.CHARACTER_SET?.length
+  });
+  console.log('✅ Classes exposed on window:', {
+    BitmapText: typeof window.BitmapText,
+    CHARACTER_SET: !!window.BitmapText?.CHARACTER_SET,
+    SYMBOL_CHARACTERS_STRING: !!window.BitmapText?.SYMBOL_CHARACTERS_STRING
+  });
 </script>
 
 </html>

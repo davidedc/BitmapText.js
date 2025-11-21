@@ -139,6 +139,12 @@ function formatHashesForOutput(hashes, metadata) {
   output += `// Spec: ${metadata.specFile}\n`;
   output += `// Font configurations: ${metadata.fontCount}\n`;
   output += `// Total hashes: ${hashCount}\n`;
+  if (metadata.skippedCount && metadata.skippedCount > 0) {
+    output += `//\n`;
+    output += `// Note: ${metadata.skippedCount} test copy hashes were skipped (not generated)\n`;
+    output += `// Reason: BitmapTextSymbols font is symbol-only and cannot render regular text\n`;
+    output += `// Skipped: All test copies (1-4) contain regular text or mixed text+symbols\n`;
+  }
   output += '\n';
 
   // Add positioning hashes as comments if any exist
@@ -311,19 +317,25 @@ async function generateHashes() {
     // Pass font spec to page and generate hashes
     console.log('⏳ Generating hashes...');
 
-    const hashes = await page.evaluate(async (spec) => {
-      // Call the hash generation function and return hash object
+    const result = await page.evaluate(async (spec) => {
+      // Call the hash generation function and return result object
       return await window.generateAndExportHashes(spec);
     }, fontSpec);
 
     // Validate received data
-    if (!hashes || typeof hashes !== 'object') {
+    if (!result || typeof result !== 'object' || !result.hashes) {
       throw new Error('Failed to receive hash data from browser');
     }
+
+    const hashes = result.hashes;
+    const skippedCount = result.skippedCount || 0;
 
     console.log('');
     console.log('✅ Hashes received from browser');
     console.log(`📊 Total hashes: ${Object.keys(hashes).length}`);
+    if (skippedCount > 0) {
+      console.log(`ℹ️  Skipped hashes: ${skippedCount} (BitmapTextSymbols with non-symbol test copies)`);
+    }
 
     // Merge with existing if requested
     let finalHashes = hashes;
@@ -338,7 +350,8 @@ async function generateHashes() {
     // Format as JavaScript (using fontCount calculated earlier)
     const output = formatHashesForOutput(finalHashes, {
       specFile: config.specFile,
-      fontCount: fontCount
+      fontCount: fontCount,
+      skippedCount: skippedCount
     });
 
     // Ensure output directory exists

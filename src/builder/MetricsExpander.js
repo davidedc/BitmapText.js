@@ -100,10 +100,11 @@ class MetricsExpander {
    *
    * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
    *   - v can be array (Tier 6c) or base64 string (Tier 7)
+   * @param {Array<string>} [characterSet=BitmapText.CHARACTER_SET] - Character set to use for expansion
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
-  static expand(minified) {
+  static expand(minified, characterSet = BitmapText.CHARACTER_SET) {
     // Check if FontMetrics class is available
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
@@ -164,8 +165,8 @@ class MetricsExpander {
       t = this.#unflattenTuplets(t);
 
       expandedData = {
-        kerningTable: this.#expandKerningTable(k, kv),
-        characterMetrics: this.#expandCharacterMetrics(g, b, v, t, cl),
+        kerningTable: this.#expandKerningTable(k, kv, characterSet),
+        characterMetrics: this.#expandCharacterMetrics(g, b, v, t, cl, characterSet),
         spaceAdvancementOverrideForSmallSizesInPx: s
       };
     }
@@ -188,17 +189,17 @@ class MetricsExpander {
    * Always uses BitmapText.CHARACTER_SET for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
    * @param {Object} minified - Minified kerning table with indexed values
-   * @param {Array} kerningValueLookup - Value lookup table for kerning values
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @private
    */
-  static #expandKerningTable(minified, kerningValueLookup) {
+  static #expandKerningTable(minified, kerningValueLookup, characterSet) {
     // PASS 1: Expand left side (characters that come before)
-    const leftExpanded = this.#expandLeftSide(minified);
+    const leftExpanded = this.#expandLeftSide(minified, characterSet);
 
     // PASS 2: Expand right side (characters that follow)
     const rangeExpanded = {};
     for (const [leftChar, pairs] of Object.entries(leftExpanded)) {
-      rangeExpanded[leftChar] = this.#expandKerningPairs(pairs);
+      rangeExpanded[leftChar] = this.#expandKerningPairs(pairs, characterSet);
     }
 
     // PASS 3 (TIER 4): Replace all indices with actual values from lookup table
@@ -218,11 +219,11 @@ class MetricsExpander {
    * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
    * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
    * Always uses BitmapText.CHARACTER_SET for range expansion
-   * @param {Object} minified - Minified kerning table with potential left-side ranges
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Left-expanded kerning table
    * @private
    */
-  static #expandLeftSide(minified) {
+  static #expandLeftSide(minified, characterSet) {
     const expanded = {};
 
     // Process entries in order so later entries can override earlier ones
@@ -235,13 +236,13 @@ class MetricsExpander {
 
         // Check if both start and end are single characters in the character set
         if (startChar.length === 1 && endChar.length === 1) {
-          const startIndex = BitmapText.CHARACTER_SET.indexOf(startChar);
-          const endIndex = BitmapText.CHARACTER_SET.indexOf(endChar);
+          const startIndex = characterSet.indexOf(startChar);
+          const endIndex = characterSet.indexOf(endChar);
 
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
             // Valid range, expand it
             for (let i = startIndex; i <= endIndex; i++) {
-              expanded[BitmapText.CHARACTER_SET[i]] = rightSideObj;
+              expanded[characterSet[i]] = rightSideObj;
             }
             continue;
           }
@@ -265,17 +266,17 @@ class MetricsExpander {
    * - Ranges: a, c-e (c,d,e), g, j-s (j,k,l,m,n,o,p,q,r,s)
    *
    * Always uses BitmapText.CHARACTER_SET for range expansion
-   * @param {Object} pairs - Compressed pairs like {"-,.:;ac-egj-s":20}
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Expanded pairs like {"-":20,",":20,".":20,...,"s":20}
    * @private
    */
-  static #expandKerningPairs(pairs) {
+  static #expandKerningPairs(pairs, characterSet) {
     const expanded = {};
 
     // Process entries in order so later entries can override earlier ones
     for (const [key, value] of Object.entries(pairs)) {
       // Parse the compact string notation
-      const chars = this.#parseCompactCharString(key);
+      const chars = this.#parseCompactCharString(key, characterSet);
 
       // Assign value to all parsed characters
       for (const char of chars) {
@@ -297,10 +298,11 @@ class MetricsExpander {
    * - "-,.:;ac-egj-s" → dash, comma, dot, colon, semicolon, a, c-e range, g, j-s range
    *
    * @param {string} compactStr - Compact string like "-,.:;ac-egj-s"
+   * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {string[]} Array of individual characters
    * @private
    */
-  static #parseCompactCharString(compactStr) {
+  static #parseCompactCharString(compactStr, characterSet) {
     const chars = [];
     let i = 0;
 
@@ -320,14 +322,14 @@ class MetricsExpander {
         const startChar = currentChar;
         const endChar = compactStr[i + 2];
 
-        // Verify it's a valid range in BitmapText.CHARACTER_SET
-        const startIndex = BitmapText.CHARACTER_SET.indexOf(startChar);
-        const endIndex = BitmapText.CHARACTER_SET.indexOf(endChar);
+        // Verify it's a valid range in the character set
+        const startIndex = characterSet.indexOf(startChar);
+        const endIndex = characterSet.indexOf(endChar);
 
         if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
           // Valid range - expand it
           for (let j = startIndex; j <= endIndex; j++) {
-            chars.push(BitmapText.CHARACTER_SET[j]);
+            chars.push(characterSet[j]);
           }
           i += 3; // Skip X, -, Y
         } else {
@@ -366,13 +368,14 @@ class MetricsExpander {
    * @param {Array} valueLookup - Value lookup table mapping indices to actual values
    * @param {Array} tupletLookup - Tuplet lookup table mapping tuplet indices to index arrays
    * @param {number} [commonLeftIndex] - Common left bounding box index (Tier 6b, optional)
+   * @param {Array<string>} characterSet - Character set to use for expansion
    * @private
    */
-  static #expandCharacterMetrics(tupletIndices, metricsCommonToAllCharacters, valueLookup, tupletLookup, commonLeftIndex) {
+  static #expandCharacterMetrics(tupletIndices, metricsCommonToAllCharacters, valueLookup, tupletLookup, commonLeftIndex, characterSet) {
     const expanded = {};
 
-    // Convert BitmapText.CHARACTER_SET string to array of characters
-    const chars = Array.from(BitmapText.CHARACTER_SET);
+    // Convert character set to array if it isn't already (though it should be)
+    const chars = Array.isArray(characterSet) ? characterSet : Array.from(characterSet);
 
     // Reconstruct object by mapping array positions to characters
     chars.forEach((char, index) => {

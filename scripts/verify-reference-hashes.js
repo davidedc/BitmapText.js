@@ -111,6 +111,71 @@ if (!config.specFile) {
 }
 
 /**
+ * Check if a test copy is compatible with a font family
+ * Symbol fonts can only render symbol-only strings
+ * Regular fonts can render all test copies (via symbol auto-redirect)
+ * This must match the logic in automated-hash-generator.js
+ * @param {number} testCopyNumber - Test copy number (1-4)
+ * @param {string} fontFamily - Font family name
+ * @returns {boolean} True if the test copy can be rendered by this font
+ */
+function isTestCopyCompatibleWithFont(testCopyNumber, fontFamily) {
+  // Regular fonts can render all test copies
+  if (fontFamily !== 'BitmapTextSymbols') {
+    return true;
+  }
+
+  // Symbol fonts (BitmapTextSymbols) cannot render regular text
+  // All current test copies (1-4) contain regular text or mixed content
+  // testCopy1: Regular text
+  // testCopy2-3: Kerning test text (regular)
+  // testCopy4: Mixed text + symbols ("Hello ☺ World ✔")
+  // None are symbol-only, so all are incompatible with BitmapTextSymbols
+  return false;
+}
+
+/**
+ * Extract font family from hash key
+ * @param {string} hashKey - Hash key like "density-1-0-Arial-style-normal-weight-normal-size-18-0 atlas"
+ * @returns {string|null} Font family name or null if not found
+ */
+function extractFontFamily(hashKey) {
+  // Hash key format: density-{density}-{fontFamily}-style-{style}-weight-{weight}-size-{size} {hashType}
+  // Example: "density-1-0-Arial-style-normal-weight-normal-size-18-0 atlas testCopyChoiceNumber 1"
+  const match = hashKey.match(/^density-\d+-\d+-([^-]+)-style-/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Extract test copy number from hash key
+ * @param {string} hashKey - Hash key
+ * @returns {number|null} Test copy number (1-4) or null if not a test copy hash
+ */
+function extractTestCopyNumber(hashKey) {
+  const match = hashKey.match(/testCopyChoiceNumber (\d+)/);
+  return match ? parseInt(match[1]) : null;
+}
+
+/**
+ * Check if a hash key should be skipped due to incompatibility
+ * @param {string} hashKey - Hash key to check
+ * @returns {boolean} True if this hash should be skipped
+ */
+function shouldSkipHash(hashKey) {
+  const testCopyNum = extractTestCopyNumber(hashKey);
+  if (testCopyNum === null) {
+    return false; // Not a test copy hash, don't skip
+  }
+
+  const fontFamily = extractFontFamily(hashKey);
+  if (!fontFamily) {
+    return false; // Can't determine font family, don't skip
+  }
+
+  return !isTestCopyCompatibleWithFont(testCopyNum, fontFamily);
+}
+
+/**
  * Compare generated hashes against reference hashes
  * @param {Object} generatedHashes - Newly generated hashes
  * @param {Object} referenceHashes - Reference hashes from file
@@ -127,6 +192,7 @@ function compareHashes(generatedHashes, referenceHashes, options = {}) {
     mismatches: 0,
     missingInReference: 0,
     missingInGenerated: 0,
+    skippedIncompatible: 0,
     details: {}
   };
 
@@ -191,6 +257,13 @@ function compareHashes(generatedHashes, referenceHashes, options = {}) {
   // Check for hashes in reference that weren't generated
   for (const key of Object.keys(referenceHashes)) {
     if (!(key in generatedHashes)) {
+      // Skip incompatible test copy/font combinations
+      // These are intentionally not generated (e.g., BitmapTextSymbols with regular text test copies)
+      if (shouldSkipHash(key)) {
+        results.skippedIncompatible++;
+        continue;
+      }
+
       const match = key.match(/^(.+?)\s+(atlas|tight atlas|positioning|testCopyChoiceNumber)/);
       if (match) {
         const fontId = match[1];
@@ -255,11 +328,17 @@ function displayResults(results, options = {}) {
     if (results.missingInGenerated > 0) {
       console.log(`Missing in generated: ${results.missingInGenerated}`);
     }
+    if (results.skippedIncompatible > 0) {
+      console.log(`Skipped (incompatible): ${results.skippedIncompatible}`);
+    }
 
     console.log('='.repeat(60));
 
     if (results.mismatches === 0 && results.missingInReference === 0 && results.missingInGenerated === 0) {
       console.log('✅ PASS: All hashes match');
+      if (results.skippedIncompatible > 0) {
+        console.log(`ℹ️  Note: ${results.skippedIncompatible} incompatible hashes skipped (BitmapTextSymbols + non-symbol test copies)`);
+      }
     } else {
       console.log('❌ FAIL: Hash verification failed');
     }
@@ -288,6 +367,9 @@ function displayResults(results, options = {}) {
   }
   if (results.missingInGenerated > 0) {
     console.log(`  Missing in generated: ${results.missingInGenerated}`);
+  }
+  if (results.skippedIncompatible > 0) {
+    console.log(`  Skipped (incompatible): ${results.skippedIncompatible}`);
   }
 
   console.log('');
@@ -356,6 +438,18 @@ function displayResults(results, options = {}) {
   console.log('─'.repeat(80));
   if (fontsWithIssues === 0) {
     console.log('✅ SUCCESS: All hashes match!');
+    if (results.skippedIncompatible > 0) {
+      console.log('');
+      console.log(`ℹ️  Note: ${results.skippedIncompatible} incompatible hashes were skipped during verification`);
+      console.log(`   Reason: BitmapTextSymbols font is symbol-only, cannot render regular text`);
+      console.log(`   Skipped: Test copies 1-4 (all contain regular text or mixed content)`);
+    } else {
+      // Show informational note even when skip count is 0
+      console.log('');
+      console.log('ℹ️  Note: BitmapTextSymbols fonts have fewer test copy hashes than regular fonts');
+      console.log('   Reason: Symbol fonts can only render symbol-only strings');
+      console.log('   Impact: Test copies 1-4 are not generated for BitmapTextSymbols (32 hashes total)');
+    }
   } else {
     console.log(`❌ FAILURE: ${fontsWithIssues} font(s) have hash mismatches`);
     console.log(`           ${fontsWithMatches} font(s) passed verification`);
@@ -464,13 +558,15 @@ async function verifyHashes() {
       console.log('');
     }
 
-    const generatedHashes = await page.evaluate(async (spec) => {
+    const result = await page.evaluate(async (spec) => {
       return await window.generateAndExportHashes(spec);
     }, fontSpec);
 
-    if (!generatedHashes || typeof generatedHashes !== 'object') {
+    if (!result || typeof result !== 'object' || !result.hashes) {
       throw new Error('Failed to receive hash data from browser');
     }
+
+    const generatedHashes = result.hashes;
 
     if (!config.ci) {
       console.log('');

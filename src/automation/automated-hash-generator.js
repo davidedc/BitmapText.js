@@ -109,13 +109,114 @@ function renderTestCopyToCanvas(testCopyNumber, fontProperties, textProperties) 
 }
 
 /**
+ * Ensure BitmapTextSymbols font is loaded for symbol auto-redirect
+ * Test copy 4 contains symbols that require BitmapTextSymbols font
+ * @param {FontProperties} fontProperties - Current font being processed
+ */
+async function ensureSymbolFontLoaded(fontProperties) {
+  // Skip if already processing BitmapTextSymbols
+  if (fontProperties.fontFamily === 'BitmapTextSymbols') {
+    return;
+  }
+
+  // Check if BitmapTextSymbols is already loaded at this size
+  const symbolFontProps = new FontPropertiesFAB(
+    fontProperties.pixelDensity,
+    'BitmapTextSymbols',
+    fontProperties.fontStyle,
+    fontProperties.fontWeight,
+    fontProperties.fontSize
+  );
+
+  // Check if already has atlas data
+  const existingData = BitmapText.getAtlasData(symbolFontProps.idString);
+  if (existingData) {
+    return; // Already loaded
+  }
+
+  // Build BitmapTextSymbols font for symbol auto-redirect
+  console.log(`  Loading BitmapTextSymbols (${fontProperties.fontSize}px) for test copy 4 symbol rendering...`);
+  await buildFont(symbolFontProps);
+
+  // Build and store atlas
+  const atlasResult = AtlasDataStoreFAB.buildAtlas(symbolFontProps);
+  const tightData = AtlasDataStoreFAB.reconstructTightAtlas(
+    atlasResult.canvas,
+    symbolFontProps
+  );
+  BitmapText.setAtlasData(symbolFontProps, tightData);
+}
+
+/**
+ * Get test copy text by number
+ * @param {number} testCopyNumber - Test copy choice (1, 2, 3, or 4)
+ * @returns {string} Test copy text
+ */
+function getTestCopyText(testCopyNumber) {
+  switch (testCopyNumber) {
+    case 1:
+      return testCopy1;
+    case 2:
+      return kernKingCopyPart1;
+    case 3:
+      return kernKingCopyPart2;
+    case 4:
+      return testCopy4;
+    default:
+      throw new Error(`Invalid testCopyNumber: ${testCopyNumber}`);
+  }
+}
+
+/**
+ * Check if a string contains only symbols (no regular text)
+ * @param {string} str - String to check
+ * @returns {boolean} True if string contains only symbols from BitmapText.SYMBOL_CHARACTERS_STRING
+ */
+function isOnlySymbols(str) {
+  // Remove whitespace and newlines for checking
+  const nonWhitespace = str.replace(/\s/g, '');
+  if (nonWhitespace.length === 0) {
+    return false; // Empty string or only whitespace
+  }
+
+  // Check if all non-whitespace characters are in the symbol set
+  const symbolSet = new Set(BitmapText.SYMBOL_CHARACTERS_STRING);
+  for (const char of nonWhitespace) {
+    if (!symbolSet.has(char)) {
+      return false; // Found a non-symbol character
+    }
+  }
+  return true;
+}
+
+/**
+ * Check if a test copy is compatible with a font family
+ * Symbol fonts can only render symbol-only strings
+ * Regular fonts can render all test copies (via symbol auto-redirect)
+ * @param {number} testCopyNumber - Test copy choice (1, 2, 3, or 4)
+ * @param {string} fontFamily - Font family name
+ * @returns {boolean} True if the test copy can be rendered by this font
+ */
+function isTestCopyCompatibleWithFont(testCopyNumber, fontFamily) {
+  // Regular fonts can render all test copies (including mixed text/symbols via auto-redirect)
+  if (fontFamily !== 'BitmapTextSymbols') {
+    return true;
+  }
+
+  // Symbol fonts can only render symbol-only strings
+  const testCopyText = getTestCopyText(testCopyNumber);
+  return isOnlySymbols(testCopyText);
+}
+
+/**
  * Generate all hash types for a single font configuration
  * @param {FontProperties} fontProperties - Font configuration
- * @returns {Object} Object with all hash keys and values
+ * @returns {Object} Object with hash data and skip statistics
  */
 async function generateHashesForFont(fontProperties) {
   const idString = fontProperties.idString;
   const hashes = {};
+  let skippedCount = 0;
 
   console.log(`Generating hashes for ${idString}...`);
 
@@ -143,10 +244,20 @@ async function generateHashesForFont(fontProperties) {
   const positioningHash = AtlasPositioningFAB.getHash(tightData.atlasPositioning);
   hashes[`${idString} positioning`] = positioningHash;
 
+  // Ensure BitmapTextSymbols is loaded for test copy 4 (contains symbols)
+  await ensureSymbolFontLoaded(fontProperties);
+
   // 4-7. Black text rendering for 4 test copies
   const blackTextProps = new TextProperties({ textColor: '#000000' });
 
   for (let testCopyNum = 1; testCopyNum <= 4; testCopyNum++) {
+    // Skip test copies incompatible with this font
+    if (!isTestCopyCompatibleWithFont(testCopyNum, fontProperties.fontFamily)) {
+      console.log(`  Skipping test copy ${testCopyNum} for ${idString} (incompatible with font)`);
+      skippedCount++;
+      continue;
+    }
+
     try {
       const canvas = renderTestCopyToCanvas(testCopyNum, fontProperties, blackTextProps);
       const ctx = canvas.getContext('2d');
@@ -161,6 +272,13 @@ async function generateHashesForFont(fontProperties) {
   const blueTextProps = new TextProperties({ textColor: '#0000FF' });
 
   for (let testCopyNum = 1; testCopyNum <= 4; testCopyNum++) {
+    // Skip test copies incompatible with this font
+    if (!isTestCopyCompatibleWithFont(testCopyNum, fontProperties.fontFamily)) {
+      console.log(`  Skipping blue test copy ${testCopyNum} for ${idString} (incompatible with font)`);
+      skippedCount++;
+      continue;
+    }
+
     try {
       const canvas = renderTestCopyToCanvas(testCopyNum, fontProperties, blueTextProps);
       const ctx = canvas.getContext('2d');
@@ -183,16 +301,21 @@ async function generateHashesForFont(fontProperties) {
     }
   }
 
-  console.log(`✓ Generated ${Object.keys(hashes).length} hashes for ${idString}`);
+  const hashCount = Object.keys(hashes).length;
+  if (skippedCount > 0) {
+    console.log(`✓ Generated ${hashCount} hashes for ${idString} (skipped ${skippedCount} incompatible test copy hashes)`);
+  } else {
+    console.log(`✓ Generated ${hashCount} hashes for ${idString}`);
+  }
 
-  return hashes;
+  return { hashes, skippedCount };
 }
 
 /**
  * Process an entire font set specification and generate all hashes
  * @param {Object} fontSetSpec - Font set specification (JSON format)
  * @param {Function} progressCallback - Called with (current, total, idString) for each font
- * @returns {Object} Complete hash object for all fonts
+ * @returns {Object} Object with hashes and skip statistics
  */
 async function processFontSet(fontSetSpec, progressCallback) {
   console.log('\n=== Processing Font Set for Hash Generation ===');
@@ -212,6 +335,7 @@ async function processFontSet(fontSetSpec, progressCallback) {
 
   const allHashes = {};
   let current = 0;
+  let totalSkipped = 0;
 
   for (const fontProps of generator.iterator()) {
     current++;
@@ -221,8 +345,9 @@ async function processFontSet(fontSetSpec, progressCallback) {
     }
 
     try {
-      const fontHashes = await generateHashesForFont(fontProps);
-      Object.assign(allHashes, fontHashes);
+      const result = await generateHashesForFont(fontProps);
+      Object.assign(allHashes, result.hashes);
+      totalSkipped += result.skippedCount;
     } catch (error) {
       console.error(`❌ Failed to generate hashes for ${fontProps.idString}:`, error.message);
       console.error(error.stack);
@@ -242,8 +367,11 @@ async function processFontSet(fontSetSpec, progressCallback) {
 
   console.log(`\n✓ Completed hash generation for ${total} font configurations`);
   console.log(`✓ Generated ${Object.keys(allHashes).length} total hashes`);
+  if (totalSkipped > 0) {
+    console.log(`ℹ️  Skipped ${totalSkipped} incompatible test copy hashes (BitmapTextSymbols with non-symbol test copies)`);
+  }
 
-  return allHashes;
+  return { hashes: allHashes, skippedCount: totalSkipped };
 }
 
 /**
@@ -263,25 +391,11 @@ async function generateAndExportHashes(fontSetSpec) {
     // 1. Initialize specs
     window.specs = initializeSpecs();
 
-    // 2. Initialize CharacterSetRegistry from font set spec
-    // Register custom character sets for fonts that define them
-    if (fontSetSpec && fontSetSpec.fontSets) {
-      for (const set of fontSetSpec.fontSets) {
-        if (set.characters && set.families) {
-          // Register custom character set for each family in this set
-          for (const family of set.families) {
-            CharacterSetRegistry.setDisplayCharacterSet(family, set.characters);
-            console.log(`Registered custom character set for ${family}: ${set.characters}`);
-          }
-        }
-      }
-    }
-
-    // 3. Reconstruct FontSetGenerator from plain spec object
+    // 2. Reconstruct FontSetGenerator from plain spec object
     const reconstructedSpec = JSON.parse(JSON.stringify(fontSetSpec));
 
-    // 4. Process all fonts and generate hashes
-    const allHashes = await processFontSet(reconstructedSpec, (current, total, idString) => {
+    // 3. Process all fonts and generate hashes
+    const result = await processFontSet(reconstructedSpec, (current, total, idString) => {
       const percent = (current / total * 100).toFixed(1);
 
       // Log JSON for Playwright
@@ -300,8 +414,11 @@ async function generateAndExportHashes(fontSetSpec) {
     console.log(`Total time: ${totalDuration} seconds`);
     console.log('\n╚════════════════════════════════════════╝\n');
 
-    // Return hash object
-    return allHashes;
+    // Return hash object with statistics
+    return {
+      hashes: result.hashes,
+      skippedCount: result.skippedCount
+    };
 
   } catch (error) {
     console.error('\n✗ Error during hash generation:', error);

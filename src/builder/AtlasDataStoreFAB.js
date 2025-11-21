@@ -44,50 +44,12 @@ class AtlasDataStoreFAB extends AtlasDataStore {
   static getGlyphsForFont(fontProperties) {
     const glyphs = {};
 
-    // Check if this font family has a custom display character set
-    const customCharSet = CharacterSetRegistry.getDisplayCharacterSet(fontProperties.fontFamily);
-
-    console.log(`🔍 getGlyphsForFont DEBUG for ${fontProperties.fontFamily}:`);
-    console.log(`  - fontProperties.key: ${fontProperties.key}`);
-    console.log(`  - customCharSet:`, customCharSet);
-    console.log(`  - Total glyphs in store: ${AtlasDataStoreFAB.#glyphs.size}`);
-
-    let matchingKeyCount = 0;
-    let includedCount = 0;
-    let skippedCount = 0;
-
     for (const [glyphKey, glyph] of AtlasDataStoreFAB.#glyphs) {
       if (glyphKey.startsWith(fontProperties.key + ':')) {
-        matchingKeyCount++;
         const char = glyphKey.substring(fontProperties.key.length + 1);
-
-        // If custom character set exists, only include characters from that set
-        if (customCharSet) {
-          if (customCharSet.includes(char)) {
-            glyphs[char] = glyph;
-            includedCount++;
-            if (includedCount <= 5) {
-              console.log(`  ✓ Including char: "${char}" (U+${char.charCodeAt(0).toString(16).toUpperCase()})`);
-            }
-          } else {
-            skippedCount++;
-            if (skippedCount <= 5) {
-              console.log(`  ✗ Skipping char: "${char}" (U+${char.charCodeAt(0).toString(16).toUpperCase()})`);
-            }
-          }
-          // Skip characters not in the custom set
-        } else {
-          // No custom set - include all characters (standard behavior)
-          glyphs[char] = glyph;
-          includedCount++;
-        }
+        glyphs[char] = glyph;
       }
     }
-
-    console.log(`  - Glyphs matching font key: ${matchingKeyCount}`);
-    console.log(`  - Glyphs included: ${includedCount}`);
-    console.log(`  - Glyphs skipped: ${skippedCount}`);
-    console.log(`  - Final glyphs object size: ${Object.keys(glyphs).length}`);
 
     return glyphs;
   }
