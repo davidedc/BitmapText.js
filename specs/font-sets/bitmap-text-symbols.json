@@ -6,8 +6,7 @@
       "families": ["BitmapTextSymbols"],
       "styles": ["normal"],
       "weights": ["normal"],
-      "sizes": [[8.5, 72, 0.5]],
-      "characters": "☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗"
+      "sizes": [[8.5, 72, 0.5]]
     }
   ]
 }
