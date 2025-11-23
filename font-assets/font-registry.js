@@ -1,5 +1,5 @@
 // Auto-generated font registry
-// Generated: 2025-11-21T20:53:12.296Z
+// Generated: 2025-11-23T21:23:04.335Z
 // Source: metrics files in font-assets/
 // Font count: 8
 //
@@ -11,10 +11,10 @@ if (typeof FontManifest !== 'undefined') {
   "density-1-0-Arial-style-normal-weight-normal-size-18-5",
   "density-1-0-Arial-style-normal-weight-normal-size-19-0",
   "density-1-0-Arial-style-normal-weight-normal-size-8-5",
-  "density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-18-0",
-  "density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-18-5",
-  "density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-19-0",
-  "density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-8-5"
+  "density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-18-0",
+  "density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-18-5",
+  "density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-19-0",
+  "density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-8-5"
 ]);
 } else {
   console.warn('FontManifest is not available. Make sure FontManifest.js is loaded before this file.');
