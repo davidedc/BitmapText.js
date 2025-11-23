@@ -47,9 +47,9 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Load only size 8.5px - all smaller sizes will interpolate from this (Arial + BitmapTextSymbols for automatic symbol fallback)
+    // Load only size 8.5px - all smaller sizes will interpolate from this (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
     const arialIDString = fontProps8_5.idString;
-    const symbolsIDString = 'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-8-5';
+    const symbolsIDString = 'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-8-5';
     console.log(`Loading size 8.5px fonts: ${arialIDString} + ${symbolsIDString}...`);
 
     await BitmapText.loadFonts([arialIDString, symbolsIDString], {

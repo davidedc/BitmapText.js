@@ -130,13 +130,13 @@
   window.bitmapTextReady = true;
   console.log('✅ BitmapText static fields initialized:', {
     CHARACTER_SET: !!BitmapText.CHARACTER_SET,
-    SYMBOL_CHARACTERS_STRING: !!BitmapText.SYMBOL_CHARACTERS_STRING,
+    FONT_INVARIANT_CHARS: !!BitmapText.FONT_INVARIANT_CHARS,
     characterSetLength: BitmapText.CHARACTER_SET?.length
   });
   console.log('✅ Classes exposed on window:', {
     BitmapText: typeof window.BitmapText,
     CHARACTER_SET: !!window.BitmapText?.CHARACTER_SET,
-    SYMBOL_CHARACTERS_STRING: !!window.BitmapText?.SYMBOL_CHARACTERS_STRING
+    FONT_INVARIANT_CHARS: !!window.BitmapText?.FONT_INVARIANT_CHARS
   });
 </script>
 

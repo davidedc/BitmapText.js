@@ -320,12 +320,12 @@ async function buildFonts() {
     });
 
     // Verify BitmapText is fully initialized
-    // This ensures static fields (CHARACTER_SET, SYMBOL_CHARACTERS_STRING) are ready
+    // This ensures static fields (CHARACTER_SET, FONT_INVARIANT_CHARS) are ready
     const isReady = await page.evaluate(() => ({
       bitmapTextReady: window.bitmapTextReady,
       hasBitmapText: typeof window.BitmapText !== 'undefined',
       hasCharacterSet: !!window.BitmapText?.CHARACTER_SET,
-      hasSymbolString: !!window.BitmapText?.SYMBOL_CHARACTERS_STRING,
+      hasFontInvariantChars: !!window.BitmapText?.FONT_INVARIANT_CHARS,
       characterSetLength: window.BitmapText?.CHARACTER_SET?.length
     }));
 
@@ -339,9 +339,9 @@ async function buildFonts() {
       throw new Error('BitmapText class not accessible on window object');
     }
 
-    if (!isReady.hasCharacterSet || !isReady.hasSymbolString) {
+    if (!isReady.hasCharacterSet || !isReady.hasFontInvariantChars) {
       console.error('❌ BitmapText static fields not initialized:', isReady);
-      throw new Error(`BitmapText static fields missing. CHARACTER_SET: ${isReady.hasCharacterSet}, SYMBOL_CHARACTERS_STRING: ${isReady.hasSymbolString}`);
+      throw new Error(`BitmapText static fields missing. CHARACTER_SET: ${isReady.hasCharacterSet}, FONT_INVARIANT_CHARS: ${isReady.hasFontInvariantChars}`);
     }
 
     console.log('✅ Page loaded with BitmapText initialized, calculating font counts...');
@@ -458,17 +458,17 @@ async function buildFonts() {
           await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
 
           // Verify BitmapText is fully initialized after reload
-          // This ensures static fields (CHARACTER_SET, SYMBOL_CHARACTERS_STRING) are ready
+          // This ensures static fields (CHARACTER_SET, FONT_INVARIANT_CHARS) are ready
           const isReady = await page.evaluate(() => ({
             bitmapTextReady: window.bitmapTextReady,
             hasBitmapText: typeof window.BitmapText !== 'undefined',
             hasCharacterSet: !!window.BitmapText?.CHARACTER_SET,
-            hasSymbolString: !!window.BitmapText?.SYMBOL_CHARACTERS_STRING
+            hasFontInvariantChars: !!window.BitmapText?.FONT_INVARIANT_CHARS
           }));
 
-          if (!isReady.bitmapTextReady || !isReady.hasBitmapText || !isReady.hasCharacterSet || !isReady.hasSymbolString) {
+          if (!isReady.bitmapTextReady || !isReady.hasBitmapText || !isReady.hasCharacterSet || !isReady.hasFontInvariantChars) {
             console.error('❌ BitmapText not ready after reload:', isReady);
-            throw new Error(`BitmapText initialization failed after reload. Ready: ${isReady.bitmapTextReady}, Class on window: ${isReady.hasBitmapText}, CHARACTER_SET: ${isReady.hasCharacterSet}, SYMBOL_CHARACTERS_STRING: ${isReady.hasSymbolString}`);
+            throw new Error(`BitmapText initialization failed after reload. Ready: ${isReady.bitmapTextReady}, Class on window: ${isReady.hasBitmapText}, CHARACTER_SET: ${isReady.hasCharacterSet}, FONT_INVARIANT_CHARS: ${isReady.hasFontInvariantChars}`);
           }
 
           console.log('✅ Page ready with BitmapText initialized');

@@ -292,17 +292,17 @@ Creating assets for both standard and high-DPI displays:
 
 **Total**: 2 × 3 × 3 × 7 × 49 = **6,174 configurations**
 
-### Example 6: Symbol Font Specification
+### Example 6: Font-Invariant Font Specification
 
-Creating the BitmapTextSymbols font for special Unicode symbols:
+Creating the BitmapTextInvariant font for special Unicode font-invariant characters:
 
 ```json
 {
   "fontSets": [
     {
-      "name": "BitmapTextSymbols Monospaced Symbols",
+      "name": "BitmapTextInvariant Monospaced Symbols",
       "density": [1.0, 2.0],
-      "families": ["BitmapTextSymbols"],
+      "families": ["BitmapTextInvariant"],
       "styles": ["normal"],
       "weights": ["normal"],
       "sizes": [[8.5, 72, 0.5]]
@@ -312,14 +312,14 @@ Creating the BitmapTextSymbols font for special Unicode symbols:
 ```
 
 **Details**:
-- Generates BitmapTextSymbols font with 18 Unicode symbols (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗)
+- Generates BitmapTextInvariant font with 18 Unicode font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗)
 - Size range 8.5px to 72px in 0.5px increments
 - Both standard (1.0) and HiDPI (2.0) pixel densities
 - Renders using Courier New for monospacing (handled internally by GlyphFAB.js)
-- Symbols auto-redirect at runtime regardless of base font specified
+- Font-invariant characters auto-redirect at runtime regardless of base font specified
 
 **Character Set Selection** (hardcoded in implementation):
-- When `fontFamily === 'BitmapTextSymbols'`: Uses 18 predefined symbols
+- When `fontFamily === 'BitmapTextInvariant'`: Uses 18 predefined font-invariant characters
 - All other fonts: Uses standard 204-character set (ASCII, CP-1252 subset, Latin-1 Supplement)
 - This behavior is implemented in `src/builder/create-glyphs.js` and cannot be overridden via configuration
 

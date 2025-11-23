@@ -55,24 +55,24 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Create IDStrings for all font configurations (Arial + BitmapTextSymbols for automatic symbol fallback)
+    // Create IDStrings for all font configurations (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
     const arialIDStrings = fontPropertiesArray.map(createIDString);
 
-    // Create BitmapTextSymbols IDStrings for each size
+    // Create BitmapTextInvariant IDStrings for each size
     const symbolIDStrings = fontSizes.map(size => {
       const normalizedSize = size.toString().replace('.', '-') + (size.toString().includes('.') ? '' : '-0');
-      return `density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-${normalizedSize}`;
+      return `density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-${normalizedSize}`;
     });
 
-    // Combine Arial and BitmapTextSymbols fonts
+    // Combine Arial and BitmapTextInvariant fonts
     const allIDStrings = [...arialIDStrings, ...symbolIDStrings];
 
     console.log('Font sizes:', fontSizes);
     console.log('Arial IDStrings:', arialIDStrings);
     console.log('Symbol IDStrings:', symbolIDStrings);
 
-    // Load all fonts using static API (3 Arial + 3 BitmapTextSymbols = 6 fonts)
-    console.log(`Loading ${allIDStrings.length} fonts (${fontSizes.length} Arial + ${fontSizes.length} BitmapTextSymbols)...`);
+    // Load all fonts using static API (3 Arial + 3 BitmapTextInvariant = 6 fonts)
+    console.log(`Loading ${allIDStrings.length} fonts (${fontSizes.length} Arial + ${fontSizes.length} BitmapTextInvariant)...`);
 
     // Wait for all fonts to load
     await BitmapText.loadFonts(allIDStrings, {

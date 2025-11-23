@@ -22,7 +22,7 @@ function initializeSpecs() {
  */
 async function buildFont(fontProperties) {
   // Create glyphs - includes both standard 204 chars + custom character set if defined
-  // This ensures symbol fonts like BitmapTextSymbols have the actual symbols rendered
+  // This ensures symbol fonts like BitmapTextInvariant have the actual symbols rendered
   createGlyphsAndAddToFullStore(fontProperties);
 
   // Build kerning table
@@ -109,20 +109,20 @@ function renderTestCopyToCanvas(testCopyNumber, fontProperties, textProperties) 
 }
 
 /**
- * Ensure BitmapTextSymbols font is loaded for symbol auto-redirect
- * Test copy 4 contains symbols that require BitmapTextSymbols font
+ * Ensure BitmapTextInvariant font is loaded for symbol auto-redirect
+ * Test copy 4 contains symbols that require BitmapTextInvariant font
  * @param {FontProperties} fontProperties - Current font being processed
  */
-async function ensureSymbolFontLoaded(fontProperties) {
-  // Skip if already processing BitmapTextSymbols
-  if (fontProperties.fontFamily === 'BitmapTextSymbols') {
+async function ensureFontInvariantLoaded(fontProperties) {
+  // Skip if already processing BitmapTextInvariant
+  if (fontProperties.fontFamily === 'BitmapTextInvariant') {
     return;
   }
 
-  // Check if BitmapTextSymbols is already loaded at this size
+  // Check if BitmapTextInvariant is already loaded at this size
   const symbolFontProps = new FontPropertiesFAB(
     fontProperties.pixelDensity,
-    'BitmapTextSymbols',
+    'BitmapTextInvariant',
     fontProperties.fontStyle,
     fontProperties.fontWeight,
     fontProperties.fontSize
@@ -134,8 +134,8 @@ async function ensureSymbolFontLoaded(fontProperties) {
     return; // Already loaded
   }
 
-  // Build BitmapTextSymbols font for symbol auto-redirect
-  console.log(`  Loading BitmapTextSymbols (${fontProperties.fontSize}px) for test copy 4 symbol rendering...`);
+  // Build BitmapTextInvariant font for symbol auto-redirect
+  console.log(`  Loading BitmapTextInvariant (${fontProperties.fontSize}px) for test copy 4 symbol rendering...`);
   await buildFont(symbolFontProps);
 
   // Build and store atlas
@@ -168,22 +168,22 @@ function getTestCopyText(testCopyNumber) {
 }
 
 /**
- * Check if a string contains only symbols (no regular text)
+ * Check if a string contains only font-invariant characters (no regular text)
  * @param {string} str - String to check
- * @returns {boolean} True if string contains only symbols from BitmapText.SYMBOL_CHARACTERS_STRING
+ * @returns {boolean} True if string contains only font-invariant characters from BitmapText.FONT_INVARIANT_CHARS
  */
-function isOnlySymbols(str) {
+function isOnlyInvariantChars(str) {
   // Remove whitespace and newlines for checking
   const nonWhitespace = str.replace(/\s/g, '');
   if (nonWhitespace.length === 0) {
     return false; // Empty string or only whitespace
   }
 
-  // Check if all non-whitespace characters are in the symbol set
-  const symbolSet = new Set(BitmapText.SYMBOL_CHARACTERS_STRING);
+  // Check if all non-whitespace characters are in the font-invariant character set
+  const invariantCharSet = new Set(BitmapText.FONT_INVARIANT_CHARS);
   for (const char of nonWhitespace) {
-    if (!symbolSet.has(char)) {
-      return false; // Found a non-symbol character
+    if (!invariantCharSet.has(char)) {
+      return false; // Found a non-invariant character
     }
   }
   return true;
@@ -199,13 +199,13 @@ function isOnlySymbols(str) {
  */
 function isTestCopyCompatibleWithFont(testCopyNumber, fontFamily) {
   // Regular fonts can render all test copies (including mixed text/symbols via auto-redirect)
-  if (fontFamily !== 'BitmapTextSymbols') {
+  if (fontFamily !== 'BitmapTextInvariant') {
     return true;
   }
 
   // Symbol fonts can only render symbol-only strings
   const testCopyText = getTestCopyText(testCopyNumber);
-  return isOnlySymbols(testCopyText);
+  return isOnlyInvariantChars(testCopyText);
 }
 
 /**
@@ -244,8 +244,8 @@ async function generateHashesForFont(fontProperties) {
   const positioningHash = AtlasPositioningFAB.getHash(tightData.atlasPositioning);
   hashes[`${idString} positioning`] = positioningHash;
 
-  // Ensure BitmapTextSymbols is loaded for test copy 4 (contains symbols)
-  await ensureSymbolFontLoaded(fontProperties);
+  // Ensure BitmapTextInvariant is loaded for test copy 4 (contains symbols)
+  await ensureFontInvariantLoaded(fontProperties);
 
   // 4-7. Black text rendering for 4 test copies
   const blackTextProps = new TextProperties({ textColor: '#000000' });
@@ -368,7 +368,7 @@ async function processFontSet(fontSetSpec, progressCallback) {
   console.log(`\n✓ Completed hash generation for ${total} font configurations`);
   console.log(`✓ Generated ${Object.keys(allHashes).length} total hashes`);
   if (totalSkipped > 0) {
-    console.log(`ℹ️  Skipped ${totalSkipped} incompatible test copy hashes (BitmapTextSymbols with non-symbol test copies)`);
+    console.log(`ℹ️  Skipped ${totalSkipped} incompatible test copy hashes (BitmapTextInvariant with non-symbol test copies)`);
   }
 
   return { hashes: allHashes, skippedCount: totalSkipped };

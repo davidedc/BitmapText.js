@@ -64,8 +64,8 @@ class GlyphFAB {
 
     const ctx = canvas.getContext("2d");
 
-    // Override to Courier New for BitmapTextSymbols to ensure monospacing
-    const renderFontFamily = fontFamily === 'BitmapTextSymbols' ? 'Courier New' : fontFamily;
+    // Override to Courier New for BitmapTextInvariant to ensure monospacing
+    const renderFontFamily = fontFamily === 'BitmapTextInvariant' ? 'Courier New' : fontFamily;
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${renderFontFamily}`;
 
     return { canvas, ctx };
@@ -281,8 +281,8 @@ class GlyphFAB {
     // Configure text rendering
     ctx.textBaseline = "bottom";
 
-    // Override to Courier New for BitmapTextSymbols to ensure monospacing
-    const renderFontFamily = fontFamily === 'BitmapTextSymbols' ? 'Courier New' : fontFamily;
+    // Override to Courier New for BitmapTextInvariant to ensure monospacing
+    const renderFontFamily = fontFamily === 'BitmapTextInvariant' ? 'Courier New' : fontFamily;
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${renderFontFamily}`;
 
     // Draw character at calculated position

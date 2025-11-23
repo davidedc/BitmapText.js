@@ -22,12 +22,12 @@
       ]
     },
     {
-      "name": "BitmapTextSymbols Monospaced Symbols",
+      "name": "BitmapTextInvariant Font-Invariant Characters",
       "density": [
         1
       ],
       "families": [
-        "BitmapTextSymbols"
+        "BitmapTextInvariant"
       ],
       "styles": [
         "normal"

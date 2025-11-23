@@ -121,16 +121,16 @@ if (!config.specFile) {
  */
 function isTestCopyCompatibleWithFont(testCopyNumber, fontFamily) {
   // Regular fonts can render all test copies
-  if (fontFamily !== 'BitmapTextSymbols') {
+  if (fontFamily !== 'BitmapTextInvariant') {
     return true;
   }
 
-  // Symbol fonts (BitmapTextSymbols) cannot render regular text
+  // Font-invariant fonts (BitmapTextInvariant) cannot render regular text
   // All current test copies (1-4) contain regular text or mixed content
   // testCopy1: Regular text
   // testCopy2-3: Kerning test text (regular)
-  // testCopy4: Mixed text + symbols ("Hello ☺ World ✔")
-  // None are symbol-only, so all are incompatible with BitmapTextSymbols
+  // testCopy4: Mixed text + font-invariant chars ("Hello ☺ World ✔")
+  // None are font-invariant-only, so all are incompatible with BitmapTextInvariant
   return false;
 }
 
@@ -258,7 +258,7 @@ function compareHashes(generatedHashes, referenceHashes, options = {}) {
   for (const key of Object.keys(referenceHashes)) {
     if (!(key in generatedHashes)) {
       // Skip incompatible test copy/font combinations
-      // These are intentionally not generated (e.g., BitmapTextSymbols with regular text test copies)
+      // These are intentionally not generated (e.g., BitmapTextInvariant with regular text test copies)
       if (shouldSkipHash(key)) {
         results.skippedIncompatible++;
         continue;
@@ -337,7 +337,7 @@ function displayResults(results, options = {}) {
     if (results.mismatches === 0 && results.missingInReference === 0 && results.missingInGenerated === 0) {
       console.log('✅ PASS: All hashes match');
       if (results.skippedIncompatible > 0) {
-        console.log(`ℹ️  Note: ${results.skippedIncompatible} incompatible hashes skipped (BitmapTextSymbols + non-symbol test copies)`);
+        console.log(`ℹ️  Note: ${results.skippedIncompatible} incompatible hashes skipped (BitmapTextInvariant + non-font-invariant test copies)`);
       }
     } else {
       console.log('❌ FAIL: Hash verification failed');
@@ -441,14 +441,14 @@ function displayResults(results, options = {}) {
     if (results.skippedIncompatible > 0) {
       console.log('');
       console.log(`ℹ️  Note: ${results.skippedIncompatible} incompatible hashes were skipped during verification`);
-      console.log(`   Reason: BitmapTextSymbols font is symbol-only, cannot render regular text`);
+      console.log(`   Reason: BitmapTextInvariant font is font-invariant-only, cannot render regular text`);
       console.log(`   Skipped: Test copies 1-4 (all contain regular text or mixed content)`);
     } else {
       // Show informational note even when skip count is 0
       console.log('');
-      console.log('ℹ️  Note: BitmapTextSymbols fonts have fewer test copy hashes than regular fonts');
-      console.log('   Reason: Symbol fonts can only render symbol-only strings');
-      console.log('   Impact: Test copies 1-4 are not generated for BitmapTextSymbols (32 hashes total)');
+      console.log('ℹ️  Note: BitmapTextInvariant fonts have fewer test copy hashes than regular fonts');
+      console.log('   Reason: Font-invariant fonts can only render font-invariant-only strings');
+      console.log('   Impact: Test copies 1-4 are not generated for BitmapTextInvariant (32 hashes total)');
     }
   } else {
     console.log(`❌ FAILURE: ${fontsWithIssues} font(s) have hash mismatches`);

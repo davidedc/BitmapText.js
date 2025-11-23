@@ -263,63 +263,63 @@ Get up and running with the production-ready bundles in seconds.
 
 **For development and debugging:** See the "Development & Debugging" section below for using individual source files.
 
-## Symbol Support
+## Font-Invariant Character Support
 
-BitmapText.js includes automatic support for 18 special Unicode symbols via the BitmapTextSymbols font:
+BitmapText.js includes automatic support for 18 special Unicode font-invariant characters via the BitmapTextInvariant font:
 
 ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
 
-### Using Symbols in Text
+### Using Font-Invariant Characters in Text
 
-Symbols automatically render using the BitmapTextSymbols font when included in text:
+Font-invariant characters automatically render using the BitmapTextInvariant font when included in text:
 
 ```javascript
-// Load both your text font AND BitmapTextSymbols
+// Load both your text font AND BitmapTextInvariant
 await BitmapText.loadFonts([
   'density-1-0-Arial-style-normal-weight-normal-size-19-0',
-  'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-19-0'
+  'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-19-0'
 ]);
 
-// Use symbols anywhere in your text - they auto-redirect to symbol font
+// Use font-invariant characters anywhere in your text - they auto-redirect to font-invariant font
 const fontProps = new FontProperties(1, "Arial", "normal", "normal", 19);
 BitmapText.drawTextFromAtlas(ctx, "Task completed ✔", 10, 50, fontProps);
 BitmapText.drawTextFromAtlas(ctx, "Score: 100 ♦", 10, 80, fontProps);
 BitmapText.drawTextFromAtlas(ctx, "Hello ☺ World", 10, 110, fontProps);
 ```
 
-### How Symbol Auto-Redirect Works
+### How Font-Invariant Character Auto-Redirect Works
 
-- When rendering text with Arial (or any font), symbol characters automatically render using BitmapTextSymbols
-- You specify Arial as the font, but symbols use their dedicated font
-- This ensures consistent, monospaced symbol rendering regardless of base font
-- No special syntax required - just include symbols in your text
-- BitmapTextSymbols must be loaded at the same size as your text font
-- Symbol detection uses fast string lookup (~1-2ns per character) in rendering loop
+- When rendering text with Arial (or any font), font-invariant characters automatically render using BitmapTextInvariant
+- You specify Arial as the font, but font-invariant characters use their dedicated font
+- This ensures consistent, monospaced font-invariant character rendering regardless of base font
+- No special syntax required - just include font-invariant characters in your text
+- BitmapTextInvariant must be loaded at the same size as your text font
+- Font-invariant character detection uses fast string lookup (~1-2ns per character) in rendering loop
 
-### Loading Symbol Fonts
+### Loading Font-Invariant Fonts
 
-Symbol fonts follow the same naming convention as regular fonts:
+Font-invariant fonts follow the same naming convention as regular fonts:
 
 ```javascript
 // For size 18
-'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-18-0'
+'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-18-0'
 
 // For size 19
-'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-19-0'
+'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-19-0'
 
 // For HiDPI (2×) at size 19
-'density-2-0-BitmapTextSymbols-style-normal-weight-normal-size-19-0'
+'density-2-0-BitmapTextInvariant-style-normal-weight-normal-size-19-0'
 ```
 
-Always load the symbol font at the same pixel density and size as your text font.
+Always load the font-invariant font at the same pixel density and size as your text font.
 
-### Symbol Font Characteristics
+### Font-Invariant Font Characteristics
 
-- **Monospaced**: All symbols have consistent width (uses Courier New metrics)
-- **18 characters**: Carefully selected common symbols for UI and text
+- **Monospaced**: All font-invariant characters have consistent width (uses Courier New metrics)
+- **18 characters**: Carefully selected common font-invariant characters for UI and text
 - **Normal style/weight only**: No italic or bold variants
 - **Size range**: 8.5px to 72px (same as regular fonts)
-- **Automatic fallback**: If BitmapTextSymbols isn't loaded, symbols will render using the base font (may look inconsistent)
+- **Automatic fallback**: If BitmapTextInvariant isn't loaded, font-invariant characters will render using the base font (may look inconsistent)
 
 ## Understanding Coordinate Systems & Transforms
 
@@ -809,22 +809,22 @@ For a middle ground between individual files and minified bundle, use the unmini
   ], { onProgress: callback });
   ```
 
-  **Symbol Font Auto-Redirect:**
+  **Font-Invariant Character Auto-Redirect:**
 
-  When rendering text, symbol characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗) automatically use the BitmapTextSymbols font regardless of the specified base font. To enable this:
+  When rendering text, font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗) automatically use the BitmapTextInvariant font regardless of the specified base font. To enable this:
 
-  1. Load both your text font AND BitmapTextSymbols at the same size
-  2. Use symbols anywhere in your text
-  3. BitmapText automatically switches to symbol font for these characters
+  1. Load both your text font AND BitmapTextInvariant at the same size
+  2. Use font-invariant characters anywhere in your text
+  3. BitmapText automatically switches to font-invariant font for these characters
 
   Example:
   ```javascript
   await BitmapText.loadFonts([
     'density-1-0-Arial-style-normal-weight-normal-size-19-0',
-    'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-19-0'
+    'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-19-0'
   ]);
 
-  // "Hello ☺" renders Hello in Arial, ☺ in BitmapTextSymbols
+  // "Hello ☺" renders Hello in Arial, ☺ in BitmapTextInvariant
   BitmapText.drawTextFromAtlas(ctx, "Hello ☺", 10, 50, fontProps);
   ```
 

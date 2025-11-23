@@ -3,7 +3,7 @@ function addDropdownWithFontFamilies() {
 
   const fontFamilySelect = document.createElement('select');
   fontFamilySelect.id = 'font-family-select';
-  const fontFamilies = ['Arial', 'BitmapTextSymbols', 'Courier New', 'Times New Roman', 'Verdana', 'Georgia', 'Comic Sans MS', 'Impact', 'Lucida Console', 'Lucida Sans Unicode', 'Tahoma', 'Trebuchet MS'];
+  const fontFamilies = ['Arial', 'BitmapTextInvariant', 'Courier New', 'Times New Roman', 'Verdana', 'Georgia', 'Comic Sans MS', 'Impact', 'Lucida Console', 'Lucida Sans Unicode', 'Tahoma', 'Trebuchet MS'];
   for (const element of fontFamilies) {
     const option = document.createElement('option');
     option.value = element;

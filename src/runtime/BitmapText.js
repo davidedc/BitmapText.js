@@ -68,31 +68,31 @@ class BitmapText {
   static CHARACTER_SET = BitmapText.#generateCharacterSet();
 
   // ============================================
-  // Symbol Auto-Redirect Configuration
+  // Font-Invariant Character Auto-Redirect Configuration
   // ============================================
 
-  // Symbol characters that auto-redirect to BitmapTextSymbols font
-  // These 18 Unicode symbols render using monospaced Courier New metrics
+  // Font-invariant characters that auto-redirect to BitmapTextInvariant font
+  // These 18 Unicode characters render using monospaced Courier New metrics
   // regardless of the font specified in FontProperties
-  static SYMBOL_CHARACTERS_STRING = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
+  static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
 
-  // Symbol set constant (18 characters)
+  // Font-invariant character set constant (18 characters)
   // Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
-  static SYMBOL_SET = Array.from(BitmapText.SYMBOL_CHARACTERS_STRING);
+  static FONT_INVARIANT_CHAR_SET = Array.from(BitmapText.FONT_INVARIANT_CHARS);
 
-  // Font family name for symbols (rendered internally using Courier New)
-  static SYMBOLS_FONT_FAMILY = 'BitmapTextSymbols';
+  // Font family name for font-invariant characters (rendered internally using Courier New)
+  static INVARIANT_FONT_FAMILY = 'BitmapTextInvariant';
 
   /**
-   * Fast symbol detection helper
+   * Fast font-invariant character detection helper
    * Uses string.includes() for ~1-2ns lookup performance
    *
    * @private
    * @param {string} char - Character to check
-   * @returns {boolean} True if character is a special symbol
+   * @returns {boolean} True if character is font-invariant
    */
-  static #isSymbolCharacter(char) {
-    return BitmapText.SYMBOL_CHARACTERS_STRING.includes(char);
+  static #isInvariantCharacter(char) {
+    return BitmapText.FONT_INVARIANT_CHARS.includes(char);
   }
 
   /**
@@ -444,39 +444,39 @@ class BitmapText {
       };
     }
 
-    // PRE-CREATE symbols font properties ONCE for potential auto-redirect
-    const symbolsFontProps = new FontProperties(
+    // PRE-CREATE font-invariant font properties ONCE for potential auto-redirect
+    const invariantFontProps = new FontProperties(
       fontProperties.pixelDensity,
-      BitmapText.SYMBOLS_FONT_FAMILY,
+      BitmapText.INVARIANT_FONT_FAMILY,
       'normal',
       'normal',
       fontProperties.fontSize
     );
 
-    // PRE-FETCH symbols font data
-    let symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+    // PRE-FETCH font-invariant font data
+    let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If symbols font not found and size < 8.5, try interpolating from size 8.5
-    if (!symbolsFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
-      const symbolsMinSizeProps = BitmapText.#createFontPropsAtMinSize(symbolsFontProps);
-      const symbolsMetricsAt8_5 = FontMetricsStore.getFontMetrics(symbolsMinSizeProps);
+    // If font-invariant font not found and size < 8.5, try interpolating from size 8.5
+    if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
+      const invariantMetricsAt8_5 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
 
-      if (symbolsMetricsAt8_5) {
-        // Create interpolated metrics wrapper for symbols font
-        symbolsFontMetrics = BitmapText.#createInterpolatedFontMetrics(symbolsMetricsAt8_5, fontProperties.fontSize);
+      if (invariantMetricsAt8_5) {
+        // Create interpolated metrics wrapper for font-invariant font
+        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt8_5, fontProperties.fontSize);
       }
     }
 
-    const hasSymbolsFont = symbolsFontMetrics !== null;
+    const hasInvariantFont = invariantFontMetrics !== null;
 
     // Scan text for missing glyphs (excluding spaces which are handled specially)
-    // Check each character against the appropriate font (base or symbols)
+    // Check each character against the appropriate font (base or font-invariant)
     const missingChars = new Set();
     for (const char of text) {
       if (char !== ' ') {
         // Determine which font should handle this character
-        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
-        const checkFontMetrics = isSymbol ? symbolsFontMetrics : fontMetrics;
+        const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
+        const checkFontMetrics = isInvariant ? invariantFontMetrics : fontMetrics;
 
         if (!checkFontMetrics.hasGlyph(char)) {
           missingChars.add(char);
@@ -499,9 +499,9 @@ class BitmapText {
     let width_CssPx = 0;
 
     // Determine font for first character
-    const firstCharIsSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(chars[0]);
-    let currentFontMetrics = firstCharIsSymbol ? symbolsFontMetrics : fontMetrics;
-    let currentFontProps = firstCharIsSymbol ? symbolsFontProps : fontProperties;
+    const firstCharIsInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(chars[0]);
+    let currentFontMetrics = firstCharIsInvariant ? invariantFontMetrics : fontMetrics;
+    let currentFontProps = firstCharIsInvariant ? invariantFontProps : fontProperties;
 
     let characterMetrics = currentFontMetrics.getCharacterMetrics(chars[0]);
     const actualBoundingBoxLeft_CssPx = characterMetrics.actualBoundingBoxLeft;
@@ -514,12 +514,12 @@ class BitmapText {
       const char = chars[i];
       const nextChar = chars[i + 1];
 
-      // FAST CHECK: Is this a symbol? Switch fonts if needed
-      const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
-      if (isSymbol && currentFontProps !== symbolsFontProps) {
-        currentFontMetrics = symbolsFontMetrics;
-        currentFontProps = symbolsFontProps;
-      } else if (!isSymbol && currentFontProps !== fontProperties) {
+      // FAST CHECK: Is this a font-invariant character? Switch fonts if needed
+      const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
+      if (isInvariant && currentFontProps !== invariantFontProps) {
+        currentFontMetrics = invariantFontMetrics;
+        currentFontProps = invariantFontProps;
+      } else if (!isInvariant && currentFontProps !== fontProperties) {
         currentFontMetrics = fontMetrics;
         currentFontProps = fontProperties;
       }
@@ -627,40 +627,40 @@ class BitmapText {
       };
     }
 
-    // PRE-CREATE symbols font properties ONCE (not per-character!)
+    // PRE-CREATE font-invariant font properties ONCE (not per-character!)
     // This avoids object allocation in hot rendering loop
-    const symbolsFontProps = new FontProperties(
+    const invariantFontProps = new FontProperties(
       fontProperties.pixelDensity,
-      BitmapText.SYMBOLS_FONT_FAMILY,
-      'normal',  // Always normal style for symbols
-      'normal',  // Always normal weight for symbols
+      BitmapText.INVARIANT_FONT_FAMILY,
+      'normal',  // Always normal style for font-invariant characters
+      'normal',  // Always normal weight for font-invariant characters
       fontProperties.fontSize
     );
 
-    // PRE-FETCH symbols font data ONCE
-    let symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
+    // PRE-FETCH font-invariant font data ONCE
+    let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If symbols font not found and size < 8.5, try interpolating from size 8.5
-    if (!symbolsFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
-      const symbolsMinSizeProps = BitmapText.#createFontPropsAtMinSize(symbolsFontProps);
-      const symbolsMetricsAt8_5 = FontMetricsStore.getFontMetrics(symbolsMinSizeProps);
+    // If font-invariant font not found and size < 8.5, try interpolating from size 8.5
+    if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
+      const invariantMetricsAt8_5 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
 
-      if (symbolsMetricsAt8_5) {
-        // Create interpolated metrics wrapper for symbols font
-        symbolsFontMetrics = BitmapText.#createInterpolatedFontMetrics(symbolsMetricsAt8_5, fontProperties.fontSize);
+      if (invariantMetricsAt8_5) {
+        // Create interpolated metrics wrapper for font-invariant font
+        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt8_5, fontProperties.fontSize);
       }
     }
 
-    const hasSymbolsFont = symbolsFontMetrics !== null;
+    const hasInvariantFont = invariantFontMetrics !== null;
 
     // Scan for missing metrics (can't render without metrics)
-    // Check each character against the appropriate font (base or symbols)
+    // Check each character against the appropriate font (base or font-invariant)
     const missingMetricsChars = new Set();
     for (const char of text) {
       if (char !== ' ') {
         // Determine which font should handle this character
-        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(char);
-        const checkFontMetrics = isSymbol ? symbolsFontMetrics : fontMetrics;
+        const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
+        const checkFontMetrics = isInvariant ? invariantFontMetrics : fontMetrics;
 
         if (!checkFontMetrics.hasGlyph(char)) {
           missingMetricsChars.add(char);
@@ -681,10 +681,10 @@ class BitmapText {
     let atlasData = forceInvalidAtlas ? null : AtlasDataStore.getAtlasData(fontProperties);
     const atlasValid = forceInvalidAtlas ? false : BitmapText.#isValidAtlas(atlasData);
 
-    const symbolsAtlasData = symbolsFontMetrics ?
-      AtlasDataStore.getAtlasData(symbolsFontProps) : null;
-    const symbolsAtlasValid = symbolsFontMetrics ?
-      BitmapText.#isValidAtlas(symbolsAtlasData) : false;
+    const invariantAtlasData = invariantFontMetrics ?
+      AtlasDataStore.getAtlasData(invariantFontProps) : null;
+    const invariantAtlasValid = invariantFontMetrics ?
+      BitmapText.#isValidAtlas(invariantAtlasData) : false;
 
     // Track current font to minimize redundant lookups
     let currentFontProps = fontProperties;
@@ -764,16 +764,16 @@ class BitmapText {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
 
-        // FAST CHECK: Is this a symbol? (string.includes on 18 chars = ~1-2ns)
-        const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(currentChar);
+        // FAST CHECK: Is this a font-invariant character? (string.includes on 18 chars = ~1-2ns)
+        const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(currentChar);
 
         // Switch font ONLY if needed (avoids redundant assignments)
-        if (isSymbol && currentFontProps !== symbolsFontProps) {
-          currentFontProps = symbolsFontProps;
-          currentFontMetrics = symbolsFontMetrics;
-          currentAtlasData = symbolsAtlasData;
-          currentAtlasValid = symbolsAtlasValid;
-        } else if (!isSymbol && currentFontProps !== fontProperties) {
+        if (isInvariant && currentFontProps !== invariantFontProps) {
+          currentFontProps = invariantFontProps;
+          currentFontMetrics = invariantFontMetrics;
+          currentAtlasData = invariantAtlasData;
+          currentAtlasValid = invariantAtlasValid;
+        } else if (!isInvariant && currentFontProps !== fontProperties) {
           // Switch back to base font
           currentFontProps = fontProperties;
           currentFontMetrics = fontMetrics;
@@ -1057,20 +1057,20 @@ class BitmapText {
 
     const metrics = measureResult.metrics;
 
-    // PRE-CREATE symbols font properties ONCE
-    const symbolsFontProps = new FontProperties(
+    // PRE-CREATE font-invariant font properties ONCE
+    const invariantFontProps = new FontProperties(
       fontProperties.pixelDensity,
-      BitmapText.SYMBOLS_FONT_FAMILY,
+      BitmapText.INVARIANT_FONT_FAMILY,
       'normal',
       'normal',
       fontProperties.fontSize
     );
 
-    // PRE-FETCH symbols font data
-    const symbolsFontMetrics = FontMetricsStore.getFontMetrics(symbolsFontProps);
-    const symbolsAtlasData = symbolsFontMetrics ?
-      AtlasDataStore.getAtlasData(symbolsFontProps) : null;
-    const hasSymbolsFont = symbolsFontMetrics !== null;
+    // PRE-FETCH font-invariant font data
+    const invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
+    const invariantAtlasData = invariantFontMetrics ?
+      AtlasDataStore.getAtlasData(invariantFontProps) : null;
+    const hasInvariantFont = invariantFontMetrics !== null;
 
     // Track current font to minimize lookups
     let currentFontProps = fontProperties;
@@ -1149,15 +1149,15 @@ class BitmapText {
       const currentChar = chars[i];
       const nextChar = chars[i + 1];
 
-      // FAST CHECK: Is this a symbol? (string.includes on 18 chars = ~1-2ns)
-      const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(currentChar);
+      // FAST CHECK: Is this a font-invariant character? (string.includes on 18 chars = ~1-2ns)
+      const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(currentChar);
 
       // Switch font ONLY if needed (avoids redundant assignments)
-      if (isSymbol && currentFontProps !== symbolsFontProps) {
-        currentFontProps = symbolsFontProps;
-        currentFontMetrics = symbolsFontMetrics;
-        currentAtlasData = symbolsAtlasData;
-      } else if (!isSymbol && currentFontProps !== fontProperties) {
+      if (isInvariant && currentFontProps !== invariantFontProps) {
+        currentFontProps = invariantFontProps;
+        currentFontMetrics = invariantFontMetrics;
+        currentAtlasData = invariantAtlasData;
+      } else if (!isInvariant && currentFontProps !== fontProperties) {
         // Switch back to base font
         currentFontProps = fontProperties;
         currentFontMetrics = fontMetrics;

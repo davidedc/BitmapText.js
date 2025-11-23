@@ -117,15 +117,15 @@ BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
 
 **Chosen:** Reset transform (identity matrix) for simplicity and robustness.
 
-### Symbol Font Auto-Redirect System
+### Font-Invariant Character Auto-Redirect System
 
-**Design Decision:** Special Unicode symbols automatically render using BitmapTextSymbols font regardless of specified base font.
+**Design Decision:** Special Unicode font-invariant characters automatically render using BitmapTextInvariant font regardless of specified base font.
 
 **Problem:**
-Different fonts render the same Unicode symbols with different metrics and styles. For UI consistency, symbols like ✔✘☺ should look identical regardless of whether text is in Arial, Georgia, or Courier.
+Different fonts render the same Unicode characters with different metrics and styles. For UI consistency, font-invariant characters like ✔✘☺ should look identical regardless of whether text is in Arial, Georgia, or Courier.
 
 **Solution:**
-Introduce a dedicated symbol font (BitmapTextSymbols) that uses Courier New for rendering, ensuring monospaced, consistent symbol appearance. At runtime, transparently redirect symbol characters to this font during rendering.
+Introduce a dedicated font-invariant font (BitmapTextInvariant) that uses Courier New for rendering, ensuring monospaced, consistent font-invariant character appearance. At runtime, transparently redirect font-invariant characters to this font during rendering.
 
 **Implementation:**
 
@@ -133,8 +133,8 @@ Introduce a dedicated symbol font (BitmapTextSymbols) that uses Courier New for 
 ```javascript
 function createGlyphsAndAddToFullStore(fontProperties) {
   let characterSet;
-  if (fontProperties.fontFamily === 'BitmapTextSymbols') {
-    characterSet = BitmapText.SYMBOL_CHARACTERS_STRING;  // 18 symbols
+  if (fontProperties.fontFamily === 'BitmapTextInvariant') {
+    characterSet = BitmapText.FONT_INVARIANT_CHARS;  // 18 symbols
   } else {
     characterSet = BitmapText.CHARACTER_SET;  // 204 standard chars
   }
@@ -145,19 +145,19 @@ function createGlyphsAndAddToFullStore(fontProperties) {
 2. **Runtime Fast Symbol Detection** (src/runtime/BitmapText.js):
 ```javascript
 // Pre-defined symbol string (18 characters)
-static SYMBOL_CHARACTERS_STRING = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
+static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
 
 // Fast detection using string.includes() (~1-2ns)
-static #isSymbolCharacter(char) {
-  return BitmapText.SYMBOL_CHARACTERS_STRING.includes(char);
+static #isInvariantCharacter(char) {
+  return BitmapText.FONT_INVARIANT_CHARS.includes(char);
 }
 
 // In rendering loop
-const isSymbol = hasSymbolsFont && BitmapText.#isSymbolCharacter(currentChar);
-if (isSymbol && currentFontProps !== symbolsFontProps) {
-  currentFontProps = symbolsFontProps;
-  currentFontMetrics = symbolsFontMetrics;
-  currentAtlasData = symbolsAtlasData;
+const isSymbol = hasInvariantFont && BitmapText.#isInvariantCharacter(currentChar);
+if (isSymbol && currentFontProps !== invariantFontProps) {
+  currentFontProps = invariantFontProps;
+  currentFontMetrics = invariantFontMetrics;
+  currentAtlasData = invariantAtlasData;
 }
 ```
 
@@ -171,7 +171,7 @@ if (isSymbol && currentFontProps !== symbolsFontProps) {
    - **Rationale**: Avoids repeated lookups when switching between base font and symbol font
    - **Trade-off**: Small memory overhead vs performance in hot loop
 
-3. **Courier New Override**: BitmapTextSymbols uses Courier New as rendering font (src/builder/GlyphFAB.js)
+3. **Courier New Override**: BitmapTextInvariant uses Courier New as rendering font (src/builder/GlyphFAB.js)
    - **Rationale**: Ensures monospacing and consistent metrics across platforms
    - **Trade-off**: Symbols don't match base font style, but consistency is more important
 
@@ -182,15 +182,15 @@ if (isSymbol && currentFontProps !== symbolsFontProps) {
 **User Impact:**
 
 ```javascript
-// User specifies Arial, but ✔ renders using BitmapTextSymbols automatically
+// User specifies Arial, but ✔ renders using BitmapTextInvariant automatically
 const fontProps = new FontProperties(1, "Arial", "normal", "normal", 19);
 BitmapText.drawTextFromAtlas(ctx, "Task done ✔", 10, 50, fontProps);
 // "Task done " → Arial metrics/atlas
-// "✔" → BitmapTextSymbols metrics/atlas (automatic)
+// "✔" → BitmapTextInvariant metrics/atlas (automatic)
 ```
 
 **Requirements:**
-- BitmapTextSymbols must be loaded at same pixel density and size as base font
+- BitmapTextInvariant must be loaded at same pixel density and size as base font
 - If symbol font not loaded, symbols render using base font (degraded experience)
 - Symbol font only supports normal style/weight
 
@@ -277,7 +277,7 @@ The 18 symbols were selected for common UI/text needs:
     - Font queries: `hasMetrics()`, `hasAtlas()`, `unloadMetrics()`, `unloadAtlas()` - delegates to stores
     - Text measurement: `measureText()` - retrieves data from stores
     - Text rendering: `drawTextFromAtlas()` - retrieves data from stores
-    - Symbol auto-redirect: Detects symbol characters during rendering and switches to BitmapTextSymbols font
+    - Symbol auto-redirect: Detects symbol characters during rendering and switches to BitmapTextInvariant font
     - Platform-specific FontLoader detection: Checks for `FontLoader` class from src/platform/
     - Canvas creation: Auto-creates in browser, uses canvasFactory in Node.js
   - Internal Fields (private):
@@ -286,7 +286,7 @@ The 18 symbols were selected for common UI/text needs:
     - `#coloredGlyphCanvas`: Shared scratch canvas for coloring glyphs (lazy-initialized)
     - `#coloredGlyphCtx`: 2D context for scratch canvas (lazy-initialized)
     - Storage: ALL font data delegated to AtlasDataStore and FontMetricsStore (stores are the single source of truth)
-    - Symbol font detection: `SYMBOL_CHARACTERS_STRING` static constant (18 symbols), `#isSymbolCharacter()` fast detection helper
+    - Symbol font detection: `FONT_INVARIANT_CHARS` static constant (18 symbols), `#isInvariantCharacter()` fast detection helper
     - Note: fontDirectory is NOT stored in BitmapText - it's owned by FontLoaderBase
 
   **AtlasDataStore (static class)**
@@ -568,11 +568,11 @@ To support compound emojis would require:
   - Orchestrates glyph creation for all characters in character set
   - Function: `createGlyphsAndAddToFullStore(fontProperties)`
   - Character set selection based on font family:
-    - BitmapTextSymbols: Uses `BitmapText.SYMBOL_CHARACTERS_STRING` (18 symbols)
+    - BitmapTextInvariant: Uses `BitmapText.FONT_INVARIANT_CHARS` (18 symbols)
     - All other fonts: Uses `BitmapText.CHARACTER_SET` (204 standard characters)
   - Iterates through selected character set and creates GlyphFAB instance for each character
   - Stores created glyphs in AtlasDataStoreFAB for subsequent atlas building
-  - Depends on: BitmapText.CHARACTER_SET, BitmapText.SYMBOL_CHARACTERS_STRING, GlyphFAB, AtlasDataStoreFAB
+  - Depends on: BitmapText.CHARACTER_SET, BitmapText.FONT_INVARIANT_CHARS, GlyphFAB, AtlasDataStoreFAB
   - Used by: font-assets-builder.html build workflow
   - Distribution: Part of font assets building toolkit only
 

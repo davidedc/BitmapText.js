@@ -109,11 +109,11 @@ class FontLoaderBase {
     const fontProperties = FontProperties.fromIDString(idString);
 
     // Determine character set based on font family
-    // If it's the symbols font, use the symbol set
+    // If it's the font-invariant font, use the font-invariant character set
     // Otherwise, pass undefined to let MetricsExpander default to standard set
     let characterSet;
-    if (bitmapTextClass && fontProperties.fontFamily === bitmapTextClass.SYMBOLS_FONT_FAMILY) {
-      characterSet = bitmapTextClass.SYMBOL_SET;
+    if (bitmapTextClass && fontProperties.fontFamily === bitmapTextClass.INVARIANT_FONT_FAMILY) {
+      characterSet = bitmapTextClass.FONT_INVARIANT_CHAR_SET;
     }
 
     const fontMetrics = MetricsExpander.expand(compactedData, characterSet);

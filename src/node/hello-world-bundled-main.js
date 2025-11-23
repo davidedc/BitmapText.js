@@ -80,9 +80,9 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Load fonts using static API (Arial + BitmapTextSymbols for automatic symbol fallback)
+    // Load fonts using static API (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
     const expectedIDString = fontProperties.idString;
-    const symbolsIDString = 'density-1-0-BitmapTextSymbols-style-normal-weight-normal-size-19-0';
+    const symbolsIDString = 'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-19-0';
     console.log(`Loading fonts: ${expectedIDString} + ${symbolsIDString}...`);
 
     await BitmapText.loadFonts([expectedIDString, symbolsIDString], {

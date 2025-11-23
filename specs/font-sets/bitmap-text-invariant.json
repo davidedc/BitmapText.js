@@ -1,9 +1,9 @@
 {
   "fontSets": [
     {
-      "name": "BitmapTextSymbols Monospaced Symbols",
+      "name": "BitmapTextInvariant Font-Invariant Characters",
       "density": [1.0, 2.0],
-      "families": ["BitmapTextSymbols"],
+      "families": ["BitmapTextInvariant"],
       "styles": ["normal"],
       "weights": ["normal"],
       "sizes": [[8.5, 72, 0.5]]

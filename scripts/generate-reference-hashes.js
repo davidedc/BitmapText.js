@@ -142,8 +142,8 @@ function formatHashesForOutput(hashes, metadata) {
   if (metadata.skippedCount && metadata.skippedCount > 0) {
     output += `//\n`;
     output += `// Note: ${metadata.skippedCount} test copy hashes were skipped (not generated)\n`;
-    output += `// Reason: BitmapTextSymbols font is symbol-only and cannot render regular text\n`;
-    output += `// Skipped: All test copies (1-4) contain regular text or mixed text+symbols\n`;
+    output += `// Reason: BitmapTextInvariant font is font-invariant-only and cannot render regular text\n`;
+    output += `// Skipped: All test copies (1-4) contain regular text or mixed text+font-invariant-chars\n`;
   }
   output += '\n';
 
@@ -334,7 +334,7 @@ async function generateHashes() {
     console.log('✅ Hashes received from browser');
     console.log(`📊 Total hashes: ${Object.keys(hashes).length}`);
     if (skippedCount > 0) {
-      console.log(`ℹ️  Skipped hashes: ${skippedCount} (BitmapTextSymbols with non-symbol test copies)`);
+      console.log(`ℹ️  Skipped hashes: ${skippedCount} (BitmapTextInvariant with non-font-invariant test copies)`);
     }
 
     // Merge with existing if requested

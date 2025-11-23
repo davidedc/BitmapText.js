@@ -218,16 +218,16 @@ function downloadFontAssets(options) {
         // Check if this font has a custom character set
         // Determine target character set
         let targetCharacterSet = BitmapText.CHARACTER_SET;
-        let isSymbolFont = false;
+        let isInvariantFont = false;
 
-        if (fontProperties.fontFamily === 'BitmapTextSymbols') {
-            targetCharacterSet = Array.from(window.BitmapText.SYMBOL_CHARACTERS_STRING);
-            isSymbolFont = true;
+        if (fontProperties.fontFamily === 'BitmapTextInvariant') {
+            targetCharacterSet = Array.from(window.BitmapText.FONT_INVARIANT_CHARS);
+            isInvariantFont = true;
         }
 
-        if (isSymbolFont) {
-            // For symbol fonts:
-            // Only include characters that are in the symbol set
+        if (isInvariantFont) {
+            // For font-invariant fonts:
+            // Only include characters that are in the font-invariant character set
             characterMetrics = {};
             for (const char of targetCharacterSet) {
                 if (generatedMetrics[char]) {
@@ -273,12 +273,12 @@ function downloadFontAssets(options) {
         };
 
         // Minify with automatic roundtrip verification
-        // Now supports both standard and symbol fonts via characterSet argument
+        // Now supports both standard and font-invariant fonts via characterSet argument
         // Use window.BitmapText to ensure consistent scoping with readiness check
         let characterSet = BitmapText.CHARACTER_SET;
-        if (fontProperties.fontFamily === 'BitmapTextSymbols') {
-            console.log(`📝 Using symbol character set for ${fontProperties.fontFamily}`);
-            characterSet = Array.from(window.BitmapText.SYMBOL_CHARACTERS_STRING);
+        if (fontProperties.fontFamily === 'BitmapTextInvariant') {
+            console.log(`📝 Using font-invariant character set for ${fontProperties.fontFamily}`);
+            characterSet = Array.from(window.BitmapText.FONT_INVARIANT_CHARS);
         }
 
         // This catches compression bugs immediately during build
