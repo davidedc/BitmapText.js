@@ -11,13 +11,6 @@ echo ""
 echo "🧹 Cleaning up examples/node/dist directory..."
 rm -rf examples/node/dist
 mkdir -p examples/node/dist
-
-# Set up font assets for Node.js demos (in dist directory alongside bundles)
-echo "📦 Setting up font assets for Node.js demos..."
-mkdir -p examples/node/dist/font-assets
-cp font-assets/*.js examples/node/dist/font-assets/ 2>/dev/null || true
-cp font-assets/*.qoi examples/node/dist/font-assets/ 2>/dev/null || true
-echo "✅ Font assets copied to examples/node/dist/font-assets/"
 echo ""
 
 # Build runtime bundle if needed
@@ -29,6 +22,7 @@ echo ""
 echo "🔨 Building standalone demo bundles..."
 ./scripts/build-node-demo.sh
 ./scripts/build-node-multi-size-demo.sh
+./scripts/build-node-small-sizes-demo.sh
 echo ""
 
 # Build runtime-bundle demos (concatenate Canvas/PNG, load runtime bundle)
@@ -44,10 +38,12 @@ echo ""
 echo "Standalone Bundles (complete, ~196KB each):"
 echo "  - examples/node/dist/hello-world.bundle.js"
 echo "  - examples/node/dist/hello-world-multi-size.bundle.js"
+echo "  - examples/node/dist/small-sizes.bundle.js"
 echo ""
 echo "Runtime Bundle Demos (use dist/bitmaptext-node.min.js, ~33KB):"
 echo "  - examples/node/dist/hello-world-bundled.js"
 echo "  - examples/node/dist/hello-world-multi-size-bundled.js"
+echo "  - examples/node/dist/small-sizes-bundled.js"
 echo ""
 
 # Run all demos
@@ -80,12 +76,24 @@ echo "────────────────────────�
 node examples/node/dist/hello-world-multi-size-bundled.js
 echo ""
 
+echo "────────────────────────────────────────────────────────────────────────────────"
+echo "5️⃣  Standalone Bundle: Small Sizes Interpolation Demo"
+echo "────────────────────────────────────────────────────────────────────────────────"
+node examples/node/dist/small-sizes.bundle.js
+echo ""
+
+echo "────────────────────────────────────────────────────────────────────────────────"
+echo "6️⃣  Runtime Bundle: Small Sizes Interpolation Demo"
+echo "────────────────────────────────────────────────────────────────────────────────"
+node examples/node/dist/small-sizes-bundled.js
+echo ""
+
 echo "================================================================================"
-echo "✅ All demos completed successfully!"
+echo "✅ All 6 demos completed successfully!"
 echo "================================================================================"
 echo ""
 echo "Generated PNG files:"
-ls -lh hello-world*.png 2>/dev/null || echo "  (no PNG files found - demos may have failed)"
+ls -lh hello-world*.png small-sizes*.png 2>/dev/null || echo "  (no PNG files found - demos may have failed)"
 echo ""
 echo "Bundle Comparison:"
 echo "  Standalone: ~196KB (includes Canvas mock, PNG encoder, QOI decoder)"

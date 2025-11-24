@@ -112,8 +112,8 @@ class FontLoaderBase {
     // If it's the font-invariant font, use the font-invariant character set
     // Otherwise, pass undefined to let MetricsExpander default to standard set
     let characterSet;
-    if (bitmapTextClass && fontProperties.fontFamily === bitmapTextClass.INVARIANT_FONT_FAMILY) {
-      characterSet = bitmapTextClass.FONT_INVARIANT_CHAR_SET;
+    if (fontProperties.fontFamily === CharacterSets.INVARIANT_FONT_FAMILY) {
+      characterSet = Array.from(CharacterSets.FONT_INVARIANT_CHARS);
     }
 
     const fontMetrics = MetricsExpander.expand(compactedData, characterSet);

@@ -22,6 +22,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Output file: $OUTPUT_FILE"
 # Verify all source files exist
 FILES_TO_CHECK=(
   "$SRC_DIR/runtime/StatusCode.js"
+  "$SRC_DIR/runtime/CharacterSets.js"
   "$SRC_DIR/runtime/BitmapText.js"
   "$SRC_DIR/runtime/FontMetrics.js"
   "$SRC_DIR/builder/MetricsMinifier.js"
@@ -55,11 +56,12 @@ cat > "$OUTPUT_FILE" << 'EOF'
  *
  * Source files concatenated (in dependency order):
  *   1. src/runtime/StatusCode.js - Status code constants (required by BitmapText)
- *   2. src/runtime/BitmapText.js - BitmapText class with CHARACTER_SET
- *   3. src/runtime/FontMetrics.js - FontMetrics class
- *   4. src/builder/MetricsMinifier.js - Minification logic
- *   5. src/builder/MetricsExpander.js - Expansion for roundtrip
- *   6. src/utils/deep-equal.js - Deep equality comparison
+ *   2. src/runtime/CharacterSets.js - Character set configuration (FONT_SPECIFIC_CHARS)
+ *   3. src/runtime/BitmapText.js - BitmapText class
+ *   4. src/runtime/FontMetrics.js - FontMetrics class
+ *   5. src/builder/MetricsMinifier.js - Minification logic
+ *   6. src/builder/MetricsExpander.js - Expansion for roundtrip
+ *   7. src/utils/deep-equal.js - Deep equality comparison
  *
  * Purpose:
  *   - Find all *-full.js files in font-assets/
@@ -164,9 +166,17 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/StatusCode.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate BitmapText (contains CHARACTER_SET required by both Minifier and Expander)
+# Concatenate CharacterSets (contains FONT_SPECIFIC_CHARS required by both Minifier and Expander)
+echo "// CHARACTER SETS CONFIGURATION" >> "$OUTPUT_FILE"
+echo "// Contains FONT_SPECIFIC_CHARS constant required by both MetricsMinifier and MetricsExpander" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/CharacterSets.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate BitmapText
 echo "// BITMAPTEXT CLASS" >> "$OUTPUT_FILE"
-echo "// Contains CHARACTER_SET constant required by both MetricsMinifier and MetricsExpander" >> "$OUTPUT_FILE"
+echo "// Main bitmap text rendering engine" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/BitmapText.js" >> "$OUTPUT_FILE"

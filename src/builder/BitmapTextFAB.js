@@ -77,7 +77,7 @@ class BitmapTextFAB extends BitmapText {
     // Build kerning table using calculator (pure calculation, no side effects)
     const kerningTable = this.#kerningCalculator.buildTable(
       fontProperties,
-      BitmapText.CHARACTER_SET
+      CharacterSets.FONT_SPECIFIC_CHARS
     );
 
     // Store kerning table (orchestration responsibility of FAB class)

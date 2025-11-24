@@ -31,6 +31,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/TextProperties.js"
   "$SRC_DIR/runtime/FontMetrics.js"
   "$SRC_DIR/runtime/InterpolatedFontMetrics.js"
+  "$SRC_DIR/runtime/CharacterSets.js"
   "$SRC_DIR/builder/MetricsExpander.js"
   "$SRC_DIR/runtime/AtlasPositioning.js"
   "$SRC_DIR/runtime/AtlasImage.js"
@@ -147,16 +148,24 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/InterpolatedFontMetrics.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate BitmapText (includes CHARACTER_SET required by MetricsExpander)
-# Note: This MUST come before other dependencies that need it
+# Concatenate CharacterSets (required by BitmapText and MetricsExpander)
+# Note: This MUST come before BitmapText and MetricsExpander
 echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// BITMAP TEXT STATIC CLASS (includes CHARACTER_SET)" >> "$OUTPUT_FILE"
+echo "// CHARACTER SETS CONFIGURATION" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/CharacterSets.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate BitmapText (depends on CharacterSets)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// BITMAP TEXT STATIC CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/BitmapText.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate expansion utility (depends on BitmapText.CHARACTER_SET)
+# Concatenate expansion utility (depends on CharacterSets.FONT_SPECIFIC_CHARS)
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// EXPANSION UTILITY - MetricsExpander.js" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"

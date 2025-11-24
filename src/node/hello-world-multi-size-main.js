@@ -50,8 +50,9 @@ async function main() {
 
     // Configure BitmapText for Node.js environment
     console.log('Configuring BitmapText for Node.js...');
+    // When built, this file is in examples/node/dist/, so go up 3 levels to project root
     BitmapText.configure({
-      fontDirectory: './font-assets/',
+      fontDirectory: path.resolve(__dirname, '../../../font-assets/'),
       canvasFactory: () => new Canvas()
     });
 

@@ -170,7 +170,7 @@ function getTestCopyText(testCopyNumber) {
 /**
  * Check if a string contains only font-invariant characters (no regular text)
  * @param {string} str - String to check
- * @returns {boolean} True if string contains only font-invariant characters from BitmapText.FONT_INVARIANT_CHARS
+ * @returns {boolean} True if string contains only font-invariant characters from CharacterSets.FONT_INVARIANT_CHARS
  */
 function isOnlyInvariantChars(str) {
   // Remove whitespace and newlines for checking
@@ -180,7 +180,7 @@ function isOnlyInvariantChars(str) {
   }
 
   // Check if all non-whitespace characters are in the font-invariant character set
-  const invariantCharSet = new Set(BitmapText.FONT_INVARIANT_CHARS);
+  const invariantCharSet = new Set(CharacterSets.FONT_INVARIANT_CHARS);
   for (const char of nonWhitespace) {
     if (!invariantCharSet.has(char)) {
       return false; // Found a non-invariant character

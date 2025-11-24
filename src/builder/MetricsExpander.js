@@ -1,6 +1,6 @@
 // Static utility class for expanding minified font metrics data (runtime only)
 // Converts compact format back to FontMetrics instances for use by the rendering engine
-// NOTE: Requires BitmapText.js to be loaded first (uses BitmapText.CHARACTER_SET)
+// NOTE: Requires BitmapText.js to be loaded first (uses CharacterSets.FONT_SPECIFIC_CHARS)
 
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -100,11 +100,11 @@ class MetricsExpander {
    *
    * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
    *   - v can be array (Tier 6c) or base64 string (Tier 7)
-   * @param {Array<string>} [characterSet=BitmapText.CHARACTER_SET] - Character set to use for expansion
+   * @param {Array<string>} [characterSet=CharacterSets.FONT_SPECIFIC_CHARS] - Character set to use for expansion
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
-  static expand(minified, characterSet = BitmapText.CHARACTER_SET) {
+  static expand(minified, characterSet = CharacterSets.FONT_SPECIFIC_CHARS) {
     // Check if FontMetrics class is available
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
@@ -186,7 +186,7 @@ class MetricsExpander {
    *   Pass 1 (left-side):  {"A-B":{"s":0}} → {"A":{"s":0},"B":{"s":0}}
    *   Pass 2 (right-side): {"A":{"0-1":0}} → {"A":{"0":0,"1":0}}
    *   Pass 3 (values):     {"A":{"s":0}} → {"A":{"s":20}} (lookup from kerningValueLookup[0])
-   * Always uses BitmapText.CHARACTER_SET for range expansion
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
    * @param {Object} minified - Minified kerning table with indexed values
    * @param {Array<string>} characterSet - Character set to use for range expansion
@@ -218,7 +218,7 @@ class MetricsExpander {
    * Expands left side of kerning table (characters that come before)
    * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
    * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
-   * Always uses BitmapText.CHARACTER_SET for range expansion
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
    * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Left-expanded kerning table
    * @private
@@ -265,7 +265,7 @@ class MetricsExpander {
    * - Individual chars: comma, dot, colon, semicolon
    * - Ranges: a, c-e (c,d,e), g, j-s (j,k,l,m,n,o,p,q,r,s)
    *
-   * Always uses BitmapText.CHARACTER_SET for range expansion
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
    * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Expanded pairs like {"-":20,",":20,".":20,...,"s":20}
    * @private
@@ -349,7 +349,7 @@ class MetricsExpander {
 
   /**
    * Expands glyph metrics from arrays back to full objects
-   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using BitmapText.CHARACTER_SET
+   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CharacterSets.FONT_SPECIFIC_CHARS
    * TIER 4 OPTIMIZATION: Looks up actual values from indices using valueLookup table
    * TIER 5a OPTIMIZATION: Decompresses variable-length tuplets (2/3/4/5 elements)
    * TIER 5b OPTIMIZATION: Looks up tuplets from tuplet indices
@@ -362,7 +362,7 @@ class MetricsExpander {
    *   - Length 5: [w, l, r, a, d] (no decompression)
    *
    * Reconstructs full TextMetrics-compatible objects from compact arrays
-   * Always uses BitmapText.CHARACTER_SET for character order
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for character order
    * @param {Array} tupletIndices - Array of tuplet indices (single integers)
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @param {Array} valueLookup - Value lookup table mapping indices to actual values

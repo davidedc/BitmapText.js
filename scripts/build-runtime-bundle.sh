@@ -71,6 +71,7 @@ COMMON_FILES=(
   "$SRC_DIR/runtime/TextProperties.js"
   "$SRC_DIR/runtime/FontMetrics.js"
   "$SRC_DIR/runtime/InterpolatedFontMetrics.js"
+  "$SRC_DIR/runtime/CharacterSets.js"
   "$SRC_DIR/runtime/BitmapText.js"
   "$SRC_DIR/builder/MetricsExpander.js"
   "$SRC_DIR/runtime/AtlasPositioning.js"

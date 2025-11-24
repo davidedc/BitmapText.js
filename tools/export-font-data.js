@@ -191,9 +191,9 @@ function downloadFontAssets(options) {
             return;
         }
 
-        // REQUIRED: ALL 204 characters from BitmapText.CHARACTER_SET must be included for standard fonts
+        // REQUIRED: ALL 204 characters from CharacterSets.FONT_SPECIFIC_CHARS must be included for standard fonts
         // For custom character set fonts, only the custom characters are included
-        // Create metrics for all 204 characters in BitmapText.CHARACTER_SET order
+        // Create metrics for all 204 characters in CharacterSets.FONT_SPECIFIC_CHARS order
         let characterMetrics = {};
 
         // Get baseline metrics from first generated character for fallback
@@ -217,11 +217,11 @@ function downloadFontAssets(options) {
 
         // Check if this font has a custom character set
         // Determine target character set
-        let targetCharacterSet = BitmapText.CHARACTER_SET;
+        let targetCharacterSet = CharacterSets.FONT_SPECIFIC_CHARS;
         let isInvariantFont = false;
 
         if (fontProperties.fontFamily === 'BitmapTextInvariant') {
-            targetCharacterSet = Array.from(window.BitmapText.FONT_INVARIANT_CHARS);
+            targetCharacterSet = Array.from(window.CharacterSets.FONT_INVARIANT_CHARS);
             isInvariantFont = true;
         }
 
@@ -238,8 +238,8 @@ function downloadFontAssets(options) {
             }
             console.log(`📝 Font has custom character set, exporting ${Object.keys(characterMetrics).length} characters: ${Array.from(targetCharacterSet).join('')}`);
         } else {
-            // For standard fonts: Add all 204 characters from BitmapText.CHARACTER_SET
-            for (const char of BitmapText.CHARACTER_SET) {
+            // For standard fonts: Add all 204 characters from CharacterSets.FONT_SPECIFIC_CHARS
+            for (const char of CharacterSets.FONT_SPECIFIC_CHARS) {
                 if (generatedMetrics[char]) {
                     // Use generated metrics if available
                     characterMetrics[char] = generatedMetrics[char];
@@ -250,17 +250,17 @@ function downloadFontAssets(options) {
             }
 
             // Warn about missing characters (should not happen in normal operation)
-            const missingChars = Array.from(BitmapText.CHARACTER_SET).filter(char => !generatedMetrics[char]);
+            const missingChars = Array.from(CharacterSets.FONT_SPECIFIC_CHARS).filter(char => !generatedMetrics[char]);
             if (missingChars.length > 0) {
                 console.warn(`⚠️  Generated placeholder metrics for ${missingChars.length} missing characters: ${missingChars.slice(0, 10).join('')}${missingChars.length > 10 ? '...' : ''}`);
             }
 
-            // Verify no extra characters outside BitmapText.CHARACTER_SET
-            const extraChars = Object.keys(generatedMetrics).filter(char => !BitmapText.CHARACTER_SET.includes(char));
+            // Verify no extra characters outside CharacterSets.FONT_SPECIFIC_CHARS
+            const extraChars = Object.keys(generatedMetrics).filter(char => !CharacterSets.FONT_SPECIFIC_CHARS.includes(char));
             if (extraChars.length > 0) {
                 throw new Error(
-                    `Font contains ${extraChars.length} characters not in BitmapText.CHARACTER_SET: ${extraChars.join(', ')}\n` +
-                    `Please update BitmapText.CHARACTER_SET in src/runtime/BitmapText.js to include these characters.`
+                    `Font contains ${extraChars.length} characters not in CharacterSets.FONT_SPECIFIC_CHARS: ${extraChars.join(', ')}\n` +
+                    `Please update CharacterSets.FONT_SPECIFIC_CHARS in src/runtime/BitmapText.js to include these characters.`
                 );
             }
         }
@@ -275,10 +275,10 @@ function downloadFontAssets(options) {
         // Minify with automatic roundtrip verification
         // Now supports both standard and font-invariant fonts via characterSet argument
         // Use window.BitmapText to ensure consistent scoping with readiness check
-        let characterSet = BitmapText.CHARACTER_SET;
+        let characterSet = CharacterSets.FONT_SPECIFIC_CHARS;
         if (fontProperties.fontFamily === 'BitmapTextInvariant') {
             console.log(`📝 Using font-invariant character set for ${fontProperties.fontFamily}`);
-            characterSet = Array.from(window.BitmapText.FONT_INVARIANT_CHARS);
+            characterSet = Array.from(window.CharacterSets.FONT_INVARIANT_CHARS);
         }
 
         // This catches compression bugs immediately during build

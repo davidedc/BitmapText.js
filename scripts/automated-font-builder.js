@@ -319,14 +319,15 @@ async function buildFonts() {
       timeout: 30000
     });
 
-    // Verify BitmapText is fully initialized
-    // This ensures static fields (CHARACTER_SET, FONT_INVARIANT_CHARS) are ready
+    // Verify BitmapText and CharacterSets are fully initialized
+    // This ensures static fields (FONT_SPECIFIC_CHARS, FONT_INVARIANT_CHARS) are ready
     const isReady = await page.evaluate(() => ({
       bitmapTextReady: window.bitmapTextReady,
       hasBitmapText: typeof window.BitmapText !== 'undefined',
-      hasCharacterSet: !!window.BitmapText?.CHARACTER_SET,
-      hasFontInvariantChars: !!window.BitmapText?.FONT_INVARIANT_CHARS,
-      characterSetLength: window.BitmapText?.CHARACTER_SET?.length
+      hasCharacterSets: typeof window.CharacterSets !== 'undefined',
+      hasFontSpecificChars: !!window.CharacterSets?.FONT_SPECIFIC_CHARS,
+      hasFontInvariantChars: !!window.CharacterSets?.FONT_INVARIANT_CHARS,
+      characterSetLength: window.CharacterSets?.FONT_SPECIFIC_CHARS?.length
     }));
 
     if (!isReady.bitmapTextReady) {
@@ -339,13 +340,18 @@ async function buildFonts() {
       throw new Error('BitmapText class not accessible on window object');
     }
 
-    if (!isReady.hasCharacterSet || !isReady.hasFontInvariantChars) {
-      console.error('❌ BitmapText static fields not initialized:', isReady);
-      throw new Error(`BitmapText static fields missing. CHARACTER_SET: ${isReady.hasCharacterSet}, FONT_INVARIANT_CHARS: ${isReady.hasFontInvariantChars}`);
+    if (!isReady.hasCharacterSets) {
+      console.error('❌ CharacterSets class not on window:', isReady);
+      throw new Error('CharacterSets class not accessible on window object');
     }
 
-    console.log('✅ Page loaded with BitmapText initialized, calculating font counts...');
-    console.log(`   CHARACTER_SET length: ${isReady.characterSetLength}`);
+    if (!isReady.hasFontSpecificChars || !isReady.hasFontInvariantChars) {
+      console.error('❌ CharacterSets static fields not initialized:', isReady);
+      throw new Error(`CharacterSets static fields missing. FONT_SPECIFIC_CHARS: ${isReady.hasFontSpecificChars}, FONT_INVARIANT_CHARS: ${isReady.hasFontInvariantChars}`);
+    }
+
+    console.log('✅ Page loaded with BitmapText and CharacterSets initialized, calculating font counts...');
+    console.log(`   FONT_SPECIFIC_CHARS length: ${isReady.characterSetLength}`);
     console.log('');
 
     // Step 1: Get font counts for each set from browser

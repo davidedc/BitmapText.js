@@ -5,9 +5,9 @@ function createGlyphsAndAddToFullStore(fontProperties) {
   let characterSet;
   if (fontProperties.fontFamily === 'BitmapTextInvariant') {
     console.log(`📝 Creating glyphs for font-invariant font: ${fontProperties.fontFamily}`);
-    characterSet = BitmapText.FONT_INVARIANT_CHARS;
+    characterSet = CharacterSets.FONT_INVARIANT_CHARS;
   } else {
-    characterSet = BitmapText.CHARACTER_SET;
+    characterSet = CharacterSets.FONT_SPECIFIC_CHARS;
   }
 
   for (const char of characterSet) {

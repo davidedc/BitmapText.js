@@ -77,6 +77,7 @@
 <script src="../src/builder/KerningCalculator.js"></script>
 <script src="../src/builder/MetricsMinifier.js"></script>
 <script src="../src/builder/MetricsExpander.js"></script>
+<script src="../src/runtime/CharacterSets.js"></script>
 
 <!-- Atlas generation utilities -->
 <script src="../src/utils/AtlasCellDimensions.js"></script>
@@ -117,6 +118,7 @@
   // Explicitly expose BitmapText on window for Playwright access
   // In WebKit, class declarations in global scope may not be enumerable on window
   // page.evaluate() from Playwright needs explicit window reference
+  window.CharacterSets = CharacterSets;
   window.BitmapText = BitmapText;
   window.BitmapTextFAB = BitmapTextFAB;
   window.AtlasDataStoreFAB = AtlasDataStoreFAB;
@@ -126,17 +128,18 @@
 
   // Signal that all scripts are loaded and BitmapText is fully initialized
   // This is checked by automated-font-builder.js after page reloads to ensure
-  // static fields like BitmapText.CHARACTER_SET are ready before font generation
+  // static fields like CharacterSets.FONT_SPECIFIC_CHARS are ready before font generation
   window.bitmapTextReady = true;
-  console.log('✅ BitmapText static fields initialized:', {
-    CHARACTER_SET: !!BitmapText.CHARACTER_SET,
-    FONT_INVARIANT_CHARS: !!BitmapText.FONT_INVARIANT_CHARS,
-    characterSetLength: BitmapText.CHARACTER_SET?.length
+  console.log('✅ CharacterSets and BitmapText initialized:', {
+    FONT_SPECIFIC_CHARS: !!CharacterSets.FONT_SPECIFIC_CHARS,
+    FONT_INVARIANT_CHARS: !!CharacterSets.FONT_INVARIANT_CHARS,
+    characterSetLength: CharacterSets.FONT_SPECIFIC_CHARS?.length
   });
   console.log('✅ Classes exposed on window:', {
     BitmapText: typeof window.BitmapText,
-    CHARACTER_SET: !!window.BitmapText?.CHARACTER_SET,
-    FONT_INVARIANT_CHARS: !!window.BitmapText?.FONT_INVARIANT_CHARS
+    CharacterSets: typeof window.CharacterSets,
+    FONT_SPECIFIC_CHARS: !!window.CharacterSets?.FONT_SPECIFIC_CHARS,
+    FONT_INVARIANT_CHARS: !!window.CharacterSets?.FONT_INVARIANT_CHARS
   });
 </script>
 
