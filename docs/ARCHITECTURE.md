@@ -134,9 +134,9 @@ Introduce a dedicated font-invariant font (BitmapTextInvariant) that uses Courie
 function createGlyphsAndAddToFullStore(fontProperties) {
   let characterSet;
   if (fontProperties.fontFamily === 'BitmapTextInvariant') {
-    characterSet = BitmapText.FONT_INVARIANT_CHARS;  // 18 symbols
+    characterSet = CharacterSets.FONT_INVARIANT_CHARS;  // 18 symbols
   } else {
-    characterSet = BitmapText.CHARACTER_SET;  // 204 standard chars
+    characterSet = CharacterSets.FONT_SPECIFIC_CHARS;  // 204 standard chars
   }
   // Generate glyphs for appropriate character set
 }
@@ -551,28 +551,32 @@ To support compound emojis would require:
 
   ### Supporting Classes
 
-  **Character Set Constant (BitmapText.CHARACTER_SET)**
+  **CharacterSets Class (src/runtime/CharacterSets.js)**
+  - Static configuration class defining all character sets used by the library
   - Defines the complete set of supported characters (shared by build-time and runtime)
-  - Implemented as static property of BitmapText class in src/runtime/BitmapText.js
-  - Programmatically generates character set from multiple ranges:
+  - Static properties:
+    - `FONT_SPECIFIC_CHARS`: 204 standard characters for regular fonts
+    - `FONT_INVARIANT_CHARS`: 18 font-invariant characters (symbols)
+    - `INVARIANT_FONT_FAMILY`: 'BitmapTextInvariant' constant
+  - Character set generation (`FONT_SPECIFIC_CHARS`):
     - ASCII printable characters (32-126): space, numbers, letters, common symbols
     - Windows-1252 (CP-1252) subset (128-159): commonly used extended ASCII symbols (€, •, —, ™, etc.)
     - Latin-1 Supplement (161-255): accented characters, excluding soft hyphen (U+00AD)
     - Full Block character (█): visual reference for maximum glyph space
-  - Implementation: Private static method `#generateCharacterSet()` creates sorted character string
-  - Accessible as: `BitmapText.CHARACTER_SET` (used by build-time: create-glyphs.js, KerningCalculator, MetricsMinifier; runtime: MetricsExpander)
-  - Character count: 204 characters (all font files must contain all 204 characters)
-  - Distribution: Part of BitmapText class, used by both build-time and runtime
+  - Implementation: Private static method `#generateFontSpecificChars()` creates sorted character string
+  - Used by: create-glyphs.js, KerningCalculator, MetricsMinifier (build-time); MetricsExpander, FontLoaderBase (runtime)
+  - Character count: 204 standard characters (all font files must contain all 204 characters)
+  - Distribution: Part of runtime, used by both build-time and runtime
 
   **Glyph Creation Utilities (src/builder/create-glyphs.js)**
   - Orchestrates glyph creation for all characters in character set
   - Function: `createGlyphsAndAddToFullStore(fontProperties)`
   - Character set selection based on font family:
-    - BitmapTextInvariant: Uses `BitmapText.FONT_INVARIANT_CHARS` (18 symbols)
-    - All other fonts: Uses `BitmapText.CHARACTER_SET` (204 standard characters)
+    - BitmapTextInvariant: Uses `CharacterSets.FONT_INVARIANT_CHARS` (18 symbols)
+    - All other fonts: Uses `CharacterSets.FONT_SPECIFIC_CHARS` (204 standard characters)
   - Iterates through selected character set and creates GlyphFAB instance for each character
   - Stores created glyphs in AtlasDataStoreFAB for subsequent atlas building
-  - Depends on: BitmapText.CHARACTER_SET, BitmapText.FONT_INVARIANT_CHARS, GlyphFAB, AtlasDataStoreFAB
+  - Depends on: CharacterSets.FONT_SPECIFIC_CHARS, CharacterSets.FONT_INVARIANT_CHARS, GlyphFAB, AtlasDataStoreFAB
   - Used by: font-assets-builder.html build workflow
   - Distribution: Part of font assets building toolkit only
 
@@ -711,7 +715,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Phase
 
   1. **Configuration Loading**
-     Character Set (BitmapText.CHARACTER_SET) → 204 characters defined
+     Character Set (CharacterSets.FONT_SPECIFIC_CHARS) → 204 characters defined
      Font Specs (src/specs/default-specs.js) → Kerning rules and corrections
 
   2. **Glyph Creation**
@@ -1033,7 +1037,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     - **Combined Tier 7 Savings**: ~307 bytes average per file (16.5% reduction from Tier 6c)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
-  - **Format Requirements** - All 204 characters from BitmapText.CHARACTER_SET must be present (no legacy format support)
+  - **Format Requirements** - All 204 characters from CharacterSets.FONT_SPECIFIC_CHARS must be present (no legacy format support)
   - **Total File Size** - Average ~1,560 bytes per font file (97.9% reduction from ~73KB original)
 
   **Value Indexing Algorithm (Tier 4)**:
@@ -1057,7 +1061,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     - Kerning values: ~5 unique from 107 total (4.7% uniqueness) → 51.0% compression
 
   **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
-  - **BitmapText.CHARACTER_SET-Based Ordering** - Always uses BitmapText.CHARACTER_SET for character order (all 204 characters in sorted order)
+  - **CharacterSets.FONT_SPECIFIC_CHARS-Based Ordering** - Always uses CharacterSets.FONT_SPECIFIC_CHARS for character order (all 204 characters in sorted order)
   - **Tier 7 Format** - Expects 8-element array format with backward compatibility for Tier 6c:
     - `[kv, k, b, v, t, g, s, cl]` where `t`, `g`, and `v` can be base64 strings
     - Element `v` handling:
@@ -1135,7 +1139,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Workflow
   ```
   User → public/font-assets-builder.html → BitmapTextFAB → AtlasDataStoreFAB
-    1. Load character set constant (BitmapText.CHARACTER_SET → 204 characters)
+    1. Load character set constant (CharacterSets.FONT_SPECIFIC_CHARS → 204 characters)
     2. Load font specifications (src/specs/default-specs.js)
     3. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     4. Create individual glyph canvases (src/builder/create-glyphs.js → GlyphFAB 6-step pipeline per character):

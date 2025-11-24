@@ -138,7 +138,8 @@ npm run demo
 
 **Common source files used:**
 - `src/platform/canvas-mock.js` - Minimal Canvas implementation (includes strokeRect for measurement boxes)
-- `src/runtime/BitmapText.js` - Core rendering class (includes CHARACTER_SET constant)
+- `src/runtime/CharacterSets.js` - Character set configuration (FONT_SPECIFIC_CHARS, FONT_INVARIANT_CHARS)
+- `src/runtime/BitmapText.js` - Core rendering class
 - `src/runtime/InterpolatedFontMetrics.js` - Automatic metric scaling for sizes < 8.5px
 - `src/builder/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
@@ -311,7 +312,7 @@ npm run generate-registry                                 # Using npm script
 **What it does:**
 - Builds a standalone Node.js tool (tools/minify-metrics.js) by concatenating source files
 - Re-uses the EXACT same code as font-assets-builder.html for minification
-- Includes: StatusCode.js, BitmapText.js (with CHARACTER_SET), FontMetrics.js, MetricsMinifier.js, MetricsExpander.js, deep-equal.js
+- Includes: StatusCode.js, CharacterSets.js, BitmapText.js, FontMetrics.js, MetricsMinifier.js, MetricsExpander.js, deep-equal.js
 - No external dependencies (self-contained executable)
 
 **Output:**
@@ -420,10 +421,10 @@ npm run build-bundle-all                            # Both (via npm)
 - **Node.js bundle:** dist/bitmaptext-node.js + dist/bitmaptext-node.min.js (33KB) + source map
 - **Compression:** 79% size reduction (149KB → 32KB browser, 153KB → 33KB node)
 
-**Browser bundle includes** (17 files):
-StatusCode, FontProperties, TextProperties, FontMetrics, BitmapText (with CHARACTER_SET), MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasReconstructionUtils, AtlasCellDimensions, TightAtlasReconstructor, AtlasDataStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
+**Browser bundle includes** (18 files):
+StatusCode, FontProperties, TextProperties, FontMetrics, CharacterSets, BitmapText, MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasReconstructionUtils, AtlasCellDimensions, TightAtlasReconstructor, AtlasDataStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
 
-**Node.js bundle includes** (19 files):
+**Node.js bundle includes** (20 files):
 All browser bundle files + QOIDecode + FontLoader-node (replaces FontLoader-browser)
 
 **Node.js bundle excludes** (user provides):
