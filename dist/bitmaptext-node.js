@@ -588,6 +588,157 @@ class InterpolatedFontMetrics {
 }
 
 // ============================================================================
+// CharacterSets.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/CharacterSets.js
+// ============================================================================
+
+/**
+ * CharacterSets - Character set configuration for BitmapText.js
+ *
+ * This class defines the character sets used throughout the BitmapText.js library.
+ * It contains both font-specific characters (required in all fonts) and font-invariant
+ * characters (auto-redirect to BitmapTextInvariant font).
+ *
+ * @class CharacterSets
+ * @static
+ */
+class CharacterSets {
+  // ============================================
+  // Font-Specific Character Set (204 characters)
+  // ============================================
+
+  /**
+   * Font-specific character set constant (204 characters)
+   * Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
+   * This is the sorted character set that defines the standard order for all font metrics.
+   * ALL font files must contain exactly these 204 characters in this order.
+   *
+   * @type {string}
+   * @static
+   * @readonly
+   */
+  static FONT_SPECIFIC_CHARS = CharacterSets.#generateFontSpecificChars();
+
+  // ============================================
+  // Font-Invariant Character Configuration
+  // ============================================
+
+  /**
+   * Font-invariant characters that auto-redirect to BitmapTextInvariant font.
+   * These 18 Unicode characters render using monospaced Courier New metrics
+   * regardless of the font specified in FontProperties.
+   *
+   * Characters: ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
+   *
+   * @type {string}
+   * @static
+   * @readonly
+   */
+  static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
+
+  /**
+   * Font family name for font-invariant characters.
+   * These characters are internally rendered using Courier New to ensure
+   * consistent monospaced appearance across all fonts.
+   *
+   * @type {string}
+   * @static
+   * @readonly
+   */
+  static INVARIANT_FONT_FAMILY = 'BitmapTextInvariant';
+
+  // ============================================
+  // Private Generator Methods
+  // ============================================
+
+  /**
+   * Generates the font-specific character set (204 characters).
+   * This includes ASCII printable characters, selected CP-1252 characters,
+   * Latin-1 Supplement characters, and the Full Block character.
+   *
+   * Character composition:
+   * - ASCII printable (32-126): 95 characters
+   * - Windows-1252 subset (CP-1252): 14 characters
+   * - Latin-1 Supplement (161-255, excluding soft hyphen 173): 94 characters
+   * - Full Block character (█): 1 character
+   *
+   * Total: 204 characters
+   *
+   * @private
+   * @static
+   * @returns {string} Sorted character set string
+   */
+  static #generateFontSpecificChars() {
+    const chars = [];
+
+    // ASCII printable characters (32-126)
+    // Includes space, numbers, letters, and common symbols
+    for (let i = 32; i <= 126; i++) {
+      chars.push(String.fromCharCode(i));
+    }
+
+    // A selection from Windows-1252 (CP-1252) printable characters.
+    // This is the most standard definition of "extended ASCII codes" from 128 to 159
+    // and many of these are common/useful symbols that people "expect to have".
+    // However fromCharCode doesn't work on those as that range is not defined
+    // in UTF-8/Unicode (modern web standard, so we want to include (some of) them but we have
+    // to map them to specific Unicode code points, not the byte values themselves.
+    // NOTE: we could likely shave some of these off, as they are not easily printable
+    // in Javascript and some of them are fairly arcane/
+    const cp1252PrintableChars = [
+      8364, // € Euro sign (CP-1252: 128)
+      //  8218, // ‚ Single low-9 quotation mark (CP-1252: 130)
+      //  402,  // ƒ Latin small letter f with hook (CP-1252: 131)
+      //  8222, // „ Double low-9 quotation mark (CP-1252: 132)
+      8230, // … Horizontal ellipsis (CP-1252: 133)
+      //  8224, // † Dagger (CP-1252: 134)
+      //  8225, // ‡ Double dagger (CP-1252: 135)
+      //  710,  // ˆ Modifier letter circumflex accent (CP-1252: 136)
+      8240, // ‰ Per mille sign (CP-1252: 137)
+      //  352,  // Š Latin capital letter S with caron (CP-1252: 138)
+      8249, // ‹ Single left-pointing angle quotation (CP-1252: 139)
+      //  338,  // Œ Latin capital ligature OE (CP-1252: 140)
+      381,  // Ž Latin capital letter Z with caron (CP-1252: 142)
+      //  8216, // ' Left single quotation mark (CP-1252: 145)
+
+      // UNFORTUNATELY SOMETIMES USED INSTEAD OF APOSTROPHE
+      8217, // ' ""curly apostrophe"" or "right single quotation mark" (CP-1252: 146)
+
+      //  8220, // " Left double quotation mark (CP-1252: 147)
+      //  8221, // " Right double quotation mark (CP-1252: 148)
+      8226, // • Bullet (CP-1252: 149)
+      //  8211, // – En dash (CP-1252: 150)
+      8212, // — Em dash (CP-1252: 151)
+      //  732,  // ˜ Small tilde (CP-1252: 152)
+      8482, // ™ Trade mark sign (CP-1252: 153)
+      353,  // š Latin small letter s with caron (CP-1252: 154)
+      8250, // › Single right-pointing angle quotation mark (CP-1252: 155)
+      339,  // œ Latin small ligature oe (CP-1252: 156)
+      382,  // ž Latin small letter z with caron (CP-1252: 158)
+      376   // Ÿ Latin capital letter Y with diaeresis (CP-1252: 159)
+    ];
+
+    for (const code of cp1252PrintableChars) {
+      chars.push(String.fromCharCode(code));
+    }
+
+    // Latin-1 Supplement characters (161-255)
+    // These are properly defined in UTF-8/Unicode
+    // Exclude U+00AD (173) - soft hyphen, which has zero width
+    for (let i = 161; i <= 255; i++) {
+      if (i !== 173) { // Skip soft hyphen
+        chars.push(String.fromCharCode(i));
+      }
+    }
+
+    // Add Full Block character (allows us to see the maximum space taken by a glyph)
+    chars.push('█');
+
+    // Sort the character set (this is how it's used throughout the codebase)
+    return chars.sort().join('');
+  }
+}
+
+// ============================================================================
 // BitmapText.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/BitmapText.js
 // ============================================================================
 
@@ -654,28 +805,6 @@ class BitmapText {
   // Default text color (matches TextProperties default)
   static #DEFAULT_TEXT_COLOR = '#000000';
 
-  // Character set constant (204 characters)
-  // Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
-  // This is the sorted character set that defines the standard order for all font metrics.
-  // ALL font files must contain exactly these 204 characters in this order.
-  static CHARACTER_SET = BitmapText.#generateCharacterSet();
-
-  // ============================================
-  // Font-Invariant Character Auto-Redirect Configuration
-  // ============================================
-
-  // Font-invariant characters that auto-redirect to BitmapTextInvariant font
-  // These 18 Unicode characters render using monospaced Courier New metrics
-  // regardless of the font specified in FontProperties
-  static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
-
-  // Font-invariant character set constant (18 characters)
-  // Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
-  static FONT_INVARIANT_CHAR_SET = Array.from(BitmapText.FONT_INVARIANT_CHARS);
-
-  // Font family name for font-invariant characters (rendered internally using Courier New)
-  static INVARIANT_FONT_FAMILY = 'BitmapTextInvariant';
-
   /**
    * Fast font-invariant character detection helper
    * Uses string.includes() for ~1-2ns lookup performance
@@ -685,7 +814,7 @@ class BitmapText {
    * @returns {boolean} True if character is font-invariant
    */
   static #isInvariantCharacter(char) {
-    return BitmapText.FONT_INVARIANT_CHARS.includes(char);
+    return CharacterSets.FONT_INVARIANT_CHARS.includes(char);
   }
 
   /**
@@ -1040,7 +1169,7 @@ class BitmapText {
     // PRE-CREATE font-invariant font properties ONCE for potential auto-redirect
     const invariantFontProps = new FontProperties(
       fontProperties.pixelDensity,
-      BitmapText.INVARIANT_FONT_FAMILY,
+      CharacterSets.INVARIANT_FONT_FAMILY,
       'normal',
       'normal',
       fontProperties.fontSize
@@ -1224,7 +1353,7 @@ class BitmapText {
     // This avoids object allocation in hot rendering loop
     const invariantFontProps = new FontProperties(
       fontProperties.pixelDensity,
-      BitmapText.INVARIANT_FONT_FAMILY,
+      CharacterSets.INVARIANT_FONT_FAMILY,
       'normal',  // Always normal style for font-invariant characters
       'normal',  // Always normal weight for font-invariant characters
       fontProperties.fontSize
@@ -1653,7 +1782,7 @@ class BitmapText {
     // PRE-CREATE font-invariant font properties ONCE
     const invariantFontProps = new FontProperties(
       fontProperties.pixelDensity,
-      BitmapText.INVARIANT_FONT_FAMILY,
+      CharacterSets.INVARIANT_FONT_FAMILY,
       'normal',
       'normal',
       fontProperties.fontSize
@@ -2298,89 +2427,6 @@ class BitmapText {
     BitmapText.#fontLoader = null;
   }
 
-  // ============================================
-  // Character Set Generation
-  // ============================================
-
-  /**
-   * Generate character set programmatically
-   * Creates a sorted string of 204 characters including:
-   * - ASCII printable (32-126): 95 characters
-   * - Windows-1252 subset (128-159): 14 characters
-   * - Latin-1 Supplement (161-255): 94 characters (excluding soft hyphen)
-   * - Full Block character (█): 1 character
-   * @private
-   * @returns {string} Sorted character set string
-   */
-  static #generateCharacterSet() {
-    const chars = [];
-
-    // ASCII printable characters (32-126)
-    // Includes space, numbers, letters, and common symbols
-    for (let i = 32; i <= 126; i++) {
-      chars.push(String.fromCharCode(i));
-    }
-
-    // A selection from Windows-1252 (CP-1252) printable characters.
-    // This is the most standard definition of "extended ASCII codes" from 128 to 159
-    // and many of these are common/useful symbols that people "expect to have".
-    // However fromCharCode doesn't work on those as that range is not defined
-    // in UTF-8/Unicode (modern web standard, so we want to include (some of) them but we have
-    // to map them to specific Unicode code points, not the byte values themselves.
-    // NOTE: we could likely shave some of these off, as they are not easily printable
-    // in Javascript and some of them are fairly arcane/
-    const cp1252PrintableChars = [
-      8364, // € Euro sign (CP-1252: 128)
-      //  8218, // ‚ Single low-9 quotation mark (CP-1252: 130)
-      //  402,  // ƒ Latin small letter f with hook (CP-1252: 131)
-      //  8222, // „ Double low-9 quotation mark (CP-1252: 132)
-      8230, // … Horizontal ellipsis (CP-1252: 133)
-      //  8224, // † Dagger (CP-1252: 134)
-      //  8225, // ‡ Double dagger (CP-1252: 135)
-      //  710,  // ˆ Modifier letter circumflex accent (CP-1252: 136)
-      8240, // ‰ Per mille sign (CP-1252: 137)
-      //  352,  // Š Latin capital letter S with caron (CP-1252: 138)
-      8249, // ‹ Single left-pointing angle quotation (CP-1252: 139)
-      //  338,  // Œ Latin capital ligature OE (CP-1252: 140)
-      381,  // Ž Latin capital letter Z with caron (CP-1252: 142)
-      //  8216, // ' Left single quotation mark (CP-1252: 145)
-
-      // UNFORTUNATELY SOMETIMES USED INSTEAD OF APOSTROPHE
-      8217, // ' ""curly apostrophe"" or "right single quotation mark" (CP-1252: 146)
-
-      //  8220, // " Left double quotation mark (CP-1252: 147)
-      //  8221, // " Right double quotation mark (CP-1252: 148)
-      8226, // • Bullet (CP-1252: 149)
-      //  8211, // – En dash (CP-1252: 150)
-      8212, // — Em dash (CP-1252: 151)
-      //  732,  // ˜ Small tilde (CP-1252: 152)
-      8482, // ™ Trade mark sign (CP-1252: 153)
-      353,  // š Latin small letter s with caron (CP-1252: 154)
-      8250, // › Single right-pointing angle quotation mark (CP-1252: 155)
-      339,  // œ Latin small ligature oe (CP-1252: 156)
-      382,  // ž Latin small letter z with caron (CP-1252: 158)
-      376   // Ÿ Latin capital letter Y with diaeresis (CP-1252: 159)
-    ];
-
-    for (const code of cp1252PrintableChars) {
-      chars.push(String.fromCharCode(code));
-    }
-
-    // Latin-1 Supplement characters (161-255)
-    // These are properly defined in UTF-8/Unicode
-    // Exclude U+00AD (173) - soft hyphen, which has zero width
-    for (let i = 161; i <= 255; i++) {
-      if (i !== 173) { // Skip soft hyphen
-        chars.push(String.fromCharCode(i));
-      }
-    }
-
-    // Add Full Block character (allows us to see the maximum space taken by a glyph)
-    chars.push('█');
-
-    // Sort the character set (this is how it's used throughout the codebase)
-    return chars.sort().join('');
-  }
 }
 
 // TIER 6b OPTIMIZATION: Short aliases for registration methods (saves ~15 bytes per file)
@@ -2393,7 +2439,7 @@ BitmapText.a = BitmapText.registerAtlas;
 
 // Static utility class for expanding minified font metrics data (runtime only)
 // Converts compact format back to FontMetrics instances for use by the rendering engine
-// NOTE: Requires BitmapText.js to be loaded first (uses BitmapText.CHARACTER_SET)
+// NOTE: Requires BitmapText.js to be loaded first (uses CharacterSets.FONT_SPECIFIC_CHARS)
 
 class MetricsExpander {
   // Private constructor - prevent instantiation following Effective Java patterns
@@ -2493,11 +2539,11 @@ class MetricsExpander {
    *
    * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
    *   - v can be array (Tier 6c) or base64 string (Tier 7)
-   * @param {Array<string>} [characterSet=BitmapText.CHARACTER_SET] - Character set to use for expansion
+   * @param {Array<string>} [characterSet=CharacterSets.FONT_SPECIFIC_CHARS] - Character set to use for expansion
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
-  static expand(minified, characterSet = BitmapText.CHARACTER_SET) {
+  static expand(minified, characterSet = CharacterSets.FONT_SPECIFIC_CHARS) {
     // Check if FontMetrics class is available
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
@@ -2579,7 +2625,7 @@ class MetricsExpander {
    *   Pass 1 (left-side):  {"A-B":{"s":0}} → {"A":{"s":0},"B":{"s":0}}
    *   Pass 2 (right-side): {"A":{"0-1":0}} → {"A":{"0":0,"1":0}}
    *   Pass 3 (values):     {"A":{"s":0}} → {"A":{"s":20}} (lookup from kerningValueLookup[0])
-   * Always uses BitmapText.CHARACTER_SET for range expansion
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
    * Later entries override earlier ones, allowing exceptions to ranges
    * @param {Object} minified - Minified kerning table with indexed values
    * @param {Array<string>} characterSet - Character set to use for range expansion
@@ -2611,7 +2657,7 @@ class MetricsExpander {
    * Expands left side of kerning table (characters that come before)
    * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
    * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
-   * Always uses BitmapText.CHARACTER_SET for range expansion
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
    * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Left-expanded kerning table
    * @private
@@ -2658,7 +2704,7 @@ class MetricsExpander {
    * - Individual chars: comma, dot, colon, semicolon
    * - Ranges: a, c-e (c,d,e), g, j-s (j,k,l,m,n,o,p,q,r,s)
    *
-   * Always uses BitmapText.CHARACTER_SET for range expansion
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
    * @param {Array<string>} characterSet - Character set to use for range expansion
    * @returns {Object} Expanded pairs like {"-":20,",":20,".":20,...,"s":20}
    * @private
@@ -2742,7 +2788,7 @@ class MetricsExpander {
 
   /**
    * Expands glyph metrics from arrays back to full objects
-   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using BitmapText.CHARACTER_SET
+   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CharacterSets.FONT_SPECIFIC_CHARS
    * TIER 4 OPTIMIZATION: Looks up actual values from indices using valueLookup table
    * TIER 5a OPTIMIZATION: Decompresses variable-length tuplets (2/3/4/5 elements)
    * TIER 5b OPTIMIZATION: Looks up tuplets from tuplet indices
@@ -2755,7 +2801,7 @@ class MetricsExpander {
    *   - Length 5: [w, l, r, a, d] (no decompression)
    *
    * Reconstructs full TextMetrics-compatible objects from compact arrays
-   * Always uses BitmapText.CHARACTER_SET for character order
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for character order
    * @param {Array} tupletIndices - Array of tuplet indices (single integers)
    * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
    * @param {Array} valueLookup - Value lookup table mapping indices to actual values
@@ -4287,8 +4333,8 @@ class FontLoaderBase {
     // If it's the font-invariant font, use the font-invariant character set
     // Otherwise, pass undefined to let MetricsExpander default to standard set
     let characterSet;
-    if (bitmapTextClass && fontProperties.fontFamily === bitmapTextClass.INVARIANT_FONT_FAMILY) {
-      characterSet = bitmapTextClass.FONT_INVARIANT_CHAR_SET;
+    if (fontProperties.fontFamily === CharacterSets.INVARIANT_FONT_FAMILY) {
+      characterSet = Array.from(CharacterSets.FONT_INVARIANT_CHARS);
     }
 
     const fontMetrics = MetricsExpander.expand(compactedData, characterSet);
