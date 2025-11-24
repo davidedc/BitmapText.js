@@ -10,14 +10,14 @@
  */
 class CharacterSets {
   // ============================================
-  // Font-Specific Character Set (204 characters)
+  // Font-Specific Character Set
   // ============================================
 
   /**
-   * Font-specific character set constant (204 characters)
+   * Font-specific character set constant
    * Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
    * This is the sorted character set that defines the standard order for all font metrics.
-   * ALL font files must contain exactly these 204 characters in this order.
+   * ALL font files must contain exactly these characters in this order.
    *
    * @type {string}
    * @static
@@ -31,7 +31,7 @@ class CharacterSets {
 
   /**
    * Font-invariant characters that auto-redirect to BitmapTextInvariant font.
-   * These 18 Unicode characters render using monospaced Courier New metrics
+   * These Unicode characters render using monospaced Courier New metrics
    * regardless of the font specified in FontProperties.
    *
    * Characters: ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
@@ -58,7 +58,7 @@ class CharacterSets {
   // ============================================
 
   /**
-   * Generates the font-specific character set (204 characters).
+   * Generates the font-specific character set.
    * This includes ASCII printable characters, selected CP-1252 characters,
    * Latin-1 Supplement characters, and the Full Block character.
    *
@@ -67,8 +67,6 @@ class CharacterSets {
    * - Windows-1252 subset (CP-1252): 14 characters
    * - Latin-1 Supplement (161-255, excluding soft hyphen 173): 94 characters
    * - Full Block character (█): 1 character
-   *
-   * Total: 204 characters
    *
    * @private
    * @static

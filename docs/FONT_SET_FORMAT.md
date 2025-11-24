@@ -312,15 +312,15 @@ Creating the BitmapTextInvariant font for special Unicode font-invariant charact
 ```
 
 **Details**:
-- Generates BitmapTextInvariant font with 18 Unicode font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗)
+- Generates BitmapTextInvariant font with Unicode font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗)
 - Size range 8.5px to 72px in 0.5px increments
 - Both standard (1.0) and HiDPI (2.0) pixel densities
 - Renders using Courier New for monospacing (handled internally by GlyphFAB.js)
 - Font-invariant characters auto-redirect at runtime regardless of base font specified
 
 **Character Set Selection** (hardcoded in implementation):
-- When `fontFamily === 'BitmapTextInvariant'`: Uses 18 predefined font-invariant characters
-- All other fonts: Uses standard 204-character set (ASCII, CP-1252 subset, Latin-1 Supplement)
+- When `fontFamily === 'BitmapTextInvariant'`: Uses predefined font-invariant characters
+- All other fonts: Uses standard character set (ASCII, CP-1252 subset, Latin-1 Supplement)
 - This behavior is implemented in `src/builder/create-glyphs.js` and cannot be overridden via configuration
 
 **Total**: 2 × 1 × 1 × 1 × 128 = **256 configurations**

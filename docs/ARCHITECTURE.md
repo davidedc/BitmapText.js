@@ -134,9 +134,9 @@ Introduce a dedicated font-invariant font (BitmapTextInvariant) that uses Courie
 function createGlyphsAndAddToFullStore(fontProperties) {
   let characterSet;
   if (fontProperties.fontFamily === 'BitmapTextInvariant') {
-    characterSet = CharacterSets.FONT_INVARIANT_CHARS;  // 18 symbols
+    characterSet = CharacterSets.FONT_INVARIANT_CHARS;  // symbols
   } else {
-    characterSet = CharacterSets.FONT_SPECIFIC_CHARS;  // 204 standard chars
+    characterSet = CharacterSets.FONT_SPECIFIC_CHARS;  // standard chars
   }
   // Generate glyphs for appropriate character set
 }
@@ -144,7 +144,7 @@ function createGlyphsAndAddToFullStore(fontProperties) {
 
 2. **Runtime Fast Symbol Detection** (src/runtime/BitmapText.js):
 ```javascript
-// Pre-defined symbol string (18 characters)
+// Pre-defined symbol string
 static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
 
 // Fast detection using string.includes() (~1-2ns)
@@ -163,9 +163,9 @@ if (isSymbol && currentFontProps !== invariantFontProps) {
 
 **Architecture Decisions:**
 
-1. **Inline Fast-Path Detection**: Uses `string.includes()` on 18-character string rather than Set or Map
+1. **Inline Fast-Path Detection**: Uses `string.includes()` on small symbol string rather than Set or Map
    - **Rationale**: ~1-2ns lookup is negligible in rendering loop, no memory allocation overhead
-   - **Trade-off**: Linear search vs O(1) hash lookup - 18 characters is small enough for linear to win
+   - **Trade-off**: Linear search vs O(1) hash lookup - The small symbol set is small enough for linear to win
 
 2. **Pre-fetch Symbol Font Once**: Symbol font properties/metrics/atlas fetched before rendering loop
    - **Rationale**: Avoids repeated lookups when switching between base font and symbol font
@@ -200,7 +200,7 @@ BitmapText.drawTextFromAtlas(ctx, "Task done ✔", 10, 50, fontProps);
 - Negligible impact on rendering hot loop
 
 **Character Set:**
-The 18 symbols were selected for common UI/text needs:
+The symbols were selected for common UI/text needs:
 - Smiley faces: ☺☹
 - Card suits: ♠♡♦♣
 - Box drawing: │─├└
@@ -286,7 +286,7 @@ The 18 symbols were selected for common UI/text needs:
     - `#coloredGlyphCanvas`: Shared scratch canvas for coloring glyphs (lazy-initialized)
     - `#coloredGlyphCtx`: 2D context for scratch canvas (lazy-initialized)
     - Storage: ALL font data delegated to AtlasDataStore and FontMetricsStore (stores are the single source of truth)
-    - Symbol font detection: `FONT_INVARIANT_CHARS` static constant (18 symbols), `#isInvariantCharacter()` fast detection helper
+    - Symbol font detection: `FONT_INVARIANT_CHARS` static constant (symbols), `#isInvariantCharacter()` fast detection helper
     - Note: fontDirectory is NOT stored in BitmapText - it's owned by FontLoaderBase
 
   **AtlasDataStore (static class)**
@@ -555,8 +555,8 @@ To support compound emojis would require:
   - Static configuration class defining all character sets used by the library
   - Defines the complete set of supported characters (shared by build-time and runtime)
   - Static properties:
-    - `FONT_SPECIFIC_CHARS`: 204 standard characters for regular fonts
-    - `FONT_INVARIANT_CHARS`: 18 font-invariant characters (symbols)
+    - `FONT_SPECIFIC_CHARS`: standard characters for regular fonts
+    - `FONT_INVARIANT_CHARS`: font-invariant characters (symbols)
     - `INVARIANT_FONT_FAMILY`: 'BitmapTextInvariant' constant
   - Character set generation (`FONT_SPECIFIC_CHARS`):
     - ASCII printable characters (32-126): space, numbers, letters, common symbols
@@ -565,15 +565,15 @@ To support compound emojis would require:
     - Full Block character (█): visual reference for maximum glyph space
   - Implementation: Private static method `#generateFontSpecificChars()` creates sorted character string
   - Used by: create-glyphs.js, KerningCalculator, MetricsMinifier (build-time); MetricsExpander, FontLoaderBase (runtime)
-  - Character count: 204 standard characters (all font files must contain all 204 characters)
+  - Character count: all standard characters (all font files must contain all standard characters)
   - Distribution: Part of runtime, used by both build-time and runtime
 
   **Glyph Creation Utilities (src/builder/create-glyphs.js)**
   - Orchestrates glyph creation for all characters in character set
   - Function: `createGlyphsAndAddToFullStore(fontProperties)`
   - Character set selection based on font family:
-    - BitmapTextInvariant: Uses `CharacterSets.FONT_INVARIANT_CHARS` (18 symbols)
-    - All other fonts: Uses `CharacterSets.FONT_SPECIFIC_CHARS` (204 standard characters)
+    - BitmapTextInvariant: Uses `CharacterSets.FONT_INVARIANT_CHARS` (symbols)
+    - All other fonts: Uses `CharacterSets.FONT_SPECIFIC_CHARS` (standard characters)
   - Iterates through selected character set and creates GlyphFAB instance for each character
   - Stores created glyphs in AtlasDataStoreFAB for subsequent atlas building
   - Depends on: CharacterSets.FONT_SPECIFIC_CHARS, CharacterSets.FONT_INVARIANT_CHARS, GlyphFAB, AtlasDataStoreFAB
@@ -715,7 +715,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Phase
 
   1. **Configuration Loading**
-     Character Set (CharacterSets.FONT_SPECIFIC_CHARS) → 204 characters defined
+     Character Set (CharacterSets.FONT_SPECIFIC_CHARS) → characters defined
      Font Specs (src/specs/default-specs.js) → Kerning rules and corrections
 
   2. **Glyph Creation**
@@ -985,7 +985,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       - **Scoring Algorithm**: `score = JSON.stringify(tuplet).length × occurrences`
       - **Index Assignment**: Highest-scoring tuplets get shortest indices (0-9 = 1 char, 10-99 = 2 chars)
       - **Format Change**: 't' field (unique tuplet lookup array) + 'g' field (single integer indices, not arrays)
-      - **Real-World Results**: 204 glyphs → ~61 unique tuplets (70% deduplication)
+      - **Real-World Results**: standard glyphs → ~61 unique tuplets (70% deduplication)
       - **Example**: Tuplet `[0,3,0,2,1]` appearing 50 times: before 550 chars (50×11), after 61 chars (11 + 50×1) = 89% saved
     - **Combined Savings**: ~1,124 bytes per font (~55% reduction on glyph data)
   - **Tier 6c: Binary Encoding Optimization** - Final compression tier using binary encoding for maximum efficiency:
@@ -1037,7 +1037,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     - **Combined Tier 7 Savings**: ~307 bytes average per file (16.5% reduction from Tier 6c)
   - **Common Metrics Extraction** - Extracts shared font metrics (fontBoundingBox, baselines, pixelDensity) to avoid repetition
   - **Roundtrip Verification** - `minifyWithVerification()` method automatically verifies compress→expand integrity at build time
-  - **Format Requirements** - All 204 characters from CharacterSets.FONT_SPECIFIC_CHARS must be present (no legacy format support)
+  - **Format Requirements** - All characters from CharacterSets.FONT_SPECIFIC_CHARS must be present (no legacy format support)
   - **Total File Size** - Average ~1,560 bytes per font file (97.9% reduction from ~73KB original)
 
   **Value Indexing Algorithm (Tier 4)**:
@@ -1061,7 +1061,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     - Kerning values: ~5 unique from 107 total (4.7% uniqueness) → 51.0% compression
 
   **Font Metrics Expansion (src/builder/MetricsExpander.js)**:
-  - **CharacterSets.FONT_SPECIFIC_CHARS-Based Ordering** - Always uses CharacterSets.FONT_SPECIFIC_CHARS for character order (all 204 characters in sorted order)
+  - **CharacterSets.FONT_SPECIFIC_CHARS-Based Ordering** - Always uses CharacterSets.FONT_SPECIFIC_CHARS for character order (all characters in sorted order)
   - **Tier 7 Format** - Expects 8-element array format with backward compatibility for Tier 6c:
     - `[kv, k, b, v, t, g, s, cl]` where `t`, `g`, and `v` can be base64 strings
     - Element `v` handling:
@@ -1139,7 +1139,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Font Assets Building Workflow
   ```
   User → public/font-assets-builder.html → BitmapTextFAB → AtlasDataStoreFAB
-    1. Load character set constant (CharacterSets.FONT_SPECIFIC_CHARS → 204 characters)
+    1. Load character set constant (CharacterSets.FONT_SPECIFIC_CHARS → characters)
     2. Load font specifications (src/specs/default-specs.js)
     3. Parse specs (src/specs/SpecsParser.parseSubSpec:98)
     4. Create individual glyph canvases (src/builder/create-glyphs.js → GlyphFAB 6-step pipeline per character):

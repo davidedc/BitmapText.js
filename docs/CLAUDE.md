@@ -38,7 +38,7 @@
   5. See scripts/README.md for detailed workflow
 
   ### Working with Font-Invariant Fonts
-  1. Font-invariant font (BitmapTextInvariant) uses custom character set (18 font-invariant characters)
+  1. Font-invariant font (BitmapTextInvariant) uses custom character set (font-invariant characters)
   2. Build-time: `create-glyphs.js` selects character set based on font family
   3. Runtime: Fast font-invariant character detection using `string.includes()` (~1-2ns per character)
   4. Font specification: `specs/font-sets/bitmap-text-invariant.json` defines font-invariant character set
@@ -86,7 +86,7 @@
   1. Position tracking uses floats (avoids rounding error accumulation), but final draw coordinates are integers (crisp, pixel-aligned rendering)
   2. Temporary canvases must be cleared between operations
   3. Kerning values are in 1/1000 em units
-  4. Font-invariant characters (18 Unicode characters) auto-redirect to BitmapTextInvariant font during rendering
+  4. Font-invariant characters (Unicode symbols) auto-redirect to BitmapTextInvariant font during rendering
   5. Font-invariant font uses Courier New for rendering to ensure monospacing
 
   ## Where to Find Things
@@ -107,8 +107,8 @@
   - **Atlas reconstruction utilities**: src/builder/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
   - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
   - **Tight atlas reconstruction**: src/runtime/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
-  - **Character set configuration**: src/runtime/CharacterSets.js (static class - FONT_SPECIFIC_CHARS: 204 standard characters; FONT_INVARIANT_CHARS: 18 font-invariant characters; INVARIANT_FONT_FAMILY: 'BitmapTextInvariant')
-  - **Character sets**: CharacterSets.FONT_SPECIFIC_CHARS (204 characters - ASCII, CP-1252 subset, Latin-1 Supplement), CharacterSets.FONT_INVARIANT_CHARS (18 font-invariant characters)
+  - **Character set configuration**: src/runtime/CharacterSets.js (static class - FONT_SPECIFIC_CHARS: standard characters; FONT_INVARIANT_CHARS: font-invariant characters; INVARIANT_FONT_FAMILY: 'BitmapTextInvariant')
+  - **Character sets**: CharacterSets.FONT_SPECIFIC_CHARS (standard characters - ASCII, CP-1252 subset, Latin-1 Supplement), CharacterSets.FONT_INVARIANT_CHARS (font-invariant characters)
   - **Font-invariant character detection**: src/runtime/BitmapText.js lines 94-96 (#isInvariantCharacter fast detection helper)
   - **Font-invariant character auto-redirect**: src/runtime/BitmapText.js lines 447-469 (measureText), lines 630-654, 767-782 (drawTextFromAtlas)
   - **Font-invariant glyph creation**: src/builder/create-glyphs.js (character set selection based on font family)

@@ -265,7 +265,7 @@ Get up and running with the production-ready bundles in seconds.
 
 ## Font-Invariant Character Support
 
-BitmapText.js includes automatic support for 18 special Unicode font-invariant characters via the BitmapTextInvariant font:
+BitmapText.js includes automatic support for special Unicode font-invariant characters via the BitmapTextInvariant font:
 
 ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
 
@@ -316,7 +316,7 @@ Always load the font-invariant font at the same pixel density and size as your t
 ### Font-Invariant Font Characteristics
 
 - **Monospaced**: All font-invariant characters have consistent width (uses Courier New metrics)
-- **18 characters**: Carefully selected common font-invariant characters for UI and text
+- **Font-invariant characters**: Carefully selected common symbols for UI and text
 - **Normal style/weight only**: No italic or bold variants
 - **Size range**: 8.5px to 72px (same as regular fonts)
 - **Automatic fallback**: If BitmapTextInvariant isn't loaded, font-invariant characters will render using the base font (may look inconsistent)

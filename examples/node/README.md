@@ -167,7 +167,7 @@ Each bundled file contains these sections in order:
 3. **Status Code**: StatusCode constants and helper functions
 4. **Configuration Classes**: FontProperties, TextProperties
 5. **Font Metrics**: FontMetrics class
-6. **Character Set**: CHARACTER_SET constant (204 characters)
+6. **Character Set**: CharacterSets class (standard character set)
 7. **Utility Functions**: MetricsExpander for font data expansion
 8. **Atlas Classes**: AtlasPositioning, AtlasImage, AtlasData
 9. **Reconstruction Utilities**: AtlasReconstructionUtils, TightAtlasReconstructor

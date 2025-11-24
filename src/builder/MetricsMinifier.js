@@ -373,7 +373,7 @@ class MetricsMinifier {
    * Analysis shows ~92% of glyphs share the same left value (usually 0)
    * This enables aggressive 2-element tuplet compression for these glyphs
    *
-   * @param {Object} characterMetrics - Character metrics object with all 204 characters
+   * @param {Object} characterMetrics - Character metrics object with all standard characters
    * @returns {number} Most common left bounding box value
    * @private
    */
@@ -418,7 +418,7 @@ class MetricsMinifier {
    *   - Case B (4 elements): w===r only                  →  [w, l, a, d]
    *   - Case A (5 elements): no compression              →  [w, l, r, a, d]
    *
-   * @param {Object} characterMetrics - Character metrics object with all 204 characters
+   * @param {Object} characterMetrics - Character metrics object with all standard characters
    * @param {number} commonLeftValue - Most common left bounding box value (will be converted to index)
    * @returns {Object} Object with valueLookup array, indexedGlyphs array, and commonLeftIndex
    * @private
@@ -643,7 +643,7 @@ class MetricsMinifier {
    * Converts glyph metrics objects to compact arrays
    * TIER 2 OPTIMIZATION: Returns array of arrays (removes character keys, uses position instead)
    * Array format: [width, actualBoundingBoxLeft, actualBoundingBoxRight, actualBoundingBoxAscent, actualBoundingBoxDescent]
-   * Always uses CharacterSets.FONT_SPECIFIC_CHARS order (all 204 characters)
+   * Always uses CharacterSets.FONT_SPECIFIC_CHARS order (all characters)
    * @deprecated This method is replaced by #createValueLookupTable (Tier 4 optimization)
    * @private
    */

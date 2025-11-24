@@ -21,7 +21,7 @@ function initializeSpecs() {
  * @param {FontProperties} fontProperties - Font configuration
  */
 async function buildFont(fontProperties) {
-  // Create glyphs - includes both standard 204 chars + custom character set if defined
+  // Create glyphs - includes both standard chars + custom character set if defined
   // This ensures symbol fonts like BitmapTextInvariant have the actual symbols rendered
   createGlyphsAndAddToFullStore(fontProperties);
 

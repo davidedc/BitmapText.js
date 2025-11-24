@@ -15,7 +15,7 @@
 // - Returns canvas with cell dimension metadata for reconstruction
 //
 // GRID LAYOUT:
-// - Grid dimensions: ceil(sqrt(N)) columns (e.g., 15×14 for 204 chars)
+// - Grid dimensions: ceil(sqrt(N)) columns (e.g., 15×14 grid for standard set)
 // - Prevents exceeding WebP 16,384px dimension limit for large fonts
 // - Characters arranged: row = floor(charIndex / columns), col = charIndex % columns
 //

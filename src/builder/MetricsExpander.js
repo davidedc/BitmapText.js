@@ -136,7 +136,7 @@ class MetricsExpander {
         spaceAdvancementOverrideForSmallSizesInPx: s
       };
     } else {
-      // Standard 204-character font: use full decompression
+      // Standard character font: use full decompression
       // Convert integer values back to floats (divide by 10000)
       kv = this.#convertIntegersToValues(kv);
 

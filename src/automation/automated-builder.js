@@ -32,7 +32,7 @@ async function buildFont(fontProperties) {
 
   console.log(`Building ${fontProperties.idString}...`);
 
-  // 1. Create glyphs - includes both standard 204 chars + custom character set if defined
+  // 1. Create glyphs - includes both standard chars + custom character set if defined
   // This is the most time-consuming step (canvas rendering)
   createGlyphsAndAddToFullStore(fontProperties);
 
