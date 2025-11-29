@@ -64,8 +64,8 @@ class CharacterSets {
    *
    * Character composition:
    * - ASCII printable (32-126): 95 characters
-   * - Windows-1252 subset (CP-1252): 14 characters
-   * - Latin-1 Supplement (161-255, excluding soft hyphen 173): 94 characters
+   * - Windows-1252 subset (CP-1252) + Unicode extras: 12 characters
+   * - Latin-1 Supplement (161-255, excluding 26 rarely-used symbols): 69 characters
    * - Full Block character (█): 1 character
    *
    * @private
@@ -98,25 +98,49 @@ class CharacterSets {
       //  8224, // † Dagger (CP-1252: 134)
       //  8225, // ‡ Double dagger (CP-1252: 135)
       //  710,  // ˆ Modifier letter circumflex accent (CP-1252: 136)
-      8240, // ‰ Per mille sign (CP-1252: 137)
+      // 8240, // ‰ U+2030 PER MILLE SIGN (CP-1252: 137) - REMOVED: rarely used
       //  352,  // Š Latin capital letter S with caron (CP-1252: 138)
-      8249, // ‹ Single left-pointing angle quotation (CP-1252: 139)
+
+      // If someone copy-pastes French quotation marks, that's on them.
+      // 8249, // ‹ U+2039 SINGLE LEFT-POINTING ANGLE QUOTATION MARK (CP-1252: 139) - REMOVED: rarely used
+
       //  338,  // Œ Latin capital ligature OE (CP-1252: 140)
       381,  // Ž Latin capital letter Z with caron (CP-1252: 142)
       //  8216, // ' Left single quotation mark (CP-1252: 145)
 
-      // UNFORTUNATELY SOMETIMES USED INSTEAD OF APOSTROPHE
+      // UNFORTUNATELY SOMETIMES USED INSTEAD OF APOSTROPHE AND VERY HARD TO
+      // DEBUG IF WE ENCOUNTER THIS ISSUE, LET'S KEEP IT
       8217, // ' ""curly apostrophe"" or "right single quotation mark" (CP-1252: 146)
 
       //  8220, // " Left double quotation mark (CP-1252: 147)
       //  8221, // " Right double quotation mark (CP-1252: 148)
       8226, // • Bullet (CP-1252: 149)
-      //  8211, // – En dash (CP-1252: 150)
-      8212, // — Em dash (CP-1252: 151)
+
+      // ============================================
+      // HYPHEN / DASH FAMILY - IMPORTANT FOR DEBUGGING
+      // ============================================
+      // These characters look nearly identical but have different Unicode code points.
+      // Including all of them prevents extremely hard-to-debug rendering issues when
+      // text is copy-pasted from different sources (Word, web, etc.).
+      //
+      // | Name        | Char | Unicode | Length            | Common Use                              | Frequency    |
+      // |-------------|------|---------|-------------------|-----------------------------------------|--------------|
+      // | Hyphen      | -    | U+002D  | short             | Compound words, line breaks, codes      | Very high    |
+      // | Minus sign  | −    | U+2212  | short/med (centered) | Math subtraction, equations          | Low (tech)   |
+      // | En dash     | –    | U+2013  | medium (≈ "N")    | Ranges (5–10), connections (London–Paris)| Moderate     |
+      // | Em dash     | —    | U+2014  | long (≈ "M")      | Breaks in thought, emphasis, asides     | High/rising  |
+      //
+      // Note: Hyphen (U+002D, code 45) is already included in ASCII printable (32-126).
+      8722, // − U+2212 MINUS SIGN - math subtraction (looks like hyphen but vertically centered)
+      8211, // – U+2013 EN DASH - ranges and connections (CP-1252: 150)
+      8212, // — U+2014 EM DASH - breaks in thought, emphasis (CP-1252: 151)
       //  732,  // ˜ Small tilde (CP-1252: 152)
-      8482, // ™ Trade mark sign (CP-1252: 153)
+      // 8482, // ™ Trade mark sign (CP-1252: 153)
       353,  // š Latin small letter s with caron (CP-1252: 154)
-      8250, // › Single right-pointing angle quotation mark (CP-1252: 155)
+
+      // If someone copy-pastes French quotation marks, that's on them.
+      // 8250, // › U+203A SINGLE RIGHT-POINTING ANGLE QUOTATION MARK (CP-1252: 155) - REMOVED: rarely used
+
       339,  // œ Latin small ligature oe (CP-1252: 156)
       382,  // ž Latin small letter z with caron (CP-1252: 158)
       376   // Ÿ Latin capital letter Y with diaeresis (CP-1252: 159)
@@ -128,9 +152,38 @@ class CharacterSets {
 
     // Latin-1 Supplement characters (161-255)
     // These are properly defined in UTF-8/Unicode
-    // Exclude U+00AD (173) - soft hyphen, which has zero width
+    // Excluded characters:
+    const latin1Exclusions = new Set([
+      173, // U+00AD - soft hyphen (zero width)
+      164, // U+00A4 ¤ - CURRENCY SIGN (rarely used generic currency symbol)
+      165, // U+00A5 ¥ - YEN SIGN (currency-specific)
+      166, // U+00A6 ¦ - BROKEN BAR (legacy character)
+      168, // U+00A8 ¨ - DIAERESIS (standalone modifier, not useful without base char)
+      169, // U+00A9 © - COPYRIGHT SIGN (use text "(c)" or proper legal formatting)
+      170, // U+00AA ª - FEMININE ORDINAL INDICATOR (Spanish/Portuguese specific)
+      171, // U+00AB « - LEFT-POINTING DOUBLE ANGLE QUOTATION MARK (use standard quotes)
+      172, // U+00AC ¬ - NOT SIGN (mathematical/logical, rarely used in text)
+      174, // U+00AE ® - REGISTERED SIGN (use text "(R)" or proper legal formatting)
+      175, // U+00AF ¯ - MACRON (standalone modifier, not useful without base char)
+      176, // U+00B0 ° - DEGREE SIGN (specialized symbol)
+      177, // U+00B1 ± - PLUS-MINUS SIGN (mathematical)
+      178, // U+00B2 ² - SUPERSCRIPT TWO (use proper superscript formatting)
+      179, // U+00B3 ³ - SUPERSCRIPT THREE (use proper superscript formatting)
+      180, // U+00B4 ´ - ACUTE ACCENT (standalone modifier, not useful without base char)
+      181, // U+00B5 µ - MICRO SIGN (use Greek mu or unit formatting)
+      184, // U+00B8 ¸ - CEDILLA (standalone modifier, not useful without base char)
+      185, // U+00B9 ¹ - SUPERSCRIPT ONE (use proper superscript formatting)
+      186, // U+00BA º - MASCULINE ORDINAL INDICATOR (Spanish/Portuguese specific)
+      187, // U+00BB » - RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK (use standard quotes)
+      188, // U+00BC ¼ - VULGAR FRACTION ONE QUARTER (use proper fraction formatting)
+      189, // U+00BD ½ - VULGAR FRACTION ONE HALF (use proper fraction formatting)
+      190, // U+00BE ¾ - VULGAR FRACTION THREE QUARTERS (use proper fraction formatting)
+      215, // U+00D7 × - MULTIPLICATION SIGN (use 'x' or proper math formatting)
+      247, // U+00F7 ÷ - DIVISION SIGN (use '/' or proper math formatting)
+    ]);
+
     for (let i = 161; i <= 255; i++) {
-      if (i !== 173) { // Skip soft hyphen
+      if (!latin1Exclusions.has(i)) {
         chars.push(String.fromCharCode(i));
       }
     }
