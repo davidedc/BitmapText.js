@@ -10,7 +10,7 @@ const testCopy1 = 'Access to this information is provided as part of the WorldWi
 
 
 // from https://web.archive.org/web/20180621013020/http://www.logofontandlettering.com/kernking.html
-// note that the special charachter ’ below is NOT the single quote character '
+// note that the special character ’ below is NOT the single quote character '
 const kernKingCopyPart1 = 'lynx tuft frogs, dolphins abduct by proxy the ever awkward klutz, dud,' + "\n" +
   'dummkopf, jinx snubnose filmgoer, orphan sgt. renfruw grudgek reyfus, md. sikh psych if halt' + "\n" +
   'tympany jewelry sri heh! twyer vs jojo pneu fylfot alcaaba son of nonplussed halfbreed bubbly' + "\n" +
