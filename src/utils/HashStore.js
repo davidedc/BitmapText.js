@@ -35,9 +35,7 @@ class HashStore {
   // Get formatted string for clipboard
   getFormattedHashString() {
       const sortedKeys = Object.keys(this.currentHashes).sort();
-      const filteredKeys = sortedKeys.filter(key => 
-          key.includes('atlas') || key.includes('ndividual glyphs')
-      );
+      const filteredKeys = sortedKeys.filter(key => key.includes('atlas'));
 
       return `// Note that some are missing because we fail to render some very small sizes\n`
            + `const storedReferenceCrispTextRendersHashes = {\n`
