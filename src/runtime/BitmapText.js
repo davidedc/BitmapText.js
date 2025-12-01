@@ -213,7 +213,7 @@ class BitmapText {
   /**
    * Check if font size requires minimum size redirection
    * @param {number} fontSize - Font size in CSS pixels
-   * @returns {boolean} True if size < 8.5 and should use interpolated metrics
+   * @returns {boolean} True if size < 9 and should use interpolated metrics
    * @private
    */
   static #shouldUseMinSize(fontSize) {
@@ -221,9 +221,9 @@ class BitmapText {
   }
 
   /**
-   * Create FontProperties with minimum renderable size (8.5)
+   * Create FontProperties with minimum renderable size (9)
    * @param {FontProperties} fontProperties - Original font properties
-   * @returns {FontProperties} New FontProperties with size 8.5
+   * @returns {FontProperties} New FontProperties with size 9
    * @private
    */
   static #createFontPropsAtMinSize(fontProperties) {
@@ -237,19 +237,19 @@ class BitmapText {
   }
 
   /**
-   * Create interpolated FontMetrics wrapper for sizes < 8.5
+   * Create interpolated FontMetrics wrapper for sizes < 9
    * Returns a wrapper object that interpolates all metric values proportionally
-   * @param {FontMetrics} metricsAt8_5 - Font metrics at size 8.5
-   * @param {number} targetSize - Desired font size (< 8.5)
+   * @param {FontMetrics} metricsAt9 - Font metrics at size 9
+   * @param {number} targetSize - Desired font size (< 9)
    * @returns {InterpolatedFontMetrics} Interpolated metrics wrapper with FontMetrics-compatible interface
    * @private
    */
-  static #createInterpolatedFontMetrics(metricsAt8_5, targetSize) {
-    return new InterpolatedFontMetrics(metricsAt8_5, targetSize);
+  static #createInterpolatedFontMetrics(metricsAt9, targetSize) {
+    return new InterpolatedFontMetrics(metricsAt9, targetSize);
   }
 
   /**
-   * Redirect idString for sizes < 8.5 to size 8.5
+   * Redirect idString for sizes < 9 to size 9
    * @param {string} idString - Original font ID string
    * @param {boolean} silent - If true, suppress console warning
    * @returns {{redirected: boolean, idString: string, originalSize: number}} Redirection result
@@ -396,16 +396,16 @@ class BitmapText {
     // Check if FontMetrics exists at all
     let fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
 
-    // If metrics not found and size < 8.5, try interpolating from size 8.5
+    // If metrics not found and size < 9, try interpolating from size 9
     if (!fontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const minSizeProps = BitmapText.#createFontPropsAtMinSize(fontProperties);
-      const metricsAt8_5 = FontMetricsStore.getFontMetrics(minSizeProps);
+      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
 
-      if (metricsAt8_5) {
+      if (metricsAt9) {
         // Create interpolated metrics wrapper
-        fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt8_5, fontProperties.fontSize);
+        fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
       } else {
-        // Even 8.5 metrics don't exist
+        // Even 9px metrics don't exist
         return {
           metrics: null,
           status: createErrorStatus(StatusCode.NO_METRICS, {
@@ -434,14 +434,14 @@ class BitmapText {
     // PRE-FETCH font-invariant font data
     let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If font-invariant font not found and size < 8.5, try interpolating from size 8.5
+    // If font-invariant font not found and size < 9, try interpolating from size 9
     if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt8_5 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
+      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
 
-      if (invariantMetricsAt8_5) {
+      if (invariantMetricsAt9) {
         // Create interpolated metrics wrapper for font-invariant font
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt8_5, fontProperties.fontSize);
+        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
       }
     }
 
@@ -584,13 +584,13 @@ class BitmapText {
     let fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
     let forceInvalidAtlas = false;
 
-    // For sizes < 8.5, always use interpolated metrics from 8.5 and force placeholder mode
+    // For sizes < 9, always use interpolated metrics from 9 and force placeholder mode
     if (BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const minSizeProps = BitmapText.#createFontPropsAtMinSize(fontProperties);
-      const metricsAt8_5 = FontMetricsStore.getFontMetrics(minSizeProps);
+      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
 
-      if (!metricsAt8_5) {
-        // Size 8.5 metrics don't exist - can't render
+      if (!metricsAt9) {
+        // Size 9 metrics don't exist - can't render
         return {
           rendered: false,
           status: createErrorStatus(StatusCode.NO_METRICS, {
@@ -602,8 +602,8 @@ class BitmapText {
       }
 
       // Create interpolated metrics wrapper and force placeholder mode
-      fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt8_5, fontProperties.fontSize);
-      forceInvalidAtlas = true; // Always use placeholders for sizes < 8.5
+      fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
+      forceInvalidAtlas = true; // Always use placeholders for sizes < 9
     } else if (!fontMetrics) {
       // Normal size but metrics not found
       return {
@@ -625,14 +625,14 @@ class BitmapText {
     // PRE-FETCH font-invariant font data ONCE
     let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If font-invariant font not found and size < 8.5, try interpolating from size 8.5
+    // If font-invariant font not found and size < 9, try interpolating from size 9
     if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt8_5 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
+      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
 
-      if (invariantMetricsAt8_5) {
+      if (invariantMetricsAt9) {
         // Create interpolated metrics wrapper for font-invariant font
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt8_5, fontProperties.fontSize);
+        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
       }
     }
 
@@ -667,7 +667,7 @@ class BitmapText {
       };
     }
 
-    // Check atlas data availability (force invalid for sizes < 8.5)
+    // Check atlas data availability (force invalid for sizes < 9)
     let atlasData = forceInvalidAtlas ? null : AtlasDataStore.getAtlasData(fontProperties);
     const atlasValid = forceInvalidAtlas ? false : BitmapText.#isValidAtlas(atlasData);
 
@@ -868,8 +868,8 @@ class BitmapText {
     // maintaining precision in the stored kerning values.
     x_CssPx -= fontProperties.fontSize * kerningCorrection / BitmapText.KERNING_UNIT_DIVISOR;
 
-    // For interpolated metrics (sizes < 8.5), preserve float precision for linear scaling
-    // For normal metrics (sizes ≥ 8.5), round to integers for crisp pixel-aligned rendering
+    // For interpolated metrics (sizes < 9), preserve float precision for linear scaling
+    // For normal metrics (sizes ≥ 9), round to integers for crisp pixel-aligned rendering
     if (fontMetrics.isInterpolatedMetrics) {
       return x_CssPx;  // Float positioning for placeholder rectangles
     } else {
@@ -1410,7 +1410,7 @@ class BitmapText {
    */
   static async loadFont(idString, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5
+    // Redirect sizes < 9 to size 9
     const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
     return BitmapText.#fontLoader.loadFont(redirection.idString, options, BitmapText);
   }
@@ -1427,7 +1427,7 @@ class BitmapText {
    */
   static async loadFonts(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    // Redirect sizes < 9 to size 9 for all idStrings
     const redirectedIdStrings = idStrings.map(idString => {
       const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
       return redirection.idString;
@@ -1443,7 +1443,7 @@ class BitmapText {
    */
   static async loadMetrics(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    // Redirect sizes < 9 to size 9 for all idStrings
     const redirectedIdStrings = idStrings.map(idString => {
       const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
       return redirection.idString;
@@ -1459,7 +1459,7 @@ class BitmapText {
    */
   static async loadAtlases(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    // Redirect sizes < 9 to size 9 for all idStrings
     const redirectedIdStrings = idStrings.map(idString => {
       const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
       return redirection.idString;
@@ -1579,7 +1579,7 @@ class BitmapText {
 
   /**
    * Check if font is fully loaded (both metrics and atlas)
-   * For sizes < 8.5, checks if size 8.5 metrics exist (atlas always false for < 8.5)
+   * For sizes < 9, checks if size 9 metrics exist (atlas always false for < 9)
    * @param {string} idString - Font ID string
    * @returns {boolean} True if both metrics and atlas are loaded
    */
@@ -1589,12 +1589,12 @@ class BitmapText {
 
   /**
    * Check if metrics are loaded for a font
-   * For sizes < 8.5, checks if size 8.5 metrics exist
+   * For sizes < 9, checks if size 9 metrics exist
    * @param {string} idString - Font ID string
    * @returns {boolean} True if metrics are loaded
    */
   static hasMetrics(idString) {
-    // Redirect sizes < 8.5 to check for 8.5 metrics (silent to avoid log spam)
+    // Redirect sizes < 9 to check for 9 metrics (silent to avoid log spam)
     const redirection = BitmapText.#redirectIdStringIfNeeded(idString, true);
     const fontProperties = FontProperties.fromIDString(redirection.idString);
     return FontMetricsStore.hasFontMetrics(fontProperties);
@@ -1602,14 +1602,14 @@ class BitmapText {
 
   /**
    * Check if atlas is loaded for a font
-   * For sizes < 8.5, always returns false (these sizes use placeholder mode)
+   * For sizes < 9, always returns false (these sizes use placeholder mode)
    * @param {string} idString - Font ID string
    * @returns {boolean} True if atlas is loaded
    */
   static hasAtlas(idString) {
     const fontProperties = FontProperties.fromIDString(idString);
 
-    // Sizes < 8.5 never have atlases (always use placeholder mode)
+    // Sizes < 9 never have atlases (always use placeholder mode)
     if (BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       return false;
     }

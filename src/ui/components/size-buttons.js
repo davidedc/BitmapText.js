@@ -3,7 +3,7 @@ function addSizeButtons() {
   hoverButtonsDiv.id = 'hoverButtons';
   document.getElementById("selectors").appendChild(hoverButtonsDiv);
 
-  // Start from minFontSize_px (8.5 for building, 0 for rendering/testing)
+  // Start from minFontSize_px (9 for building, 0 for rendering/testing)
   for (let i = minFontSize_px; i <= maxFontSize_px; i += fontSizeIncrement_px) {
     const button = document.createElement('button');
     // set the id to "button-size-<i>"
