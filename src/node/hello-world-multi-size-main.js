@@ -120,7 +120,7 @@ async function main() {
 
     fontPropertiesArray.forEach((fontProperties, index) => {
       const yPosition = 50 + (index * 50); // Space lines 50px apart
-      const text = `Hello ☺ World (size ${fontProperties.fontSize}) ✔`;
+      const text = `Hello 😊 World (size ${fontProperties.fontSize}) ✔`;
 
       console.log(`Rendering "${text}" at y=${yPosition}`);
 
@@ -171,7 +171,7 @@ async function main() {
 
     fontPropertiesArray.forEach((fontProperties, index) => {
       const yPosition = 50 + (index * 50); // Same y positions as black text
-      const text = `Hello ☺ World (size ${fontProperties.fontSize}) ✔`;
+      const text = `Hello 😊 World (size ${fontProperties.fontSize}) ✔`;
 
       console.log(`Rendering blue "${text}" at x=220, y=${yPosition}`);
 

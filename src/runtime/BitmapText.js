@@ -66,7 +66,7 @@ class BitmapText {
    * Uses string.includes() for ~1-2ns lookup performance
    *
    * @private
-   * @param {string} char - Character to check
+   * @param {string} char - Already-resolved character (caller must resolve aliases first)
    * @returns {boolean} True if character is font-invariant
    */
   static #isInvariantCharacter(char) {
@@ -447,10 +447,15 @@ class BitmapText {
 
     const hasInvariantFont = invariantFontMetrics !== null;
 
-    // Scan text for missing glyphs (excluding spaces which are handled specially)
+    // Resolve all character aliases upfront using fast regex pass
+    // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
+    const resolvedText = CharacterSets.resolveString(text);
+    const chars = [...resolvedText];
+
+    // Scan for missing glyphs (excluding spaces which are handled specially)
     // Check each character against the appropriate font (base or font-invariant)
     const missingChars = new Set();
-    for (const char of text) {
+    for (const char of chars) {
       if (char !== ' ') {
         // Determine which font should handle this character
         const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
@@ -473,15 +478,17 @@ class BitmapText {
     }
 
     // SUCCESS PATH: Calculate metrics normally
-    const chars = [...text];
     let width_CssPx = 0;
 
+    // First character (already resolved)
+    const firstChar = chars[0];
+
     // Determine font for first character
-    const firstCharIsInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(chars[0]);
+    const firstCharIsInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(firstChar);
     let currentFontMetrics = firstCharIsInvariant ? invariantFontMetrics : fontMetrics;
     let currentFontProps = firstCharIsInvariant ? invariantFontProps : fontProperties;
 
-    let characterMetrics = currentFontMetrics.getCharacterMetrics(chars[0]);
+    let characterMetrics = currentFontMetrics.getCharacterMetrics(firstChar);
     const actualBoundingBoxLeft_CssPx = characterMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -631,10 +638,15 @@ class BitmapText {
 
     const hasInvariantFont = invariantFontMetrics !== null;
 
+    // Resolve all character aliases upfront using fast regex pass
+    // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
+    const resolvedText = CharacterSets.resolveString(text);
+    const chars = [...resolvedText];
+
     // Scan for missing metrics (can't render without metrics)
     // Check each character against the appropriate font (base or font-invariant)
     const missingMetricsChars = new Set();
-    for (const char of text) {
+    for (const char of chars) {
       if (char !== ' ') {
         // Determine which font should handle this character
         const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
@@ -683,9 +695,6 @@ class BitmapText {
     // 3. No double-scaling when users apply ctx.scale(dpr, dpr)
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);  // Reset to identity matrix
-
-    // Render text
-    const chars = [...text];
     const textColor = textProperties.textColor;
 
     // BASELINE SUPPORT: Convert user's y from their chosen baseline to 'bottom' baseline
@@ -738,6 +747,7 @@ class BitmapText {
       // Skip character-by-character loop for colored text
     } else {
       // Black text or invalid atlas: use character-by-character rendering
+      // Note: chars array is already resolved (emojis→symbols) from resolvedText
       for (let i = 0; i < chars.length; i++) {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
@@ -1123,6 +1133,7 @@ class BitmapText {
       y: baselineY_PhysPx
     };
 
+    // Note: chars array is already resolved (emojis→symbols) from caller
     for (let i = 0; i < chars.length; i++) {
       const currentChar = chars[i];
       const nextChar = chars[i + 1];

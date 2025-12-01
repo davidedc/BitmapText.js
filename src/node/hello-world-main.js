@@ -77,7 +77,7 @@ async function main() {
     // Render "Hello World" using bitmap text - API returns status info
     const result = BitmapText.drawTextFromAtlas(
       ctx,
-      "Hello ☺ World ✔",
+      "Hello 😊 World ✔",
       10,  // x position in CSS pixels (absolute from origin)
       50,  // y position in CSS pixels (absolute from origin)
       fontProperties,
@@ -118,7 +118,7 @@ async function main() {
 
     const blueResult = BitmapText.drawTextFromAtlas(
       ctx,
-      "Hello ☺ World ✔",
+      "Hello 😊 World ✔",
       10,  // x position in CSS pixels (absolute from origin)
       80,  // y position in CSS pixels (30px below black text)
       fontProperties,

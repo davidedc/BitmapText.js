@@ -105,7 +105,7 @@ async function main() {
     // Render "Hello World" in black (fast path)
     const result = BitmapText.drawTextFromAtlas(
       ctx,
-      "Hello ☺ World ✔",
+      "Hello 😊 World ✔",
       10,
       50,
       fontProperties,
@@ -134,7 +134,7 @@ async function main() {
 
     const blueResult = BitmapText.drawTextFromAtlas(
       ctx,
-      "Hello ☺ World ✔",
+      "Hello 😊 World ✔",
       10,
       80,
       fontProperties,

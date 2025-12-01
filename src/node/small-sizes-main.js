@@ -85,7 +85,7 @@ async function main() {
     // SECTION 1: Visual rendering of small sizes
     console.log('\n=== Section 1: Visual Rendering ===\n');
 
-    const testText = "The quick brown ☺ fox jumps over the lazy dog. ✔";
+    const testText = "The quick brown 😊 fox jumps over the lazy dog. ✔";
     let yPos = 40;
     let renderedCount = 0;
 

@@ -57,5 +57,5 @@ const kernKingCopyPart2 = 'Aaron Abraham Adam Aeneas Agfa Ahoy Aileen Akbar Alan
   'Xavier Xerox Xi Xylophone Yaboe Year Yipes Yo Ypsilant Ys Yu Zabar’s Zero Zhane Zizi Zorro Zu' + "\n" +
   'Zy Don’t I’ll I’m I’se';
 
-// Test copy 4 - Mixed text and symbols
-const testCopy4 = 'Hello ☺ World ✔';
+// Test copy 4 - Mixed text and emoji (😊 resolves to ☺ via CHARACTER_ALIASES)
+const testCopy4 = 'Hello 😊 World ✔';

@@ -147,7 +147,7 @@ async function main() {
     for (let i = 0; i < fontPropertiesArray.length; i++) {
       const fontProps = fontPropertiesArray[i];
       const yPosition = 50 + (i * 50);
-      const text = `Hello ☺ World (size ${fontProps.fontSize}) ✔`;
+      const text = `Hello 😊 World (size ${fontProps.fontSize}) ✔`;
 
       const result = BitmapText.drawTextFromAtlas(
         ctx,
@@ -179,7 +179,7 @@ async function main() {
     for (let i = 0; i < fontPropertiesArray.length; i++) {
       const fontProps = fontPropertiesArray[i];
       const yPosition = 50 + (i * 50);
-      const text = `Hello ☺ World (size ${fontProps.fontSize}) ✔`;
+      const text = `Hello 😊 World (size ${fontProps.fontSize}) ✔`;
 
       const result = BitmapText.drawTextFromAtlas(
         ctx,

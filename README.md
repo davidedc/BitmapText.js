@@ -269,6 +269,17 @@ BitmapText.js includes automatic support for special Unicode font-invariant char
 
 ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
 
+### Emoji Character Aliasing
+
+Modern emoji characters are automatically mapped to their corresponding font-invariant symbols:
+
+| Input Emoji | Rendered As | Unicode Name |
+|-------------|-------------|--------------|
+| 😊 😀 😃 | ☺ | Smiling faces → White Smiling Face |
+| 😢 ☹️ | ☹ | Sad faces → White Frowning Face |
+
+This allows you to use modern emojis in your text while rendering them using the bitmap font glyphs.
+
 ### Using Font-Invariant Characters in Text
 
 Font-invariant characters automatically render using the BitmapTextInvariant font when included in text:
@@ -284,7 +295,7 @@ await BitmapText.loadFonts([
 const fontProps = new FontProperties(1, "Arial", "normal", "normal", 19);
 BitmapText.drawTextFromAtlas(ctx, "Task completed ✔", 10, 50, fontProps);
 BitmapText.drawTextFromAtlas(ctx, "Score: 100 ♦", 10, 80, fontProps);
-BitmapText.drawTextFromAtlas(ctx, "Hello ☺ World", 10, 110, fontProps);
+BitmapText.drawTextFromAtlas(ctx, "Hello 😊 World", 10, 110, fontProps);  // 😊 renders as ☺
 ```
 
 ### How Font-Invariant Character Auto-Redirect Works
@@ -811,11 +822,11 @@ For a middle ground between individual files and minified bundle, use the unmini
 
   **Font-Invariant Character Auto-Redirect:**
 
-  When rendering text, font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗) automatically use the BitmapTextInvariant font regardless of the specified base font. To enable this:
+  When rendering text, font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗) automatically use the BitmapTextInvariant font regardless of the specified base font. Modern emojis (😊😀😃😢) are also aliased to their symbol equivalents. To enable this:
 
   1. Load both your text font AND BitmapTextInvariant at the same size
-  2. Use font-invariant characters anywhere in your text
-  3. BitmapText automatically switches to font-invariant font for these characters
+  2. Use font-invariant characters or emojis anywhere in your text
+  3. BitmapText automatically resolves aliases and switches to font-invariant font
 
   Example:
   ```javascript
@@ -824,8 +835,8 @@ For a middle ground between individual files and minified bundle, use the unmini
     'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-19-0'
   ]);
 
-  // "Hello ☺" renders Hello in Arial, ☺ in BitmapTextInvariant
-  BitmapText.drawTextFromAtlas(ctx, "Hello ☺", 10, 50, fontProps);
+  // "Hello 😊" renders Hello in Arial, 😊 as ☺ in BitmapTextInvariant
+  BitmapText.drawTextFromAtlas(ctx, "Hello 😊", 10, 50, fontProps);
   ```
 
 #### Rendering Methods

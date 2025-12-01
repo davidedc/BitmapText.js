@@ -119,13 +119,24 @@ BitmapText.drawTextFromAtlas(ctx, "Hello", baseX + 10, baseY + 20, fontProps);
 
 ### Font-Invariant Character Auto-Redirect System
 
-**Design Decision:** Special Unicode font-invariant characters automatically render using BitmapTextInvariant font regardless of specified base font.
+**Design Decision:** Special Unicode font-invariant characters automatically render using BitmapTextInvariant font regardless of specified base font. Modern emojis are aliased to their symbol equivalents.
 
 **Problem:**
-Different fonts render the same Unicode characters with different metrics and styles. For UI consistency, font-invariant characters like ✔✘☺ should look identical regardless of whether text is in Arial, Georgia, or Courier.
+Different fonts render the same Unicode characters with different metrics and styles. For UI consistency, font-invariant characters like ✔✘☺ should look identical regardless of whether text is in Arial, Georgia, or Courier. Additionally, users expect to use modern emojis (😊) but need them to render using bitmap glyphs.
 
 **Solution:**
-Introduce a dedicated font-invariant font (BitmapTextInvariant) that uses Courier New for rendering, ensuring monospaced, consistent font-invariant character appearance. At runtime, transparently redirect font-invariant characters to this font during rendering.
+Introduce a dedicated font-invariant font (BitmapTextInvariant) that uses Courier New for rendering, ensuring monospaced, consistent font-invariant character appearance. At runtime, transparently redirect font-invariant characters to this font during rendering. Character aliasing maps modern emojis to their symbol equivalents.
+
+**Why Character Aliasing Exists:**
+
+BitmapText.js uses **monochrome (black/white) atlases only**. This design constraint provides:
+- **Filesystem savings**: Single-channel images are smaller than RGBA
+- **Faster loading**: Less data to transfer and decode
+- **Lower memory**: Runtime memory footprint reduced ~4x vs colored atlases
+
+However, users expect to use modern colored emojis (😊) in their text. Since colored glyphs aren't supported, we leverage existing **black/white Unicode symbols** (☺) that visually approximate the emojis.
+
+Character aliasing transparently maps emoji input → symbol output at runtime, requiring no atlas/metrics duplication. If colored atlases were supported in the future, this aliasing mechanism would become unnecessary.
 
 **Implementation:**
 
@@ -142,17 +153,37 @@ function createGlyphsAndAddToFullStore(fontProperties) {
 }
 ```
 
-2. **Runtime Fast Symbol Detection** (src/runtime/BitmapText.js):
+2. **Character Aliasing** (src/runtime/CharacterSets.js):
+```javascript
+// Maps emoji input to symbol output (no duplicate atlas/metrics entries)
+static CHARACTER_ALIASES = {
+  '😊': '☺',  // Smiling Face with Smiling Eyes → White Smiling Face
+  '😀': '☺',  // Grinning Face → White Smiling Face
+  '😃': '☺',  // Grinning Face with Big Eyes → White Smiling Face
+  '😢': '☹',  // Crying Face → White Frowning Face
+  '☹️': '☹',  // Frowning Face (emoji variant) → White Frowning Face
+};
+
+// O(1) resolution - returns original char if no alias
+static resolveCharacter(char) {
+  return CharacterSets.CHARACTER_ALIASES[char] ?? char;
+}
+```
+
+3. **Runtime Fast Symbol Detection** (src/runtime/BitmapText.js):
 ```javascript
 // Pre-defined symbol string
 static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
 
-// Fast detection using string.includes() (~1-2ns)
+// Fast detection using string.includes() (~1-2ns) after alias resolution
 static #isInvariantCharacter(char) {
-  return BitmapText.FONT_INVARIANT_CHARS.includes(char);
+  const resolved = CharacterSets.resolveCharacter(char);
+  return CharacterSets.FONT_INVARIANT_CHARS.includes(resolved);
 }
 
-// In rendering loop
+// In rendering loop - resolve character aliases before lookup
+const inputChar = chars[i];
+const currentChar = CharacterSets.resolveCharacter(inputChar);
 const isSymbol = hasInvariantFont && BitmapText.#isInvariantCharacter(currentChar);
 if (isSymbol && currentFontProps !== invariantFontProps) {
   currentFontProps = invariantFontProps;
@@ -172,6 +203,10 @@ if (isSymbol && currentFontProps !== invariantFontProps) {
    - **Trade-off**: Small memory overhead vs performance in hot loop
 
 3. **Courier New Override**: BitmapTextInvariant uses Courier New as rendering font (src/builder/GlyphFAB.js)
+
+4. **Character Aliasing via Object Lookup**: Uses simple object property access for emoji→symbol mapping
+   - **Rationale**: O(1) lookup (~3-5ns), no duplicate atlas/metrics entries, backward compatible
+   - **Trade-off**: Small constant overhead per character vs memory savings from no glyph duplication
    - **Rationale**: Ensures monospacing and consistent metrics across platforms
    - **Trade-off**: Symbols don't match base font style, but consistency is more important
 
