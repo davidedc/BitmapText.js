@@ -125,10 +125,10 @@ npm run demo
 **Small-sizes demo (`build-node-small-sizes-demo.sh`):**
 - Same build process as above demos
 - Creates `examples/node/dist/small-sizes.bundle.js` (~214KB)
-- Uses `src/node/small-sizes-main.js` - tests sizes 0-8.5px
-- Demonstrates automatic metric interpolation for sizes < 8.5px
+- Uses `src/node/small-sizes-main.js` - tests sizes 0-9px
+- Demonstrates automatic metric interpolation for sizes < 9px
 - Two sections: visual rendering (placeholders) + measurements with boxes
-- Shows only 8.5px metrics needed for all small sizes
+- Shows only 9px metrics needed for all small sizes
 
 **Bundled versions (`build-node-bundled-demos.sh`):**
 - Builds 3 demos that use production runtime bundle (dist/bitmaptext-node.min.js)
@@ -140,7 +140,7 @@ npm run demo
 - `src/platform/canvas-mock.js` - Minimal Canvas implementation (includes strokeRect for measurement boxes)
 - `src/runtime/CharacterSets.js` - Character set configuration (FONT_SPECIFIC_CHARS, FONT_INVARIANT_CHARS)
 - `src/runtime/BitmapText.js` - Core rendering class
-- `src/runtime/InterpolatedFontMetrics.js` - Automatic metric scaling for sizes < 8.5px
+- `src/runtime/InterpolatedFontMetrics.js` - Automatic metric scaling for sizes < 9px
 - `src/builder/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/runtime/FontLoaderBase.js` - Abstract base class for font loading (shared logic)

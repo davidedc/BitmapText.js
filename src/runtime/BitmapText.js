@@ -48,8 +48,8 @@ class BitmapText {
   // Kerning unit divisor (kerning measured in 1/1000 em units)
   static KERNING_UNIT_DIVISOR = 1000;
 
-  // Minimum renderable font size (sizes < 8.5 use interpolated metrics from 8.5)
-  static MIN_RENDERABLE_SIZE = 8.5;
+  // Minimum renderable font size (sizes < 9 use interpolated metrics from 9)
+  static MIN_RENDERABLE_SIZE = 9;
 
   // Font asset naming conventions
   static METRICS_PREFIX = 'metrics-';

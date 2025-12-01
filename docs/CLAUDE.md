@@ -132,7 +132,7 @@
   - **Automated hash generator page**: public/automated-hash-generator.html (hash generation page for automation, no UI)
   - **Automated hash generator orchestration**: src/automation/automated-hash-generator.js (browser-side orchestration for hash generation)
   - **Reference hash database**: test/data/reference-hashes.js (auto-generated reference hashes for regression testing)
-  - **Small font size interpolation**: src/runtime/InterpolatedFontMetrics.js (extends FontMetrics to scale metrics from 8.5px base for sizes < 8.5px)
+  - **Small font size interpolation**: src/runtime/InterpolatedFontMetrics.js (extends FontMetrics to scale metrics from 9px base for sizes < 9px)
   - **Small text demos**: public/small-text-rendering-demo.html (browser), src/node/small-sizes-main.js (Node.js standalone), src/node/small-sizes-bundled-main.js (Node.js bundled)
 
   ## Development Tips

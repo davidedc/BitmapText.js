@@ -47,14 +47,14 @@ examples/node/
 - **Size**: ~207KB standalone executable
 
 ### `dist/small-sizes.bundle.js`
-- **Purpose**: Demonstrates small font size interpolation (sizes 0-8.5px)
+- **Purpose**: Demonstrates small font size interpolation (sizes 0-9px)
 - **Output**: Creates `small-sizes-output.png` (800×1100) in current directory
 - **Features**:
-  - Loads only 8.5px metrics - all smaller sizes interpolate automatically
+  - Loads only 9px metrics - all smaller sizes interpolate automatically
   - Two sections: visual rendering (placeholder rectangles) and measurements with boxes
   - Shows accurate text measurements work with interpolated metrics
   - Console output provides detailed size labels, status, and measurements
-  - Demonstrates that no atlas/metrics needed for sizes < 8.5px
+  - Demonstrates that no atlas/metrics needed for sizes < 9px
 - **Source**: Built from `src/node/small-sizes-main.js` + core library files
 - **Usage**: `node examples/node/dist/small-sizes.bundle.js`
 - **Size**: ~214KB standalone executable
@@ -125,7 +125,7 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the small-sizes demo:
 1. **Main logic**: `src/node/small-sizes-main.js` (standalone), `src/node/small-sizes-bundled-main.js` (bundled)
-2. **Font interpolation**: `src/runtime/InterpolatedFontMetrics.js` (automatically interpolates metrics for sizes < 8.5px)
+2. **Font interpolation**: `src/runtime/InterpolatedFontMetrics.js` (automatically interpolates metrics for sizes < 9px)
 3. **Canvas mock**: `src/platform/canvas-mock.js` (includes `strokeRect()` for measurement boxes)
 4. **Other components**: Same as above
 

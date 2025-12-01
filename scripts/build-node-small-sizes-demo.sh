@@ -81,8 +81,8 @@ cat > "$OUTPUT_FILE" << 'EOF'
  *   - lib/QOIDecode.js, lib/PngEncoder.js (image handling)
  *
  * This demonstrates:
- * - Small font size interpolation (sizes < 8.5px)
- * - Loading only 8.5px metrics (all smaller sizes interpolate)
+ * - Small font size interpolation (sizes < 9px)
+ * - Loading only 9px metrics (all smaller sizes interpolate)
  * - Placeholder rendering for interpolated sizes
  * - Accurate measurements with scaled metrics
  * - Two-section canvas (visual + measurements)
@@ -309,6 +309,6 @@ echo "  ./scripts/build-node-small-sizes-demo.sh"
 echo ""
 echo "Expected output:"
 echo "  - small-sizes-output.png (800x1100 canvas)"
-echo "  - Section 1: Visual rendering of sizes 0-8.5px"
+echo "  - Section 1: Visual rendering of sizes 0-9px"
 echo "  - Section 2: Same sizes with measurement boxes"
-echo "  - Only 8.5px metrics loaded (all smaller sizes interpolate)"
+echo "  - Only 9px metrics loaded (all smaller sizes interpolate)"

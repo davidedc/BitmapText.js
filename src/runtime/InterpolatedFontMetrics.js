@@ -1,26 +1,26 @@
 // InterpolatedFontMetrics - Wrapper for FontMetrics that scales metric values
 //
-// This is a RUNTIME class used by BitmapText to support font sizes < 8.5px.
+// This is a RUNTIME class used by BitmapText to support font sizes < 9px.
 //
 // USAGE:
-// - Font sizes < 8.5px interpolate metrics from size 8.5px
+// - Font sizes < 9px interpolate metrics from size 9px
 // - All metric values (widths, kerning, baselines) are scaled proportionally
 // - Marker property `isInterpolatedMetrics` enables conditional rounding in BitmapText
 //
 // ARCHITECTURE:
-// - Wraps a FontMetrics instance (typically size 8.5px)
-// - Scales all metric values by interpolationFactor = targetSize / 8.5
+// - Wraps a FontMetrics instance (typically size 9px)
+// - Scales all metric values by interpolationFactor = targetSize / 9
 // - Delegates glyph checking and kerning table access to base metrics
 // - Used exclusively for rendering placeholder rectangles (atlases never loaded)
 //
 // DEPENDENCIES:
 // - Requires FontMetrics.js to be loaded first
-// - Used by BitmapText.js for sizes < MIN_RENDERABLE_SIZE (8.5px)
+// - Used by BitmapText.js for sizes < MIN_RENDERABLE_SIZE (9px)
 //
 /**
  * InterpolatedFontMetrics - Wrapper for FontMetrics that scales all values
  *
- * Used for font sizes < 8.5px which interpolate metrics from size 8.5px.
+ * Used for font sizes < 9px which interpolate metrics from size 9px.
  * All metric values (widths, kerning, baselines) are scaled proportionally.
  *
  * Marker property `isInterpolatedMetrics` enables conditional rounding in
@@ -30,7 +30,7 @@ class InterpolatedFontMetrics {
   constructor(baseFontMetrics, targetSize) {
     this.baseFontMetrics = baseFontMetrics;
     this.targetSize = targetSize;
-    this.interpolationFactor = targetSize / 8.5;  // MIN_RENDERABLE_SIZE constant value
+    this.interpolationFactor = targetSize / 9;  // MIN_RENDERABLE_SIZE constant value
 
     // Marker for detection in calculateAdvancement_CssPx()
     // Enables float positioning instead of integer rounding

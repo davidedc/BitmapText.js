@@ -329,7 +329,7 @@ Always load the font-invariant font at the same pixel density and size as your t
 - **Monospaced**: All font-invariant characters have consistent width (uses Courier New metrics)
 - **Font-invariant characters**: Carefully selected common symbols for UI and text
 - **Normal style/weight only**: No italic or bold variants
-- **Size range**: 8.5px to 72px (same as regular fonts)
+- **Size range**: 9px to 72px (same as regular fonts)
 - **Automatic fallback**: If BitmapTextInvariant isn't loaded, font-invariant characters will render using the base font (may look inconsistent)
 
 ## Understanding Coordinate Systems & Transforms
@@ -1336,7 +1336,7 @@ try {
   Open `public/hello-world-multi-size.html` to see text rendered at multiple font sizes (18, 18.5, 19), demonstrating the complexity of loading multiple bitmap font configurations.
 
   **Small Text Rendering Demo**
-  Open `public/small-text-rendering-demo.html` to see small font size interpolation in action. Demonstrates sizes 0px through 8.5px, where sizes < 8.5px automatically interpolate metrics from 8.5px and render as placeholder rectangles. Shows both visual rendering and measurement accuracy across all sizes. See also `public/small-text-rendering-demo-bundled.html` for the production bundle version.
+  Open `public/small-text-rendering-demo.html` to see small font size interpolation in action. Demonstrates sizes 0px through 9px, where sizes < 9px automatically interpolate metrics from 9px and render as placeholder rectangles. Shows both visual rendering and measurement accuracy across all sizes. See also `public/small-text-rendering-demo-bundled.html` for the production bundle version.
 
   **Baseline & Alignment Demo**
   Open `public/baseline-alignment-demo.html` for an interactive demonstration of all baseline and alignment combinations, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
@@ -1365,7 +1365,7 @@ try {
   **Demo descriptions:**
   - **Single-size demo**: Renders "Hello World" at size 19 using QOI atlases, exports as PNG
   - **Multi-size demo**: Renders at sizes 18, 18.5, and 19. Demonstrates multi-size font loading and placeholder fallback
-  - **Small-sizes demo**: Tests sizes 0-8.5px. Demonstrates automatic metric interpolation for sizes < 8.5px, renders two sections (visual + measurements), shows that only 8.5px metrics needed for all small sizes
+  - **Small-sizes demo**: Tests sizes 0-9px. Demonstrates automatic metric interpolation for sizes < 9px, renders two sections (visual + measurements), shows that only 9px metrics needed for all small sizes
 
   All demos are self-contained scripts with no npm dependencies, built from modular source files. See `examples/node/README.md` for details.
 

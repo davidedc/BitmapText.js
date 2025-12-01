@@ -45,20 +45,20 @@
 </head>
 
 <body>
-  <h1>BitmapText.js - Small Text Rendering Demo (Sizes &lt; 8.5px)</h1>
+  <h1>BitmapText.js - Small Text Rendering Demo (Sizes &lt; 9px)</h1>
 
   <div class="info-box">
     <h3>Small Font Size Interpolation</h3>
-    <p>Font sizes &lt; 8.5px use <strong>interpolated metrics</strong> from size 8.5px and render as <strong>placeholder rectangles</strong>.</p>
+    <p>Font sizes &lt; 9px use <strong>interpolated metrics</strong> from size 9px and render as <strong>placeholder rectangles</strong>.</p>
     <ul>
-      <li>Only <strong>one set of assets</strong> (8.5px) is needed for all small sizes</li>
-      <li>Metrics are scaled down proportionally: <code>size / 8.5</code></li>
+      <li>Only <strong>one set of assets</strong> (9px) is needed for all small sizes</li>
+      <li>Metrics are scaled down proportionally: <code>size / 9</code></li>
       <li>Atlases are never loaded - placeholder mode is always used</li>
       <li>Text measurements work correctly with scaled metrics</li>
     </ul>
   </div>
 
-  <div class="canvas-label">Sizes 0px through 8.5px:</div>
+  <div class="canvas-label">Sizes 0px through 9px:</div>
   <canvas id="small-sizes-canvas" width="1000" height="520"></canvas>
 
   <div class="canvas-label">Measurements for All Sizes:</div>
@@ -89,8 +89,8 @@
     BitmapText.setFontDirectory('../font-assets/');
     const isFileProtocol = window.location.href.includes("file://");
 
-    // Load only size 8.5px - all small sizes will interpolate from this
-    const fontProps8_5 = new FontProperties(1, "Arial", "normal", "normal", 8.5);
+    // Load only size 9px - all small sizes will interpolate from this
+    const fontProps9 = new FontProperties(1, "Arial", "normal", "normal", 9);
     const textProps = new TextProperties({
       isKerningEnabled: true,
       textBaseline: 'bottom',
@@ -98,13 +98,13 @@
       textColor: '#000000'
     });
 
-    console.log('Loading size 8.5px metrics (used for all sizes < 8.5px)...');
+    console.log('Loading size 9px metrics (used for all sizes < 9px)...');
 
-    BitmapText.loadFont(fontProps8_5.idString, {
+    BitmapText.loadFont(fontProps9.idString, {
       isFileProtocol,
       onProgress: (loaded, total) => console.log(`Loaded ${loaded} of ${total} files`)
     }).then(() => {
-      console.log('✅ Size 8.5px loaded successfully');
+      console.log('✅ Size 9px loaded successfully');
       renderDemos();
     }).catch((error) => {
       console.error('❌ Failed to load fonts:', error);
@@ -123,8 +123,8 @@
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Test various small sizes plus 8.5
-      const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.4, 8.5];
+      // Test various small sizes plus 9
+      const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.5, 9];
       const testText = "The quick brown fox jumps over the lazy dog.";
       let yPos = 40;
 
@@ -148,7 +148,7 @@
 
         // Log status and draw annotation
         if (result.rendered) {
-          if (size === 8.5) {
+          if (size === 9) {
             console.log(`✅ Size ${size}px rendered from atlas`);
             ctx.fillStyle = '#4CAF50';
             ctx.font = '12px Arial';
@@ -180,8 +180,8 @@
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Test various small sizes plus 8.5
-      const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.4, 8.5];
+      // Test various small sizes plus 9
+      const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.5, 9];
       const testText = "The quick brown fox jumps over the lazy dog.";
       let yPos = 40;
 

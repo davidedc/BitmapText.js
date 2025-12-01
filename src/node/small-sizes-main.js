@@ -9,11 +9,11 @@ if (typeof path === 'undefined') {
   var path = require('path');
 }
 
-// Test sizes: all small sizes that will use interpolation, plus 8.5px base
-const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.4, 8.5];
+// Test sizes: all small sizes that will use interpolation, plus 9px base
+const testSizes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8.5, 9];
 
-// Load only 8.5px - all smaller sizes will interpolate from this
-const fontProps8_5 = new FontProperties(1, "Arial", "normal", "normal", 8.5);
+// Load only 9px - all smaller sizes will interpolate from this
+const fontProps9 = new FontProperties(1, "Arial", "normal", "normal", 9);
 
 // Text properties for rendering configuration
 const textProperties = new TextProperties({
@@ -48,27 +48,27 @@ async function main() {
       canvasFactory: () => new Canvas()
     });
 
-    // Load only size 8.5px - all smaller sizes will interpolate from this (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
-    const arialIDString = fontProps8_5.idString;
-    const symbolsIDString = 'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-8-5';
-    console.log(`Loading size 8.5px fonts: ${arialIDString} + ${symbolsIDString}...`);
+    // Load only size 9px - all smaller sizes will interpolate from this (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
+    const arialIDString = fontProps9.idString;
+    const symbolsIDString = 'density-1-0-BitmapTextInvariant-style-normal-weight-normal-size-9-0';
+    console.log(`Loading size 9px fonts: ${arialIDString} + ${symbolsIDString}...`);
 
     await BitmapText.loadFonts([arialIDString, symbolsIDString], {
       onProgress: (loaded, total) => console.log(`Loading progress: ${loaded}/${total}`)
     });
 
-    console.log('✅ Size 8.5px loaded successfully\n');
+    console.log('✅ Size 9px loaded successfully\n');
 
     // Verify font loaded
-    const hasMetrics = BitmapText.hasMetrics(fontProps8_5.idString);
-    const hasAtlas = BitmapText.hasAtlas(fontProps8_5.idString);
+    const hasMetrics = BitmapText.hasMetrics(fontProps9.idString);
+    const hasAtlas = BitmapText.hasAtlas(fontProps9.idString);
 
     if (hasMetrics && hasAtlas) {
-      console.log('Font size 8.5px: ready with full atlas');
+      console.log('Font size 9px: ready with full atlas');
     } else if (hasMetrics) {
-      console.log('Font size 8.5px: ready with placeholder mode (no atlas)');
+      console.log('Font size 9px: ready with placeholder mode (no atlas)');
     } else {
-      throw new Error('Font size 8.5px: no metrics available');
+      throw new Error('Font size 9px: no metrics available');
     }
 
     // Create output canvas (large enough for both sections)
@@ -103,7 +103,7 @@ async function main() {
 
       // Console annotation: size label and status
       if (result.rendered) {
-        if (size === 8.5) {
+        if (size === 9) {
           console.log(`Size ${size}px: ✅ Rendered from atlas`);
         } else {
           const statusInfo = result.status.placeholdersUsed ? '(interpolated, placeholders)' : '(interpolated)';
@@ -192,11 +192,11 @@ async function main() {
     console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
     console.log(`File size: ${(fs.statSync(outputPath).size / 1024).toFixed(2)} KB`);
     console.log('\nThe PNG contains two sections:');
-    console.log('  - Section 1: Visual rendering of sizes 0px through 8.5px (placeholder rectangles)');
+    console.log('  - Section 1: Visual rendering of sizes 0px through 9px (placeholder rectangles)');
     console.log('  - Section 2: Same sizes with blue measurement boxes showing bounding boxes');
     console.log('\nKey features:');
-    console.log('  ✓ Only size 8.5px metrics loaded (all smaller sizes interpolate)');
-    console.log('  ✓ Sizes < 8.5px use interpolated metrics and render as placeholders');
+    console.log('  ✓ Only size 9px metrics loaded (all smaller sizes interpolate)');
+    console.log('  ✓ Sizes < 9px use interpolated metrics and render as placeholders');
     console.log('  ✓ Measurements work correctly with scaled metrics');
     console.log('  ✓ No atlas needed for small sizes (placeholder mode always used)');
 
@@ -204,7 +204,7 @@ async function main() {
     console.error('\n❌ Error:', error.message);
     console.error('\nTroubleshooting:');
     console.error('1. Make sure you run this from the project root directory');
-    console.error('2. Ensure font metrics exist for size 8.5px: metrics-density-1-0-Arial-style-normal-weight-normal-size-8-5.js');
+    console.error('2. Ensure font metrics exist for size 9px: metrics-density-1-0-Arial-style-normal-weight-normal-size-9-0.js');
     console.error('3. Atlas JS file is optional - missing atlas will show placeholder rectangles');
     console.error('4. Build font assets using public/font-assets-builder.html if needed');
     console.error('\nStack trace:');
