@@ -4,14 +4,35 @@ This document describes automated browser-based workflows using Playwright for t
 
 ## Overview
 
-The project uses Playwright for four main automation workflows:
+The project uses Playwright for five main automation workflows:
 
 1. **📸 Screenshot Capture** - Automated visual verification of Canvas rendering
 2. **🔠 Font Asset Generation** - Batch generation of bitmap fonts from JSON specifications
 3. **🔐 Reference Hash Generation** - Automated generation of test fixtures for regression testing
 4. **✅ Reference Hash Verification** - Automated verification of font hashes for CI/CD regression testing
+5. **🚦 Smoke Loop** - Headless multi-page console-error sweep across every demo, under both `http://` and `file://`
 
-All four systems share common infrastructure (HTTP server, headless browser, progress reporting) and can be used independently or as part of CI/CD pipelines.
+All five systems share common infrastructure (HTTP server, headless browser, progress reporting) and can be used independently or as part of CI/CD pipelines.
+
+---
+
+## Standard verification sequence
+
+Whenever a change touches the runtime, font assets, or build/dedup tools, run this three-step sequence end-to-end. It catches regressions in the rendered output, in Node consumers, and in the browser asset pipeline:
+
+```bash
+# 1. Hash regression — does the rendered output still match the reference DB?
+node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json --ci
+
+# 2. Node demos — does the Node-side rendering path still work?
+./run-node-demos.sh
+
+# 3. Browser smoke loop — does every demo page load without console errors,
+#    under both http:// (production) and file:// (local debugging)?
+node scripts/playwright-smoke-loop.js
+```
+
+All three are exit-code-clean (`0` on pass), so they can be chained in a single CI step. The third (`playwright-smoke-loop`) is the one that catches asset-pipeline regressions in the browser specifically — it visits every page in `public/` under both protocols and surfaces any `console.error` or uncaught page error. See section 5 below.
 
 ---
 
@@ -456,6 +477,79 @@ steps:
 ```
 
 **For detailed documentation**, see `scripts/README.md` section 14.
+
+---
+
+## 5. Browser Smoke Loop
+
+### Status
+✅ **FULLY WORKING & RECOMMENDED for pre-commit / pre-push verification**
+
+### Description
+
+Headless multi-page sweep that loads every demo under `public/` against **both** `http://` and `file://`, then reports any `console.error` or uncaught `pageerror`. Exits non-zero with a per-page breakdown if anything fails. Designed to be the third step of the standard verification sequence (after hash verify + Node demos).
+
+The two-protocol coverage matters because the browser asset pipeline can break differently per protocol. `http://` and `file://` exercise different code paths in the loader (network-style fetch vs. local file URL), and a regression that breaks only one of them won't be caught by single-protocol automation.
+
+### Implementation
+**File**: `scripts/playwright-smoke-loop.js`
+
+What it does:
+- Spins up a static HTTP server on port 8766 (serves the project root with the right MIME types for `.js`, `.webp`, `.qoi`, etc.)
+- Launches headless Chromium via Playwright
+- For each page in the hard-coded list (12 pages today: bundled + unbundled variants of the demos):
+  - Visits the `http://localhost:8766/<page>` URL → waits for `networkidle` + 1.5 s grace for any post-networkidle async work
+  - Visits the matching `file://<absolute path>` URL → same wait
+- Captures `pageerror` and `console.error` per visit (warnings are deliberately allowed — `test-renderer` legitimately logs `console.warn` while exercising error paths)
+- Closes the browser + server, prints a `✓`/`✗` line per page-protocol pair, and exits 0 if every visit was clean
+
+### Usage
+
+```bash
+node scripts/playwright-smoke-loop.js
+```
+
+Typical clean output (24 page-loads = 12 pages × 2 protocols):
+
+```
+  ✓ http  public/hello-world-demo.html
+  ✓ file  public/hello-world-demo.html
+  ...
+  ✓ http  public/test-renderer-bundled.html
+  ✓ file  public/test-renderer-bundled.html
+
+✅ All 24 page-loads clean (12 pages × 2 protocols)
+```
+
+Failure output includes the offending pageerror / console.error message, suitable for paste-into-bug-report:
+
+```
+❌ 2 page-loads had errors:
+  http  public/hello-world-demo-bundled.html
+    pageerror: <error message here>
+  file  public/hello-world-demo-bundled.html
+    pageerror: <error message here>
+```
+
+### When to run
+
+- After **any change to the runtime bundle** (`src/runtime/`, `src/platform/`, `lib/QOIDecode.js`, `scripts/build-runtime-bundle.sh`).
+- After **any change to the font-asset pipeline** (anything that emits files under `font-assets/`).
+- After **any change to the demo HTML pages** under `public/`.
+- Before committing changes that affect more than one of the above.
+
+### Limitations
+
+- Pages list is hard-coded (`PAGES` constant near the top of the script). When new demos are added under `public/`, append them there.
+- It checks only console errors and uncaught exceptions, not pixel output. For pixel-level regression coverage, run the **hash regression** step (workflow 4) instead — that's the right tool for "did my change alter rendered output."
+- Some browsers / locked-down OSes restrict `file://` cross-origin loads of subresources. Chromium under Playwright is lenient by default; if a future change tightens this, switch the file:// half of the loop to a `chromium.launch({ args: ['--allow-file-access-from-files'] })`.
+- Warnings are intentionally not flagged. If you want to assert "no warns either", bump the filter in `visit()` to also catch `msg.type() === 'warning'`.
+
+### Use cases
+
+- **Pre-commit gate**: catches "I broke the asset pipeline" regressions that Node demos and hash-verify alone won't surface.
+- **Asset-pipeline changes**: any change that touches how assets are produced or loaded benefits from re-running the loop after each step. Each clean iteration produces a 24/24 result.
+- **CI**: cheap (a handful of seconds), deterministic, and exits 0 on pass — drop straight into a GitHub Actions step.
 
 ---
 

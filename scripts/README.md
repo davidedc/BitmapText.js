@@ -866,6 +866,37 @@ node scripts/verify-reference-hashes.js \
 
 ---
 
+### 15. Browser Smoke Loop (Playwright)
+
+**File**: `scripts/playwright-smoke-loop.js`
+
+Headless multi-page sweep that loads every demo under `public/` against **both** `http://` and `file://`, captures `console.error` and uncaught `pageerror`, and exits non-zero with a per-page breakdown if anything fails.
+
+```bash
+node scripts/playwright-smoke-loop.js
+```
+
+Recommended as the third step of the standard verification sequence:
+
+```bash
+# 1. hashes — does rendered output still match the reference DB?
+node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json --ci
+
+# 2. node demos — does the Node-side rendering path still work?
+./run-node-demos.sh
+
+# 3. browser — do all demos load without console errors under both protocols?
+node scripts/playwright-smoke-loop.js
+```
+
+Use cases:
+- Catches asset-pipeline regressions in the browser (e.g. missing/stale bundle, file:// vs http:// divergence) that hash-verify and Node demos won't surface.
+- Cheap (a few seconds), deterministic, and exits 0 on pass — drop straight into CI.
+
+For the full reference (page list, output format, when to run, limitations, CI use), see [`docs/PLAYWRIGHT_AUTOMATION.md`](../docs/PLAYWRIGHT_AUTOMATION.md) section 5.
+
+---
+
 ## 📁 File Structure
 
 ```
@@ -886,6 +917,7 @@ scripts/
 ├── build-all-node-demos.sh       # Builds all 6 Node.js demos
 ├── run-all-node-demos.sh         # Runs all 6 Node.js demos with summary
 ├── screenshot-with-playwright.js # Automated browser screenshot capture
+├── playwright-smoke-loop.js      # Multi-page console-error sweep (file:// + http://)
 ├── automated-font-builder.js     # Automated font generation from JSON specs
 ├── generate-reference-hashes.js  # Automated reference hash generation
 ├── verify-reference-hashes.js    # Automated reference hash verification
