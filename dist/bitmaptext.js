@@ -486,27 +486,27 @@ class FontMetrics {
 
 // InterpolatedFontMetrics - Wrapper for FontMetrics that scales metric values
 //
-// This is a RUNTIME class used by BitmapText to support font sizes < 8.5px.
+// This is a RUNTIME class used by BitmapText to support font sizes < 9px.
 //
 // USAGE:
-// - Font sizes < 8.5px interpolate metrics from size 8.5px
+// - Font sizes < 9px interpolate metrics from size 9px
 // - All metric values (widths, kerning, baselines) are scaled proportionally
 // - Marker property `isInterpolatedMetrics` enables conditional rounding in BitmapText
 //
 // ARCHITECTURE:
-// - Wraps a FontMetrics instance (typically size 8.5px)
-// - Scales all metric values by interpolationFactor = targetSize / 8.5
+// - Wraps a FontMetrics instance (typically size 9px)
+// - Scales all metric values by interpolationFactor = targetSize / 9
 // - Delegates glyph checking and kerning table access to base metrics
 // - Used exclusively for rendering placeholder rectangles (atlases never loaded)
 //
 // DEPENDENCIES:
 // - Requires FontMetrics.js to be loaded first
-// - Used by BitmapText.js for sizes < MIN_RENDERABLE_SIZE (8.5px)
+// - Used by BitmapText.js for sizes < MIN_RENDERABLE_SIZE (9px)
 //
 /**
  * InterpolatedFontMetrics - Wrapper for FontMetrics that scales all values
  *
- * Used for font sizes < 8.5px which interpolate metrics from size 8.5px.
+ * Used for font sizes < 9px which interpolate metrics from size 9px.
  * All metric values (widths, kerning, baselines) are scaled proportionally.
  *
  * Marker property `isInterpolatedMetrics` enables conditional rounding in
@@ -516,7 +516,7 @@ class InterpolatedFontMetrics {
   constructor(baseFontMetrics, targetSize) {
     this.baseFontMetrics = baseFontMetrics;
     this.targetSize = targetSize;
-    this.interpolationFactor = targetSize / 8.5;  // MIN_RENDERABLE_SIZE constant value
+    this.interpolationFactor = targetSize / 9;  // MIN_RENDERABLE_SIZE constant value
 
     // Marker for detection in calculateAdvancement_CssPx()
     // Enables float positioning instead of integer rounding
@@ -603,14 +603,14 @@ class InterpolatedFontMetrics {
  */
 class CharacterSets {
   // ============================================
-  // Font-Specific Character Set (204 characters)
+  // Font-Specific Character Set
   // ============================================
 
   /**
-   * Font-specific character set constant (204 characters)
+   * Font-specific character set constant
    * Used by both build-time (MetricsMinifier) and runtime (MetricsExpander)
    * This is the sorted character set that defines the standard order for all font metrics.
-   * ALL font files must contain exactly these 204 characters in this order.
+   * ALL font files must contain exactly these characters in this order.
    *
    * @type {string}
    * @static
@@ -624,7 +624,7 @@ class CharacterSets {
 
   /**
    * Font-invariant characters that auto-redirect to BitmapTextInvariant font.
-   * These 18 Unicode characters render using monospaced Courier New metrics
+   * These Unicode characters render using monospaced Courier New metrics
    * regardless of the font specified in FontProperties.
    *
    * Characters: ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
@@ -647,21 +647,99 @@ class CharacterSets {
   static INVARIANT_FONT_FAMILY = 'BitmapTextInvariant';
 
   // ============================================
+  // Character Aliasing (Emoji → Symbol Mapping)
+  // ============================================
+  //
+  // WHY THIS EXISTS:
+  // BitmapText.js uses monochrome (black/white) atlases only to minimize
+  // filesystem size, loading time, and runtime memory. Since colored emoji
+  // glyphs aren't supported, we map modern emojis to visually-similar
+  // black/white Unicode symbols from the font-invariant character set.
+  //
+  // This allows users to type emojis (😊) which render as their
+  // corresponding symbols (☺) without duplicating atlas/metrics entries.
+  // If colored atlases were supported, this mechanism would be unnecessary.
+  //
+  // See docs/ARCHITECTURE.md for full architectural rationale.
+  // ============================================
+
+  /**
+   * Maps input emoji characters to their rendered symbol equivalents.
+   * @type {Object.<string, string>}
+   * @static
+   * @readonly
+   */
+  static CHARACTER_ALIASES = {
+    '😊': '☺',  // U+1F60A Smiling Face with Smiling Eyes → U+263A White Smiling Face
+    '😀': '☺',  // U+1F600 Grinning Face → U+263A White Smiling Face
+    '😃': '☺',  // U+1F603 Grinning Face with Big Eyes → U+263A White Smiling Face
+    '😢': '☹',  // U+1F622 Crying Face → U+2639 White Frowning Face
+    '☹️': '☹',  // U+2639 U+FE0F Frowning Face (emoji variant) → U+2639 White Frowning Face
+  };
+
+  /**
+   * Resolves an input character to its rendered equivalent.
+   * Returns the original character if no alias exists.
+   * This method is called during text measurement and rendering
+   * to transparently map emojis to their bitmap symbol equivalents.
+   *
+   * Performance: O(1) object property lookup (~3-5ns)
+   *
+   * @param {string} char - Input character (may be emoji or regular character)
+   * @returns {string} Resolved character for rendering
+   * @static
+   */
+  static resolveCharacter(char) {
+    return CharacterSets.CHARACTER_ALIASES[char] ?? char;
+  }
+
+  /**
+   * Cached regex for string-level alias resolution.
+   * Built lazily on first use, reused for all subsequent calls.
+   * @type {RegExp|null}
+   * @private
+   */
+  static #aliasRegex = null;
+
+  /**
+   * Resolves all character aliases in a string using a single regex pass.
+   * Much faster than per-character resolution, especially for longer strings.
+   *
+   * Performance (100K iterations):
+   * - Short strings (11-31 chars): 2.6-5.1x faster than per-char
+   * - Long strings (900-1000 chars): 4-386x faster than per-char
+   *
+   * @param {string} text - Input text (may contain emojis)
+   * @returns {string} Text with all aliases resolved
+   * @static
+   */
+  static resolveString(text) {
+    // Fast path: no aliases defined
+    if (Object.keys(CharacterSets.CHARACTER_ALIASES).length === 0) {
+      return text;
+    }
+    // Build regex once, cache for reuse
+    if (!CharacterSets.#aliasRegex) {
+      const patterns = Object.keys(CharacterSets.CHARACTER_ALIASES).join('|');
+      CharacterSets.#aliasRegex = new RegExp(patterns, 'gu');
+    }
+    return text.replace(CharacterSets.#aliasRegex, m => CharacterSets.CHARACTER_ALIASES[m]);
+  }
+
+  // ============================================
   // Private Generator Methods
   // ============================================
 
   /**
-   * Generates the font-specific character set (204 characters).
+   * Generates the font-specific character set.
    * This includes ASCII printable characters, selected CP-1252 characters,
    * Latin-1 Supplement characters, and the Full Block character.
    *
    * Character composition:
    * - ASCII printable (32-126): 95 characters
-   * - Windows-1252 subset (CP-1252): 14 characters
-   * - Latin-1 Supplement (161-255, excluding soft hyphen 173): 94 characters
+   * - Windows-1252 subset (CP-1252) + Unicode extras: 12 characters
+   * - Latin-1 Supplement (161-255, excluding 26 rarely-used symbols): 69 characters
    * - Full Block character (█): 1 character
-   *
-   * Total: 204 characters
    *
    * @private
    * @static
@@ -693,25 +771,49 @@ class CharacterSets {
       //  8224, // † Dagger (CP-1252: 134)
       //  8225, // ‡ Double dagger (CP-1252: 135)
       //  710,  // ˆ Modifier letter circumflex accent (CP-1252: 136)
-      8240, // ‰ Per mille sign (CP-1252: 137)
+      // 8240, // ‰ U+2030 PER MILLE SIGN (CP-1252: 137) - REMOVED: rarely used
       //  352,  // Š Latin capital letter S with caron (CP-1252: 138)
-      8249, // ‹ Single left-pointing angle quotation (CP-1252: 139)
+
+      // If someone copy-pastes French quotation marks, that's on them.
+      // 8249, // ‹ U+2039 SINGLE LEFT-POINTING ANGLE QUOTATION MARK (CP-1252: 139) - REMOVED: rarely used
+
       //  338,  // Œ Latin capital ligature OE (CP-1252: 140)
       381,  // Ž Latin capital letter Z with caron (CP-1252: 142)
       //  8216, // ' Left single quotation mark (CP-1252: 145)
 
-      // UNFORTUNATELY SOMETIMES USED INSTEAD OF APOSTROPHE
+      // UNFORTUNATELY SOMETIMES USED INSTEAD OF APOSTROPHE AND VERY HARD TO
+      // DEBUG IF WE ENCOUNTER THIS ISSUE, LET'S KEEP IT
       8217, // ' ""curly apostrophe"" or "right single quotation mark" (CP-1252: 146)
 
       //  8220, // " Left double quotation mark (CP-1252: 147)
       //  8221, // " Right double quotation mark (CP-1252: 148)
       8226, // • Bullet (CP-1252: 149)
-      //  8211, // – En dash (CP-1252: 150)
-      8212, // — Em dash (CP-1252: 151)
+
+      // ============================================
+      // HYPHEN / DASH FAMILY - IMPORTANT FOR DEBUGGING
+      // ============================================
+      // These characters look nearly identical but have different Unicode code points.
+      // Including all of them prevents extremely hard-to-debug rendering issues when
+      // text is copy-pasted from different sources (Word, web, etc.).
+      //
+      // | Name        | Char | Unicode | Length            | Common Use                              | Frequency    |
+      // |-------------|------|---------|-------------------|-----------------------------------------|--------------|
+      // | Hyphen      | -    | U+002D  | short             | Compound words, line breaks, codes      | Very high    |
+      // | Minus sign  | −    | U+2212  | short/med (centered) | Math subtraction, equations          | Low (tech)   |
+      // | En dash     | –    | U+2013  | medium (≈ "N")    | Ranges (5–10), connections (London–Paris)| Moderate     |
+      // | Em dash     | —    | U+2014  | long (≈ "M")      | Breaks in thought, emphasis, asides     | High/rising  |
+      //
+      // Note: Hyphen (U+002D, code 45) is already included in ASCII printable (32-126).
+      8722, // − U+2212 MINUS SIGN - math subtraction (looks like hyphen but vertically centered)
+      8211, // – U+2013 EN DASH - ranges and connections (CP-1252: 150)
+      8212, // — U+2014 EM DASH - breaks in thought, emphasis (CP-1252: 151)
       //  732,  // ˜ Small tilde (CP-1252: 152)
-      8482, // ™ Trade mark sign (CP-1252: 153)
+      // 8482, // ™ Trade mark sign (CP-1252: 153)
       353,  // š Latin small letter s with caron (CP-1252: 154)
-      8250, // › Single right-pointing angle quotation mark (CP-1252: 155)
+
+      // If someone copy-pastes French quotation marks, that's on them.
+      // 8250, // › U+203A SINGLE RIGHT-POINTING ANGLE QUOTATION MARK (CP-1252: 155) - REMOVED: rarely used
+
       339,  // œ Latin small ligature oe (CP-1252: 156)
       382,  // ž Latin small letter z with caron (CP-1252: 158)
       376   // Ÿ Latin capital letter Y with diaeresis (CP-1252: 159)
@@ -723,9 +825,38 @@ class CharacterSets {
 
     // Latin-1 Supplement characters (161-255)
     // These are properly defined in UTF-8/Unicode
-    // Exclude U+00AD (173) - soft hyphen, which has zero width
+    // Excluded characters:
+    const latin1Exclusions = new Set([
+      173, // U+00AD - soft hyphen (zero width)
+      164, // U+00A4 ¤ - CURRENCY SIGN (rarely used generic currency symbol)
+      165, // U+00A5 ¥ - YEN SIGN (currency-specific)
+      166, // U+00A6 ¦ - BROKEN BAR (legacy character)
+      168, // U+00A8 ¨ - DIAERESIS (standalone modifier, not useful without base char)
+      169, // U+00A9 © - COPYRIGHT SIGN (use text "(c)" or proper legal formatting)
+      170, // U+00AA ª - FEMININE ORDINAL INDICATOR (Spanish/Portuguese specific)
+      171, // U+00AB « - LEFT-POINTING DOUBLE ANGLE QUOTATION MARK (use standard quotes)
+      172, // U+00AC ¬ - NOT SIGN (mathematical/logical, rarely used in text)
+      174, // U+00AE ® - REGISTERED SIGN (use text "(R)" or proper legal formatting)
+      175, // U+00AF ¯ - MACRON (standalone modifier, not useful without base char)
+      176, // U+00B0 ° - DEGREE SIGN (specialized symbol)
+      177, // U+00B1 ± - PLUS-MINUS SIGN (mathematical)
+      178, // U+00B2 ² - SUPERSCRIPT TWO (use proper superscript formatting)
+      179, // U+00B3 ³ - SUPERSCRIPT THREE (use proper superscript formatting)
+      180, // U+00B4 ´ - ACUTE ACCENT (standalone modifier, not useful without base char)
+      181, // U+00B5 µ - MICRO SIGN (use Greek mu or unit formatting)
+      184, // U+00B8 ¸ - CEDILLA (standalone modifier, not useful without base char)
+      185, // U+00B9 ¹ - SUPERSCRIPT ONE (use proper superscript formatting)
+      186, // U+00BA º - MASCULINE ORDINAL INDICATOR (Spanish/Portuguese specific)
+      187, // U+00BB » - RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK (use standard quotes)
+      188, // U+00BC ¼ - VULGAR FRACTION ONE QUARTER (use proper fraction formatting)
+      189, // U+00BD ½ - VULGAR FRACTION ONE HALF (use proper fraction formatting)
+      190, // U+00BE ¾ - VULGAR FRACTION THREE QUARTERS (use proper fraction formatting)
+      215, // U+00D7 × - MULTIPLICATION SIGN (use 'x' or proper math formatting)
+      247, // U+00F7 ÷ - DIVISION SIGN (use '/' or proper math formatting)
+    ]);
+
     for (let i = 161; i <= 255; i++) {
-      if (i !== 173) { // Skip soft hyphen
+      if (!latin1Exclusions.has(i)) {
         chars.push(String.fromCharCode(i));
       }
     }
@@ -792,8 +923,8 @@ class BitmapText {
   // Kerning unit divisor (kerning measured in 1/1000 em units)
   static KERNING_UNIT_DIVISOR = 1000;
 
-  // Minimum renderable font size (sizes < 8.5 use interpolated metrics from 8.5)
-  static MIN_RENDERABLE_SIZE = 8.5;
+  // Minimum renderable font size (sizes < 9 use interpolated metrics from 9)
+  static MIN_RENDERABLE_SIZE = 9;
 
   // Font asset naming conventions
   static METRICS_PREFIX = 'metrics-';
@@ -810,7 +941,7 @@ class BitmapText {
    * Uses string.includes() for ~1-2ns lookup performance
    *
    * @private
-   * @param {string} char - Character to check
+   * @param {string} char - Already-resolved character (caller must resolve aliases first)
    * @returns {boolean} True if character is font-invariant
    */
   static #isInvariantCharacter(char) {
@@ -957,7 +1088,7 @@ class BitmapText {
   /**
    * Check if font size requires minimum size redirection
    * @param {number} fontSize - Font size in CSS pixels
-   * @returns {boolean} True if size < 8.5 and should use interpolated metrics
+   * @returns {boolean} True if size < 9 and should use interpolated metrics
    * @private
    */
   static #shouldUseMinSize(fontSize) {
@@ -965,9 +1096,9 @@ class BitmapText {
   }
 
   /**
-   * Create FontProperties with minimum renderable size (8.5)
+   * Create FontProperties with minimum renderable size (9)
    * @param {FontProperties} fontProperties - Original font properties
-   * @returns {FontProperties} New FontProperties with size 8.5
+   * @returns {FontProperties} New FontProperties with size 9
    * @private
    */
   static #createFontPropsAtMinSize(fontProperties) {
@@ -981,19 +1112,19 @@ class BitmapText {
   }
 
   /**
-   * Create interpolated FontMetrics wrapper for sizes < 8.5
+   * Create interpolated FontMetrics wrapper for sizes < 9
    * Returns a wrapper object that interpolates all metric values proportionally
-   * @param {FontMetrics} metricsAt8_5 - Font metrics at size 8.5
-   * @param {number} targetSize - Desired font size (< 8.5)
+   * @param {FontMetrics} metricsAt9 - Font metrics at size 9
+   * @param {number} targetSize - Desired font size (< 9)
    * @returns {InterpolatedFontMetrics} Interpolated metrics wrapper with FontMetrics-compatible interface
    * @private
    */
-  static #createInterpolatedFontMetrics(metricsAt8_5, targetSize) {
-    return new InterpolatedFontMetrics(metricsAt8_5, targetSize);
+  static #createInterpolatedFontMetrics(metricsAt9, targetSize) {
+    return new InterpolatedFontMetrics(metricsAt9, targetSize);
   }
 
   /**
-   * Redirect idString for sizes < 8.5 to size 8.5
+   * Redirect idString for sizes < 9 to size 9
    * @param {string} idString - Original font ID string
    * @param {boolean} silent - If true, suppress console warning
    * @returns {{redirected: boolean, idString: string, originalSize: number}} Redirection result
@@ -1140,16 +1271,16 @@ class BitmapText {
     // Check if FontMetrics exists at all
     let fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
 
-    // If metrics not found and size < 8.5, try interpolating from size 8.5
+    // If metrics not found and size < 9, try interpolating from size 9
     if (!fontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const minSizeProps = BitmapText.#createFontPropsAtMinSize(fontProperties);
-      const metricsAt8_5 = FontMetricsStore.getFontMetrics(minSizeProps);
+      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
 
-      if (metricsAt8_5) {
+      if (metricsAt9) {
         // Create interpolated metrics wrapper
-        fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt8_5, fontProperties.fontSize);
+        fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
       } else {
-        // Even 8.5 metrics don't exist
+        // Even 9px metrics don't exist
         return {
           metrics: null,
           status: createErrorStatus(StatusCode.NO_METRICS, {
@@ -1178,23 +1309,28 @@ class BitmapText {
     // PRE-FETCH font-invariant font data
     let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If font-invariant font not found and size < 8.5, try interpolating from size 8.5
+    // If font-invariant font not found and size < 9, try interpolating from size 9
     if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt8_5 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
+      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
 
-      if (invariantMetricsAt8_5) {
+      if (invariantMetricsAt9) {
         // Create interpolated metrics wrapper for font-invariant font
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt8_5, fontProperties.fontSize);
+        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
       }
     }
 
     const hasInvariantFont = invariantFontMetrics !== null;
 
-    // Scan text for missing glyphs (excluding spaces which are handled specially)
+    // Resolve all character aliases upfront using fast regex pass
+    // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
+    const resolvedText = CharacterSets.resolveString(text);
+    const chars = [...resolvedText];
+
+    // Scan for missing glyphs (excluding spaces which are handled specially)
     // Check each character against the appropriate font (base or font-invariant)
     const missingChars = new Set();
-    for (const char of text) {
+    for (const char of chars) {
       if (char !== ' ') {
         // Determine which font should handle this character
         const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
@@ -1217,15 +1353,17 @@ class BitmapText {
     }
 
     // SUCCESS PATH: Calculate metrics normally
-    const chars = [...text];
     let width_CssPx = 0;
 
+    // First character (already resolved)
+    const firstChar = chars[0];
+
     // Determine font for first character
-    const firstCharIsInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(chars[0]);
+    const firstCharIsInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(firstChar);
     let currentFontMetrics = firstCharIsInvariant ? invariantFontMetrics : fontMetrics;
     let currentFontProps = firstCharIsInvariant ? invariantFontProps : fontProperties;
 
-    let characterMetrics = currentFontMetrics.getCharacterMetrics(chars[0]);
+    let characterMetrics = currentFontMetrics.getCharacterMetrics(firstChar);
     const actualBoundingBoxLeft_CssPx = characterMetrics.actualBoundingBoxLeft;
     let actualBoundingBoxAscent = 0;
     let actualBoundingBoxDescent = 0;
@@ -1321,13 +1459,13 @@ class BitmapText {
     let fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
     let forceInvalidAtlas = false;
 
-    // For sizes < 8.5, always use interpolated metrics from 8.5 and force placeholder mode
+    // For sizes < 9, always use interpolated metrics from 9 and force placeholder mode
     if (BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const minSizeProps = BitmapText.#createFontPropsAtMinSize(fontProperties);
-      const metricsAt8_5 = FontMetricsStore.getFontMetrics(minSizeProps);
+      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
 
-      if (!metricsAt8_5) {
-        // Size 8.5 metrics don't exist - can't render
+      if (!metricsAt9) {
+        // Size 9 metrics don't exist - can't render
         return {
           rendered: false,
           status: createErrorStatus(StatusCode.NO_METRICS, {
@@ -1339,8 +1477,8 @@ class BitmapText {
       }
 
       // Create interpolated metrics wrapper and force placeholder mode
-      fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt8_5, fontProperties.fontSize);
-      forceInvalidAtlas = true; // Always use placeholders for sizes < 8.5
+      fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
+      forceInvalidAtlas = true; // Always use placeholders for sizes < 9
     } else if (!fontMetrics) {
       // Normal size but metrics not found
       return {
@@ -1362,23 +1500,28 @@ class BitmapText {
     // PRE-FETCH font-invariant font data ONCE
     let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If font-invariant font not found and size < 8.5, try interpolating from size 8.5
+    // If font-invariant font not found and size < 9, try interpolating from size 9
     if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt8_5 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
+      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
 
-      if (invariantMetricsAt8_5) {
+      if (invariantMetricsAt9) {
         // Create interpolated metrics wrapper for font-invariant font
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt8_5, fontProperties.fontSize);
+        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
       }
     }
 
     const hasInvariantFont = invariantFontMetrics !== null;
 
+    // Resolve all character aliases upfront using fast regex pass
+    // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
+    const resolvedText = CharacterSets.resolveString(text);
+    const chars = [...resolvedText];
+
     // Scan for missing metrics (can't render without metrics)
     // Check each character against the appropriate font (base or font-invariant)
     const missingMetricsChars = new Set();
-    for (const char of text) {
+    for (const char of chars) {
       if (char !== ' ') {
         // Determine which font should handle this character
         const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
@@ -1399,7 +1542,7 @@ class BitmapText {
       };
     }
 
-    // Check atlas data availability (force invalid for sizes < 8.5)
+    // Check atlas data availability (force invalid for sizes < 9)
     let atlasData = forceInvalidAtlas ? null : AtlasDataStore.getAtlasData(fontProperties);
     const atlasValid = forceInvalidAtlas ? false : BitmapText.#isValidAtlas(atlasData);
 
@@ -1427,9 +1570,6 @@ class BitmapText {
     // 3. No double-scaling when users apply ctx.scale(dpr, dpr)
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);  // Reset to identity matrix
-
-    // Render text
-    const chars = [...text];
     const textColor = textProperties.textColor;
 
     // BASELINE SUPPORT: Convert user's y from their chosen baseline to 'bottom' baseline
@@ -1482,6 +1622,7 @@ class BitmapText {
       // Skip character-by-character loop for colored text
     } else {
       // Black text or invalid atlas: use character-by-character rendering
+      // Note: chars array is already resolved (emojis→symbols) from resolvedText
       for (let i = 0; i < chars.length; i++) {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
@@ -1602,8 +1743,8 @@ class BitmapText {
     // maintaining precision in the stored kerning values.
     x_CssPx -= fontProperties.fontSize * kerningCorrection / BitmapText.KERNING_UNIT_DIVISOR;
 
-    // For interpolated metrics (sizes < 8.5), preserve float precision for linear scaling
-    // For normal metrics (sizes ≥ 8.5), round to integers for crisp pixel-aligned rendering
+    // For interpolated metrics (sizes < 9), preserve float precision for linear scaling
+    // For normal metrics (sizes ≥ 9), round to integers for crisp pixel-aligned rendering
     if (fontMetrics.isInterpolatedMetrics) {
       return x_CssPx;  // Float positioning for placeholder rectangles
     } else {
@@ -1867,6 +2008,7 @@ class BitmapText {
       y: baselineY_PhysPx
     };
 
+    // Note: chars array is already resolved (emojis→symbols) from caller
     for (let i = 0; i < chars.length; i++) {
       const currentChar = chars[i];
       const nextChar = chars[i + 1];
@@ -2143,7 +2285,7 @@ class BitmapText {
    */
   static async loadFont(idString, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5
+    // Redirect sizes < 9 to size 9
     const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
     return BitmapText.#fontLoader.loadFont(redirection.idString, options, BitmapText);
   }
@@ -2160,7 +2302,7 @@ class BitmapText {
    */
   static async loadFonts(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    // Redirect sizes < 9 to size 9 for all idStrings
     const redirectedIdStrings = idStrings.map(idString => {
       const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
       return redirection.idString;
@@ -2176,7 +2318,7 @@ class BitmapText {
    */
   static async loadMetrics(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    // Redirect sizes < 9 to size 9 for all idStrings
     const redirectedIdStrings = idStrings.map(idString => {
       const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
       return redirection.idString;
@@ -2192,7 +2334,7 @@ class BitmapText {
    */
   static async loadAtlases(idStrings, options = {}) {
     BitmapText.#ensureFontLoader();
-    // Redirect sizes < 8.5 to size 8.5 for all idStrings
+    // Redirect sizes < 9 to size 9 for all idStrings
     const redirectedIdStrings = idStrings.map(idString => {
       const redirection = BitmapText.#redirectIdStringIfNeeded(idString);
       return redirection.idString;
@@ -2312,7 +2454,7 @@ class BitmapText {
 
   /**
    * Check if font is fully loaded (both metrics and atlas)
-   * For sizes < 8.5, checks if size 8.5 metrics exist (atlas always false for < 8.5)
+   * For sizes < 9, checks if size 9 metrics exist (atlas always false for < 9)
    * @param {string} idString - Font ID string
    * @returns {boolean} True if both metrics and atlas are loaded
    */
@@ -2322,12 +2464,12 @@ class BitmapText {
 
   /**
    * Check if metrics are loaded for a font
-   * For sizes < 8.5, checks if size 8.5 metrics exist
+   * For sizes < 9, checks if size 9 metrics exist
    * @param {string} idString - Font ID string
    * @returns {boolean} True if metrics are loaded
    */
   static hasMetrics(idString) {
-    // Redirect sizes < 8.5 to check for 8.5 metrics (silent to avoid log spam)
+    // Redirect sizes < 9 to check for 9 metrics (silent to avoid log spam)
     const redirection = BitmapText.#redirectIdStringIfNeeded(idString, true);
     const fontProperties = FontProperties.fromIDString(redirection.idString);
     return FontMetricsStore.hasFontMetrics(fontProperties);
@@ -2335,14 +2477,14 @@ class BitmapText {
 
   /**
    * Check if atlas is loaded for a font
-   * For sizes < 8.5, always returns false (these sizes use placeholder mode)
+   * For sizes < 9, always returns false (these sizes use placeholder mode)
    * @param {string} idString - Font ID string
    * @returns {boolean} True if atlas is loaded
    */
   static hasAtlas(idString) {
     const fontProperties = FontProperties.fromIDString(idString);
 
-    // Sizes < 8.5 never have atlases (always use placeholder mode)
+    // Sizes < 9 never have atlases (always use placeholder mode)
     if (BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
       return false;
     }
@@ -2575,7 +2717,7 @@ class MetricsExpander {
         spaceAdvancementOverrideForSmallSizesInPx: s
       };
     } else {
-      // Standard 204-character font: use full decompression
+      // Standard character font: use full decompression
       // Convert integer values back to floats (divide by 10000)
       kv = this.#convertIntegersToValues(kv);
 
