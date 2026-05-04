@@ -67,15 +67,15 @@ if [ ! -d "$DIRECTORY" ]; then
     exit 1
 fi
 
-# Find all atlas PNG files
-PNG_FILES=($(find "$DIRECTORY" -maxdepth 1 -name "atlas-*.png" -type f))
+# Count atlas PNG files (use NUL-delimited find to handle filenames with spaces)
+NUM_PNG_FILES=$(find "$DIRECTORY" -maxdepth 1 -name "atlas-*.png" -type f -print0 | tr -cd '\0' | wc -c | tr -d ' ')
 
-if [ ${#PNG_FILES[@]} -eq 0 ]; then
+if [ "$NUM_PNG_FILES" -eq 0 ]; then
     log_warning "No atlas-*.png files found in $DIRECTORY"
     exit 0
 fi
 
-log_info "Found ${#PNG_FILES[@]} PNG file(s) to convert"
+log_info "Found ${NUM_PNG_FILES} PNG file(s) to convert"
 echo ""
 
 # Statistics
@@ -84,8 +84,9 @@ TOTAL_WEBP_SIZE=0
 CONVERTED=0
 FAILED=0
 
-# Convert each PNG to WebP
-for PNG_FILE in "${PNG_FILES[@]}"; do
+# Convert each PNG to WebP (NUL-delimited to preserve spaces in filenames; process
+# substitution keeps the loop in the parent shell so counters propagate)
+while IFS= read -r -d '' PNG_FILE; do
     BASENAME=$(basename "$PNG_FILE" .png)
     WEBP_FILE="${DIRECTORY}/${BASENAME}.webp"
 
@@ -145,7 +146,7 @@ for PNG_FILE in "${PNG_FILES[@]}"; do
     fi
 
     echo ""
-done
+done < <(find "$DIRECTORY" -maxdepth 1 -name "atlas-*.png" -type f -print0)
 
 # Final statistics
 echo "=================================================="

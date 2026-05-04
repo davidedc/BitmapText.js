@@ -383,39 +383,58 @@ async function buildFonts() {
     });
     console.log('');
 
-    // Step 2: Partition fontSets into batches based on font counts
+    // Step 2: Partition fontSets into batches based on font counts.
+    // FontSets that fit within batchSize are grouped together. Oversized fontSets
+    // are auto-chunked into multiple single-set batches with skip/take subranges,
+    // so that a page reload happens between sub-ranges to relieve WebKit's
+    // per-process 2D-canvas backing-store pressure.
     const batches = [];
     let currentBatch = { fontSets: [], totalCount: 0, setIndices: [] };
 
-    for (const sc of setCounts) {
-      // Check if adding this set would exceed limit
-      if (currentBatch.totalCount + sc.count > config.batchSize && currentBatch.fontSets.length > 0) {
+    const flushCurrentBatch = () => {
+      if (currentBatch.fontSets.length > 0) {
         batches.push(currentBatch);
         currentBatch = { fontSets: [], totalCount: 0, setIndices: [] };
       }
+    };
 
-      // Check if single set exceeds limit (error case)
+    for (const sc of setCounts) {
+      // Oversized single fontSet: flush current batch, then emit one batch per chunk
       if (sc.count > config.batchSize) {
-        throw new Error(
-          `FontSet "${sc.name}" generates ${sc.count} fonts, ` +
-          `which exceeds batch limit of ${config.batchSize}. ` +
-          `Please split this fontSet into smaller sets or increase --batch-size.`
-        );
+        flushCurrentBatch();
+
+        const numChunks = Math.ceil(sc.count / config.batchSize);
+        for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
+          const skip = chunkIdx * config.batchSize;
+          const take = Math.min(config.batchSize, sc.count - skip);
+          batches.push({
+            fontSets: [fontSpec.fontSets[sc.index]],
+            totalCount: take,
+            setIndices: [sc.index],
+            skip,
+            take,
+            chunkLabel: `${sc.name} (chunk ${chunkIdx + 1}/${numChunks}, fonts ${skip + 1}-${skip + take})`
+          });
+        }
+        continue;
+      }
+
+      // Normal-sized set: pack into current batch (flush if it would overflow)
+      if (currentBatch.totalCount + sc.count > config.batchSize && currentBatch.fontSets.length > 0) {
+        flushCurrentBatch();
       }
 
       currentBatch.fontSets.push(fontSpec.fontSets[sc.index]);
       currentBatch.totalCount += sc.count;
       currentBatch.setIndices.push(sc.index);
     }
-
-    // Add final batch
-    if (currentBatch.fontSets.length > 0) {
-      batches.push(currentBatch);
-    }
+    flushCurrentBatch();
 
     console.log(`📦 Split into ${batches.length} batch(es):`);
     batches.forEach((batch, idx) => {
-      console.log(`   Batch ${idx + 1}: ${batch.totalCount} fonts (sets: ${batch.setIndices.map(i => setCounts[i].name).join(', ')})`);
+      const label = batch.chunkLabel
+        || `sets: ${batch.setIndices.map(i => setCounts[i].name).join(', ')}`;
+      console.log(`   Batch ${idx + 1}: ${batch.totalCount} fonts (${label})`);
     });
     console.log('');
 
@@ -435,13 +454,20 @@ async function buildFonts() {
         console.log(`⏳ Processing batch ${batchNum}/${batches.length} (${batch.totalCount} fonts)...`);
         console.log('─'.repeat(60));
 
-        // Generate fonts for this batch
+        // Generate fonts for this batch (with optional skip/take for chunked oversized sets)
         const batchSpec = { fontSets: batch.fontSets };
-        const zipBase64 = await page.evaluate(async ({ spec, includeFullMetrics }) => {
+        const zipBase64 = await page.evaluate(async ({ spec, includeFullMetrics, skip, take }) => {
           return await window.buildAndExportFonts(spec, {
-            includeNonMinifiedMetrics: includeFullMetrics
+            includeNonMinifiedMetrics: includeFullMetrics,
+            skip,
+            take
           });
-        }, { spec: batchSpec, includeFullMetrics: config.includeFullMetrics });
+        }, {
+          spec: batchSpec,
+          includeFullMetrics: config.includeFullMetrics,
+          skip: batch.skip,
+          take: batch.take
+        });
 
         // Validate received data
         if (!zipBase64 || typeof zipBase64 !== 'string') {
@@ -464,17 +490,18 @@ async function buildFonts() {
           await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
 
           // Verify BitmapText is fully initialized after reload
-          // This ensures static fields (CHARACTER_SET, FONT_INVARIANT_CHARS) are ready
+          // This ensures CharacterSets static fields (FONT_SPECIFIC_CHARS, FONT_INVARIANT_CHARS) are ready
           const isReady = await page.evaluate(() => ({
             bitmapTextReady: window.bitmapTextReady,
             hasBitmapText: typeof window.BitmapText !== 'undefined',
-            hasCharacterSet: !!window.BitmapText?.CHARACTER_SET,
-            hasFontInvariantChars: !!window.BitmapText?.FONT_INVARIANT_CHARS
+            hasCharacterSets: typeof window.CharacterSets !== 'undefined',
+            hasFontSpecificChars: !!window.CharacterSets?.FONT_SPECIFIC_CHARS,
+            hasFontInvariantChars: !!window.CharacterSets?.FONT_INVARIANT_CHARS
           }));
 
-          if (!isReady.bitmapTextReady || !isReady.hasBitmapText || !isReady.hasCharacterSet || !isReady.hasFontInvariantChars) {
+          if (!isReady.bitmapTextReady || !isReady.hasBitmapText || !isReady.hasCharacterSets || !isReady.hasFontSpecificChars || !isReady.hasFontInvariantChars) {
             console.error('❌ BitmapText not ready after reload:', isReady);
-            throw new Error(`BitmapText initialization failed after reload. Ready: ${isReady.bitmapTextReady}, Class on window: ${isReady.hasBitmapText}, CHARACTER_SET: ${isReady.hasCharacterSet}, FONT_INVARIANT_CHARS: ${isReady.hasFontInvariantChars}`);
+            throw new Error(`BitmapText initialization failed after reload. Ready: ${isReady.bitmapTextReady}, BitmapText: ${isReady.hasBitmapText}, CharacterSets: ${isReady.hasCharacterSets}, FONT_SPECIFIC_CHARS: ${isReady.hasFontSpecificChars}, FONT_INVARIANT_CHARS: ${isReady.hasFontInvariantChars}`);
           }
 
           console.log('✅ Page ready with BitmapText initialized');

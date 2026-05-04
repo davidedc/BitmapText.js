@@ -58,14 +58,21 @@ async function buildFont(fontProperties) {
  * @param {Object} fontSetSpec - Font set specification (JSON format)
  * @param {Function} progressCallback - Called with (current, total, idString) for each font
  */
-async function processFontSet(fontSetSpec, progressCallback) {
+async function processFontSet(fontSetSpec, progressCallback, options = {}) {
+  const skip = options.skip || 0;
+  const take = (options.take === undefined || options.take === null) ? Infinity : options.take;
+
   console.log('\n=== Processing Font Set ===');
 
   // Create generator from spec
   const generator = new FontSetGenerator(fontSetSpec);
-  const total = generator.getCount();
+  const generatorTotal = generator.getCount();
+  const effectiveTotal = Math.min(take, Math.max(0, generatorTotal - skip));
 
-  console.log(`Total font configurations: ${total}`);
+  console.log(`Total font configurations in spec: ${generatorTotal}`);
+  if (skip > 0 || take !== Infinity) {
+    console.log(`Building subrange: skip=${skip}, take=${take === Infinity ? 'all' : take} (effective=${effectiveTotal})`);
+  }
 
   // Get set info for reporting
   const setsInfo = generator.getSetsInfo();
@@ -76,14 +83,23 @@ async function processFontSet(fontSetSpec, progressCallback) {
 
   console.log('\nBuilding fonts...\n');
 
-  // Iterate through all font configurations
-  let current = 0;
+  // Iterate through all font configurations, honoring skip/take
+  let iterIndex = 0;
+  let built = 0;
   for (const fontProps of generator.iterator()) {
-    current++;
+    if (iterIndex < skip) {
+      iterIndex++;
+      continue;
+    }
+    if (built >= take) {
+      break;
+    }
+    iterIndex++;
+    built++;
 
-    // Report progress
+    // Report progress (relative to this subrange, not the whole spec)
     if (progressCallback) {
-      progressCallback(current, total, fontProps.idString);
+      progressCallback(built, effectiveTotal, fontProps.idString);
     }
 
     // Build this font
@@ -91,12 +107,12 @@ async function processFontSet(fontSetSpec, progressCallback) {
 
     // Allow browser to breathe (prevent UI freeze, though we have no UI)
     // This also helps with memory management
-    if (current % 10 === 0) {
+    if (built % 10 === 0) {
       await new Promise(resolve => setTimeout(resolve, 0));
     }
   }
 
-  console.log(`\n✓ Completed building ${total} font configurations`);
+  console.log(`\n✓ Completed building ${built} font configurations`);
 }
 
 /**
@@ -121,7 +137,7 @@ async function buildAndExportFonts(fontSetSpec, exportOptions = {}) {
     // (necessary because spec comes from Playwright page.evaluate serialization)
     const reconstructedSpec = JSON.parse(JSON.stringify(fontSetSpec));
 
-    // 3. Process all fonts in the set
+    // 3. Process all fonts in the set (honoring optional skip/take subrange)
     await processFontSet(reconstructedSpec, (current, total, idString) => {
       // Report progress as structured JSON for Playwright to parse
       const percent = (current / total * 100).toFixed(1);
@@ -137,7 +153,7 @@ async function buildAndExportFonts(fontSetSpec, exportOptions = {}) {
 
       // Also log human-readable version
       console.log(`[${current}/${total}] ${percent}% - ${idString}`);
-    });
+    }, { skip: exportOptions.skip, take: exportOptions.take });
 
     // 4. Export all fonts to .zip
     console.log('\n=== Exporting Font Assets ===');
