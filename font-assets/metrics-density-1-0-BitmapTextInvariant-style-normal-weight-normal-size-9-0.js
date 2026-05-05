@@ -1,1 +1,0 @@
-BitmapText.r(1,"BitmapTextInvariant",0,0,9,[[],{},[7,3,7.4927,0,-2.7026,1],"ALgCnAy4At4fuAK65AKaDKytAeiZAc4kxBOMEYwRvgZs9AG0Bdw1qgeKEaLvAQ==","HgIsDyICFgseAhoHHgIcBR4CGAciAiYDHgIkCSInHh8iKR4bHiseGR4NIhMiEQ==","AgcICQMKAA0ACwEEDAEOBQYP",null,0]);

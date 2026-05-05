@@ -16,3 +16,9 @@ hello-world-multi-size-output.png
 test-simple.html
 test-simple.png
 aa-rebuild-output/
+
+# font-assets/ contents are distributed via GitHub Releases (see font-assets/README.md).
+# Only the directory marker + README are tracked; the asset bytes are not.
+font-assets/*
+!font-assets/.gitkeep
+!font-assets/README.md
