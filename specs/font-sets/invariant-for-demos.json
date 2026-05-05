@@ -1,0 +1,12 @@
+{
+  "fontSets": [
+    {
+      "name": "BitmapTextInvariant — DPR 1+2, sizes 9–96 step 0.5",
+      "density": [1, 2],
+      "families": ["BitmapTextInvariant"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[9, 96, 0.5]]
+    }
+  ]
+}

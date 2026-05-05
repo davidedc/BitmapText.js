@@ -1,0 +1,12 @@
+{
+  "fontSets": [
+    {
+      "name": "Arial / Courier New / Times New Roman — normal+italic, normal+bold, DPR 1+2, sizes 9–96 step 0.5",
+      "density": [1, 2],
+      "families": ["Arial", "Courier New", "Times New Roman"],
+      "styles": ["normal", "italic"],
+      "weights": ["normal", "bold"],
+      "sizes": [[9, 96, 0.5]]
+    }
+  ]
+}
