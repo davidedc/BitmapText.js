@@ -187,7 +187,9 @@ function mergeZips(batchPaths, outputPath) {
     for (let i = 0; i < batchPaths.length; i++) {
       const batchPath = batchPaths[i];
       console.log(`   Extracting batch ${i + 1}/${batchPaths.length}...`);
-      execSync(`unzip -q "${batchPath}" -d "${mergeTempDir}"`, {
+      // -o overwrite without prompting; identical files (e.g. metrics-bundle.js)
+      // recur in every batch and the prompt would otherwise block the merge.
+      execSync(`unzip -oq "${batchPath}" -d "${mergeTempDir}"`, {
         stdio: 'pipe'
       });
     }
