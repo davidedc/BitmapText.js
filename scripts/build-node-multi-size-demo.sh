@@ -237,6 +237,22 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/AtlasDataStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
+# Concatenate MetricsBundleStore (before FontMetricsStore which depends on it)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// METRICS BUNDLE STORE" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/MetricsBundleStore.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate MetricsBundleDecoder (before FontLoaderBase which depends on it)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// METRICS BUNDLE DECODER" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/MetricsBundleDecoder.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
 # Concatenate FontMetricsStore (before BitmapText)
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// FONT METRICS STORE" >> "$OUTPUT_FILE"

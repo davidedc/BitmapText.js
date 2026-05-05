@@ -354,64 +354,13 @@ function run_js_conversion() {
     fi
 }
 
-function generate_font_registry() {
-    log "INFO" "Generating font registry for test-renderer..."
-
-    if node "$PROJECT_ROOT/scripts/generate-font-registry.js"; then
-        log "SUCCESS" "Font registry generation completed"
-        return 0
-    else
-        log "WARNING" "Font registry generation failed"
-        return 1
-    fi
-}
-
 function run_terser_minification() {
-    log "INFO" "Minifying JS files with terser (metrics + atlases)..."
+    log "INFO" "Minifying atlas JS files with terser..."
 
-    # Track metrics separately
-    local metrics_count=0
-    local metrics_before=0
-    local metrics_after=0
-
-    # Track atlases separately
     local atlas_count=0
     local atlas_before=0
     local atlas_after=0
 
-    # Process metrics files
-    log "INFO" "Processing metrics files..."
-    local metrics_files=$(find "$DATA_DIR" -name "metrics-density-*.js" ! -name "*-full.js" -type f)
-
-    if [ -n "$metrics_files" ]; then
-        while IFS= read -r file; do
-            if [ -f "$file" ]; then
-                local before_size=$(wc -c < "$file")
-                local temp_file="${file}.tmp"
-
-                # Run terser: minify in-place with compact output
-                if terser "$file" -c -m -o "$temp_file" 2>/dev/null; then
-                    local after_size=$(wc -c < "$temp_file")
-                    mv "$temp_file" "$file"
-
-                    local saved=$((before_size - after_size))
-                    log "SUCCESS" "METRICS: $(basename "$file"): ${before_size} → ${after_size} bytes (saved ${saved} bytes)"
-
-                    metrics_count=$((metrics_count + 1))
-                    metrics_before=$((metrics_before + before_size))
-                    metrics_after=$((metrics_after + after_size))
-                else
-                    log "WARNING" "Failed to minify metrics file: $(basename "$file")"
-                    rm -f "$temp_file"
-                fi
-            fi
-        done <<< "$metrics_files"
-    else
-        log "WARNING" "No metrics files found to minify"
-    fi
-
-    # Process atlas files (both webp and qoi variants)
-    log "INFO" "Processing atlas files..."
     local atlas_files=$(find "$DATA_DIR" \( -name "atlas-density-*-webp.js" -o -name "atlas-density-*-qoi.js" \) -type f)
 
     if [ -n "$atlas_files" ]; then
@@ -420,7 +369,6 @@ function run_terser_minification() {
                 local before_size=$(wc -c < "$file")
                 local temp_file="${file}.tmp"
 
-                # Run terser: minify in-place with compact output
                 if terser "$file" -c -m -o "$temp_file" 2>/dev/null; then
                     local after_size=$(wc -c < "$temp_file")
                     mv "$temp_file" "$file"
@@ -441,24 +389,9 @@ function run_terser_minification() {
         log "WARNING" "No atlas files found to minify"
     fi
 
-    # Summary statistics
-    local total_count=$((metrics_count + atlas_count))
-    local total_before=$((metrics_before + atlas_before))
-    local total_after=$((metrics_after + atlas_after))
-    local total_saved=$((total_before - total_after))
-
-    if [ $total_count -gt 0 ]; then
-        log "SUCCESS" "═══════════════════════════════════════════════════"
-        if [ $metrics_count -gt 0 ]; then
-            local metrics_saved=$((metrics_before - metrics_after))
-            log "SUCCESS" "Metrics: ${metrics_count} file(s), saved ${metrics_saved} bytes"
-        fi
-        if [ $atlas_count -gt 0 ]; then
-            local atlas_saved=$((atlas_before - atlas_after))
-            log "SUCCESS" "Atlases: ${atlas_count} file(s), saved ${atlas_saved} bytes"
-        fi
-        log "SUCCESS" "Total: ${total_count} file(s), ${total_before} → ${total_after} bytes (saved ${total_saved} bytes)"
-        log "SUCCESS" "═══════════════════════════════════════════════════"
+    if [ $atlas_count -gt 0 ]; then
+        local atlas_saved=$((atlas_before - atlas_after))
+        log "SUCCESS" "Atlases: ${atlas_count} file(s), ${atlas_before} → ${atlas_after} bytes (saved ${atlas_saved} bytes)"
         return 0
     else
         log "WARNING" "No files were minified"
@@ -507,17 +440,12 @@ function process_font_assets() {
         log "WARNING" "Image to JS conversion failed, but continuing..."
     fi
 
-    # Step 8: Minify metrics files with terser
+    # Step 8: Minify atlas JS files with terser
     if ! run_terser_minification; then
         log "WARNING" "Terser minification failed, but continuing..."
     fi
 
-    # Step 9: Generate font registry
-    if ! generate_font_registry; then
-        log "WARNING" "Font registry generation failed, but continuing..."
-    fi
-
-    # Step 10: Move zip to trash
+    # Step 9: Move zip to trash
     move_zip_to_trash
 
     log "SUCCESS" "Font assets processing pipeline completed!"

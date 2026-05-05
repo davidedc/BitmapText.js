@@ -41,6 +41,8 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/TightAtlasReconstructor.js"
   "$LIB_DIR/QOIDecode.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
+  "$SRC_DIR/runtime/MetricsBundleStore.js"
+  "$SRC_DIR/runtime/MetricsBundleDecoder.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontLoaderBase.js"
   "$SRC_DIR/platform/FontLoader-node.js"
@@ -230,6 +232,22 @@ echo "// ATLAS DATA STORE" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/AtlasDataStore.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate MetricsBundleStore (before FontMetricsStore which depends on it)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// METRICS BUNDLE STORE" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/MetricsBundleStore.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate MetricsBundleDecoder (before FontLoaderBase which depends on it)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// METRICS BUNDLE DECODER" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/MetricsBundleDecoder.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontMetricsStore (before BitmapText)

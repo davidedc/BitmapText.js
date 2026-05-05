@@ -81,6 +81,8 @@ COMMON_FILES=(
   "$SRC_DIR/utils/AtlasCellDimensions.js"
   "$SRC_DIR/runtime/TightAtlasReconstructor.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
+  "$SRC_DIR/runtime/MetricsBundleStore.js"
+  "$SRC_DIR/runtime/MetricsBundleDecoder.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontManifest.js"
   "$SRC_DIR/runtime/FontLoaderBase.js"
@@ -210,6 +212,8 @@ if (typeof global !== 'undefined') {
   global.AtlasDataStore = AtlasDataStore;
   global.FontMetricsStore = FontMetricsStore;
   global.FontManifest = FontManifest;
+  global.MetricsBundleStore = MetricsBundleStore;
+  global.MetricsBundleDecoder = MetricsBundleDecoder;
   global.QOIDecode = QOIDecode;
 }
 NODEJS_FOOTER

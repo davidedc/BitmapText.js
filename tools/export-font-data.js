@@ -1,3 +1,29 @@
+// Helper: deflate-raw + base64 encode a string in the browser using CompressionStream.
+async function _deflateRawBase64InBrowser(jsonString) {
+    const u8 = new TextEncoder().encode(jsonString);
+    const cs = new Response(u8).body.pipeThrough(new CompressionStream('deflate-raw'));
+    const compressed = new Uint8Array(await new Response(cs).arrayBuffer());
+    // base64 in chunks to avoid stack overflow on very large inputs.
+    const CHUNK = 0x8000;
+    let binary = '';
+    for (let i = 0; i < compressed.length; i += CHUNK) {
+        binary += String.fromCharCode.apply(null, compressed.subarray(i, i + CHUNK));
+    }
+    return btoa(binary);
+}
+
+// Helper: drop pixelDensity from baseline[5]. Bundle records are density-agnostic;
+// the runtime injects pixelDensity at MetricsExpander.expand time.
+function _stripDensityFromBaseline(minified) {
+    const baseline = minified[2];
+    if (!Array.isArray(baseline) || baseline.length !== 6) {
+        throw new Error(`Expected 6-element baseline, got ${baseline?.length}`);
+    }
+    const out = minified.slice();
+    out[2] = [baseline[0], baseline[1], baseline[2], baseline[3], baseline[4], null];
+    return out;
+}
+
 function downloadFontAssets(options) {
     const {
         pixelDensity,
@@ -87,6 +113,11 @@ function downloadFontAssets(options) {
         return Promise.reject(new Error('No fonts available to export'));
     }
 
+
+    // Collect density-agnostic minified records here. We emit one
+    // `font-assets/metrics-bundle.js` at the end of the loop holding all of them.
+    // Map keyed by `family|styleIdx|weightIdx|size`.
+    const bundleRecords = new Map();
 
     fontsToExport.forEach(fontConfig => {
         // Create FontPropertiesFAB for this specific font configuration
@@ -297,33 +328,52 @@ function downloadFontAssets(options) {
         const styleIdx = styleFromID === 'normal' ? 0 : (styleFromID === 'italic' ? 1 : 2);
         const weightIdx = weightFromID === 'normal' ? 0 : (weightFromID === 'bold' ? 1 : weightFromID);
 
-        // Add minified metrics JS file to zip (only contains metrics, no atlas positioning)
-        // TIER 1 OPTIMIZATION: Comments removed, wrapper minified for smaller file size
-        // TIER 6b OPTIMIZATION: Use 'r' shorthand with multi-parameter format (saves ~10 bytes)
-        // TIER 7 OPTIMIZATION: Remove safety checks - assume BitmapText exists (private library, saves ~46 bytes)
-        folder.file(
-            `metrics-${IDString}.js`,
-            `BitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(minified)})`,
-            { date: currentDate }
-        );
-
-        // Optionally add non-minified metrics file for debugging/development
-        if (includeNonMinifiedMetrics) {
-            folder.file(
-                `metrics-${IDString}-full.js`,
-                `// Full non-minified metrics for debugging\n// This file is NOT used by the runtime - it's for development/inspection only\nBitmapText.r(${density},'${fontFamilyFromID}',${styleIdx},${weightIdx},${sizeStr},${JSON.stringify(metricsData, null, 2)})`,
-                { date: currentDate }
-            );
-            console.log(`✅ Added non-minified metrics file: metrics-${IDString}-full.js`);
+        // Stash this minified record in the bundle accumulator. The bundle is
+        // density-agnostic — different densities of the same (family,style,weight,size)
+        // collapse to one record (only `pixelDensity` differs and the runtime injects
+        // it at MetricsExpander.expand time).
+        const sizeNum = parseFloat(sizeStr);
+        const bundleKey = `${fontFamilyFromID}|${styleIdx}|${weightIdx}|${sizeNum}`;
+        if (!bundleRecords.has(bundleKey)) {
+            bundleRecords.set(bundleKey, {
+                family: fontFamilyFromID,
+                styleIdx,
+                weightIdx,
+                size: sizeNum,
+                minified: _stripDensityFromBaseline(minified),
+            });
         }
-
-        // NO positioning JSON file - positioning will be reconstructed at runtime from Atlas image
-        // This eliminates ~3.7KB per font (75% of previous serialized size)
+        // Note: `includeNonMinifiedMetrics` is no longer wired to per-file output;
+        // the bundle is the only metrics artifact shipped.
     });
 
+    // Build the bundle promise; resolved after the per-font loop above writes its
+    // accumulated records to `bundleRecords`. We finalise the zip generation only
+    // after the bundle is in.
+    let bundlePromise;
+    {
+        const recordsArr = Array.from(bundleRecords.values()).sort((a, b) => {
+            if (a.family !== b.family) return a.family < b.family ? -1 : 1;
+            if (a.styleIdx !== b.styleIdx) return a.styleIdx - b.styleIdx;
+            const aw = typeof a.weightIdx === 'number' ? a.weightIdx : 0;
+            const bw = typeof b.weightIdx === 'number' ? b.weightIdx : 0;
+            if (aw !== bw) return aw - bw;
+            return a.size - b.size;
+        });
+        const bundleArray = recordsArr.map(r => [r.family, r.styleIdx, r.weightIdx, r.size, r.minified]);
+        const json = JSON.stringify(bundleArray);
+        console.log(`📦 Bundle: ${recordsArr.length} records, JSON size: ${json.length} bytes`);
+        bundlePromise = _deflateRawBase64InBrowser(json).then(b64 => {
+            const wrapped = `BitmapText.rBundle('${b64}');\n`;
+            const folderDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60 * 1000);
+            folder.file('metrics-bundle.js', wrapped, { date: folderDate });
+            console.log(`📦 metrics-bundle.js: ${wrapped.length} bytes (${b64.length} base64 chars)`);
+        });
+    }
 
-    // Generate zip file as base64 for transfer to Node.js (automation) or download (browser UI)
-    return zip.generateAsync({ type: "base64" })
+
+    // Wait for the bundle to be written, then generate the zip.
+    return bundlePromise.then(() => zip.generateAsync({ type: "base64" }))
         .then(base64Content => {
             console.log('✅ ZIP generated successfully, ready for transfer');
 
