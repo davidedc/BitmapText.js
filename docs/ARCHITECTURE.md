@@ -767,10 +767,11 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   ### Runtime Phase
 
   1. **Data Loading**
-     - Browser: font-registry.js → FontManifest → FontLoader instance → loadFonts() → Promise-based loading
-     - Node.js: FontLoader instance → loadFonts() → Synchronous fs-based loading
-     - Loading order: Metrics FIRST (required), then Atlases
-     - Atlas reconstruction: Atlas JS → registerAtlasPackage() → TightAtlasReconstructor.reconstructFromAtlas() → Tight Atlas + AtlasPositioning → AtlasData → Store
+     - Browser: BitmapText.ensureMetricsBundleLoaded() → metrics-bundle.js (single deflate-raw + base64 file) decoded async via DecompressionStream → MetricsBundleStore + FontManifest populated → loadFonts() loads atlases per-font
+     - Node.js: BitmapText.ensureMetricsBundleLoaded() → metrics-bundle.js read via fs.readFileSync + eval → DecompressionStream (Node 18+) or zlib.inflateRawSync (Node ≤ 17) → MetricsBundleStore populated → loadFonts() loads atlases per-font
+     - Loading order: Bundle FIRST (one-shot, async), then per-font atlases
+     - FontMetrics materialisation is lazy: FontMetricsStore.getFontMetrics(fp) hits MetricsBundleStore on first access, calls MetricsExpander.expand with fp.pixelDensity injected
+     - Atlas reconstruction: Atlas JS → registerAtlas() → TightAtlasReconstructor.reconstructFromAtlas() → Tight Atlas + AtlasPositioning → AtlasData → Store
 
   2. **Text Rendering**
      Text String → Measure → Apply Kerning → Copy Glyphs → Apply Color (fast path for black, composite for colors)
@@ -1188,7 +1189,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
     6. Calculate kerning tables (KerningCalculator using character set)
     7. Build optimized atlases (AtlasBuilder → variable-width cells)
     8. Generate minified metadata (MetricsMinifier)
-    9. Export metrics-*.js files + atlas-*-qoi.js files + font-registry.js (browser pipeline converts QOI → WebP)
+    9. Export metrics-bundle.js (deflate-raw + base64, all sizes density-agnostic) + atlas-*-qoi.js files (browser pipeline converts QOI → WebP)
   ```
 
   ### Runtime Font Loading Workflow (Static API)

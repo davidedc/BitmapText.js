@@ -17,7 +17,7 @@
   - **Platform-specific loaders**: src/platform/FontLoader-browser.js, src/platform/FontLoader-node.js (unified class name, selected at build time)
   - **Configuration classes**: src/runtime/FontProperties.js, src/runtime/TextProperties.js
   - **Font assets building tools**: src/builder/*FAB.js files (extend runtime classes with building capabilities)
-  - **Font data**: font-assets/ (self-registering files that call BitmapText.registerMetrics/Atlas → delegates to stores)
+  - **Font data**: font-assets/metrics-bundle.js (single deflate-compressed bundle for ALL metrics, calls BitmapText.rBundle once) + atlas-*-{webp,qoi}.js per font (call BitmapText.a → delegates to stores)
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, image-to-js-converter.js)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
   - **Examples**: examples/node/dist/ (Built Node.js demo bundles), src/node/ (demo source code)
@@ -31,11 +31,11 @@
   4. Test with public/test-renderer.html
 
   ### Testing Minification Strategies
-  1. Generate full metrics with font-assets-builder.html (enable "Include non-minified metrics files" checkbox)
+  1. Generate per-font metrics with font-assets-builder.html (drop the resulting per-file metrics into font-assets/)
   2. Modify src/builder/MetricsMinifier.js with new strategy
-  3. Rebuild tool: `./scripts/build-metrics-minifier.sh`
-  4. Test: `./tools/minify-metrics.js` (performs automatic roundtrip verification)
-  5. See scripts/README.md for detailed workflow
+  3. Run `node scripts/build-metrics-bundle.js` (or `npm run build-metrics-bundle`) to rebuild font-assets/metrics-bundle.js
+  4. Verify byte-identical FontMetrics output: `node scripts/verify-metrics-bundle.js` (compares hash to a snapshot baseline)
+  5. Run all 6 Node demos: `npm run demo`
 
   ### Working with Font-Invariant Fonts
   1. Font-invariant font (BitmapTextInvariant) uses custom character set (font-invariant characters)
@@ -66,7 +66,7 @@
   3. **Anti-aliasing**: Canvases must be attached to DOM before rendering for crisp text
   4. **StatusCode Loading**: In browser script tags, StatusCode.js MUST load before BitmapText.js (dependency requirement)
   5. **Transform Behavior**: BitmapText IGNORES all canvas transforms - coordinates are ABSOLUTE from canvas origin (see README.md "Transform Behavior - CRITICAL")
-  6. **Short Aliases**: Generated font files use BitmapText.r (registerMetrics) and BitmapText.a (registerAtlas) for minimal file size
+  6. **Short Aliases**: metrics-bundle.js calls BitmapText.rBundle (registerBundle); atlas-*-{webp,qoi}.js files use BitmapText.a (registerAtlas). Don't rename — the asset files depend on these aliases.
   7. **Automated Font Generation (macOS)**: Use WebKit/Safari for font asset generation, not Chromium - WebKit uses Core Text (native macOS font rendering) which produces crisp text with consistent stroke widths at small sizes, while Chromium's Skia renderer produces artifacts
 
   ## Testing
@@ -117,7 +117,9 @@
   - **Glyph creation utilities**: src/builder/create-glyphs.js (creates glyphs for all characters in character set)
   - **Glyph rendering**: src/builder/GlyphFAB.js (6-step pipeline: canvas setup, measurement, corrections, dimensions, rendering, preservation)
   - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)
-  - **Font loading API**: src/runtime/BitmapText.js (static methods: loadFont, loadFonts - delegates to platform-specific FontLoader; registerMetrics, registerAtlas - delegates to stores)
+  - **Font loading API**: src/runtime/BitmapText.js (static methods: loadFont, loadFonts - delegates to platform-specific FontLoader; registerBundle (rBundle), registerAtlas (a), ensureMetricsBundleLoaded - delegates to stores)
+  - **Metrics bundle decoder**: src/runtime/MetricsBundleDecoder.js (deflate-raw → JSON via DecompressionStream or zlib)
+  - **Metrics bundle store**: src/runtime/MetricsBundleStore.js (density-agnostic record cache; FontMetricsStore lazy-materialises from this)
   - **Font registry management**: src/runtime/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.js (getHash method for canvas pixel hash), src/runtime/AtlasPositioning.js (getHash method for positioning data hash)
   - **Specs parsing**: src/specs/SpecsParser.js:104 (parseSubSpec method)

@@ -639,9 +639,9 @@ For development with maximum debugging flexibility, you can use individual sourc
   <script src="src/builder/MetricsExpander.js"></script>
   <script src="src/runtime/BitmapText.js"></script>
 
-  <!-- Load pre-generated font data (self-registers automatically) -->
-  <script src="font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js"></script>
-  <script src="font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-webp.js"></script>
+  <!-- Metrics are loaded automatically on first BitmapText.loadFont() call from -->
+  <!-- font-assets/metrics-bundle.js (a single deflate-compressed bundle holding -->
+  <!-- every font's metrics, density-agnostic). Atlases load per-font as before. -->
 
   <canvas id="myCanvas" width="400" height="100"></canvas>
 
@@ -928,8 +928,9 @@ For a middle ground between individual files and minified bundle, use the unmini
 
 #### Registration Methods (Called by Font Assets)
 
-  **registerMetrics(idString, compactedData)**: Register font metrics
-  **registerAtlas(idString, base64Data)**: Register atlas image
+  **registerBundle(b64)** (alias `rBundle`): Decode the metrics bundle. Called once by `font-assets/metrics-bundle.js` on first load. Async.
+  **registerAtlas(...)** (alias `a`): Register atlas image. Called per-font by `atlas-*-{webp,qoi}.js` files.
+  **ensureMetricsBundleLoaded()**: Public helper to await the metrics-bundle load before enumerating `FontManifest`.
 
   These are called automatically when font asset files are loaded.
 

@@ -273,124 +273,25 @@ npm run qoi-memory                                       # Using npm script
 - Displays compression ratios and memory savings
 - Identifies largest files by uncompressed size
 
-### 8. Font Registry Generator Script
+### 8. Metrics Bundle Builder
 ```bash
-node scripts/generate-font-registry.js [options]
+node scripts/build-metrics-bundle.js
 # or
-npm run generate-registry
-```
-
-**Options:**
-- `--help, -h` - Show help message
-- `--verbose, -v` - Show verbose output
-
-**Examples:**
-```bash
-node scripts/generate-font-registry.js                    # Generate registry from font-assets/
-node scripts/generate-font-registry.js --verbose          # Show detailed processing information
-npm run generate-registry                                 # Using npm script
+npm run build-metrics-bundle
 ```
 
 **What it does:**
-- Scans font-assets/ directory for metrics-*.js files
-- Extracts font IDs from filenames (e.g., metrics-{ID}.js → {ID})
-- Generates font-registry.js with FontManifest.addFontIDs() call
-- Saves to font-assets/font-registry.js for use by test-renderer.html
-- Provides detailed feedback and error handling
+- Reads any per-file `metrics-density-*.js` left in `font-assets/` (typically only present transiently after a font-assets-builder export, before the Node-side bundle build)
+- Strips `pixelDensity` from `baseline[5]` (the bundle is density-agnostic — runtime injects density at expansion time)
+- Deduplicates density-1/density-2 pairs
+- Frames as JSON, deflate-raw compresses, base64-wraps in `BitmapText.rBundle("...")`
+- Writes `font-assets/metrics-bundle.js` (~1.1 MB for the full corpus, replacing ~18 MB of per-file metrics)
 
 **When to use:**
-- After extracting font assets from fontAssets.zip
-- When you want to run test-renderer.html to view all available fonts
-- After manually adding/removing font assets
-- When font-registry.js is missing or outdated
+- After dropping per-file metrics from a builder export into `font-assets/`, to (re)build the bundle
+- The browser font-assets-builder writes the bundle directly into its zip output, so this Node-side script is mainly for ad-hoc rebuilds and the watcher pipeline
 
-### 9. Metrics Minifier Build Script
-```bash
-./scripts/build-metrics-minifier.sh
-```
-
-**What it does:**
-- Builds a standalone Node.js tool (tools/minify-metrics.js) by concatenating source files
-- Re-uses the EXACT same code as font-assets-builder.html for minification
-- Includes: StatusCode.js, CharacterSets.js, BitmapText.js, FontMetrics.js, MetricsMinifier.js, MetricsExpander.js, deep-equal.js
-- No external dependencies (self-contained executable)
-
-**Output:**
-- Executable: `tools/minify-metrics.js` (~53KB)
-- Can be run directly: `./tools/minify-metrics.js`
-
-**When to use:**
-- When testing different minification strategies in MetricsMinifier.js
-- After modifying minification/expansion logic
-- To rebuild the tool with updated source files
-
-**Usage after building:**
-```bash
-# Show help and all options
-./tools/minify-metrics.js --help
-
-# Test minification (default: no comparison with production files)
-./tools/minify-metrics.js
-
-# Validate tool output matches production exactly (for tool validation only)
-./tools/minify-metrics.js --verify-exact
-```
-
-**What the generated tool does:**
-1. Finds all `*-full.js` files in font-assets/
-2. Extracts full metricsData from each file
-3. Runs `MetricsMinifier.minifyWithVerification()`:
-   - Minifies data (Tier 1-7 optimizations)
-   - Expands back using MetricsExpander
-   - Compares with original (roundtrip verification)
-   - Throws error if mismatch detected
-4. Outputs minified `.js` files (EXACT production format)
-5. Reports statistics and verification results
-
-**Example output:**
-```bash
-$ ./tools/minify-metrics.js
-
-🔬 Metrics Minification & Verification
-════════════════════════════════════════════════════════════
-Found 3 full metrics file(s) to process
-
-✅ metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0-full.js
-   → metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0-full-minified.js
-   ID: density-1-0-Arial-style-normal-weight-normal-size-19-0
-   Original: 77,074 chars
-   Minified: 3,123 chars
-   Saved: 73,951 chars (95.9% reduction)
-   ✓ Roundtrip verification passed
-```
-
-**Prerequisites:**
-To get `*-full.js` files:
-1. Open `public/font-assets-builder.html` in browser
-2. Configure font settings
-3. Check "Include non-minified metrics files"
-4. Click "Download font assets"
-5. Extract `fontAssets.zip` to font-assets/
-
-**Development workflow:**
-```bash
-# 1. Modify minification strategy in src/builder/MetricsMinifier.js
-# 2. Rebuild the tool
-./scripts/build-metrics-minifier.sh
-
-# 3. Test on real font data (default: no comparison, just minify + roundtrip verify)
-./tools/minify-metrics.js
-
-# 4. Examine output files
-cat font-assets/metrics-*-full-minified.js
-
-# Optional: Validate tool produces identical output to browser (one-time check)
-./tools/minify-metrics.js --verify-exact
-```
-
-**Note:** Default behavior does NOT compare with production files, allowing you to freely test new minification strategies. Use `--verify-exact` only when validating the tool itself produces identical output to the browser font-assets-builder.
-
-### 10. Runtime Bundle Build Script
+### 9. Runtime Bundle Build Script
 ```bash
 ./scripts/build-runtime-bundle.sh [--browser] [--node] [--all]
 ```
@@ -907,8 +808,7 @@ scripts/
 ├── qoi-to-png-converter.js       # QOI → PNG conversion (intermediate step)
 ├── image-to-js-converter.js      # Image → JS wrapper conversion (WebP/QOI)
 ├── qoi-memory-calculator.js      # QOI memory usage analyzer
-├── generate-font-registry.js     # Font registry generator
-├── build-metrics-minifier.sh     # Builds tools/minify-metrics.js
+├── build-metrics-bundle.js       # Builds font-assets/metrics-bundle.js from per-file metrics
 ├── build-runtime-bundle.sh       # Builds production bundles
 ├── build-node-demo.sh            # Builds hello-world.bundle.js
 ├── build-node-multi-size-demo.sh # Builds hello-world-multi-size.bundle.js
@@ -940,12 +840,9 @@ dist/
 font-assets/
 ├── *.webp                    # WebP atlas images (browser delivery)
 ├── *.qoi                     # QOI atlas images (Node.js usage)
-├── *.js                      # Glyph data and metrics
-├── *-full.js                 # Non-minified metrics (optional, from builder checkbox)
-├── *-full-minified.js        # Re-minified output (generated by tools/minify-metrics.js)
-├── *-webp.js                 # JS-wrapped WebP images (for file:// protocol)
-├── *-qoi.js                  # JS-wrapped QOI images (for file:// protocol)
-├── font-registry.js          # Auto-generated font registry
+├── metrics-bundle.js         # All metrics in one deflate-compressed bundle (density-agnostic)
+├── *-webp.js                 # JS-wrapped WebP atlas images (for file:// protocol)
+├── *-qoi.js                  # JS-wrapped QOI atlas images (for file:// protocol)
 └── font-assets-backup-*.zip  # Automatic backups
 ```
 
