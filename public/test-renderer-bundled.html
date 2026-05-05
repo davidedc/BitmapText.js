@@ -130,20 +130,18 @@ and then open the page from the browser at:
 <script src="../src/ui/components/size-buttons.js"></script>
 <script src="../src/ui/base-ui.js"></script>
 
-<!-- FontManifest.js is included in dist/bitmaptext.min.js - do not load separately -->
-<script src="../font-assets/font-registry.js"></script>
+<!-- FontManifest.js is included in dist/bitmaptext.min.js - do not load separately. -->
+<!-- The metrics bundle is loaded via BitmapText.ensureMetricsBundleLoaded() below; -->
+<!-- the bundle decoder populates FontManifest as it parses. -->
 
 <script>
   // Ensure everything is loaded before starting
   console.log("BitmapText available:", typeof BitmapText !== 'undefined');
-  console.log("FontManifest available:", typeof FontManifest !== 'undefined' && FontManifest.count() > 0);
 
   if (typeof BitmapText === 'undefined') {
     console.error("BitmapText is not defined. Check that BitmapText.js loaded properly.");
-  } else if (typeof FontManifest === 'undefined' || FontManifest.count() === 0) {
-    console.error("FontManifest is not available or contains no fonts. Check that FontManifest.js and font-registry.js loaded properly.");
   } else {
-    // Load all fonts from manifest and trigger test rendering
+    // Load all fonts from the metrics bundle and trigger test rendering
     startTiming('loadingFontData');
 
     // Determine protocol for image loading
@@ -152,23 +150,25 @@ and then open the page from the browser at:
     // Configure font directory (required since we're in public/ subdirectory)
     BitmapText.setFontDirectory('../font-assets/');
 
-    // Load all fonts using static API
-    console.log("Using font registry IDs:", FontManifest.allFontIDs());
+    // Ensure the metrics bundle is loaded so FontManifest is populated.
+    BitmapText.ensureMetricsBundleLoaded().then(() => {
+      console.log("Using font IDs from metrics bundle:", FontManifest.count());
 
-    BitmapText.loadFonts(FontManifest.allFontIDs(), {
-      isFileProtocol,
-      onProgress: (loaded, total) => {
-        const progressBar = document.getElementById('loadingProgressBar');
-        if (progressBar) {
-          const percentage = Math.round((loaded / total) * 100);
-          const progressFill = progressBar.querySelector('.progress-fill');
-          const progressText = progressBar.querySelector('.progress-text');
+      return BitmapText.loadFonts(FontManifest.allFontIDs(), {
+        isFileProtocol,
+        onProgress: (loaded, total) => {
+          const progressBar = document.getElementById('loadingProgressBar');
+          if (progressBar) {
+            const percentage = Math.round((loaded / total) * 100);
+            const progressFill = progressBar.querySelector('.progress-fill');
+            const progressText = progressBar.querySelector('.progress-text');
 
-          if (progressFill) progressFill.style.width = percentage + '%';
-          if (progressText) progressText.textContent = `Loading fonts: ${loaded}/${total} (${percentage}%)`;
+            if (progressFill) progressFill.style.width = percentage + '%';
+            if (progressText) progressText.textContent = `Loading fonts: ${loaded}/${total} (${percentage}%)`;
+          }
+          console.log(`loadedScripts: ${loaded} out of ${total}`);
         }
-        console.log(`loadedScripts: ${loaded} out of ${total}`);
-      }
+      });
     }).then(() => {
       console.log("⏱️ loadingFontData took " + stopTiming('loadingFontData') + " milliseconds");
       console.log("All metrics loaded to BitmapText");

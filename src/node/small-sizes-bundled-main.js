@@ -245,7 +245,7 @@ async function main() {
     console.error('\nTroubleshooting:');
     console.error('1. Make sure you run this from the project root directory');
     console.error('2. Ensure runtime bundle exists: dist/bitmaptext-node.min.js');
-    console.error('3. Ensure font metrics exist for size 9px: metrics-density-1-0-Arial-style-normal-weight-normal-size-9-0.js');
+    console.error('3. Ensure font-assets/metrics-bundle.js exists and contains size 9px Arial');
     console.error('4. Atlas JS file is optional - missing atlas will show placeholder rectangles');
     console.error('\nStack trace:');
     console.error(error.stack);

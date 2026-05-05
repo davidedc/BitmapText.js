@@ -166,7 +166,7 @@ async function main() {
     console.error('Error:', error.message);
     console.error('\nTroubleshooting:');
     console.error('1. Make sure you run this from the project root directory');
-    console.error('2. Ensure font data exists: font-assets/metrics-density-1-0-Arial-style-normal-weight-normal-size-19-0.js and font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-qoi.js');
+    console.error('2. Ensure font-assets/metrics-bundle.js exists and font-assets/atlas-density-1-0-Arial-style-normal-weight-normal-size-19-0-qoi.js exists');
     console.error('3. Build font assets using public/font-assets-builder.html if needed');
     process.exit(1);
   }

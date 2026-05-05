@@ -226,8 +226,8 @@
   <!-- PRODUCTION: Single minified bundle (~32KB) includes FontManifest -->
   <script src="../dist/bitmaptext.min.js"></script>
 
-  <!-- Load font registry (external data) -->
-  <script src="../font-assets/font-registry.js"></script>
+  <!-- The metrics bundle is loaded via BitmapText.ensureMetricsBundleLoaded() below; -->
+  <!-- the bundle decoder populates FontManifest as it parses. -->
 
   <script>
     // Configuration
@@ -386,9 +386,12 @@
         const fontProps = getFontPropertiesFromUI();
         const text = getSelectedText();
 
+        // Ensure the metrics bundle is loaded so FontManifest is populated.
+        await BitmapText.ensureMetricsBundleLoaded();
+
         // Check if font is available
         if (!FontManifest.hasFontID(fontProps.idString)) {
-          demosDiv.innerHTML = `<div class="loading" style="color: #f44336;">Font ${fontProps.idString} is not available in the registry.</div>`;
+          demosDiv.innerHTML = `<div class="loading" style="color: #f44336;">Font ${fontProps.idString} is not in the metrics bundle.</div>`;
           return;
         }
 

@@ -233,7 +233,7 @@ async function main() {
     console.error('Error:', error.message);
     console.error('\nTroubleshooting:');
     console.error('1. Make sure you run this from the project root directory');
-    console.error('2. Ensure font metrics exist for all sizes:', fontSizes.map(s => `metrics-density-1-0-Arial-style-normal-weight-normal-size-${s.toString().replace('.', '-')}${s.toString().includes('.') ? '' : '-0'}.js`).join(', '));
+    console.error('2. Ensure font-assets/metrics-bundle.js exists and contains Arial sizes:', fontSizes.join(', '));
     console.error('3. Atlas JS files are optional - missing ones will show placeholder rectangles');
     console.error('4. Build font assets using public/font-assets-builder.html if needed');
     process.exit(1);

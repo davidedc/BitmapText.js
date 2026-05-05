@@ -209,9 +209,8 @@
 
   <div id="demos"></div>
 
-  <!-- Load FontManifest and registry -->
+  <!-- FontManifest is populated by the metrics-bundle decoder; see ensureMetricsBundleLoaded() below. -->
   <script src="../src/runtime/FontManifest.js"></script>
-  <script src="../font-assets/font-registry.js"></script>
 
   <!-- Load BitmapText runtime classes -->
   <script src="../src/runtime/StatusCode.js"></script>
@@ -226,6 +225,8 @@
   <script src="../src/utils/AtlasCellDimensions.js"></script>
   <script src="../src/runtime/TightAtlasReconstructor.js"></script>
   <script src="../src/runtime/AtlasDataStore.js"></script>
+  <script src="../src/runtime/MetricsBundleStore.js"></script>
+  <script src="../src/runtime/MetricsBundleDecoder.js"></script>
   <script src="../src/runtime/FontMetricsStore.js"></script>
   <script src="../src/runtime/FontLoaderBase.js"></script>
   <script src="../src/platform/FontLoader-browser.js"></script>
@@ -390,9 +391,12 @@
         const fontProps = getFontPropertiesFromUI();
         const text = getSelectedText();
 
+        // Ensure the metrics bundle is loaded so FontManifest is populated.
+        await BitmapText.ensureMetricsBundleLoaded();
+
         // Check if font is available
         if (!FontManifest.hasFontID(fontProps.idString)) {
-          demosDiv.innerHTML = `<div class="loading" style="color: #f44336;">Font ${fontProps.idString} is not available in the registry.</div>`;
+          demosDiv.innerHTML = `<div class="loading" style="color: #f44336;">Font ${fontProps.idString} is not in the metrics bundle.</div>`;
           return;
         }
 
