@@ -111,6 +111,14 @@
       <input id="ctrl-k" type="range" min="4" max="200" value="80">
       <span id="val-k" class="value">80</span>
     </label>
+    <label>Pixel density
+      <select id="ctrl-dpr">
+        <option value="auto">Auto</option>
+        <option value="1">1 only</option>
+        <option value="2">2 only</option>
+        <option value="both">Both (mix)</option>
+      </select>
+    </label>
     <button id="ctrl-pause">Pause</button>
     <span id="ctrl-status" style="color:#666"></span>
   </div>
@@ -147,7 +155,12 @@
 
   const MIN_LIFETIME_MS = 1000;
 
-  const TEXT_CONTENT = 'Hello World ☺';
+  // Latin-only text: keeps the canvas tightly sized to the rendered glyphs.
+  // (Earlier versions used "Hello World ☺" — but the smiley auto-redirects to
+  // BitmapTextInvariant whose chars typically have larger actualAscent than Arial caps,
+  // so canvases ended up sized for the smiley and Latin glyphs visually sat low. A
+  // dedicated "multi-font glyph" demo would be a better fit for that scenario.)
+  const TEXT_CONTENT = 'Hello, World!';
   const TEXT_PROPERTIES = new TextProperties({
     isKerningEnabled: true,
     textBaseline: 'bottom',
@@ -244,32 +257,19 @@
     constructor(idString, lifetimeMs, lru) {
       this.idString  = idString;
       this.fontProps = FontProperties.fromIDString(idString);
-      // The text contains the smiley character "☺", which the runtime auto-redirects to the
-      // BitmapTextInvariant font (a separate atlas, same density+size, normal/normal). The
-      // textbox must wait for BOTH atlases to be loaded before its paint shows real glyphs
-      // for everything; otherwise drawTextFromAtlas returns PARTIAL_ATLAS and the smiley is
-      // a placeholder rectangle.
-      const invariantProps = new FontProperties(
-        this.fontProps.pixelDensity,
-        'BitmapTextInvariant',
-        'normal',
-        'normal',
-        this.fontProps.fontSize
-      );
-      this.invariantIdString = invariantProps.idString;
       this.lru       = lru;
       this.alive     = true;
       this.expireAt  = performance.now() + lifetimeMs;
-      this.hadAtlasOnce = false;        // diagnostic: did we ever paint with both atlases loaded?
+      this.hadAtlasOnce = false;        // diagnostic: did we ever paint with our atlas loaded?
 
-      // Sizing: we use measureText ahead of paint so the canvas is big enough for the glyphs.
-      // This needs metrics (always loaded), not the atlas, so it works without a load.
-      // measureText returns { metrics, status }; metrics is null only if no metrics exist
-      // for this font, which shouldn't happen (the bundle covers everything we picked from).
+      // Tight canvas sizing using measureText. Since TEXT_CONTENT is Latin-only there's no
+      // sub-font redirect, so actualBoundingBox{Ascent,Descent} reflects the rendered glyph
+      // extent precisely. Adding fontBoundingBoxDescent to y_CssPx accounts for the
+      // textBaseline='bottom' convention (y is the em-square bottom, not the alphabetic
+      // baseline).
       const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, TEXT_PROPERTIES);
-      const m = measurement.metrics || {
-        width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0,
-        fontBoundingBoxAscent: 0, fontBoundingBoxDescent: 0
+      const m = (measurement && measurement.metrics) || {
+        width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxDescent: 0,
       };
       const padding = 4;
       const cssWidth  = Math.max(40, Math.ceil(m.width) + padding * 2);
@@ -287,10 +287,10 @@
 
       this.ctx = this.canvas.getContext('2d');
       this.paddingCssPx = padding;
-      // textBaseline is 'bottom', which means y_CssPx is the bottom of the em square
-      // (= alphabetic baseline + fontBoundingBoxDescent). To position visible glyphs at
-      // y=padding from the canvas top, the y_CssPx must include fontBoundingBoxDescent
-      // so the runtime computes alphabetic baseline at (y_CssPx - fbd) = padding + ascent.
+      // textBaseline is 'bottom', so y_CssPx is the bottom of the em square (= alphabetic
+      // baseline + fontBoundingBoxDescent). Place the alphabetic baseline at
+      // padding + actualBoundingBoxAscent so the tallest glyph touches y=padding from the
+      // canvas top — tight visual fit for Latin text.
       this.baselineYCssPx = padding + m.actualBoundingBoxAscent + m.fontBoundingBoxDescent;
 
       // Position: random within stage, biased away from edges.
@@ -323,33 +323,19 @@
         this.fontProps, TEXT_PROPERTIES
       );
 
-      // Use hasAtlas() — not the status code — as the "needs repaint" signal. The status
-      // code can return PARTIAL_ATLAS if a sub-font (e.g. BitmapTextInvariant for the smiley)
-      // is still loading; basing the loop on PARTIAL_ATLAS would infinite-loop microtasks
-      // when our primary is loaded and we keep re-firing paint() that re-finds the same
-      // partial state. Two atlases need to be ready: the primary and the invariant pair.
-      const primaryReady   = BitmapText.hasAtlas(this.idString);
-      const invariantReady = BitmapText.hasAtlas(this.invariantIdString);
-      const allReady = primaryReady && invariantReady;
-
-      if (allReady) {
+      // Use hasAtlas() — not the status code — as the "needs repaint" signal. Once our
+      // primary atlas is loaded, paint() runs once and stops (no infinite repaint loop).
+      if (BitmapText.hasAtlas(this.idString)) {
         if (!this.hadAtlasOnce) this.hadAtlasOnce = true;
-        // Bump recency on both entries so they stay warm while we're on screen.
-        this.lru.request(this.idString);
-        this.lru.request(this.invariantIdString);
+        this.lru.request(this.idString);  // bump recency only
         return;
       }
 
-      // One or both atlases missing. If we previously had them and lost them, count it
-      // as an eviction-during-life (race-handling diagnostic).
+      // Atlas not loaded — either initial load, or our atlas was evicted under us.
       if (this.hadAtlasOnce) this.lru.reloadCount++;
-
-      // Trigger any missing loads in parallel; repaint when both are ready.
-      const wantPrimary   = primaryReady   ? Promise.resolve('loaded') : this.lru.request(this.idString);
-      const wantInvariant = invariantReady ? Promise.resolve('loaded') : this.lru.request(this.invariantIdString);
-      Promise.all([wantPrimary, wantInvariant])
+      this.lru.request(this.idString)
         .then(() => this.paint())
-        .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
+        .catch(() => { /* load failed; textbox stays in placeholder mode for life */ });
     }
 
     destroy() {
@@ -378,6 +364,7 @@
   const LIFE_VAL   = document.getElementById('val-life');
   const K_INPUT    = document.getElementById('ctrl-k');
   const K_VAL      = document.getElementById('val-k');
+  const DPR_INPUT  = document.getElementById('ctrl-dpr');
   const PAUSE_BTN  = document.getElementById('ctrl-pause');
 
   N_INPUT.oninput    = () => { N_VAL.textContent    = N_INPUT.value;    refreshWarn(); };
@@ -387,6 +374,12 @@
     if (lru) lru.setCapacity(parseInt(K_INPUT.value, 10));
     refreshWarn();
   };
+  DPR_INPUT.onchange = () => {
+    candidates = pickCandidates(DPR_INPUT.value);
+    statusEl.textContent = candidates.length === 0
+      ? `No candidate fonts at DPR=${DPR_INPUT.value}. Try a different option.`
+      : `DPR=${DPR_INPUT.value}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;
+  };
   PAUSE_BTN.onclick = () => {
     paused = !paused;
     PAUSE_BTN.textContent = paused ? 'Resume' : 'Pause';
@@ -395,11 +388,10 @@
   function refreshWarn() {
     const N = parseInt(N_INPUT.value, 10);
     const K = parseInt(K_INPUT.value, 10);
-    // Each textbox holds up to 2 atlases warm (its primary font + the BitmapTextInvariant
-    // pair atlas needed for the smiley). Steady-state working-set ≈ 2N (with some sharing
-    // of the invariant atlas across textboxes at the same size).
-    if (K <= 2 * N) {
-      warnEl.textContent = `Warning: K (${K}) ≤ 2·N (${2 * N}) — each textbox needs up to 2 atlases (primary + BitmapTextInvariant pair). Thrashing expected. The cache invariant still holds.`;
+    // Each textbox holds one atlas warm. Steady-state working-set ≈ N (with some sharing
+    // when textboxes happen to pick the same idString). K should comfortably exceed N.
+    if (K <= N) {
+      warnEl.textContent = `Warning: K (${K}) ≤ N (${N}) — atlas thrashing expected. The cache invariant still holds.`;
     } else {
       warnEl.textContent = '';
     }
@@ -493,28 +485,39 @@
   refreshWarn();
   statusEl.textContent = 'Loading metrics bundle…';
 
+  // Filter candidate idStrings by selected DPR mode. Per the CLAUDE.md "DPR is a hard
+  // partition" rule, an *application* picks one DPR at startup. This demo deliberately
+  // exposes a "Both (mix)" option so curious users can see what happens — each textbox
+  // still has a single fontProperties.pixelDensity, the runtime renders each correctly,
+  // but on screen you'll see a mix of physical pixel densities.
+  function pickCandidates(mode) {
+    let prefixes;
+    if (mode === '1')        prefixes = ['density-1-0-'];
+    else if (mode === '2')   prefixes = ['density-2-0-'];
+    else if (mode === 'both') prefixes = ['density-1-0-', 'density-2-0-'];
+    else { /* auto */
+      const auto = (window.devicePixelRatio >= 1.5) ? 2 : 1;
+      prefixes = [`density-${auto}-0-`];
+    }
+    return FontManifest.allFontIDs()
+      .filter(id => prefixes.some(p => id.startsWith(p)))
+      .filter(id => FontProperties.fromIDString(id).fontSize >= 9);
+  }
+
   BitmapText.ensureMetricsBundleLoaded()
     .then(() => {
-      // Pick density at startup — hard partition (per CLAUDE.md).
-      const dpr = (window.devicePixelRatio >= 1.5) ? 2 : 1;
-      const densityPrefix = `density-${dpr}-0-`;
-
-      candidates = FontManifest.allFontIDs()
-        .filter(id => id.startsWith(densityPrefix))
-        .filter(id => {
-          const p = FontProperties.fromIDString(id);
-          return p.fontSize >= 9;   // sub-9px sizes have no atlas (placeholder-only)
-        });
+      candidates = pickCandidates(DPR_INPUT.value);
 
       if (candidates.length === 0) {
-        statusEl.textContent = `No candidate fonts at DPR ${dpr}. Did you run ./scripts/download-font-assets.sh?`;
+        statusEl.textContent =
+          `No candidate fonts. Did you run ./scripts/download-font-assets.sh?`;
         return;
       }
 
       lru = new AtlasLRU(parseInt(K_INPUT.value, 10));
 
       statusEl.textContent =
-        `DPR ${dpr}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;
+        `DPR=${DPR_INPUT.value}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;
 
       // Spawn loop on a fixed interval; expiry sweep + stats on rAF.
       spawnTimer = setInterval(spawnIfNeeded, SPAWN_INTERVAL_MS);
