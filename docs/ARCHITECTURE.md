@@ -1053,6 +1053,12 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
   - **Node.js**: QOI direct loading, no dependencies
   - **Export**: QOI simple, portable, minimal encoder
 
+  **Distribution split (canonical vs. derived)**:
+  Because `font-assets/` is too large to commit, the project distributes only the canonical/source-of-truth subset and re-derives the rest locally:
+  - **Canonical (~72 MB)**: `metrics-bundle.js` (deflate-raw + base64) and `atlas-*.webp` (lossless WebP)
+  - **Derived locally**: `atlas-*.qoi` (re-encoded from `dwebp -pam` raw RGBA via `lib/QOIEncode.js`), `atlas-*-{webp,qoi}.js` (base64 wrappers, terser-minified)
+  - **Operational steps**: see `scripts/README.md` § 9 and `scripts/rebuild-from-minimal.sh`. Lossless WebP + deterministic QOI encoding guarantees a byte-identical rebuild.
+
   ## Data Minification/Expansion
 
   Font data is minified for efficient storage and network transfer using seven-tier compression:

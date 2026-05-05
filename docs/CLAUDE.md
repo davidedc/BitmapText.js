@@ -19,6 +19,7 @@
   - **Font assets building tools**: src/builder/*FAB.js files (extend runtime classes with building capabilities)
   - **Font data**: font-assets/metrics-bundle.js (single deflate-compressed bundle for ALL metrics, calls BitmapText.rBundle once) + atlas-*-{webp,qoi}.js per font (call BitmapText.a → delegates to stores)
   - **Automation scripts**: scripts/ (watch-font-assets.sh, optimize-images.sh, image-to-js-converter.js)
+  - **Asset distribution**: scripts/rebuild-from-minimal.sh + scripts/webp-to-qoi-converter.js (re-derive full font-assets/ from the minimum metrics-bundle.js + atlas-*.webp set ≈ 72 MB; the rest is locally regenerated)
   - **Entry points**: public/font-assets-builder.html (font assets building), public/test-renderer.html (testing)
   - **Examples**: examples/node/dist/ (Built Node.js demo bundles), src/node/ (demo source code)
 
@@ -36,6 +37,12 @@
   3. Run `node scripts/build-metrics-bundle.js` (or `npm run build-metrics-bundle`) to rebuild font-assets/metrics-bundle.js
   4. Verify byte-identical FontMetrics output: `node scripts/verify-metrics-bundle.js` (compares hash to a snapshot baseline)
   5. Run all 6 Node demos: `npm run demo`
+
+  ### Distributing / Re-deriving Font Assets
+  1. Canonical / source-of-truth subset: font-assets/metrics-bundle.js + font-assets/atlas-*.webp (~72 MB for full corpus)
+  2. To publish: strip font-assets/ to those two kinds, delete stale atlas-*.png + derived atlas-*.qoi + atlas-*-{webp,qoi}.js, zip, attach to release
+  3. To consume: place the minimum set in font-assets/, run `./scripts/rebuild-from-minimal.sh` (~10–30 min for 4,550 fonts)
+  4. Verification: SHA-256 round-trip diff against canonical hashes + `npm run demo` (see scripts/README.md § 9)
 
   ### Working with Font-Invariant Fonts
   1. Font-invariant font (BitmapTextInvariant) uses custom character set (font-invariant characters)

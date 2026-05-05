@@ -742,6 +742,17 @@ For a middle ground between individual files and minified bundle, use the unmini
 
   For detailed rebuild instructions, see **[dist/README.md](dist/README.md#-rebuilding)**.
 
+## Getting Font Assets Without Rebuilding
+
+  The full `font-assets/` directory (~814 MB for 4,550 fonts) is too large to commit. The published distribution is a **minimum set** of `metrics-bundle.js` + `atlas-*.webp` (~72 MB total); everything else is regenerated locally.
+
+  Place the minimum set in `font-assets/`, then run:
+  ```bash
+  ./scripts/rebuild-from-minimal.sh
+  ```
+
+  This re-derives `atlas-*.qoi` (via `dwebp -pam` + `lib/QOIEncode.js`) and the `atlas-*-{webp,qoi}.js` wrappers (terser-minified) byte-for-byte against the canonical pipeline. Requires `dwebp` (`brew install webp`), `terser`, and Node. See `scripts/README.md` § 9 for the round-trip verification protocol.
+
 ## Generating Your Own Bitmap Fonts
 
 ### Automated Pipeline (Recommended for Interactive Use)

@@ -291,7 +291,59 @@ npm run build-metrics-bundle
 - After dropping per-file metrics from a builder export into `font-assets/`, to (re)build the bundle
 - The browser font-assets-builder writes the bundle directly into its zip output, so this Node-side script is mainly for ad-hoc rebuilds and the watcher pipeline
 
-### 9. Runtime Bundle Build Script
+### 9. Distribution / Minimum-Set Workflow
+```bash
+./scripts/rebuild-from-minimal.sh
+```
+
+`font-assets/` is too large to commit (~814 MB after stale-PNG cleanup). The canonical / source-of-truth subset is **`metrics-bundle.js` + `atlas-*.webp`** (~72 MB total); everything else is locally re-derivable. The full set is published as a release artifact (URL TBD); this script reconstructs the rest of `font-assets/` byte-for-byte.
+
+**To minimise (publisher):**
+```bash
+# Inside font-assets/, strip everything that isn't the minimum set.
+# Note: stale atlas-*.png files from interrupted forward-pipeline runs
+# can occupy several GB — delete them before zipping.
+find font-assets -maxdepth 1 -name 'atlas-*.png'    -delete
+find font-assets -maxdepth 1 -name 'atlas-*.qoi'    -delete
+find font-assets -maxdepth 1 -name 'atlas-*-webp.js' -delete
+find font-assets -maxdepth 1 -name 'atlas-*-qoi.js'  -delete
+# Result: metrics-bundle.js + atlas-*.webp ≈ 72 MB
+```
+
+**To unminimise (consumer):**
+```bash
+./scripts/rebuild-from-minimal.sh
+```
+
+**What the rebuild does:**
+1. Sanity-checks `metrics-bundle.js` and counts `atlas-*.webp` (must be > 0)
+2. Deletes any stale `atlas-*.png` intermediates
+3. Runs `scripts/webp-to-qoi-converter.js`: `dwebp -pam` decodes each WebP to raw RGBA, then `lib/QOIEncode.js` encodes to QOI
+4. Runs `scripts/image-to-js-converter.js font-assets --all` to wrap both formats as `BitmapText.a(...)` JS files
+5. Minifies the new `atlas-*-{webp,qoi}.js` files in place with `terser` (NUL-delimited loop — family names contain spaces)
+6. Reports final counts; expects four kinds × WEBP_COUNT each (e.g. 4,550 each for the full corpus)
+
+**Runtime:** ~10–30 min for 4,550 fonts on a typical machine.
+
+**Verification (bit-exact round-trip):**
+```bash
+# After a forward build, snapshot canonical hashes:
+(cd font-assets && shasum -a 256 atlas-*.qoi atlas-*-webp.js atlas-*-qoi.js | sort) > /tmp/baseline.sha256
+
+# Strip derived files, then rebuild:
+mv font-assets/atlas-*.qoi font-assets/atlas-*-webp.js font-assets/atlas-*-qoi.js /tmp/aside/
+./scripts/rebuild-from-minimal.sh
+
+# Compare — must be empty:
+(cd font-assets && shasum -a 256 atlas-*.qoi atlas-*-webp.js atlas-*-qoi.js | sort) > /tmp/rebuilt.sha256
+diff /tmp/baseline.sha256 /tmp/rebuilt.sha256
+```
+
+Determinism rationale: lossless WebP round-trips RGBA byte-for-byte through `dwebp -pam`; QOI is deterministic for fixed RGBA + descriptor; the JS wrapper and terser are deterministic. `metrics-bundle.js` is shipped as-is and never touched by the rebuild.
+
+**Requires:** `dwebp` (`brew install webp`), `terser` (`npm i -g terser`), Node.
+
+### 10. Runtime Bundle Build Script
 ```bash
 ./scripts/build-runtime-bundle.sh [--browser] [--node] [--all]
 ```
