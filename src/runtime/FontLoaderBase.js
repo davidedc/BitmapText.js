@@ -38,6 +38,16 @@ class FontLoaderBase {
   // Loading promises to prevent duplicate loads
   static _loadingPromises = new Map();
 
+  // Singleton: resolves when the metrics bundle is fully loaded, decoded, and
+  // every record is registered into MetricsBundleStore. Materialisation of
+  // density-specific FontMetrics happens lazily on first FontMetricsStore lookup.
+  static _bundleReadyPromise = null;
+
+  // Internal: set by `BitmapText.registerBundle` when the bundle script executes.
+  // The platform-specific `loadBundleFile` awaits this after `script.onload` /
+  // `eval()` returns.
+  static _bundleDecodePromise = null;
+
   // ============================================
   // Configuration
   // ============================================
@@ -84,45 +94,40 @@ class FontLoaderBase {
   // ============================================
 
   /**
-   * Register font metrics from metrics-*.js file
-   * Called by self-registering metrics files
-   * @param {string} idString - Font ID string
-   * @param {Object} compactedData - Compacted metrics data
-   * @param {Object} bitmapTextClass - BitmapText class reference (for backward compatibility)
+   * Decode the metrics bundle and register every record into MetricsBundleStore.
+   * Called by `BitmapText.registerBundle` (which is called by the bundle JS file).
+   *
+   * @param {string} b64 - Base64-encoded deflate-raw stream produced by build-metrics-bundle.js.
+   * @returns {Promise<void>} Resolves once every record is registered.
    */
-  static registerMetrics(idString, compactedData, bitmapTextClass) {
-    if (typeof idString !== 'string') {
-      console.warn('FontLoader.registerMetrics: Invalid idString - must be string');
-      return;
+  static async processBundle(b64) {
+    if (typeof MetricsBundleDecoder === 'undefined') {
+      throw new Error('FontLoader.processBundle: MetricsBundleDecoder not available');
+    }
+    if (typeof MetricsBundleStore === 'undefined') {
+      throw new Error('FontLoader.processBundle: MetricsBundleStore not available');
     }
 
-    if (typeof MetricsExpander === 'undefined') {
-      console.warn('FontLoader.registerMetrics: MetricsExpander not available');
-      return;
+    const records = await MetricsBundleDecoder.decode(b64);
+
+    const styleByIdx = ['normal', 'italic', 'oblique'];
+    const ids = [];
+    for (const [fontFamily, styleIdx, weightIdx, fontSize, minified] of records) {
+      const fontStyle = styleByIdx[styleIdx];
+      const fontWeight = weightIdx === 0 ? 'normal' : (weightIdx === 1 ? 'bold' : String(weightIdx));
+      MetricsBundleStore.setRecord(fontFamily, fontStyle, fontWeight, fontSize, minified);
+
+      if (typeof FontManifest !== 'undefined') {
+        // The bundle is density-agnostic. Register both density-1 and density-2
+        // idStrings so consumers that enumerate via FontManifest see what's available.
+        const sizeStr = Number.isInteger(fontSize) ? `${fontSize}-0` : String(fontSize).replace('.', '-');
+        ids.push(`density-1-0-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${sizeStr}`);
+        ids.push(`density-2-0-${fontFamily}-style-${fontStyle}-weight-${fontWeight}-size-${sizeStr}`);
+      }
     }
-
-    if (typeof FontProperties === 'undefined') {
-      console.warn('FontLoader.registerMetrics: FontProperties not available');
-      return;
+    if (typeof FontManifest !== 'undefined' && ids.length) {
+      FontManifest.addFontIDs(ids);
     }
-
-    const fontProperties = FontProperties.fromIDString(idString);
-
-    // Determine character set based on font family
-    // If it's the font-invariant font, use the font-invariant character set
-    // Otherwise, pass undefined to let MetricsExpander default to standard set
-    let characterSet;
-    if (fontProperties.fontFamily === CharacterSets.INVARIANT_FONT_FAMILY) {
-      characterSet = Array.from(CharacterSets.FONT_INVARIANT_CHARS);
-    }
-
-    const fontMetrics = MetricsExpander.expand(compactedData, characterSet);
-
-    // Store metrics directly in FontMetricsStore
-    FontMetricsStore.setFontMetrics(fontProperties, fontMetrics);
-
-    // Process any pending atlases that were waiting for these metrics
-    FontLoaderBase._processPendingAtlas(idString);
   }
 
   /**
@@ -241,14 +246,16 @@ class FontLoaderBase {
   // ============================================
 
   /**
-   * Load metrics file for a font
-   * @abstract Must be implemented by derived classes
-   * @param {string} idString - Font ID string
-   * @param {Object} bitmapTextClass - BitmapText class reference
-   * @returns {Promise} Resolves when metrics are loaded
+   * Ensure the metrics bundle is loaded (idempotent singleton).
+   * The first call triggers the platform's `loadBundleFile`; subsequent calls
+   * return the same Promise.
+   * @returns {Promise<void>} Resolves once every record is in MetricsBundleStore.
    */
-  static async loadMetricsFile(idString, bitmapTextClass) {
-    throw new Error('FontLoaderBase.loadMetricsFile() must be implemented by derived class');
+  static async loadMetricsFile(/* idString, bitmapTextClass */) {
+    if (!FontLoaderBase._bundleReadyPromise) {
+      FontLoaderBase._bundleReadyPromise = FontLoader.loadBundleFile();
+    }
+    return FontLoaderBase._bundleReadyPromise;
   }
 
   /**

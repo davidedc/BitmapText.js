@@ -1,64 +1,55 @@
 // FontLoader - Node.js-Specific Font Loader
 //
-// This static class extends FontLoaderBase to provide Node.js-specific
-// font loading implementation using Node.js APIs (fs, path, require).
+// Node implementation of the FontLoaderBase abstract methods.
 //
-// DISTRIBUTION ROLE:
-// - Only included in Node.js distributions
-// - Excluded from browser bundles via build scripts
-// - Uses Node.js-specific APIs (fs, path, eval)
+// METRICS:
+//   The whole metrics corpus is one file: `font-assets/metrics-bundle.js`.
+//   On the first metrics request we `fs.readFileSync` it and `eval` it; the
+//   wrapper calls `BitmapText.registerBundle("<base64>")`, which sets
+//   `FontLoaderBase._bundleDecodePromise` to the async decode work. The decode
+//   uses `DecompressionStream('deflate-raw')` on Node 18+ or `zlib.inflateRawSync`
+//   on Node ≤ 17 (handled inside MetricsBundleDecoder).
 //
-// ARCHITECTURE:
-// - Static class extending FontLoaderBase
-// - Implements abstract methods for Node.js environment
-// - Uses fs.readFileSync for metrics and atlas loading
-// - Uses eval() to execute metrics registration code
-// - Uses QOIDecode for atlas decompression
-//
-// LOADING STRATEGIES:
-// - Metrics: fs.readFileSync + eval()
-// - Atlas: fs.readFileSync QOI file + QOIDecode + canvas creation
+// ATLAS:
+//   Per-font, unchanged: read QOI base64 wrapper, decode, paint into a canvas.
 
 class FontLoader extends FontLoaderBase {
 
   // ============================================
-  // File Name Constants (from BitmapText)
+  // File Name Constants
   // ============================================
 
-  static METRICS_PREFIX = 'metrics-';
   static ATLAS_PREFIX = 'atlas-';
   static JS_EXTENSION = '.js';
+  static METRICS_BUNDLE_FILENAME = 'metrics-bundle.js';
 
   // ============================================
   // Node.js-Specific Loading Implementation
   // ============================================
 
   /**
-   * Load metrics file via fs.readFileSync + eval
-   * @param {string} idString - Font ID string
-   * @param {Object} bitmapTextClass - BitmapText class reference
-   * @returns {Promise} Resolves when metrics are loaded
+   * Read + eval the metrics bundle once, then await the decode promise that
+   * `BitmapText.registerBundle` set as a side effect of the eval.
+   * @returns {Promise<void>} Resolves once every record is in MetricsBundleStore.
    */
-  static async loadMetricsFile(idString, bitmapTextClass) {
+  static async loadBundleFile() {
     if (typeof require === 'undefined') {
-      throw new Error('FontLoader.loadMetricsFile requires Node.js environment');
+      throw new Error('FontLoader.loadBundleFile requires Node.js environment');
     }
 
     const fs = require('fs');
     const path = require('path');
 
     const fontDirectory = FontLoaderBase.getFontDirectory();
-    const metricsPath = path.resolve(fontDirectory, `${FontLoader.METRICS_PREFIX}${idString}${FontLoader.JS_EXTENSION}`);
+    const bundlePath = path.resolve(fontDirectory, FontLoader.METRICS_BUNDLE_FILENAME);
+    const bundleCode = fs.readFileSync(bundlePath, 'utf8');
+    eval(bundleCode);
 
-    try {
-      const metricsCode = fs.readFileSync(metricsPath, 'utf8');
-      // Execute with BitmapText in scope
-      // The metrics file will call BitmapText.registerMetrics()
-      eval(metricsCode);
-    } catch (error) {
-      console.warn(`Metrics file not found: ${metricsPath}`);
-      throw error;
+    const decodePromise = FontLoaderBase._bundleDecodePromise;
+    if (!decodePromise) {
+      throw new Error('metrics-bundle.js evaluated but did not call BitmapText.registerBundle');
     }
+    return decodePromise;
   }
 
   /**

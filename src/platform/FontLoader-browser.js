@@ -1,58 +1,56 @@
 // FontLoader - Browser-Specific Font Loader
 //
-// This static class extends FontLoaderBase to provide browser-specific
-// font loading implementation using DOM APIs (script tags, Image objects).
+// Browser implementation of the FontLoaderBase abstract methods.
 //
-// DISTRIBUTION ROLE:
-// - Only included in browser distributions
-// - Excluded from Node.js bundles via build scripts
-// - Uses browser-specific APIs (document, Image, script tags)
+// METRICS:
+//   The whole metrics corpus is shipped as one file: `font-assets/metrics-bundle.js`.
+//   On first metrics request the file is injected as a `<script>` tag (works under
+//   `file://` because there is no `fetch` involved). The script wrapper calls
+//   `BitmapText.registerBundle("<base64>")`, which sets `FontLoaderBase._bundleDecodePromise`
+//   to the async base64 → deflate-raw → JSON decode. We await that promise after
+//   `script.onload` fires.
 //
-// ARCHITECTURE:
-// - Static class extending FontLoaderBase
-// - Implements abstract methods for browser environment
-// - Uses DOM script injection for metrics loading
-// - Uses Image objects or script tags for atlas loading
-//
-// LOADING STRATEGIES:
-// - Metrics: Always via script tag injection
-// - Atlas (file:// protocol): Via script tag with base64 WebP data
-// - Atlas (http/https): Via Image object loading WebP directly
+// ATLAS:
+//   Per-font, as before — direct WebP fetch over HTTP(S), or base64-WebP via a
+//   `<script>` tag under `file://`.
 
 class FontLoader extends FontLoaderBase {
   // ============================================
-  // File Name Constants (from BitmapText)
+  // File Name Constants
   // ============================================
 
-  static METRICS_PREFIX = 'metrics-';
   static ATLAS_PREFIX = 'atlas-';
   static JS_EXTENSION = '.js';
   static WEBP_EXTENSION = '.webp';
+  static METRICS_BUNDLE_FILENAME = 'metrics-bundle.js';
 
   // ============================================
   // Browser-Specific Loading Implementation
   // ============================================
 
   /**
-   * Load metrics file via script tag injection
-   * @param {string} idString - Font ID string
-   * @param {Object} bitmapTextClass - BitmapText class reference
-   * @returns {Promise} Resolves when metrics are loaded
+   * Inject the metrics-bundle script tag once and await full decode.
+   * Singleton-safe: `FontLoaderBase.loadMetricsFile` calls this only on the first invocation.
+   * @returns {Promise<void>} Resolves once every record is in MetricsBundleStore.
    */
-  static async loadMetricsFile(idString, bitmapTextClass) {
+  static async loadBundleFile() {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      script.src = `${fontDirectory}${FontLoader.METRICS_PREFIX}${idString}${FontLoader.JS_EXTENSION}`;
+      script.src = `${fontDirectory}${FontLoader.METRICS_BUNDLE_FILENAME}`;
 
       script.onload = () => {
-        resolve();
+        const decodePromise = FontLoaderBase._bundleDecodePromise;
+        if (!decodePromise) {
+          reject(new Error('metrics-bundle.js loaded but did not call BitmapText.registerBundle'));
+          return;
+        }
+        decodePromise.then(resolve, reject);
       };
 
       script.onerror = () => {
         script.remove();
-        console.warn(`Metrics JS not found: metrics-${idString}.js - font will not be available`);
-        reject(new Error(`Metrics not found for ${idString}`));
+        reject(new Error(`Failed to load metrics bundle from ${script.src}`));
       };
 
       document.head.appendChild(script);

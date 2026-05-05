@@ -96,15 +96,15 @@ class MetricsExpander {
 
   /**
    * Expands minified metrics back to FontMetrics instance for runtime use
-   * TIER 7 FORMAT (backward compatible with Tier 6c)
    *
-   * @param {Array} minified - Minified metrics array [kv, k, b, v, t, g, s, cl]
-   *   - v can be array (Tier 6c) or base64 string (Tier 7)
+   * @param {Array} minified - 8-element minified metrics array [kv, k, b, v, t, g, s, cl]
    * @param {Array<string>} [characterSet=CharacterSets.FONT_SPECIFIC_CHARS] - Character set to use for expansion
+   * @param {number} [overrideDensity] - Optional pixelDensity to inject (replaces baseline[5]).
+   *   Bundle records ship with density-agnostic data; the runtime supplies the desired density here.
    * @returns {FontMetrics} FontMetrics instance with expanded data
    * @throws {Error} If invalid format detected
    */
-  static expand(minified, characterSet = CharacterSets.FONT_SPECIFIC_CHARS) {
+  static expand(minified, characterSet = CharacterSets.FONT_SPECIFIC_CHARS, overrideDensity) {
     // Check if FontMetrics class is available
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
@@ -154,6 +154,12 @@ class MetricsExpander {
 
       // Unflatten baseline array to object
       b = this.#unflattenBaseline(b);
+
+      // Density injection: bundle records have baseline[5] = null (density-agnostic).
+      // Runtime supplies pixelDensity at expansion time.
+      if (overrideDensity !== undefined) {
+        b.pd = overrideDensity;
+      }
 
       // Decode base64-encoded binary data
       // t = VarInt+zigzag encoded flattened tuplets
@@ -499,6 +505,8 @@ class MetricsExpander {
     }
 
     // Fixed order: fba, fbd, hb, ab, ib, pd
+    // baseline[5] (pd) is null in bundle records and is filled in by `expand`
+    // from its `overrideDensity` argument.
     return {
       fba: baselineArray[0],
       fbd: baselineArray[1],

@@ -286,7 +286,7 @@ class BitmapText {
 
   /**
    * Convert registration parameters to ID string
-   * Shared helper for registerMetrics and registerAtlas
+   * Used by registerAtlas to build the idString from per-asset arguments.
    * @private
    * @param {number} density - Pixel density
    * @param {string} fontFamily - Font family name
@@ -313,20 +313,27 @@ class BitmapText {
   }
 
   /**
-   * Register font metrics from metrics-*.js file
-   * TIER 6c: Multi-parameter format only (no legacy support)
-   *
-   * @param {number} density - Pixel density (e.g., 1 or 1.5)
-   * @param {string} fontFamily - Font family name (e.g., 'Arial')
-   * @param {number} styleIdx - Style index (0=normal, 1=italic, 2=oblique)
-   * @param {number} weightIdx - Weight index (0=normal, 1=bold, or numeric weight)
-   * @param {number} size - Font size (e.g., 18 or 18.5)
-   * @param {Array} compactedData - Tier 6c compacted metrics array
+   * Ensure the metrics bundle has been loaded, decoded, and registered. Use this
+   * when you want to enumerate available fonts (via `FontManifest.allFontIDs()`)
+   * before calling `loadFont`/`loadFonts`. Idempotent: safe to call multiple times.
+   * @returns {Promise<void>}
    */
-  static registerMetrics(density, fontFamily, styleIdx, weightIdx, size, compactedData) {
+  static async ensureMetricsBundleLoaded() {
     BitmapText.#ensureFontLoader();
-    const fullIDString = BitmapText.#parametersToIDString(density, fontFamily, styleIdx, weightIdx, size);
-    FontLoaderBase.registerMetrics(fullIDString, compactedData, BitmapText);
+    return FontLoaderBase.loadMetricsFile();
+  }
+
+  /**
+   * Register the metrics bundle (called once by `font-assets/metrics-bundle.js`).
+   *
+   * Kicks off async base64 → deflate-raw → JSON decode. Stores the resulting
+   * Promise on FontLoaderBase so `loadFont()` can await it.
+   *
+   * @param {string} b64 - Base64-encoded deflate-raw stream containing the bundle JSON.
+   */
+  static registerBundle(b64) {
+    BitmapText.#ensureFontLoader();
+    FontLoaderBase._bundleDecodePromise = FontLoaderBase.processBundle(b64);
   }
 
   /**
@@ -1697,5 +1704,5 @@ class BitmapText {
 }
 
 // TIER 6b OPTIMIZATION: Short aliases for registration methods (saves ~15 bytes per file)
-BitmapText.r = BitmapText.registerMetrics;
+BitmapText.rBundle = BitmapText.registerBundle;
 BitmapText.a = BitmapText.registerAtlas;
