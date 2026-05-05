@@ -293,6 +293,43 @@ class GlyphFAB {
       Math.round(charTextMetrics.actualBoundingBoxLeft) + cropLeftCorrection_CssPx,
       canvas.height / pixelDensity - 1
     );
+
+    // Enforce CLAUDE.md invariant 2: glyph atlases are binary (pixels on or off).
+    // Below ~182 physical pixels the platform text rasterizer (Skia / Core Text /
+    // Cairo) produces binary alpha thanks to TrueType `gasp`/bitmap hints; at and
+    // above that threshold it engages full grayscale AA. The exact cutoff is
+    // platform/font dependent and observed empirically (density-2 CSS size 91 →
+    // 182 phys px was the boundary across Arial / Times / Courier on macOS).
+    // We threshold post-rasterization so the atlas pixels are always 0 or 255 α.
+    GlyphFAB.binarizeCanvas(canvas);
+  }
+
+  /**
+   * Threshold every pixel of a glyph canvas to either fully transparent
+   * (0,0,0,0) or fully opaque black (0,0,0,255), based on alpha ≥ threshold.
+   *
+   * Threshold default 128 = centred half-on/half-off split. Reproduces the
+   * binary look the platform itself produces at small physical sizes.
+   *
+   * Implementation note: getImageData/putImageData operate in image-space and
+   * ignore the current transform (per CanvasRenderingContext2D spec), so we
+   * don't need to reset ctx.scale(...) here. Avoiding ctx.setTransform also
+   * sidesteps a WebKit-headless quirk where it occasionally throws
+   * InvalidStateError after a transform reset on a freshly-painted canvas.
+   *
+   * @param {HTMLCanvasElement} canvas
+   * @param {number} [alphaThreshold=128]
+   */
+  static binarizeCanvas(canvas, alphaThreshold = 128) {
+    const ctx = canvas.getContext("2d");
+    const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const on = d[i + 3] >= alphaThreshold;
+      d[i] = 0; d[i + 1] = 0; d[i + 2] = 0;
+      d[i + 3] = on ? 255 : 0;
+    }
+    ctx.putImageData(id, 0, 0);
   }
 
   /**

@@ -30,7 +30,7 @@ The hard problem: each engine's text rasterizer (Skia, Core Text, etc.) anti-ali
 ## Universal invariants
 
 1. **`BitmapText` is a static singleton.** Never instantiate it. The internal `AtlasDataStore` and `FontMetricsStore` are application-wide state; there is no per-instance variant.
-2. **Glyph atlases are binary** — pixels are on or off. Anti-aliasing-related debugging heuristics do not apply.
+2. **Glyph atlases are binary** — pixels are on or off. Anti-aliasing-related debugging heuristics do not apply. Enforced by `GlyphFAB.binarizeCanvas` (alpha ≥ 128 → opaque black, else fully transparent) which runs at the end of `renderCharacterToCanvas`. **Don't remove this step**: the platform Canvas text rasterizer (Skia / Core Text / Cairo) silently switches from binary to greyscale AA at physical pixel size ≥ 182 (see `docs/ARCHITECTURE.md` § *Glyph rasterization quirk*), so the FAB cannot trust `fillText` output to be on/off. Verify with `node scripts/check-atlas-binary.js`.
 3. **9-physical-pixel rasterization floor.** Below ~9 phys-px the renderer falls back to placeholder rectangles; no atlas glyphs exist below that size.
 4. **DPR is a hard partition.** Each app picks one `pixelDensity` at startup; assets, bundles, and in-memory stores never mix DPRs.
 5. **Transforms are ignored.** `BitmapText.drawTextFromAtlas` resets the canvas matrix to identity (`src/runtime/BitmapText.js:697`); coordinates are absolute physical pixels. `ctx.translate(...)` before drawing has no effect — callers must compute absolute positions themselves.

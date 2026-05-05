@@ -685,6 +685,59 @@ To support compound emojis would require:
   - Part of core runtime distribution (~18-22KB)
   - API: `reconstructFromAtlas(fontMetrics, atlasImage)` - fontMetrics first for consistency
 
+## Glyph rasterization quirk: forcing binarity
+
+**Why the FAB binarises glyphs after `fillText`.** The platform Canvas text
+rasterizer (Skia in Chromium, Core Text in Safari/WebKit, Cairo / FreeType in
+Node `canvas`) does not produce binary alpha at all sizes. Empirically, with
+`Arial`, `Courier New`, `Times New Roman` and `BitmapTextInvariant` (which
+delegates to Courier New for monospacing) on macOS / WebKit, the rasterizer
+silently switches behaviour at **physical pixel size ≥ 182** (CSS size 91 at
+`pixelDensity=2`):
+
+| pixelDensity | CSS size | physical px | rasterized alpha |
+|---|---|---|---|
+| 1 | 9 → 96 | 9 → 96 | **binary** (0 or 255) |
+| 2 | 9 → 90.5 | 18 → 181 | **binary** |
+| 2 | 91 → 96 | **182 → 192** | **256-level greyscale** |
+
+Below the cutoff the platform consults the font's TrueType `gasp` table /
+bytecode hints / embedded bitmaps and produces on/off pixels; above the cutoff
+it switches to outline rasterization with full greyscale anti-aliasing. The
+exact threshold is platform- and font-specific; treat it as an undocumented,
+moving target.
+
+This violates **CLAUDE.md universal invariant 2** ("Glyph atlases are binary
+— pixels are on or off"), which the runtime depends on:
+
+- `BitmapText.drawTextFromAtlas` uses `globalCompositeOperation = 'source-in'`
+  for colour-tinted glyphs (`src/runtime/BitmapText.js:1199`); a partially-
+  transparent atlas pixel becomes a partially-tinted output pixel, producing
+  visible AA fringe in shipped text.
+- `TightAtlasReconstructor` scans atlas pixels at runtime via
+  `alpha !== 0` to derive per-glyph cell positions; AA fringe inflates those
+  bounding boxes by ~1 pixel and the inflation is cell- and atlas-specific.
+- The rendering pipeline (QOI authoring → PNG → cwebp lossless → WebP
+  delivery) is byte-faithful, so any AA pixel introduced at rasterization
+  time propagates verbatim to every shipped artifact.
+
+**The fix.** `GlyphFAB.binarizeCanvas(canvas, alphaThreshold = 128)` runs
+inside `renderCharacterToCanvas` immediately after `ctx.fillText`. It rewrites
+each pixel to either `(0,0,0,0)` or `(0,0,0,255)` based on `alpha ≥ 128` (a
+centred half-on/half-off split — produces the same shape the platform itself
+produces at sizes < 182). Bounding boxes computed via `getOnPixelsArray` (which
+uses `alpha !== 0`) are now stable across the cutoff, and downstream cell
+layout, tight-atlas reconstruction, and runtime compositing all see binary
+input.
+
+**Verifying.** `node scripts/check-atlas-binary.js` decodes every QOI / PNG /
+WebP under `font-assets/` (QOI in-process via `lib/QOIDecode.js`, PNG via an
+inline zlib decoder, WebP via parallel `dwebp -pam` subprocesses) and reports
+any pixel whose R, G, B or A channel is neither 0 nor 255. SHA-1 fingerprints
+are also computed per file so QOI / PNG / WebP triples for the same atlas can
+be cross-checked. A clean run prints `0 / N` for every format. Run after any
+change to glyph rasterization or after regenerating atlases.
+
 ## Canvas Factory Pattern
 
 ### Why Factory Functions, Not Classes?
