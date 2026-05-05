@@ -796,6 +796,26 @@ Use cases:
 
 For the full reference (page list, output format, when to run, limitations, CI use), see [`docs/PLAYWRIGHT_AUTOMATION.md`](../docs/PLAYWRIGHT_AUTOMATION.md) section 5.
 
+### 16. Atlas binarity inspector
+
+**File**: `scripts/check-atlas-binary.js`
+
+Scans every QOI / PNG / WebP under a directory (default `font-assets/`) and flags any pixel whose R, G, B or A channel is neither 0 nor 255. CLAUDE.md universal invariant 2 requires glyph atlases to be **binary** (pixels on or off); this tool catches regressions where Canvas's `fillText` rasterizer produced grey AA pixels and the FAB's binarisation step (`GlyphFAB.binarizeCanvas`) didn't catch them — see `docs/ARCHITECTURE.md` § *Glyph rasterization quirk* for the underlying ≥182-physical-pixel cutoff.
+
+```bash
+node scripts/check-atlas-binary.js                  # full scan, human-readable report
+node scripts/check-atlas-binary.js --json           # machine-readable (full lists)
+node scripts/check-atlas-binary.js --limit=10       # smoke test on first N per format
+node scripts/check-atlas-binary.js --concurrency=8  # tune dwebp parallelism (default = cpu cores)
+node scripts/check-atlas-binary.js path/to/dir      # scan a different directory
+```
+
+A clean run prints `0 / N` for every format. The report also SHA-1-fingerprints every decode so the QOI / PNG / WebP triples for the same atlas can be cross-checked: any divergence indicates a lossy step in the qoi → png → webp pipeline.
+
+Decoders: QOI in-process via `lib/QOIDecode.js`, PNG via an inline zlib decoder (handles all colour types at bit depth 8, all 5 PNG filters), WebP via parallel `dwebp -pam` subprocesses (requires `brew install webp`). Full-directory scan ≈ 3 minutes on Apple Silicon.
+
+Run after any change to glyph rasterization or after regenerating atlases — the inspector is the cheapest way to confirm CLAUDE.md invariant 2 still holds.
+
 ---
 
 ## 📁 File Structure
