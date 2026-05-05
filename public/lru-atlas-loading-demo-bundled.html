@@ -267,7 +267,10 @@
       // measureText returns { metrics, status }; metrics is null only if no metrics exist
       // for this font, which shouldn't happen (the bundle covers everything we picked from).
       const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, TEXT_PROPERTIES);
-      const m = measurement.metrics || { width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0 };
+      const m = measurement.metrics || {
+        width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0,
+        fontBoundingBoxAscent: 0, fontBoundingBoxDescent: 0
+      };
       const padding = 4;
       const cssWidth  = Math.max(40, Math.ceil(m.width) + padding * 2);
       const cssHeight = Math.max(20, Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) + padding * 2);
@@ -283,8 +286,12 @@
       this.canvas.style.height = cssHeight + 'px';
 
       this.ctx = this.canvas.getContext('2d');
-      this.paddingCssPx   = padding;
-      this.baselineYCssPx = m.actualBoundingBoxAscent + padding;
+      this.paddingCssPx = padding;
+      // textBaseline is 'bottom', which means y_CssPx is the bottom of the em square
+      // (= alphabetic baseline + fontBoundingBoxDescent). To position visible glyphs at
+      // y=padding from the canvas top, the y_CssPx must include fontBoundingBoxDescent
+      // so the runtime computes alphabetic baseline at (y_CssPx - fbd) = padding + ascent.
+      this.baselineYCssPx = padding + m.actualBoundingBoxAscent + m.fontBoundingBoxDescent;
 
       // Position: random within stage, biased away from edges.
       const stageRect = stage.getBoundingClientRect();
