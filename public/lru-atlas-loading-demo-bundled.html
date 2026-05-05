@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BitmapText.js — LRU dynamic atlas loading demo</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: #fafafa;
+      color: #222;
+      overflow: hidden;
+      height: 100vh;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    .panel {
+      flex: 0 0 auto;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 8px 12px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .controls input[type=range] {
+      width: 140px;
+    }
+    .controls .value {
+      display: inline-block;
+      min-width: 30px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .controls button {
+      font-size: 13px;
+      padding: 4px 12px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 4px 16px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stats .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+    .stats .stat .label { color: #666; }
+    .stats .stat .num   { font-weight: 600; }
+    .stats .stat.bad .num { color: #c00; }
+    .warn {
+      color: #b35900;
+      font-size: 12px;
+      margin-top: 4px;
+      min-height: 16px;
+    }
+    #stage {
+      flex: 1 1 auto;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    }
+    .textbox {
+      position: absolute;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      border-radius: 3px;
+      padding: 4px 6px;
+      pointer-events: none;
+    }
+    .textbox canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="controls">
+    <label>N (textboxes)
+      <input id="ctrl-n" type="range" min="1" max="80" value="30">
+      <span id="val-n" class="value">30</span>
+    </label>
+    <label>Max lifetime (s)
+      <input id="ctrl-life" type="range" min="1" max="15" value="5">
+      <span id="val-life" class="value">5</span>
+    </label>
+    <label>K (LRU capacity)
+      <input id="ctrl-k" type="range" min="2" max="120" value="50">
+      <span id="val-k" class="value">50</span>
+    </label>
+    <button id="ctrl-pause">Pause</button>
+    <span id="ctrl-status" style="color:#666"></span>
+  </div>
+  <div id="warn" class="warn"></div>
+  <div class="stats" id="stats"></div>
+</div>
+
+<div id="stage"></div>
+
+<script src="../dist/bitmaptext.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Bootstrap ----------
+
+  BitmapText.setFontDirectory('../font-assets/');
+  const isFileProtocol = window.location.href.includes('file://');
+
+  const stage    = document.getElementById('stage');
+  const warnEl   = document.getElementById('warn');
+  const statsEl  = document.getElementById('stats');
+  const statusEl = document.getElementById('ctrl-status');
+
+  // ---------- Configuration ----------
+
+  // Pin window: a freshly-loaded or freshly-touched atlas is not evictable for this long.
+  // Must exceed the time between a load resolving and the requester's first paint
+  // (a few microtasks) but stay well below typical textbox lifetimes (>= 1 s).
+  const PIN_GRACE_MS = 250;
+
+  // Spawn loop tick.
+  const SPAWN_INTERVAL_MS = 80;
+
+  const MIN_LIFETIME_MS = 1000;
+
+  const TEXT_CONTENT = 'Hello World ☺';
+  const TEXT_PROPERTIES = new TextProperties({
+    isKerningEnabled: true,
+    textBaseline: 'bottom',
+    textAlign: 'left',
+    textColor: '#222'
+  });
+
+  // ---------- AtlasLRU ----------
+
+  // Tracks "what's loaded" + recency. The actual atlas bytes live in AtlasDataStore;
+  // the LRU is just an ordering structure that decides when to call BitmapText.loadFont
+  // and BitmapText.unloadAtlas to keep the resident-atlas count <= capacity.
+  class AtlasLRU {
+    constructor(capacity) {
+      this.capacity     = capacity;
+      this.entries      = new Map();   // idString -> entry record (see below)
+      this.pendingCount = 0;
+      this.reloadCount  = 0;           // diagnostic: how many times we re-loaded an evicted atlas
+    }
+
+    // Called by a TextBox at every paint. Returns a Promise that resolves when the
+    // atlas is in AtlasDataStore. If already there, resolves immediately and bumps recency.
+    request(idString) {
+      const now = performance.now();
+      let e = this.entries.get(idString);
+
+      if (e) {
+        e.lastUsed = now;
+        e.pinUntil = now + PIN_GRACE_MS;
+        return e.state === 'loaded' ? Promise.resolve('loaded') : e.promise;
+      }
+
+      // New idString — find a slot.
+      while (this.entries.size >= this.capacity) {
+        if (!this.#evictOne(now)) break;   // no evictable victim; proceed (capacity will be temporarily over)
+      }
+
+      // Reserve and kick off the load.
+      const promise = BitmapText.loadFont(idString, { isFileProtocol })
+        .then(() => {
+          const x = this.entries.get(idString);
+          if (!x) {
+            // Slot was removed under us (only happens on load failure path or capacity=0).
+            return 'evicted-during-load';
+          }
+          x.state    = 'loaded';
+          x.lastUsed = performance.now();        // KEY: load completion = a fresh use
+          x.pinUntil = x.lastUsed + PIN_GRACE_MS; // protect briefly so requester can paint
+          this.pendingCount--;
+          return 'loaded';
+        })
+        .catch(err => {
+          this.entries.delete(idString);
+          this.pendingCount--;
+          throw err;
+        });
+
+      e = { state: 'loading', lastUsed: now, pinUntil: now + PIN_GRACE_MS, promise };
+      this.entries.set(idString, e);
+      this.pendingCount++;
+      return promise;
+    }
+
+    // Returns true if a victim was evicted, false if no eligible victim was found.
+    #evictOne(now) {
+      let victimId = null, victimT = Infinity;
+      for (const [id, e] of this.entries) {
+        if (e.state !== 'loaded') continue;     // never touch in-flight loads
+        if (now < e.pinUntil)     continue;     // never evict freshly-touched/just-loaded
+        if (e.lastUsed < victimT) { victimT = e.lastUsed; victimId = id; }
+      }
+      if (!victimId) return false;
+      BitmapText.unloadAtlas(victimId);
+      this.entries.delete(victimId);
+      return true;
+    }
+
+    // Slider lowered K below current size — shrink as much as the pin window allows.
+    setCapacity(newCapacity) {
+      this.capacity = newCapacity;
+      const now = performance.now();
+      while (this.entries.size > this.capacity) {
+        if (!this.#evictOne(now)) break;
+      }
+    }
+
+    get size()        { return this.entries.size; }
+    get loadedCount() { return this.entries.size - this.pendingCount; }
+  }
+
+  // ---------- TextBox ----------
+
+  class TextBox {
+    constructor(idString, lifetimeMs, lru) {
+      this.idString  = idString;
+      this.fontProps = FontProperties.fromIDString(idString);
+      this.lru       = lru;
+      this.alive     = true;
+      this.expireAt  = performance.now() + lifetimeMs;
+      this.hadAtlasOnce = false;        // diagnostic: did we ever achieve a non-placeholder paint?
+      this.evictedDuringLife = 0;       // diagnostic: how many times did we hit NO_ATLAS after a successful paint?
+
+      // Sizing: we use measureText ahead of paint so the canvas is big enough for the glyphs.
+      // This needs metrics (always loaded), not the atlas, so it works without a load.
+      // measureText returns { metrics, status }; metrics is null only if no metrics exist
+      // for this font, which shouldn't happen (the bundle covers everything we picked from).
+      const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, TEXT_PROPERTIES);
+      const m = measurement.metrics || { width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0 };
+      const padding = 4;
+      const cssWidth  = Math.max(40, Math.ceil(m.width) + padding * 2);
+      const cssHeight = Math.max(20, Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) + padding * 2);
+
+      // Backing buffer is at physical pixels (cssSize × pixelDensity); CSS display stays at
+      // cssSize. Coordinates passed to drawTextFromAtlas are CSS pixels — the runtime scales
+      // by fontProperties.pixelDensity internally. Don't pre-multiply.
+      const dpr = this.fontProps.pixelDensity;
+      this.canvas = document.createElement('canvas');
+      this.canvas.width  = cssWidth  * dpr;
+      this.canvas.height = cssHeight * dpr;
+      this.canvas.style.width  = cssWidth  + 'px';
+      this.canvas.style.height = cssHeight + 'px';
+
+      this.ctx = this.canvas.getContext('2d');
+      this.paddingCssPx   = padding;
+      this.baselineYCssPx = m.actualBoundingBoxAscent + padding;
+
+      // Position: random within stage, biased away from edges.
+      const stageRect = stage.getBoundingClientRect();
+      const maxX = Math.max(0, stageRect.width  - cssWidth);
+      const maxY = Math.max(0, stageRect.height - cssHeight);
+      this.x = Math.floor(Math.random() * maxX);
+      this.y = Math.floor(Math.random() * maxY);
+
+      this.wrapper = document.createElement('div');
+      this.wrapper.className = 'textbox';
+      this.wrapper.style.left = this.x + 'px';
+      this.wrapper.style.top  = this.y + 'px';
+      this.wrapper.appendChild(this.canvas);
+      stage.appendChild(this.wrapper);
+
+      this.paint();
+    }
+
+    paint() {
+      if (!this.alive) return;
+
+      // Clear, then draw. drawTextFromAtlas paints placeholder rectangles when atlas missing.
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.fillStyle = '#fff';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      const result = BitmapText.drawTextFromAtlas(
+        this.ctx, TEXT_CONTENT, this.paddingCssPx, this.baselineYCssPx,
+        this.fontProps, TEXT_PROPERTIES
+      );
+
+      const code = result && result.status ? result.status.code : null;
+
+      if (code === StatusCode.NO_ATLAS || code === StatusCode.PARTIAL_ATLAS) {
+        // Placeholders are already painted. Either we never had the atlas, OR we had it
+        // and lost it to eviction. Track the latter — it should be rare, by design.
+        if (this.hadAtlasOnce) {
+          this.evictedDuringLife++;
+          this.lru.reloadCount++;
+        }
+
+        this.lru.request(this.idString)
+          .then(() => this.paint())
+          .catch(() => { /* load failed; textbox stays in placeholder mode for life */ });
+      } else if (code === StatusCode.SUCCESS) {
+        this.hadAtlasOnce = true;
+        // Bump recency on the cache so this entry stays warm while we're on screen.
+        // (The load wasn't triggered here; just a touch.)
+        this.lru.request(this.idString);
+      } else {
+        // NO_METRICS / PARTIAL_METRICS — shouldn't happen since metrics bundle is fully loaded.
+        // Treat like a missing atlas and try anyway.
+        this.lru.request(this.idString);
+      }
+    }
+
+    destroy() {
+      this.alive = false;
+      this.wrapper.remove();
+    }
+  }
+
+  // ---------- Demo state ----------
+
+  let lru;
+  let candidates = [];
+  let onScreen   = new Set();
+  let paused     = false;
+  let spawnTimer = null;
+
+  // Shared diagnostic counters.
+  let totalSpawned        = 0;
+  let totalSpawnFailures  = 0;       // spawn loop hit the "all pinned" eviction floor
+
+  // ---------- Slider wiring ----------
+
+  const N_INPUT    = document.getElementById('ctrl-n');
+  const N_VAL      = document.getElementById('val-n');
+  const LIFE_INPUT = document.getElementById('ctrl-life');
+  const LIFE_VAL   = document.getElementById('val-life');
+  const K_INPUT    = document.getElementById('ctrl-k');
+  const K_VAL      = document.getElementById('val-k');
+  const PAUSE_BTN  = document.getElementById('ctrl-pause');
+
+  N_INPUT.oninput    = () => { N_VAL.textContent    = N_INPUT.value;    refreshWarn(); };
+  LIFE_INPUT.oninput = () => { LIFE_VAL.textContent = LIFE_INPUT.value; };
+  K_INPUT.oninput    = () => {
+    K_VAL.textContent = K_INPUT.value;
+    if (lru) lru.setCapacity(parseInt(K_INPUT.value, 10));
+    refreshWarn();
+  };
+  PAUSE_BTN.onclick = () => {
+    paused = !paused;
+    PAUSE_BTN.textContent = paused ? 'Resume' : 'Pause';
+  };
+
+  function refreshWarn() {
+    const N = parseInt(N_INPUT.value, 10);
+    const K = parseInt(K_INPUT.value, 10);
+    if (K <= N) {
+      warnEl.textContent = `Warning: K (${K}) ≤ N (${N}) — atlas thrashing expected. The cache invariant still holds.`;
+    } else {
+      warnEl.textContent = '';
+    }
+  }
+
+  // ---------- Spawn loop ----------
+
+  function spawnIfNeeded() {
+    if (paused || candidates.length === 0) return;
+    const N = parseInt(N_INPUT.value, 10);
+    const lifeMaxMs = parseInt(LIFE_INPUT.value, 10) * 1000;
+
+    while (onScreen.size < N) {
+      const id = candidates[Math.floor(Math.random() * candidates.length)];
+      const lifetime = MIN_LIFETIME_MS + Math.floor(Math.random() * (lifeMaxMs - MIN_LIFETIME_MS));
+      try {
+        const tb = new TextBox(id, lifetime, lru);
+        onScreen.add(tb);
+        totalSpawned++;
+      } catch (err) {
+        // Most likely cause: AtlasLRU saturated with pinned/loading entries. Pause spawning
+        // for one tick and let the system drain.
+        totalSpawnFailures++;
+        break;
+      }
+    }
+  }
+
+  function reapExpired(now) {
+    for (const tb of onScreen) {
+      if (now >= tb.expireAt) {
+        tb.destroy();
+        onScreen.delete(tb);
+      }
+    }
+  }
+
+  // ---------- Stats panel ----------
+
+  const STAT_KEYS = [
+    ['onScreen',      'on-screen / N'],
+    ['resident',      'AtlasDataStore.size'],
+    ['lruSize',       'LRU entries'],
+    ['lruLoaded',     'LRU loaded'],
+    ['lruPending',    'LRU pending loads'],
+    ['lruPinned',     'LRU pinned (grace)'],
+    ['reloadCount',   'reloads after eviction'],
+    ['totalSpawned',  'total spawned'],
+    ['spawnFailures', 'spawn-loop saturations'],
+  ];
+
+  function buildStatsPanel() {
+    statsEl.innerHTML = STAT_KEYS.map(([k, label]) =>
+      `<div class="stat" id="stat-${k}"><span class="label">${label}</span><span class="num">—</span></div>`
+    ).join('');
+  }
+
+  function updateStats() {
+    const N = parseInt(N_INPUT.value, 10);
+    const K = parseInt(K_INPUT.value, 10);
+    const now = performance.now();
+
+    let pinned = 0;
+    for (const e of lru.entries.values()) {
+      if (now < e.pinUntil) pinned++;
+    }
+
+    const resident = AtlasDataStore.size();
+
+    setStat('onScreen',      `${onScreen.size} / ${N}`);
+    setStat('resident',      `${resident} / ${K}`,    resident > K);
+    setStat('lruSize',       `${lru.size} / ${K}`,    lru.size > K);
+    setStat('lruLoaded',     `${lru.loadedCount}`);
+    setStat('lruPending',    `${lru.pendingCount}`);
+    setStat('lruPinned',     `${pinned}`);
+    setStat('reloadCount',   `${lru.reloadCount}`);
+    setStat('totalSpawned',  `${totalSpawned}`);
+    setStat('spawnFailures', `${totalSpawnFailures}`);
+  }
+
+  function setStat(key, value, bad = false) {
+    const el = document.getElementById('stat-' + key);
+    if (!el) return;
+    el.classList.toggle('bad', !!bad);
+    el.querySelector('.num').textContent = value;
+  }
+
+  // ---------- Main ----------
+
+  buildStatsPanel();
+  refreshWarn();
+  statusEl.textContent = 'Loading metrics bundle…';
+
+  BitmapText.ensureMetricsBundleLoaded()
+    .then(() => {
+      // Pick density at startup — hard partition (per CLAUDE.md).
+      const dpr = (window.devicePixelRatio >= 1.5) ? 2 : 1;
+      const densityPrefix = `density-${dpr}-0-`;
+
+      candidates = FontManifest.allFontIDs()
+        .filter(id => id.startsWith(densityPrefix))
+        .filter(id => {
+          const p = FontProperties.fromIDString(id);
+          return p.fontSize >= 9;   // sub-9px sizes have no atlas (placeholder-only)
+        });
+
+      if (candidates.length === 0) {
+        statusEl.textContent = `No candidate fonts at DPR ${dpr}. Did you run ./scripts/download-font-assets.sh?`;
+        return;
+      }
+
+      lru = new AtlasLRU(parseInt(K_INPUT.value, 10));
+
+      statusEl.textContent =
+        `DPR ${dpr}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;
+
+      // Spawn loop on a fixed interval; expiry sweep + stats on rAF.
+      spawnTimer = setInterval(spawnIfNeeded, SPAWN_INTERVAL_MS);
+
+      const tick = () => {
+        const now = performance.now();
+        reapExpired(now);
+        updateStats();
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    })
+    .catch(err => {
+      statusEl.textContent = `Failed to load metrics bundle: ${err && err.message ? err.message : err}`;
+      console.error(err);
+    });
+})();
+</script>
+</body>
+</html>

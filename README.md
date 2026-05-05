@@ -1366,6 +1366,9 @@ try {
   **Baseline & Alignment Demo**
   Open `public/baseline-alignment-demo.html` for an interactive demonstration of all baseline and alignment combinations, with side-by-side comparison of BitmapText vs native Canvas rendering. Includes controls for font selection, size, pixel density, and text samples.
 
+  **LRU Dynamic Atlas Loading Demo**
+  Open `public/lru-atlas-loading-demo-bundled.html` (or run `npm run demo-lru-atlas` after `npm run serve`) to see dynamic atlas loading with an LRU cache. Many text boxes spawn at random positions with random font/style/weight/size; each only stays for a random number of seconds. Atlases are loaded on demand and an LRU pool keeps the resident-atlas count bounded — old atlases are explicitly unloaded when evicted. Demonstrates the "draw before atlas is loaded" path: textboxes paint placeholder rectangles immediately and repaint themselves once the atlas arrives. Live stats show that `AtlasDataStore.size()` never exceeds the configured capacity K.
+
   **Node.js Usage**
   ```bash
   # Build all demos and runtime bundles, then run all Node.js demos (RECOMMENDED)
