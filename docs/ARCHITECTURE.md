@@ -1055,9 +1055,9 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   **Distribution split (canonical vs. derived)**:
   Because `font-assets/` is too large to commit, the project distributes only the canonical/source-of-truth subset and re-derives the rest locally:
-  - **Canonical (~72 MB)**: `metrics-bundle.js` (deflate-raw + base64) and `atlas-*.webp` (lossless WebP)
+  - **Canonical (~72 MB)**: `metrics-bundle.js` (deflate-raw + base64) and `atlas-*.webp` (lossless WebP). Hosted on **GitHub Releases**, not the repo tree (the working-directory `font-assets/` is `.gitignore`d apart from a sentinel + README).
   - **Derived locally**: `atlas-*.qoi` (re-encoded from `dwebp -pam` raw RGBA via `lib/QOIEncode.js`), `atlas-*-{webp,qoi}.js` (base64 wrappers, terser-minified)
-  - **Operational steps**: see `scripts/README.md` § 9 and `scripts/rebuild-from-minimal.sh`. Lossless WebP + deterministic QOI encoding guarantees a byte-identical rebuild.
+  - **Operational steps**: `./scripts/download-font-assets.sh` (consumer), `./scripts/publish-font-assets.sh` (maintainer), `./scripts/rebuild-from-minimal.sh` (used by both). See `scripts/README.md` § 9 for details. Lossless WebP + deterministic QOI encoding guarantees byte-identical `.qoi` and `metrics-bundle.js` on rebuild; JS wrappers may differ in surface formatting across terser versions but are functionally equivalent.
 
   ## Data Minification/Expansion
 

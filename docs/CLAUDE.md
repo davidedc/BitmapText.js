@@ -39,10 +39,11 @@
   5. Run all 6 Node demos: `npm run demo`
 
   ### Distributing / Re-deriving Font Assets
-  1. Canonical / source-of-truth subset: font-assets/metrics-bundle.js + font-assets/atlas-*.webp (~72 MB for full corpus)
-  2. To publish: strip font-assets/ to those two kinds, delete stale atlas-*.png + derived atlas-*.qoi + atlas-*-{webp,qoi}.js, zip, attach to release
-  3. To consume: place the minimum set in font-assets/, run `./scripts/rebuild-from-minimal.sh` (~10–30 min for 4,550 fonts)
-  4. Verification: SHA-256 round-trip diff against canonical hashes + `npm run demo` (see scripts/README.md § 9)
+  1. Canonical home is **GitHub Releases**: https://github.com/davidedc/BitmapText.js/releases. Tag convention `font-assets-YYYY-MM-DD`. Each release ships `font-assets-min.zip` (≈72 MB: `metrics-bundle.js` + `atlas-*.webp` only) plus a `.sha256` sidecar. Nothing under `font-assets/` is tracked in git except `.gitkeep` and `README.md`.
+  2. **Consume**: `./scripts/download-font-assets.sh` (curl latest, verify SHA-256, unzip, chain into rebuild). Pin a specific release with `--tag <font-assets-YYYY-MM-DD>`.
+  3. **Publish**: `./scripts/publish-font-assets.sh` (pre-flight, build zip + sidecar, generate notes, `git tag` + `gh release create`). Use `--dry-run` to inspect staged artifacts without uploading. Requires one-time `brew install gh && gh auth login`.
+  4. **Re-derive**: `./scripts/rebuild-from-minimal.sh` reconstructs `atlas-*.qoi` and `atlas-*-{webp,qoi}.js` from the minimum set (~10 min for 4,550 fonts).
+  5. Verification: SHA-256 round-trip diff against canonical hashes + `npm run demo` (see scripts/README.md § 9).
 
   ### Working with Font-Invariant Fonts
   1. Font-invariant font (BitmapTextInvariant) uses custom character set (font-invariant characters)

@@ -744,14 +744,27 @@ For a middle ground between individual files and minified bundle, use the unmini
 
 ## Getting Font Assets Without Rebuilding
 
-  The full `font-assets/` directory (~814 MB for 4,550 fonts) is too large to commit. The published distribution is a **minimum set** of `metrics-bundle.js` + `atlas-*.webp` (~72 MB total); everything else is regenerated locally.
+  The full `font-assets/` directory (~800 MB for 4,550 fonts) is too large to commit. The published distribution is a **minimum set** of `metrics-bundle.js` + `atlas-*.webp` (~72 MB total) hosted on [GitHub Releases](https://github.com/davidedc/BitmapText.js/releases); everything else is regenerated locally.
 
-  Place the minimum set in `font-assets/`, then run:
+  One command (downloads the latest release, verifies SHA-256, unzips, and runs the local rebuild):
   ```bash
-  ./scripts/rebuild-from-minimal.sh
+  ./scripts/download-font-assets.sh
   ```
 
-  This re-derives `atlas-*.qoi` (via `dwebp -pam` + `lib/QOIEncode.js`) and the `atlas-*-{webp,qoi}.js` wrappers (terser-minified) byte-for-byte against the canonical pipeline. Requires `dwebp` (`brew install webp`), `terser`, and Node. See `scripts/README.md` § 9 for the round-trip verification protocol.
+  Pin to a specific release with `--tag font-assets-YYYY-MM-DD`. Skip the rebuild step with `--no-rebuild` if you only want the bytes. Re-fetch over an existing populated tree with `--force`.
+
+  Manual fallback (no script):
+  ```bash
+  curl -L -o font-assets-min.zip \
+    https://github.com/davidedc/BitmapText.js/releases/latest/download/font-assets-min.zip
+  curl -L -o font-assets-min.zip.sha256 \
+    https://github.com/davidedc/BitmapText.js/releases/latest/download/font-assets-min.zip.sha256
+  shasum -a 256 -c font-assets-min.zip.sha256   # integrity check
+  unzip font-assets-min.zip                      # populates font-assets/
+  ./scripts/rebuild-from-minimal.sh              # re-derives QOI + JS wrappers (~10 min)
+  ```
+
+  Requires `dwebp` (`brew install webp`), `terser` (`npm i -g terser`), and Node ≥ 12. See [`scripts/README.md`](scripts/README.md) § 9 for the full Consume / Publish / Re-derive workflow.
 
 ## Generating Your Own Bitmap Fonts
 

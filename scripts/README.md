@@ -292,38 +292,66 @@ npm run build-metrics-bundle
 - The browser font-assets-builder writes the bundle directly into its zip output, so this Node-side script is mainly for ad-hoc rebuilds and the watcher pipeline
 
 ### 9. Distribution / Minimum-Set Workflow
+
+`font-assets/` is too large to commit (~800 MB full, ~72 MB minimum set). It is **not in the repo** — only `font-assets/.gitkeep` and `font-assets/README.md` are tracked. The asset bytes live in [GitHub Releases](https://github.com/davidedc/BitmapText.js/releases). Tag convention: `font-assets-YYYY-MM-DD`. Each release ships two assets — `font-assets-min.zip` and a matching `font-assets-min.zip.sha256` sidecar — so consumers can verify integrity without a separate hash transcription.
+
+The workflow has three scripts: one for consumers, one for maintainers, and the existing rebuilder used by both.
+
+#### 9.a Consume — `scripts/download-font-assets.sh`
+
+```bash
+./scripts/download-font-assets.sh                       # latest release
+./scripts/download-font-assets.sh --tag font-assets-2026-05-05
+./scripts/download-font-assets.sh --no-rebuild          # fetch+verify only
+./scripts/download-font-assets.sh --force               # overwrite existing
+```
+
+**What it does:**
+1. Refuses to clobber a populated `font-assets/` unless `--force` is given.
+2. `curl`s `font-assets-min.zip` from GitHub's stable `releases/latest/download/...` URL (or the specific tag URL if `--tag` is passed).
+3. `curl`s the matching `.sha256` sidecar and runs `shasum -a 256 -c` to verify. (Older releases without a sidecar emit a warning and continue.)
+4. `unzip`s into the repo root, populating `font-assets/`.
+5. Unless `--no-rebuild`, chains into `./scripts/rebuild-from-minimal.sh`.
+
+Total time end-to-end: ~10 min on a typical machine. Uses only `curl`, `unzip`, `shasum`, `find` — no `gh`, no `jq`, no `node` needed for the download.
+
+#### 9.b Publish — `scripts/publish-font-assets.sh`
+
+```bash
+./scripts/publish-font-assets.sh --dry-run              # stage, don't push
+./scripts/publish-font-assets.sh                        # tag = font-assets-$(date +%F)
+./scripts/publish-font-assets.sh --tag font-assets-2026-05-06
+```
+
+**What it does:**
+1. Pre-flight: confirms `metrics-bundle.js` + at least one `atlas-*.webp`; warns if `scripts/` or `src/` is dirty; checks that `gh` is installed and authed (skipped under `--dry-run`).
+2. Defensive cleanup: deletes any stale `atlas-*.png` intermediates so they can't sneak into the zip.
+3. Auto-tag `font-assets-$(date +%Y-%m-%d)` (or `--tag` override). If the tag already has a release, prompts for overwrite confirmation.
+4. Builds `font-assets-min.zip` via `find … -print | zip -@` (newline-safe; atlas filenames have spaces but never newlines).
+5. Computes the SHA-256 sidecar from inside the staging dir so the file references just the basename (so `shasum -c` works for consumers).
+6. Generates release notes from a template parameterised with the tag, file count, and hash.
+7. Confirms with the user, then `git tag` + `git push origin <tag>` + `gh release create <tag> <zip> <sha256> --title … --notes-file …`.
+8. Prints both canonical URLs (specific-tag + `releases/latest/...`) on success.
+
+**Requires:** `gh` (`brew install gh && gh auth login`), `zip`, `shasum`, `git`. Use `--dry-run` to inspect the staged artifacts and notes without pushing or uploading — that path doesn't need `gh`.
+
+#### 9.c Re-derive — `scripts/rebuild-from-minimal.sh`
+
+Used by `download-font-assets.sh` after unzipping. Can also be run directly when you already have the minimum set in place.
+
 ```bash
 ./scripts/rebuild-from-minimal.sh
 ```
 
-`font-assets/` is too large to commit (~814 MB after stale-PNG cleanup). The canonical / source-of-truth subset is **`metrics-bundle.js` + `atlas-*.webp`** (~72 MB total); everything else is locally re-derivable. The full set is published as a release artifact (URL TBD); this script reconstructs the rest of `font-assets/` byte-for-byte.
+**What it does:**
+1. Sanity-checks `metrics-bundle.js` and counts `atlas-*.webp` (must be > 0).
+2. Deletes any stale `atlas-*.png` intermediates.
+3. Runs `scripts/webp-to-qoi-converter.js`: `dwebp -pam` decodes each WebP to raw RGBA, then `lib/QOIEncode.js` encodes to QOI.
+4. Runs `scripts/image-to-js-converter.js font-assets --all` to wrap both formats as `BitmapText.a(...)` JS files.
+5. Minifies the new `atlas-*-{webp,qoi}.js` files in place with `terser` (NUL-delimited loop — family names contain spaces).
+6. Reports final counts; expects four kinds × WEBP_COUNT each (e.g. 4,550 each for the full corpus).
 
-**To minimise (publisher):**
-```bash
-# Inside font-assets/, strip everything that isn't the minimum set.
-# Note: stale atlas-*.png files from interrupted forward-pipeline runs
-# can occupy several GB — delete them before zipping.
-find font-assets -maxdepth 1 -name 'atlas-*.png'    -delete
-find font-assets -maxdepth 1 -name 'atlas-*.qoi'    -delete
-find font-assets -maxdepth 1 -name 'atlas-*-webp.js' -delete
-find font-assets -maxdepth 1 -name 'atlas-*-qoi.js'  -delete
-# Result: metrics-bundle.js + atlas-*.webp ≈ 72 MB
-```
-
-**To unminimise (consumer):**
-```bash
-./scripts/rebuild-from-minimal.sh
-```
-
-**What the rebuild does:**
-1. Sanity-checks `metrics-bundle.js` and counts `atlas-*.webp` (must be > 0)
-2. Deletes any stale `atlas-*.png` intermediates
-3. Runs `scripts/webp-to-qoi-converter.js`: `dwebp -pam` decodes each WebP to raw RGBA, then `lib/QOIEncode.js` encodes to QOI
-4. Runs `scripts/image-to-js-converter.js font-assets --all` to wrap both formats as `BitmapText.a(...)` JS files
-5. Minifies the new `atlas-*-{webp,qoi}.js` files in place with `terser` (NUL-delimited loop — family names contain spaces)
-6. Reports final counts; expects four kinds × WEBP_COUNT each (e.g. 4,550 each for the full corpus)
-
-**Runtime:** ~10–30 min for 4,550 fonts on a typical machine.
+**Runtime:** ~10 min for 4,550 fonts on a typical machine.
 
 **Verification (bit-exact round-trip):**
 ```bash
@@ -339,7 +367,7 @@ mv font-assets/atlas-*.qoi font-assets/atlas-*-webp.js font-assets/atlas-*-qoi.j
 diff /tmp/baseline.sha256 /tmp/rebuilt.sha256
 ```
 
-Determinism rationale: lossless WebP round-trips RGBA byte-for-byte through `dwebp -pam`; QOI is deterministic for fixed RGBA + descriptor; the JS wrapper and terser are deterministic. `metrics-bundle.js` is shipped as-is and never touched by the rebuild.
+Determinism rationale: lossless WebP round-trips RGBA byte-for-byte through `dwebp -pam`; QOI is deterministic for fixed RGBA + descriptor; the JS wrapper is deterministic. `metrics-bundle.js` is shipped as-is and never touched by the rebuild. (Terser output may differ across versions — the JS wrappers are functionally equivalent but bytes can vary.)
 
 **Requires:** `dwebp` (`brew install webp`), `terser` (`npm i -g terser`), Node.
 
