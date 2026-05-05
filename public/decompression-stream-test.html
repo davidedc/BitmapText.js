@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DecompressionStream(deflate-raw) round-trip test</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 18px; }
+  pre { background: #f4f4f4; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 13px; }
+  .pass { color: #0a0; font-weight: bold; }
+  .fail { color: #c00; font-weight: bold; }
+  .meta { color: #666; font-size: 12px; }
+  .row { padding: 6px 0; border-bottom: 1px solid #eee; }
+</style>
+</head>
+<body>
+<h1>DecompressionStream(<code>deflate-raw</code>) cross-platform round-trip test</h1>
+<p class="meta">
+  Verifies that <code>CompressionStream</code>/<code>DecompressionStream</code> with <code>deflate-raw</code> works
+  on a synthetic <code>Response</code> body (no network), under both HTTP and <code>file://</code>.
+  Required for the metrics-bundle implementation.
+</p>
+<p class="meta">
+  Protocol: <strong id="proto"></strong> &middot; UA: <span id="ua"></span>
+</p>
+<div id="results"></div>
+<h2>Round-trip details</h2>
+<pre id="details"></pre>
+
+<script>
+(async () => {
+  const results = document.getElementById('results');
+  const details = document.getElementById('details');
+  document.getElementById('proto').textContent = location.protocol;
+  document.getElementById('ua').textContent = navigator.userAgent;
+
+  const log = [];
+
+  function addRow(label, ok, detail) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = '<span class="' + (ok ? 'pass' : 'fail') + '">' + (ok ? 'PASS' : 'FAIL') + '</span> &mdash; ' + label;
+    if (detail) row.innerHTML += ' <span class="meta">(' + detail + ')</span>';
+    results.appendChild(row);
+    log.push((ok ? 'PASS' : 'FAIL') + ': ' + label + (detail ? ' (' + detail + ')' : ''));
+  }
+
+  // --- Capability checks ---
+  const hasCS = typeof CompressionStream === 'function';
+  const hasDS = typeof DecompressionStream === 'function';
+  const hasResponse = typeof Response === 'function';
+  const hasTextDecoder = typeof TextDecoder === 'function';
+  const hasAtob = typeof atob === 'function';
+
+  addRow('CompressionStream global available', hasCS);
+  addRow('DecompressionStream global available', hasDS);
+  addRow('Response global available', hasResponse);
+  addRow('TextDecoder global available', hasTextDecoder);
+  addRow('atob global available', hasAtob);
+
+  if (!hasCS || !hasDS || !hasResponse || !hasTextDecoder || !hasAtob) {
+    details.textContent = log.join('\n') + '\n\nMISSING REQUIRED GLOBAL(S). Cannot run round-trip.';
+    return;
+  }
+
+  // --- Build a representative test payload (~120 KB of text with strong repetition) ---
+  // Mimics the kind of content the metrics bundle will hold: lots of repeated short tokens,
+  // base64-ish strings, JSON-ish punctuation.
+  const fakeRecord = '["Arial",0,0,SIZE,[[],{}, [9,2,9.05,0,-2.12,null], "APIEihHUDrgCuAK6ArgC8AS6ArgCliKqB5gitBiYIq6XAZoM7IMBuKoBjg/wBPIE", "bAKKAQl4gwFsAoYBC2wCjAEJeAR6qgEBbAJkCZoBAqoBC44BAqoB", "axhMMiUzNE0ICE5PJlBRDgAZGTUR", null, 0]]';
+  let payload = '[';
+  for (let s = 9; s <= 96; s += 0.5) payload += fakeRecord.replace('SIZE', String(s)) + ',';
+  payload = payload.slice(0, -1) + ']';
+  const original = new TextEncoder().encode(payload);
+
+  // --- Compress via CompressionStream('deflate-raw') ---
+  let compressed;
+  try {
+    const rs = new Response(original).body.pipeThrough(new CompressionStream('deflate-raw'));
+    compressed = new Uint8Array(await new Response(rs).arrayBuffer());
+    addRow('CompressionStream(deflate-raw) produced output', compressed.byteLength > 0,
+           original.byteLength + ' B → ' + compressed.byteLength + ' B (' +
+           ((1 - compressed.byteLength / original.byteLength) * 100).toFixed(1) + '% reduction)');
+  } catch (e) {
+    addRow('CompressionStream(deflate-raw) round-trip', false, 'compress threw: ' + e.message);
+    details.textContent = log.join('\n');
+    return;
+  }
+
+  // --- Decompress via DecompressionStream('deflate-raw') ---
+  let decompressed;
+  try {
+    const ds = new Response(compressed).body.pipeThrough(new DecompressionStream('deflate-raw'));
+    decompressed = new Uint8Array(await new Response(ds).arrayBuffer());
+    addRow('DecompressionStream(deflate-raw) produced output', decompressed.byteLength === original.byteLength,
+           'original=' + original.byteLength + ' B, decompressed=' + decompressed.byteLength + ' B');
+  } catch (e) {
+    addRow('DecompressionStream(deflate-raw) decompress', false, 'decompress threw: ' + e.message);
+    details.textContent = log.join('\n');
+    return;
+  }
+
+  // --- Byte-identity check ---
+  let allEqual = decompressed.byteLength === original.byteLength;
+  if (allEqual) {
+    for (let i = 0; i < original.length; i++) {
+      if (original[i] !== decompressed[i]) { allEqual = false; break; }
+    }
+  }
+  addRow('Round-trip byte-identical', allEqual);
+
+  // --- Decode as UTF-8 + parse as JSON ---
+  try {
+    const text = new TextDecoder().decode(decompressed);
+    const parsed = JSON.parse(text);
+    addRow('TextDecoder + JSON.parse', Array.isArray(parsed) && parsed.length > 0,
+           'records=' + parsed.length);
+  } catch (e) {
+    addRow('TextDecoder + JSON.parse', false, e.message);
+  }
+
+  // --- atob path (decode base64 → Uint8Array) ---
+  try {
+    const b64 = btoa(String.fromCharCode.apply(null, compressed));
+    const u8 = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    let same = u8.byteLength === compressed.byteLength;
+    if (same) for (let i = 0; i < compressed.length; i++) if (u8[i] !== compressed[i]) { same = false; break; }
+    addRow('btoa → atob → Uint8Array round-trip', same);
+  } catch (e) {
+    addRow('btoa/atob round-trip', false, e.message);
+  }
+
+  // --- Final summary ---
+  const failed = log.filter(l => l.startsWith('FAIL')).length;
+  const passed = log.filter(l => l.startsWith('PASS')).length;
+  const summary = document.createElement('p');
+  summary.style.fontWeight = 'bold';
+  summary.style.fontSize = '16px';
+  summary.style.marginTop = '20px';
+  summary.innerHTML = failed === 0
+    ? '<span class="pass">ALL ' + passed + ' CHECKS PASSED</span> &mdash; safe to proceed with metrics-bundle implementation on this browser.'
+    : '<span class="fail">' + failed + ' / ' + (failed + passed) + ' CHECKS FAILED</span> &mdash; do NOT proceed; investigate first.';
+  results.appendChild(summary);
+
+  details.textContent = log.join('\n');
+})();
+</script>
+</body>
+</html>
