@@ -108,8 +108,8 @@
       <span id="val-life" class="value">5</span>
     </label>
     <label>K (LRU capacity)
-      <input id="ctrl-k" type="range" min="2" max="120" value="50">
-      <span id="val-k" class="value">50</span>
+      <input id="ctrl-k" type="range" min="4" max="200" value="80">
+      <span id="val-k" class="value">80</span>
     </label>
     <button id="ctrl-pause">Pause</button>
     <span id="ctrl-status" style="color:#666"></span>
@@ -244,11 +244,23 @@
     constructor(idString, lifetimeMs, lru) {
       this.idString  = idString;
       this.fontProps = FontProperties.fromIDString(idString);
+      // The text contains the smiley character "☺", which the runtime auto-redirects to the
+      // BitmapTextInvariant font (a separate atlas, same density+size, normal/normal). The
+      // textbox must wait for BOTH atlases to be loaded before its paint shows real glyphs
+      // for everything; otherwise drawTextFromAtlas returns PARTIAL_ATLAS and the smiley is
+      // a placeholder rectangle.
+      const invariantProps = new FontProperties(
+        this.fontProps.pixelDensity,
+        'BitmapTextInvariant',
+        'normal',
+        'normal',
+        this.fontProps.fontSize
+      );
+      this.invariantIdString = invariantProps.idString;
       this.lru       = lru;
       this.alive     = true;
       this.expireAt  = performance.now() + lifetimeMs;
-      this.hadAtlasOnce = false;        // diagnostic: did we ever achieve a non-placeholder paint?
-      this.evictedDuringLife = 0;       // diagnostic: how many times did we hit NO_ATLAS after a successful paint?
+      this.hadAtlasOnce = false;        // diagnostic: did we ever paint with both atlases loaded?
 
       // Sizing: we use measureText ahead of paint so the canvas is big enough for the glyphs.
       // This needs metrics (always loaded), not the atlas, so it works without a load.
@@ -299,34 +311,38 @@
       this.ctx.fillStyle = '#fff';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-      const result = BitmapText.drawTextFromAtlas(
+      BitmapText.drawTextFromAtlas(
         this.ctx, TEXT_CONTENT, this.paddingCssPx, this.baselineYCssPx,
         this.fontProps, TEXT_PROPERTIES
       );
 
-      const code = result && result.status ? result.status.code : null;
+      // Use hasAtlas() — not the status code — as the "needs repaint" signal. The status
+      // code can return PARTIAL_ATLAS if a sub-font (e.g. BitmapTextInvariant for the smiley)
+      // is still loading; basing the loop on PARTIAL_ATLAS would infinite-loop microtasks
+      // when our primary is loaded and we keep re-firing paint() that re-finds the same
+      // partial state. Two atlases need to be ready: the primary and the invariant pair.
+      const primaryReady   = BitmapText.hasAtlas(this.idString);
+      const invariantReady = BitmapText.hasAtlas(this.invariantIdString);
+      const allReady = primaryReady && invariantReady;
 
-      if (code === StatusCode.NO_ATLAS || code === StatusCode.PARTIAL_ATLAS) {
-        // Placeholders are already painted. Either we never had the atlas, OR we had it
-        // and lost it to eviction. Track the latter — it should be rare, by design.
-        if (this.hadAtlasOnce) {
-          this.evictedDuringLife++;
-          this.lru.reloadCount++;
-        }
-
-        this.lru.request(this.idString)
-          .then(() => this.paint())
-          .catch(() => { /* load failed; textbox stays in placeholder mode for life */ });
-      } else if (code === StatusCode.SUCCESS) {
-        this.hadAtlasOnce = true;
-        // Bump recency on the cache so this entry stays warm while we're on screen.
-        // (The load wasn't triggered here; just a touch.)
+      if (allReady) {
+        if (!this.hadAtlasOnce) this.hadAtlasOnce = true;
+        // Bump recency on both entries so they stay warm while we're on screen.
         this.lru.request(this.idString);
-      } else {
-        // NO_METRICS / PARTIAL_METRICS — shouldn't happen since metrics bundle is fully loaded.
-        // Treat like a missing atlas and try anyway.
-        this.lru.request(this.idString);
+        this.lru.request(this.invariantIdString);
+        return;
       }
+
+      // One or both atlases missing. If we previously had them and lost them, count it
+      // as an eviction-during-life (race-handling diagnostic).
+      if (this.hadAtlasOnce) this.lru.reloadCount++;
+
+      // Trigger any missing loads in parallel; repaint when both are ready.
+      const wantPrimary   = primaryReady   ? Promise.resolve('loaded') : this.lru.request(this.idString);
+      const wantInvariant = invariantReady ? Promise.resolve('loaded') : this.lru.request(this.invariantIdString);
+      Promise.all([wantPrimary, wantInvariant])
+        .then(() => this.paint())
+        .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
     }
 
     destroy() {
@@ -372,8 +388,11 @@
   function refreshWarn() {
     const N = parseInt(N_INPUT.value, 10);
     const K = parseInt(K_INPUT.value, 10);
-    if (K <= N) {
-      warnEl.textContent = `Warning: K (${K}) ≤ N (${N}) — atlas thrashing expected. The cache invariant still holds.`;
+    // Each textbox holds up to 2 atlases warm (its primary font + the BitmapTextInvariant
+    // pair atlas needed for the smiley). Steady-state working-set ≈ 2N (with some sharing
+    // of the invariant atlas across textboxes at the same size).
+    if (K <= 2 * N) {
+      warnEl.textContent = `Warning: K (${K}) ≤ 2·N (${2 * N}) — each textbox needs up to 2 atlases (primary + BitmapTextInvariant pair). Thrashing expected. The cache invariant still holds.`;
     } else {
       warnEl.textContent = '';
     }
