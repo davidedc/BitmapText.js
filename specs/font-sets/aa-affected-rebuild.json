@@ -1,0 +1,21 @@
+{
+  "_comment": "Targeted rebuild spec for the 143 atlases hit by the platform Canvas-fillText AA bug at physical pixel sizes >= 182 (density 2 x CSS size >= 91). Used by GlyphFAB.binarizeCanvas remediation. See ~/.claude/plans/binarize-atlases-curious-falcon.md.",
+  "fontSets": [
+    {
+      "name": "AA-affected: Arial / Courier New / Times New Roman, density 2, sizes 91-96",
+      "density": [2.0],
+      "families": ["Arial", "Courier New", "Times New Roman"],
+      "styles": ["normal", "italic"],
+      "weights": ["normal", "bold"],
+      "sizes": [[91, 96, 0.5]]
+    },
+    {
+      "name": "AA-affected: BitmapTextInvariant, density 2, sizes 91-96",
+      "density": [2.0],
+      "families": ["BitmapTextInvariant"],
+      "styles": ["normal"],
+      "weights": ["normal"],
+      "sizes": [[91, 96, 0.5]]
+    }
+  ]
+}
