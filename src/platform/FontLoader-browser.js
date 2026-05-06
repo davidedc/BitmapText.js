@@ -86,6 +86,7 @@ class FontLoader extends FontLoaderBase {
    */
   static _loadAtlasFromJS(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
+      const tFetchStart = performance.now();
       const imageScript = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
       imageScript.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}-webp${FontLoader.JS_EXTENSION}`;
@@ -104,6 +105,7 @@ class FontLoader extends FontLoaderBase {
         img.src = `data:image/webp;base64,${pkg.base64Data}`;
 
         img.onload = async () => {
+          const tImgOnload = performance.now();
           try {
             // Force the WebP decode to complete off-main-thread before the
             // reconstructor reads pixels (otherwise the first getImageData
@@ -113,8 +115,14 @@ class FontLoader extends FontLoaderBase {
             if (typeof img.decode === 'function') {
               try { await img.decode(); } catch (_) { /* fall through */ }
             }
+            const tDecoded = performance.now();
             // Atlas will be reconstructed now or later when metrics are available
             await FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
+            console.log(
+              `[atlas-fetch] ${idString} (file://): ` +
+              `script=${(tImgOnload - tFetchStart).toFixed(1)}ms ` +
+              `decode=${(tDecoded - tImgOnload).toFixed(1)}ms`
+            );
           } finally {
             imageScript.remove();
             resolve();
@@ -148,11 +156,13 @@ class FontLoader extends FontLoaderBase {
    */
   static _loadAtlasFromWebP(idString, bitmapTextClass) {
     return new Promise((resolve, reject) => {
+      const tFetchStart = performance.now();
       const img = new Image();
       const fontDirectory = FontLoaderBase.getFontDirectory();
       img.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.WEBP_EXTENSION}`;
 
       img.onload = async () => {
+        const tImgOnload = performance.now();
         try {
           // Force the WebP decode to complete off-main-thread before the
           // reconstructor reads pixels. Without this, the first getImageData
@@ -161,8 +171,14 @@ class FontLoader extends FontLoaderBase {
           if (typeof img.decode === 'function') {
             try { await img.decode(); } catch (_) { /* fall through */ }
           }
+          const tDecoded = performance.now();
           // Atlas will be reconstructed now or later when metrics are available
           await FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
+          console.log(
+            `[atlas-fetch] ${idString} (http): ` +
+            `fetch=${(tImgOnload - tFetchStart).toFixed(1)}ms ` +
+            `decode=${(tDecoded - tImgOnload).toFixed(1)}ms`
+          );
         } finally {
           resolve();
         }

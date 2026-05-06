@@ -52,11 +52,21 @@ class TightAtlasReconstructor {
    *
    * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions (CSS pixels) and positioning
    * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells, already at physical pixels)
-   * @returns {Promise<{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}>}
+   * @returns {Promise<{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning, perf: object}>}
+   *   `perf` is a diagnostic object with timing breakdowns for the reconstruction
+   *   sub-phases (in milliseconds). Used by the caller to log per-load latency.
    */
   static async reconstructFromAtlas(fontMetrics, atlasImage) {
+    const perf = {
+      getImageData: 0,
+      boundsTotal: 0, boundsMaxChunk: 0, boundsChunks: 0,
+      packTotal:   0, packMaxChunk:   0, packChunks:   0,
+    };
+
     // 1. Get ImageData from atlas for pixel scanning
+    const t_gid = performance.now();
     const imageData = AtlasReconstructionUtils.getImageData(atlasImage);
+    perf.getImageData = performance.now() - t_gid;
 
     // 2. Get SORTED character list (CRITICAL for determinism)
     // Must match the order used in AtlasBuilder
@@ -118,6 +128,15 @@ class TightAtlasReconstructor {
     const tightBounds = {};
     const cellDebugInfo = []; // Track first 5 chars for debugging
 
+    let chunkStart = performance.now();
+    const recordChunk = (durArr, maxKey, totalKey, countKey) => {
+      const dur = performance.now() - chunkStart;
+      perf[totalKey] += dur;
+      if (dur > perf[maxKey]) perf[maxKey] = dur;
+      perf[countKey]++;
+      chunkStart = performance.now();
+    };
+
     for (let charIndex = 0; charIndex < characters.length; charIndex++) {
       const char = characters[charIndex];
       const cellWidth_PhysPx = cellWidths_PhysPx[charIndex];
@@ -150,14 +169,18 @@ class TightAtlasReconstructor {
       // Yield to the host event loop every CHUNK_SIZE glyphs so a long bound-finding
       // pass (~30+ ms for big fonts) can be split across multiple frames.
       if ((charIndex + 1) % TightAtlasReconstructor.CHUNK_SIZE === 0) {
+        recordChunk(null, 'boundsMaxChunk', 'boundsTotal', 'boundsChunks');
         await TightAtlasReconstructor._yieldToHost();
+        chunkStart = performance.now();
       }
     }
+    // Final partial chunk (the last <CHUNK_SIZE characters).
+    recordChunk(null, 'boundsMaxChunk', 'boundsTotal', 'boundsChunks');
 
     console.debug(`🔍 Cell dimensions (first 5): ${cellDebugInfo.join(', ')} [Grid: ${GRID_COLUMNS}×${GRID_ROWS}]`);
 
     // 7. Repack into tight atlas with positioning data
-    return this.packTightAtlas(
+    const packed = await this.packTightAtlas(
       fontMetrics,
       tightBounds,
       characters,
@@ -166,8 +189,11 @@ class TightAtlasReconstructor {
       cellHeight_PhysPx,
       cellWidths_PhysPx,
       columnXPositions_PhysPx,
-      GRID_COLUMNS
+      GRID_COLUMNS,
+      perf
     );
+
+    return { atlasImage: packed.atlasImage, atlasPositioning: packed.atlasPositioning, perf };
   }
 
   /**
@@ -272,9 +298,10 @@ class TightAtlasReconstructor {
    * @param {Array<number>} cellWidths_PhysPx - Width of each character cell in physical pixels
    * @param {Array<number>} columnXPositions_PhysPx - X position of each column in grid
    * @param {number} GRID_COLUMNS - Number of columns in grid layout (for calculating row/col from charIndex)
+   * @param {object} [perf] - Optional perf accumulator with packTotal/packMaxChunk/packChunks fields.
    * @returns {Promise<{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}>}
    */
-  static async packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx, cellWidths_PhysPx, columnXPositions_PhysPx, GRID_COLUMNS) {
+  static async packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx, cellWidths_PhysPx, columnXPositions_PhysPx, GRID_COLUMNS, perf) {
     // Calculate tight atlas dimensions (all in physical pixels)
     let totalWidth_PhysPx = 0;
     let maxHeight_PhysPx = 0;
@@ -302,6 +329,8 @@ class TightAtlasReconstructor {
       xInAtlas: {},
       yInAtlas: {}
     };
+
+    let packChunkStart = performance.now();
 
     // Extract and pack each tight glyph
     for (let charIndex = 0; charIndex < characters.length; charIndex++) {
@@ -414,8 +443,22 @@ class TightAtlasReconstructor {
       // drawImage cost (the dominant share of reconstruction time) is spread
       // across multiple frames instead of one big stall.
       if ((charIndex + 1) % TightAtlasReconstructor.CHUNK_SIZE === 0) {
+        if (perf) {
+          const dur = performance.now() - packChunkStart;
+          perf.packTotal += dur;
+          if (dur > perf.packMaxChunk) perf.packMaxChunk = dur;
+          perf.packChunks++;
+        }
         await TightAtlasReconstructor._yieldToHost();
+        packChunkStart = performance.now();
       }
+    }
+    // Final partial chunk.
+    if (perf) {
+      const dur = performance.now() - packChunkStart;
+      perf.packTotal += dur;
+      if (dur > perf.packMaxChunk) perf.packMaxChunk = dur;
+      perf.packChunks++;
     }
 
     // Create domain objects

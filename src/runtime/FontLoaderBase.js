@@ -305,8 +305,22 @@ class FontLoaderBase {
     }
 
     // Reconstruct tight atlas + positioning from Atlas image
-    const { atlasImage: tightAtlasImage, atlasPositioning } =
+    const { atlasImage: tightAtlasImage, atlasPositioning, perf } =
       await TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage);
+
+    // Diagnostic log: emit one line per atlas reconstruction with sub-phase timings.
+    // Helps locate which step (getImageData readback, bounds-find, or pack) is the
+    // dominant remaining contributor to dynamic-load FPS spikes. Gate later via a
+    // flag if needed; currently always-on while tuning.
+    if (perf && typeof console !== 'undefined' && console.log) {
+      const f = (n) => n.toFixed(1);
+      console.log(
+        `[atlas-reconstruct] ${idString}: ` +
+        `getImageData=${f(perf.getImageData)}ms ` +
+        `bounds=${f(perf.boundsTotal)}ms (${perf.boundsChunks} chunks, max ${f(perf.boundsMaxChunk)}ms) ` +
+        `pack=${f(perf.packTotal)}ms (${perf.packChunks} chunks, max ${f(perf.packMaxChunk)}ms)`
+      );
+    }
 
     // Create AtlasData instance
     const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);
