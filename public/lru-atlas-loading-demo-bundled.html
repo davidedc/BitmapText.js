@@ -273,19 +273,26 @@
       this.expireAt  = performance.now() + lifetimeMs;
       this.hadAtlasOnce = false;        // diagnostic: did we ever paint with both atlases loaded?
 
-      // Tight canvas sizing from a single measureText on the full string. With the smiley
-      // included, max(actualAscent) is dominated by BitmapTextInvariant's smiley glyph —
-      // which usually exceeds Latin cap height — so Latin caps appear a few pixels below
-      // the top padding. We accept this typographic artifact rather than splitting into
-      // multiple measure/draw passes. Adding fontBoundingBoxDescent to y_CssPx accounts
-      // for the textBaseline='bottom' convention (y is the em-square bottom).
+      // Single measureText on the full string — sizes canvas to fit every glyph including
+      // the smiley (BitmapTextInvariant). With the smiley included, max(actualAscent) is
+      // dominated by the smiley glyph (which usually exceeds Latin cap height), so the
+      // canvas is naturally taller than a Latin-only line. Latin caps and the smiley
+      // share the alphabetic baseline; no choice of textBaseline can change that — they're
+      // all anchored typographically.
+      //
+      // Treatment: add ~10% of the font size as extra vertical breathing room and
+      // vertically center the rendered text inside the canvas. This makes the composition
+      // look intentional (centered with margin on all sides) rather than top-anchored
+      // with Latin glyphs visibly low against the edge.
       const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, TEXT_PROPERTIES);
       const m = (measurement && measurement.metrics) || {
         width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxDescent: 0,
       };
       const padding = 4;
+      const tightTextHeight = Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent);
+      const extraVertical   = Math.max(2, Math.ceil(this.fontProps.fontSize * 0.10));
       const cssWidth  = Math.max(40, Math.ceil(m.width) + padding * 2);
-      const cssHeight = Math.max(20, Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) + padding * 2);
+      const cssHeight = Math.max(20, padding + tightTextHeight + extraVertical + padding);
 
       // Backing buffer is at physical pixels (cssSize × pixelDensity); CSS display stays at
       // cssSize. Coordinates passed to drawTextFromAtlas are CSS pixels — the runtime scales
@@ -300,10 +307,12 @@
       this.ctx = this.canvas.getContext('2d');
       this.paddingCssPx = padding;
       // textBaseline is 'bottom', so y_CssPx is the bottom of the em square (= alphabetic
-      // baseline + fontBoundingBoxDescent). Place the alphabetic baseline at
-      // padding + actualBoundingBoxAscent so the tallest glyph touches y=padding from the
-      // canvas top — tight visual fit for Latin text.
-      this.baselineYCssPx = padding + m.actualBoundingBoxAscent + m.fontBoundingBoxDescent;
+      // baseline + fontBoundingBoxDescent). Vertically center the rendered text by
+      // shifting the alphabetic baseline down by half of extraVertical. The tallest
+      // glyph then sits at y = padding + ⌊extraVertical/2⌋ from the canvas top, leaving
+      // matching whitespace below.
+      this.baselineYCssPx = padding + Math.floor(extraVertical / 2)
+                          + m.actualBoundingBoxAscent + m.fontBoundingBoxDescent;
 
       // Position: random within stage, biased away from edges.
       const stageRect = stage.getBoundingClientRect();
