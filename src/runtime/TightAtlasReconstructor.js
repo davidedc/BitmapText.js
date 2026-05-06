@@ -31,16 +31,30 @@ class TightAtlasReconstructor {
     throw new Error('TightAtlasReconstructor cannot be instantiated - use static methods');
   }
 
+  // Number of glyphs processed per chunk before yielding to the host event loop.
+  // Spreads the per-load cost across multiple frames so the user-visible UI thread
+  // doesn't stall for the full duration of a 100+ glyph reconstruction.
+  static CHUNK_SIZE = 32;
+
+  // Macrotask yield. setTimeout(0) is a touch slower than MessageChannel postMessage
+  // but works identically in browsers and Node, which is what we need: the runtime is
+  // shared across both bundle targets.
+  static _yieldToHost() {
+    return new Promise(resolve => setTimeout(resolve, 0));
+  }
+
   /**
-   * Main entry point - reconstructs tight atlas from standard atlas
+   * Main entry point - reconstructs tight atlas from standard atlas. Async so the
+   * reconstruction work yields to the event loop between glyph chunks, preventing
+   * a single big main-thread stall when many fonts load dynamically.
    *
    * PARAMETER ORDER: Standardized to (fontMetrics, data) for API consistency
    *
    * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions (CSS pixels) and positioning
    * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells, already at physical pixels)
-   * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
+   * @returns {Promise<{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}>}
    */
-  static reconstructFromAtlas(fontMetrics, atlasImage) {
+  static async reconstructFromAtlas(fontMetrics, atlasImage) {
     // 1. Get ImageData from atlas for pixel scanning
     const imageData = AtlasReconstructionUtils.getImageData(atlasImage);
 
@@ -131,6 +145,12 @@ class TightAtlasReconstructor {
 
       if (bounds) {
         tightBounds[char] = bounds;
+      }
+
+      // Yield to the host event loop every CHUNK_SIZE glyphs so a long bound-finding
+      // pass (~30+ ms for big fonts) can be split across multiple frames.
+      if ((charIndex + 1) % TightAtlasReconstructor.CHUNK_SIZE === 0) {
+        await TightAtlasReconstructor._yieldToHost();
       }
     }
 
@@ -252,9 +272,9 @@ class TightAtlasReconstructor {
    * @param {Array<number>} cellWidths_PhysPx - Width of each character cell in physical pixels
    * @param {Array<number>} columnXPositions_PhysPx - X position of each column in grid
    * @param {number} GRID_COLUMNS - Number of columns in grid layout (for calculating row/col from charIndex)
-   * @returns {{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}}
+   * @returns {Promise<{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}>}
    */
-  static packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx, cellWidths_PhysPx, columnXPositions_PhysPx, GRID_COLUMNS) {
+  static async packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx, cellWidths_PhysPx, columnXPositions_PhysPx, GRID_COLUMNS) {
     // Calculate tight atlas dimensions (all in physical pixels)
     let totalWidth_PhysPx = 0;
     let maxHeight_PhysPx = 0;
@@ -389,6 +409,13 @@ class TightAtlasReconstructor {
         + 1 * pixelDensity;
 
       xInTightAtlas_PhysPx += bounds.width;
+
+      // Yield every CHUNK_SIZE glyphs so the per-glyph canvas allocation +
+      // drawImage cost (the dominant share of reconstruction time) is spread
+      // across multiple frames instead of one big stall.
+      if ((charIndex + 1) % TightAtlasReconstructor.CHUNK_SIZE === 0) {
+        await TightAtlasReconstructor._yieldToHost();
+      }
     }
 
     // Create domain objects

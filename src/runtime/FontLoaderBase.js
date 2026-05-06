@@ -275,13 +275,16 @@ class FontLoaderBase {
   // ============================================
 
   /**
-   * Load atlas from package (image + metrics) and reconstruct positioning
+   * Load atlas from package (image + metrics) and reconstruct positioning. Async
+   * because TightAtlasReconstructor yields between glyph chunks to keep the host
+   * event loop responsive during dynamic atlas loads.
+   *
    * @param {string} idString - Font ID string
    * @param {HTMLImageElement|HTMLCanvasElement} atlasImage - Atlas source image
    * @param {Object} bitmapTextClass - BitmapText class reference
-   * @returns {boolean} True if atlas was reconstructed, false if pending metrics
+   * @returns {Promise<boolean>} True if atlas was reconstructed, false if pending metrics
    */
-  static _loadAtlasFromPackage(idString, atlasImage, bitmapTextClass) {
+  static async _loadAtlasFromPackage(idString, atlasImage, bitmapTextClass) {
     const fontProperties = FontProperties.fromIDString(idString);
 
     // Clean up temporary package storage
@@ -303,7 +306,7 @@ class FontLoaderBase {
 
     // Reconstruct tight atlas + positioning from Atlas image
     const { atlasImage: tightAtlasImage, atlasPositioning } =
-      TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage);
+      await TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage);
 
     // Create AtlasData instance
     const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);
@@ -315,10 +318,12 @@ class FontLoaderBase {
   }
 
   /**
-   * Process pending atlas that was waiting for metrics
+   * Process pending atlas that was waiting for metrics. Async; mirrors
+   * _loadAtlasFromPackage's signature.
    * @param {string} idString - Font ID string
+   * @returns {Promise<void>}
    */
-  static _processPendingAtlas(idString) {
+  static async _processPendingAtlas(idString) {
     // Check if there's a pending atlas waiting for these metrics
     if (!FontLoaderBase._pendingAtlases.has(idString)) {
       return;
@@ -328,6 +333,6 @@ class FontLoaderBase {
     FontLoaderBase._pendingAtlases.delete(idString);
 
     // Try to load the atlas now that metrics are available
-    FontLoaderBase._loadAtlasFromPackage(idString, atlasImage, bitmapTextClass);
+    await FontLoaderBase._loadAtlasFromPackage(idString, atlasImage, bitmapTextClass);
   }
 }

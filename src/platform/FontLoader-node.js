@@ -96,8 +96,8 @@ class FontLoader extends FontLoaderBase {
         imageData.data.set(decoded.data);
         ctx.putImageData(imageData, 0, 0);
 
-        // Reconstruct atlas
-        FontLoaderBase._loadAtlasFromPackage(idString, canvas, bitmapTextClass);
+        // Reconstruct atlas (async — TightAtlasReconstructor yields between glyph chunks)
+        await FontLoaderBase._loadAtlasFromPackage(idString, canvas, bitmapTextClass);
       }
     } catch (error) {
       console.warn(`Atlas loading error for ${atlasPath}: ${error.message}`);

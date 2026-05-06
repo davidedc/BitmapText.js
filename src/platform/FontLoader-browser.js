@@ -103,11 +103,22 @@ class FontLoader extends FontLoaderBase {
         const img = new Image();
         img.src = `data:image/webp;base64,${pkg.base64Data}`;
 
-        img.onload = () => {
-          // Atlas will be reconstructed now or later when metrics are available
-          FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
-          imageScript.remove();
-          resolve();
+        img.onload = async () => {
+          try {
+            // Force the WebP decode to complete off-main-thread before the
+            // reconstructor reads pixels (otherwise the first getImageData
+            // call would synchronously trigger the decode on the UI thread).
+            // decode() is supported in all modern browsers; if it isn't, we
+            // fall back to assuming onload is sufficient.
+            if (typeof img.decode === 'function') {
+              try { await img.decode(); } catch (_) { /* fall through */ }
+            }
+            // Atlas will be reconstructed now or later when metrics are available
+            await FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
+          } finally {
+            imageScript.remove();
+            resolve();
+          }
         };
 
         img.onerror = () => {
@@ -141,10 +152,20 @@ class FontLoader extends FontLoaderBase {
       const fontDirectory = FontLoaderBase.getFontDirectory();
       img.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.WEBP_EXTENSION}`;
 
-      img.onload = () => {
-        // Atlas will be reconstructed now or later when metrics are available
-        FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
-        resolve();
+      img.onload = async () => {
+        try {
+          // Force the WebP decode to complete off-main-thread before the
+          // reconstructor reads pixels. Without this, the first getImageData
+          // call (inside the reconstructor) synchronously decodes the image
+          // on the UI thread — a major contributor to per-load FPS spikes.
+          if (typeof img.decode === 'function') {
+            try { await img.decode(); } catch (_) { /* fall through */ }
+          }
+          // Atlas will be reconstructed now or later when metrics are available
+          await FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
+        } finally {
+          resolve();
+        }
       };
 
       img.onerror = () => {
