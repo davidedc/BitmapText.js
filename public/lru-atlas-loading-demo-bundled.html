@@ -22,101 +22,28 @@
       flex: 0 0 auto;
       background: #fff;
       border-bottom: 1px solid #ddd;
-      padding: 8px 12px;
+      padding: 8px 14px;
     }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px;
-      align-items: center;
-      font-size: 13px;
-    }
-    .controls label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .controls input[type=range] {
-      width: 140px;
-    }
-    .controls .value {
-      display: inline-block;
-      min-width: 30px;
-      font-variant-numeric: tabular-nums;
-      font-weight: 600;
-    }
-    .controls button {
-      font-size: 13px;
-      padding: 4px 12px;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 4px 16px;
-      font-size: 12px;
-      font-variant-numeric: tabular-nums;
-    }
-    .stats .stat {
-      display: flex;
-      justify-content: space-between;
-      padding: 2px 0;
-    }
-    .stats .stat .label { color: #666; }
-    .stats .stat .num   { font-weight: 600; }
-    .stats .stat.bad .num { color: #c00; }
-    .warn {
-      color: #b35900;
-      font-size: 12px;
-      margin-top: 4px;
-      min-height: 16px;
-    }
-    #stage {
-      flex: 1 1 auto;
-      position: relative;
-      overflow: hidden;
-      background:
-        linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
-        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
-        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-      background-size: 16px 16px;
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-    }
-    .textbox {
-      position: absolute;
-      background: #fff;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-      border-radius: 3px;
-      padding: 4px 6px;
-      pointer-events: none;
-    }
-    .textbox canvas {
-      display: block;
-    }
-    #fps-hist {
-      display: block;
-      border: 1px solid #ccc;
-      background: #fff;
-      vertical-align: middle;
-    }
-    .fps-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-variant-numeric: tabular-nums;
-    }
+
+    /* About */
     details.about {
       font-size: 12px;
       color: #444;
       padding-bottom: 6px;
+      margin-bottom: 8px;
       border-bottom: 1px solid #eee;
-      margin-bottom: 6px;
     }
     details.about > summary {
       cursor: pointer;
+      list-style: revert;
+      user-select: none;
+      font-size: 12px;
+      color: #777;
+    }
+    details.about > summary > strong {
       color: #2196F3;
       font-weight: 600;
-      list-style: revert;
+      margin-right: 6px;
     }
     details.about p {
       margin: 6px 0;
@@ -128,13 +55,142 @@
       border-radius: 3px;
       font-size: 11px;
     }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .controls input[type=range] { width: 140px; }
+    .controls .value {
+      display: inline-block;
+      min-width: 28px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      text-align: right;
+    }
+    .controls select,
+    .controls button {
+      font-size: 13px;
+      padding: 3px 10px;
+      border: 1px solid #b8b8b8;
+      border-radius: 4px;
+      background: #fff;
+      color: #222;
+      cursor: pointer;
+    }
+    .controls button:hover { background: #f3f3f3; }
+    .controls button:active { background: #e8e8e8; }
+    .controls .status {
+      color: #888;
+      font-size: 12px;
+      margin-left: auto;     /* push status to the right edge of the row */
+    }
+
+    /* Metrics row: prominent FPS histogram on the left, stat pills filling the rest */
+    .metrics-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 20px;
+      margin-top: 8px;
+    }
+    .fps-block {
+      position: relative;
+      flex: 0 0 auto;
+    }
+    #fps-hist {
+      display: block;
+      width: 480px;
+      height: 64px;
+      border: 1px solid #d8d8d8;
+      border-radius: 3px;
+      background: #fff;
+    }
+    #fps-text {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #444;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+
+    /* Stat pills */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 18px;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      flex: 1 1 auto;
+    }
+    .stats .stat {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+    .stats .stat .label { color: #888; }
+    .stats .stat .num   { font-weight: 600; color: #222; }
+    .stats .stat.bad .num { color: #c00; }
+
+    .warn {
+      color: #b35900;
+      font-size: 12px;
+    }
+    .warn:not(:empty) {
+      margin-top: 6px;
+    }
+
+    /* Stage */
+    #stage {
+      flex: 1 1 auto;
+      position: relative;
+      overflow: hidden;
+      background: #f4f4f4;
+    }
+
+    /* Textboxes — outline reserves space so the loaded↔placeholder transition
+       doesn't shift layout; we just animate its color. */
+    .textbox {
+      position: absolute;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+      border-radius: 3px;
+      padding: 4px 6px;
+      pointer-events: none;
+      outline: 2px dashed transparent;
+      outline-offset: -2px;
+      transition: outline-color 250ms ease, background-color 250ms ease;
+    }
+    .textbox.placeholder {
+      outline-color: #d9a050;
+      background: #fff8ec;
+    }
+    .textbox canvas {
+      display: block;
+    }
   </style>
 </head>
 <body>
 
 <div class="panel">
-  <details class="about" open>
-    <summary>About this demo</summary>
+  <details class="about">
+    <summary><strong>About this demo</strong> bounded LRU keeps &le; K atlases resident under N &gt; K stress; placeholder rectangles paint until atlases arrive.</summary>
     <p><strong>What it shows.</strong> Dynamic, on-demand atlas loading with a bounded-size LRU cache. Many text boxes spawn at random positions with random font / style / weight / size and a random short lifetime; the page pulls in atlases as needed, and the LRU evicts and <strong>actually unloads</strong> old atlases so the resident-atlas count stays bounded — even under N &gt; K stress.</p>
     <p><strong>Why it matters.</strong> Real apps with large font catalogues can&rsquo;t hold every atlas in memory. This shows BitmapText.js&rsquo;s <code>BitmapText.loadFont</code> / <code>BitmapText.unloadAtlas</code> / <code>BitmapText.hasAtlas</code> primitives composing into a working memory-bounded loader, and confirms that <code>drawTextFromAtlas</code> already paints placeholder rectangles when an atlas is missing — so a textbox can render <em>before</em> its atlas exists and self-repaint when it arrives.</p>
     <p><strong>How.</strong> Each <code>TextBox</code> calls <code>drawTextFromAtlas</code> immediately at construction (placeholders if not yet loaded) and asks the LRU for its primary + smiley-pair atlases. The LRU returns <code>Promise.resolve()</code> if both are warm, otherwise it kicks off the missing loads — evicting the oldest non-pinned entry first if at capacity — and resolves once the loads complete; the textbox then repaints. <strong>Atlases-resident</strong> in the stats panel reads <code>AtlasDataStore.size()</code> directly, so it physically can&rsquo;t exceed K. The race where a freshly-loaded atlas could be evicted before its requester paints is defused by a 250 ms <em>pin window</em> on every recent touch and load completion. The FPS histogram (last 120 frames, color-coded by frame budget) makes any reconstruction-induced jank directly visible.</p>
@@ -162,14 +218,16 @@
       </select>
     </label>
     <button id="ctrl-pause">Pause</button>
-    <span class="fps-label">
+    <span class="status" id="ctrl-status"></span>
+  </div>
+  <div class="metrics-row">
+    <div class="fps-block">
+      <canvas id="fps-hist" width="960" height="128" title="Frame durations (last 120 frames). Green ≤16.7ms (60fps), amber ≤33ms (30fps), red beyond."></canvas>
       <span id="fps-text">— fps</span>
-      <canvas id="fps-hist" width="240" height="32" title="Frame durations (last 120 frames). Green ≤16.7ms (60fps), amber ≤33ms (30fps), red beyond."></canvas>
-    </span>
-    <span id="ctrl-status" style="color:#666"></span>
+    </div>
+    <div class="stats" id="stats"></div>
   </div>
   <div id="warn" class="warn"></div>
-  <div class="stats" id="stats"></div>
 </div>
 
 <div id="stage"></div>
@@ -368,7 +426,10 @@
       this.y = Math.floor(Math.random() * maxY);
 
       this.wrapper = document.createElement('div');
-      this.wrapper.className = 'textbox';
+      // Start in placeholder mode; paint() flips the class off once both
+      // atlases are warm. Reserved outline geometry means the toggle is
+      // pure color animation, no layout shift.
+      this.wrapper.className = 'textbox placeholder';
       this.wrapper.style.left = this.x + 'px';
       this.wrapper.style.top  = this.y + 'px';
       this.wrapper.appendChild(this.canvas);
@@ -398,12 +459,14 @@
       const invariantReady = BitmapText.hasAtlas(this.invariantIdString);
 
       if (primaryReady && invariantReady) {
+        this.wrapper.classList.remove('placeholder');
         if (!this.hadAtlasOnce) this.hadAtlasOnce = true;
         this.lru.request(this.idString);
         this.lru.request(this.invariantIdString);
         return;
       }
 
+      this.wrapper.classList.add('placeholder');
       if (this.hadAtlasOnce) this.lru.reloadCount++;
 
       const wantPrimary   = primaryReady   ? Promise.resolve('loaded') : this.lru.request(this.idString);
@@ -508,15 +571,15 @@
   // ---------- Stats panel ----------
 
   const STAT_KEYS = [
-    ['onScreen',      'on-screen / N'],
-    ['resident',      'AtlasDataStore.size'],
-    ['lruSize',       'LRU entries'],
-    ['lruLoaded',     'LRU loaded'],
-    ['lruPending',    'LRU pending loads'],
-    ['lruPinned',     'LRU pinned (grace)'],
-    ['reloadCount',   'reloads after eviction'],
-    ['totalSpawned',  'total spawned'],
-    ['spawnFailures', 'spawn-loop saturations'],
+    ['onScreen',      'On-screen'],
+    ['resident',      'Resident'],
+    ['lruSize',       'LRU'],
+    ['lruLoaded',     'Loaded'],
+    ['lruPending',    'Loading'],
+    ['lruPinned',     'Pinned'],
+    ['reloadCount',   'Reloads'],
+    ['totalSpawned',  'Spawned'],
+    ['spawnFailures', 'Stalls'],
   ];
 
   function buildStatsPanel() {
@@ -604,7 +667,7 @@
       let histIdx = 0;
       let histFilled = 0;
       let lastFrameMs = performance.now();
-      const HIST_MAX_MS = 50;   // y-axis cap; anything ≥50ms tops out the bar
+      const HIST_MAX_MS = 100;  // y-axis cap; anything ≥100ms tops out the bar
       const histCanvas = document.getElementById('fps-hist');
       const hctx = histCanvas.getContext('2d');
       const fpsText = document.getElementById('fps-text');
