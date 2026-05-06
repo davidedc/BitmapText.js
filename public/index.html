@@ -103,6 +103,11 @@
       <div class="desc">Demonstrates interpolated metrics for font sizes &lt; 9px with production bundle</div>
     </div>
 
+    <div class="demo-section bundled">
+      <a href="lru-atlas-loading-demo-bundled.html">LRU Dynamic Atlas Loading Demo (Bundled)</a>
+      <div class="desc">Many text boxes spawn at random positions with random font/style/weight/size; each lives a random handful of seconds. Atlases load on demand and an LRU cache caps the resident-atlas count, evicting and unloading the least-recently-used entry when capacity is exceeded. Textboxes initially paint placeholder rectangles (handled natively by <code>drawTextFromAtlas</code> when the atlas is missing) and repaint themselves once their atlas arrives. Live stats panel + FPS histogram make the cache-bound invariant and frame fluidity directly observable.</div>
+    </div>
+
     <h2>Development Demos <span class="badge debug">17 files</span></h2>
     <p style="color: #666; font-size: 0.95em;">These demos load individual source files (17 separate files) for easier debugging and development.</p>
 

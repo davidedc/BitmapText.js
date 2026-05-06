@@ -105,11 +105,41 @@
       gap: 6px;
       font-variant-numeric: tabular-nums;
     }
+    details.about {
+      font-size: 12px;
+      color: #444;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 6px;
+    }
+    details.about > summary {
+      cursor: pointer;
+      color: #2196F3;
+      font-weight: 600;
+      list-style: revert;
+    }
+    details.about p {
+      margin: 6px 0;
+      max-width: 100ch;
+    }
+    details.about code {
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
   </style>
 </head>
 <body>
 
 <div class="panel">
+  <details class="about" open>
+    <summary>About this demo</summary>
+    <p><strong>What it shows.</strong> Dynamic, on-demand atlas loading with a bounded-size LRU cache. Many text boxes spawn at random positions with random font / style / weight / size and a random short lifetime; the page pulls in atlases as needed, and the LRU evicts and <strong>actually unloads</strong> old atlases so the resident-atlas count stays bounded — even under N &gt; K stress.</p>
+    <p><strong>Why it matters.</strong> Real apps with large font catalogues can&rsquo;t hold every atlas in memory. This shows BitmapText.js&rsquo;s <code>BitmapText.loadFont</code> / <code>BitmapText.unloadAtlas</code> / <code>BitmapText.hasAtlas</code> primitives composing into a working memory-bounded loader, and confirms that <code>drawTextFromAtlas</code> already paints placeholder rectangles when an atlas is missing — so a textbox can render <em>before</em> its atlas exists and self-repaint when it arrives.</p>
+    <p><strong>How.</strong> Each <code>TextBox</code> calls <code>drawTextFromAtlas</code> immediately at construction (placeholders if not yet loaded) and asks the LRU for its primary + smiley-pair atlases. The LRU returns <code>Promise.resolve()</code> if both are warm, otherwise it kicks off the missing loads — evicting the oldest non-pinned entry first if at capacity — and resolves once the loads complete; the textbox then repaints. <strong>Atlases-resident</strong> in the stats panel reads <code>AtlasDataStore.size()</code> directly, so it physically can&rsquo;t exceed K. The race where a freshly-loaded atlas could be evicted before its requester paints is defused by a 250 ms <em>pin window</em> on every recent touch and load completion. The FPS histogram (last 120 frames, color-coded by frame budget) makes any reconstruction-induced jank directly visible.</p>
+  </details>
+
   <div class="controls">
     <label>N (textboxes)
       <input id="ctrl-n" type="range" min="1" max="80" value="30">
