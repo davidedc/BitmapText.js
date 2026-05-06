@@ -209,6 +209,10 @@
       <input id="ctrl-k" type="range" min="4" max="200" value="80">
       <span id="val-k" class="value">80</span>
     </label>
+    <label>Repaint budget / tick
+      <input id="ctrl-budget" type="range" min="1" max="80" value="16">
+      <span id="val-budget" class="value">16</span>
+    </label>
     <label>Pixel density
       <select id="ctrl-dpr">
         <option value="auto">Auto</option>
@@ -503,8 +507,9 @@
       this.wrapper.style.top  = this.y + 'px';
       this.wrapper.appendChild(this.canvas);
       stage.appendChild(this.wrapper);
-
-      this.paint();
+      // No dirty.add here: the spawn site owns the (onScreen, dirty) registration
+      // pair so a constructor that throws partway can't leave a half-built textbox
+      // pinned in dirty without ever appearing in onScreen.
     }
 
     paint() {
@@ -520,11 +525,6 @@
         this.fontProps, this.textProps
       );
 
-      // Always call request on both ids. For warm entries it's a recency bump that
-      // returns Promise.resolve('loaded'); for cold entries it kicks off the load.
-      // The unified call collapses the previous warm/cold split.
-      const both = this.#requestBoth();
-
       // Use hasAtlas() — not the status code — as the "needs repaint" signal. Status-code
       // branching would infinite-loop microtasks once primary loads but the invariant pair
       // is still missing (PARTIAL_ATLAS resolves immediately on every retry). Both atlases
@@ -537,7 +537,12 @@
 
       this.wrapper.classList.add('placeholder');
       if (this.hadAtlasOnce) this.lru.reloadCount++;
-      both.then(() => this.paint())
+
+      // Route load completion onto the dirty queue. The promise stays inside the
+      // textbox (the LRU's natural API), but it no longer drives rendering — it
+      // just enqueues. drainDirty() picks the textbox up on the next tick.
+      this.#requestBoth()
+          .then(() => { if (this.alive) dirty.add(this); })
           .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
     }
 
@@ -550,6 +555,7 @@
 
     destroy() {
       this.alive = false;
+      dirty.delete(this);
       this.wrapper.remove();
     }
   }
@@ -562,6 +568,12 @@
   let paused     = false;
   let spawnTimer = null;
 
+  // Per-tick repaint queue. drainDirty() (in the rAF tick) is the *only* caller
+  // of TextBox.paint(); textboxes never invoke paint() on themselves. Snapshot-
+  // and-replace inside the drain means same-tick re-enqueues land in the next
+  // tick's batch, never looping within this one.
+  let dirty = new Set();
+
   // Shared diagnostic counters.
   let totalSpawned = 0;
 
@@ -573,6 +585,8 @@
   const LIFE_VAL   = document.getElementById('val-life');
   const K_INPUT    = document.getElementById('ctrl-k');
   const K_VAL      = document.getElementById('val-k');
+  const BUDGET_INPUT = document.getElementById('ctrl-budget');
+  const BUDGET_VAL   = document.getElementById('val-budget');
   const DPR_INPUT   = document.getElementById('ctrl-dpr');
   const COLOR_INPUT = document.getElementById('ctrl-color');
   const PAUSE_BTN   = document.getElementById('ctrl-pause');
@@ -584,6 +598,7 @@
     if (lru) lru.setCapacity(parseInt(K_INPUT.value, 10));
     refreshWarn();
   };
+  BUDGET_INPUT.oninput = () => { BUDGET_VAL.textContent = BUDGET_INPUT.value; };
   DPR_INPUT.onchange = () => {
     candidates = pickCandidates(DPR_INPUT.value);
     statusEl.textContent = candidates.length === 0
@@ -619,7 +634,11 @@
       const id = candidates[Math.floor(Math.random() * candidates.length)];
       const lifetime = MIN_LIFETIME_MS + Math.floor(Math.random() * (lifeMaxMs - MIN_LIFETIME_MS));
       const tb = new TextBox(id, lifetime, lru);
+      // Order matters: onScreen.add first so reapExpired can find the textbox
+      // even if dirty.add fails for some reason. dirty.add second to schedule
+      // the first paint into the next tick's drain.
       onScreen.add(tb);
+      dirty.add(tb);
       totalSpawned++;
     }
   }
@@ -633,6 +652,42 @@
     }
   }
 
+  // ---------- Dirty-set drain ----------
+
+  // Snapshot-and-replace, then iterate. paint() may .then(() => dirty.add(this))
+  // when an atlas is still loading; those re-enqueues land in the *new* `dirty`
+  // and won't repaint within this tick. Budget leftovers also re-add into the
+  // new set, so they paint first next tick (FIFO across ticks).
+  function drainDirty() {
+    if (dirty.size === 0) return;
+    const budget = parseInt(BUDGET_INPUT.value, 10);
+    const snapshot = dirty;
+    dirty = new Set();
+    let painted = 0;
+    for (const tb of snapshot) {
+      if (!tb.alive) continue;
+      if (painted < budget) {
+        // Defensive try/catch: a paint() exception (drawTextFromAtlas, hasAtlas,
+        // anything thrown from the runtime) shouldn't drop the rest of the
+        // snapshot. The textbox will re-enter dirty via its outstanding .then if
+        // its loads are still pending; if not, it stays painted-or-frozen, which
+        // is the same outcome as a successful paint that hit hasAtlas-true.
+        try { tb.paint(); }
+        catch (err) { console.error('drainDirty: paint() threw for', tb.idString, err); }
+        painted++;
+      } else {
+        // Budget exhausted — carry over to next tick. Refresh the pin window for
+        // this textbox's atlases: queue ticks otherwise burn pin time without
+        // any lru.request call to bump it, which at low budget + high N + low K
+        // could expose back-of-queue atlases to eviction before their textbox
+        // gets a chance to paint. "Queued for paint" is treated as a use here.
+        lru.beingUsed(tb.idString);
+        lru.beingUsed(tb.invariantIdString);
+        dirty.add(tb);
+      }
+    }
+  }
+
   // ---------- Stats panel ----------
 
   const STAT_KEYS = [
@@ -642,6 +697,7 @@
     ['lruLoaded',     'Loaded'],
     ['lruPending',    'Loading'],
     ['lruPinned',     'Pinned'],
+    ['dirty',         'Dirty'],
     ['reloadCount',   'Reloads'],
     ['totalSpawned',  'Spawned'],
     ['loadP95',       'Load p95'],
@@ -671,6 +727,7 @@
     setStat('lruLoaded',     `${lru.loadedCount}`);
     setStat('lruPending',    `${lru.pendingCount}`);
     setStat('lruPinned',     `${pinned}`);
+    setStat('dirty',         `${dirty.size}`);
     setStat('reloadCount',   `${lru.reloadCount}`);
     setStat('totalSpawned',  `${totalSpawned}`);
     const ls = lru.loadStats();
@@ -789,6 +846,7 @@
         const now = performance.now();
         updateFps(now);
         reapExpired(now);
+        drainDirty();
         updateStats();
         requestAnimationFrame(tick);
       };
