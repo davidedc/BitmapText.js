@@ -248,7 +248,96 @@
 (() => {
   'use strict';
 
+  // ========================================================================
+  //  BitmapText.js LRU atlas-loading demo
+  // ========================================================================
+  //
+  //  A self-contained, intentionally over-commented reference for using
+  //  BitmapText.js in an application whose font catalogue exceeds what
+  //  will fit in memory at once. It also doubles as a template for
+  //  adapting these patterns to any framework that drives rendering off a
+  //  per-frame tick.
+  //
+  //  ── BitmapText.js API used here ────────────────────────────────────
+  //
+  //  Setup (once at startup):
+  //    BitmapText.setFontDirectory(path)         where atlas / metrics-bundle live
+  //    BitmapText.ensureMetricsBundleLoaded()    one-time async metrics decode
+  //    FontManifest.allFontIDs()                 enumerate registered idStrings
+  //    FontProperties.fromIDString(id)           parse idString → typed props
+  //    new TextProperties({...})                 frozen text-rendering config
+  //
+  //  Per-textbox runtime:
+  //    BitmapText.measureText(t, fp, tp)         CSS-pixel sizing
+  //    BitmapText.drawTextFromAtlas(ctx,...)     pixel-perfect blit, or
+  //                                              placeholder rectangles when
+  //                                              an atlas isn't resident
+  //    BitmapText.hasAtlas(idString)             is the atlas resident now?
+  //    BitmapText.loadFont(idString, opts)       async dynamic load
+  //    BitmapText.unloadAtlas(idString)          drop atlas bytes
+  //    AtlasDataStore.size()                     truth source: resident count
+  //
+  //  ── Three cooperating layers ───────────────────────────────────────
+  //
+  //    AtlasLRU       bounded-size loader on top of loadFont / unloadAtlas;
+  //                   keeps AtlasDataStore.size() ≤ K via LRU eviction with
+  //                   a 250 ms pin window. Hands out Promises that resolve
+  //                   once atlases are resident.
+  //
+  //    TextBox        renders one text element to its own DOM canvas.
+  //                   Always paints SOMETHING — real glyphs where atlases
+  //                   are resident, placeholder rectangles where they
+  //                   aren't. Routes load completion onto the dirty set;
+  //                   never calls paint() on itself.
+  //
+  //    rAF tick       the ONLY caller of TextBox.paint(). Each frame:
+  //                   reap expired → drainDirty (budget-bounded) →
+  //                   updateStats. Replace this loop with your framework's
+  //                   per-frame update.
+  //
+  //  ── Key invariants ─────────────────────────────────────────────────
+  //
+  //    Two atlases per textbox. Every textbox needs both its primary font
+  //    atlas AND a matching 'BitmapTextInvariant' atlas (for symbols like
+  //    ☺ that auto-redirect to a shared invariant font).
+  //    drawTextFromAtlas paints placeholders for any glyph whose atlas is
+  //    not resident — partial coverage = partial visuals.
+  //
+  //    Pin window (PIN_GRACE_MS = 250 ms). A freshly loaded or freshly
+  //    "used" atlas is unevictable for 250 ms. Closes the race between
+  //    load completion and the requester's next paint. drainDirty also
+  //    bumps the pin via lru.beingUsed for queued-but-not-yet-painted
+  //    textboxes so back-of-queue items survive the wait under low-budget
+  //    stress.
+  //
+  //    Successful paint = fixed point. Once both atlases are warm and a
+  //    textbox paints them, it exits dirty and never re-enters. If the
+  //    atlas is later evicted, the DOM canvas keeps its pixels — eviction
+  //    empties AtlasDataStore, not the canvas.
+  //
+  //  ── Adapting this to your framework ────────────────────────────────
+  //
+  //    The three layers are independently reusable:
+  //      AtlasLRU       lift verbatim into your asset / loader subsystem.
+  //      TextBox.paint  body becomes whatever your renderer does for a
+  //                     text element each frame (Pixi sprite update, your
+  //                     own canvas-layer blit, …).
+  //      drainDirty     replace with your existing per-tick loop;
+  //                     tb.paint() swap-in is the only change.
+  //
+  //    No promise plumbing leaks into your render path — the only `.then`
+  //    in this file is the load-completion → dirty.add hand-off, fully
+  //    contained inside TextBox.paint().
+  // ========================================================================
+
   // ---------- Bootstrap ----------
+  //
+  // BitmapText is a static singleton — these calls configure global state
+  // for the page. setFontDirectory tells the loader where to find
+  // metrics-bundle.js + atlas-*.webp / atlas-*-webp.js. isFileProtocol is
+  // consulted by loadFont: under file:// the loader injects
+  // atlas-*-webp.js <script> tags instead of fetching .webp files directly,
+  // because file:// fetches are blocked by the browser.
 
   BitmapText.setFontDirectory('../font-assets/');
   const isFileProtocol = window.location.protocol === 'file:';
@@ -259,29 +348,43 @@
   const statusEl = document.getElementById('ctrl-status');
 
   // ---------- Configuration ----------
+  //
+  // Tunables that don't have a UI control. Everything else (N, K, max
+  // lifetime, repaint budget, DPR mode, text color) is exposed via sliders
+  // and read at runtime from the DOM.
 
-  // Pin window: a freshly-loaded or freshly-touched atlas is not evictable for this long.
-  // Must exceed the time between a load resolving and the requester's first paint
-  // (a few microtasks) but stay well below typical textbox lifetimes (>= 1 s).
+  // Pin window: a freshly loaded or freshly touched atlas is unevictable
+  // for this long. Must exceed the gap between a load resolving and the
+  // requester's next paint (a few microtasks under no load, up to one
+  // rAF tick under budgeted drain) but stay well below typical textbox
+  // lifetimes (≥ 1 s).
   const PIN_GRACE_MS = 250;
 
-  // Spawn loop tick.
+  // Spawn-attempt cadence. Decoupled from rAF so spawn pressure stays
+  // steady even if the browser throttles rAF.
   const SPAWN_INTERVAL_MS = 80;
 
+  // Floor on randomly-rolled textbox lifetimes (hard-coded; the slider
+  // controls the upper bound only). Keeps every textbox alive long enough
+  // for at least one load+paint cycle to complete.
   const MIN_LIFETIME_MS = 1000;
 
-  // The smiley auto-redirects to BitmapTextInvariant; rendering still happens in a single
-  // drawTextFromAtlas call (matching src/node/hello-world-bundled-main.js's approach) and
-  // the canvas is sized via a single measureText. Because the smiley's actualAscent
-  // typically exceeds Latin cap height, with a tight canvas Latin glyphs sit a few pixels
-  // below the canvas top — a typographic artifact we accept rather than working around.
+  // The string every textbox renders. The smiley ☺ is in
+  // CharacterSets.FONT_INVARIANT_CHARS, so drawTextFromAtlas auto-routes
+  // it through the BitmapTextInvariant atlas — that's why each textbox
+  // pulls in two atlases. Rendering is still a single drawTextFromAtlas
+  // call; sizing is a single measureText call. The smiley's actualAscent
+  // exceeds Latin cap height, so Latin glyphs would sit a few px below
+  // the canvas top in a tight box — we add ~10% extra vertical room and
+  // center, rather than work the asymmetry into the layout.
   const TEXT_CONTENT = 'Hello, World ☺';
 
-  // Per-textbox color is decided at spawn time from the Text-color dropdown.
-  // The textbox keeps its color for life — re-rolling per paint would flicker.
+  // Per-textbox TextProperties baseline (color is filled in at spawn from
+  // the Text-color dropdown via pickTextProps). Frozen for the textbox's
+  // lifetime — re-rolling per paint would flicker the canvas.
   const TEXT_PROPERTIES_BASE = {
     isKerningEnabled: true,
-    textBaseline: 'bottom',
+    textBaseline: 'bottom',  // BitmapText's architectural default; see src/runtime/TextProperties.js
     textAlign: 'left',
   };
 
@@ -302,12 +405,51 @@
   }
 
   // ---------- AtlasLRU ----------
+  //
+  //  Bounded-size atlas loader on top of BitmapText's runtime stores. The
+  //  actual atlas bytes live in AtlasDataStore (BitmapText's own store);
+  //  this class is just an ordering structure that decides when to call:
+  //      BitmapText.loadFont(idString)       to bring an atlas in
+  //      BitmapText.unloadAtlas(idString)    to drop one out
+  //  …keeping AtlasDataStore.size() ≤ capacity (K).
+  //
+  //  Entry shape (per idString):
+  //      state     'loading' | 'loaded'
+  //      lastUsed  ms timestamp — recency for the LRU eviction policy
+  //      pinUntil  ms timestamp — eviction floor (now < pinUntil ⇒ pinned)
+  //      promise   on 'loading' entries: Promise<'loaded'|'evicted-during-load'>;
+  //                warm entries return Promise.resolve('loaded') without
+  //                storing anything.
+  //
+  //  Public API used in this demo:
+  //      request(id)        load if missing + bump recency. Returns a
+  //                         Promise resolving when the atlas is resident.
+  //                         Triggers eviction synchronously (before kicking
+  //                         off the load) if entries.size would exceed K.
+  //      beingUsed(id)      bump recency only — no load. Used by drainDirty
+  //                         to keep queued textboxes' atlases pinned across
+  //                         the wait.
+  //      setCapacity(n)     slider hook: shrink or grow K. Shrinks evict
+  //                         down to n as far as the pin window allows;
+  //                         entries.size may temporarily exceed n if too
+  //                         many entries are pinned/loading.
+  //
+  //  Eviction policy (#evictOne):
+  //      • Skip entries with state !== 'loaded'   (in-flight loads are NEVER
+  //        evictable — the load can't be cancelled mid-flight).
+  //      • Skip entries whose pinUntil > now.
+  //      • Among the rest, evict the smallest lastUsed.
+  //      • If no eligible victim, return false; the caller proceeds and
+  //        entries.size temporarily exceeds capacity.
+  //
+  //  Diagnostics surfaced to the stats panel:
+  //      pendingCount  number of state==='loading' entries
+  //      reloadCount   how many times a textbox that previously rendered
+  //                    fully had to re-load an evicted atlas (thrash gauge)
+  //      loadStats()   p50 / p95 / max wall-clock load times over the
+  //                    last LOAD_HISTORY_CAP loads
 
-  // Tracks "what's loaded" + recency. The actual atlas bytes live in AtlasDataStore;
-  // the LRU is just an ordering structure that decides when to call BitmapText.loadFont
-  // and BitmapText.unloadAtlas to keep the resident-atlas count <= capacity.
-  // Recent-load wall-clock durations (ms). Caps the buffer at LOAD_HISTORY_CAP
-  // so old samples decay; loadStats() returns p50/p95/max over what's there.
+  // Cap on the rolling load-duration buffer used by loadStats().
   const LOAD_HISTORY_CAP = 50;
 
   class AtlasLRU {
@@ -428,6 +570,42 @@
   }
 
   // ---------- TextBox ----------
+  //
+  //  One text element rendered to its own DOM canvas, positioned absolutely
+  //  on the stage. Lifecycle:
+  //
+  //    constructor    Measure the string with BitmapText.measureText to size
+  //                   the canvas; pick a random position; create the DOM
+  //                   wrapper in .placeholder visual state. The constructor
+  //                   does NOT register itself anywhere — the spawn site
+  //                   (spawnIfNeeded) does that, registering into both
+  //                   onScreen and dirty.
+  //
+  //    first paint    Runs in the next rAF's drainDirty. drawTextFromAtlas
+  //                   paints placeholder rectangles (atlases not yet
+  //                   resident). #requestBoth() asks the LRU for both
+  //                   idStrings; the resolved Promise.all routes back into
+  //                   the dirty set when both atlases land.
+  //
+  //    second paint+  Once both atlases are resident
+  //                   (BitmapText.hasAtlas true for both),
+  //                   drawTextFromAtlas paints real glyphs and the
+  //                   .placeholder class is removed. The textbox exits
+  //                   dirty and stays out for the rest of its life — fixed
+  //                   point. Subsequent atlas eviction has no visual
+  //                   effect; the canvas pixels persist.
+  //
+  //    destroy        Called by reapExpired when expireAt ≤ now. Sets
+  //                   alive=false, removes from dirty, removes the DOM
+  //                   wrapper. In-flight .then callbacks observe
+  //                   alive=false and skip their dirty.add — no zombies.
+  //
+  //  Two-atlas requirement: TEXT_CONTENT contains the smiley ☺, listed in
+  //  CharacterSets.FONT_INVARIANT_CHARS. drawTextFromAtlas auto-routes
+  //  that character through a separate atlas of family
+  //  'BitmapTextInvariant' (same density+size, normal/normal). Each
+  //  textbox needs BOTH atlases warm to render the full string — hence
+  //  invariantIdString and the K ≤ 2·N warning banner.
 
   class TextBox {
     constructor(idString, lifetimeMs, lru) {
@@ -512,6 +690,13 @@
       // pinned in dirty without ever appearing in onScreen.
     }
 
+    // Render the textbox. drawTextFromAtlas always paints SOMETHING (real
+    // glyphs where atlases are resident, placeholder rectangles where they
+    // aren't), so the textbox is always visible. If both atlases are warm
+    // we exit placeholder mode and return — no .then attached. Otherwise
+    // we route the load-completion promise back into dirty so we'll be
+    // repainted as soon as the bytes arrive. paint() is only ever called
+    // by drainDirty.
     paint() {
       if (!this.alive) return;
 
@@ -561,6 +746,12 @@
   }
 
   // ---------- Demo state ----------
+  //
+  // Module-scope mutable state. Mutated only from the rAF tick or the
+  // spawn-timer macrotask; JS is single-threaded so no synchronization is
+  // needed. `lru` is created once the metrics bundle has loaded (see
+  // ---------- Main ----------) so other code must guard `if (lru)` before
+  // touching it during startup.
 
   let lru;
   let candidates = [];
@@ -578,6 +769,14 @@
   let totalSpawned = 0;
 
   // ---------- Slider wiring ----------
+  //
+  // Every slider's `oninput` updates its companion <span> for live readout.
+  // K's handler also pushes the new capacity into the LRU (which evicts
+  // immediately if K shrunk). DPR's `onchange` recomputes the candidate
+  // pool — existing textboxes keep their original density, new spawns use
+  // the new pool. Pause toggles a flag consulted by spawnIfNeeded; the
+  // rAF tick keeps running so already-loaded atlases still drain into
+  // visible glyphs.
 
   const N_INPUT    = document.getElementById('ctrl-n');
   const N_VAL      = document.getElementById('val-n');
@@ -624,6 +823,12 @@
   }
 
   // ---------- Spawn loop ----------
+  //
+  // setInterval-driven (not rAF) so spawn cadence is decoupled from frame
+  // rate — drops to 80 ms between attempts even if rAF is throttled.
+  // spawnIfNeeded refills onScreen up to N each tick; reapExpired (called
+  // from the rAF tick) destroys textboxes when their lifetime expires.
+  // Together they maintain a steady-state population.
 
   function spawnIfNeeded() {
     if (paused || candidates.length === 0) return;
@@ -689,6 +894,27 @@
   }
 
   // ---------- Stats panel ----------
+  //
+  // Each STAT_KEYS entry becomes one inline pill. updateStats runs every
+  // rAF tick and pulls live state from lru, AtlasDataStore, and the local
+  // sets. Stats worth knowing about:
+  //
+  //   resident      reads AtlasDataStore.size() directly — the truth
+  //                 source for "atlases physically resident". Goes red if
+  //                 it ever exceeds K, which would indicate a bug.
+  //   lruSize       lru.entries.size — bookkeeping, includes 'loading'
+  //                 entries. Always ≥ resident.
+  //   lruPinned     entries within their pin window right now. Reflects
+  //                 recent activity / load-completion freshness.
+  //   dirty         queue depth at the moment of the read (post-drain).
+  //                 Climbs when budget < demand; should fall to ~0
+  //                 between bursts.
+  //   reloadCount   thrash gauge — only increments when a previously-
+  //                 fully-rendered textbox loses its atlas and has to
+  //                 reload. Stays at zero when K ≥ 2·N.
+  //   loadP95       95th-percentile wall-clock load time (fetch + decode
+  //                 + reconstruction) over the last LOAD_HISTORY_CAP
+  //                 loads. The single number behind per-load FPS spikes.
 
   const STAT_KEYS = [
     ['onScreen',      'On-screen'],
@@ -742,6 +968,13 @@
   }
 
   // ---------- Main ----------
+  //
+  // ensureMetricsBundleLoaded is a singleton: the metrics-bundle.js script
+  // tag is injected once and the resulting promise is shared. After it
+  // resolves, MetricsBundleStore is populated and FontManifest.allFontIDs()
+  // returns the registered idStrings. Until then loadFont and measureText
+  // would fail — so everything that touches them (lru creation, spawn
+  // loop, rAF tick) is hung off the .then below.
 
   buildStatsPanel();
   refreshWarn();
@@ -842,6 +1075,19 @@
         drawHistogram();
       }
 
+      // The rAF tick — the integration point. Order matters:
+      //   1. updateFps    — record frame duration (must be first; any later
+      //                     work would inflate the measurement)
+      //   2. reapExpired  — destroy expired textboxes BEFORE we paint, so
+      //                     the dirty drain never paints a dying textbox
+      //   3. drainDirty   — paint up to `budget` textboxes from the queue;
+      //                     leftovers and re-enqueues from .then microtasks
+      //                     between frames carry into next tick
+      //   4. updateStats  — reads post-drain state (incl. dirty.size of
+      //                     leftovers); writing this LAST keeps the panel
+      //                     consistent with what was just rendered.
+      // In a real framework, this is the function whose body you'd merge
+      // into your existing per-frame update loop.
       const tick = () => {
         const now = performance.now();
         updateFps(now);
