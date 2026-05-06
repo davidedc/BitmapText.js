@@ -217,6 +217,13 @@
         <option value="both">Both (mix)</option>
       </select>
     </label>
+    <label>Text color
+      <select id="ctrl-color" title="Black takes the fast direct-blit path; any other color forces the per-glyph composite recolor path.">
+        <option value="000">#000 (fast)</option>
+        <option value="222">#222 (slow)</option>
+        <option value="random">Random (slow)</option>
+      </select>
+    </label>
     <button id="ctrl-pause">Pause</button>
     <span class="status" id="ctrl-status"></span>
   </div>
@@ -265,12 +272,30 @@
   // typically exceeds Latin cap height, with a tight canvas Latin glyphs sit a few pixels
   // below the canvas top — a typographic artifact we accept rather than working around.
   const TEXT_CONTENT = 'Hello, World ☺';
-  const TEXT_PROPERTIES = new TextProperties({
+
+  // Per-textbox color is decided at spawn time from the Text-color dropdown.
+  // The textbox keeps its color for life — re-rolling per paint would flicker.
+  const TEXT_PROPERTIES_BASE = {
     isKerningEnabled: true,
     textBaseline: 'bottom',
     textAlign: 'left',
-    textColor: '#222'
-  });
+  };
+
+  function pickTextProps() {
+    const mode = COLOR_INPUT.value;
+    let textColor;
+    if (mode === 'random') {
+      // HSL with capped luminance. L=32% keeps every hue legible against
+      // white — at higher L the yellow band (around hue 60°) washes out
+      // because perceptual luminance of yellow is high even at moderate L.
+      textColor = `hsl(${Math.floor(Math.random() * 360)}, 70%, 32%)`;
+    } else if (mode === '222') {
+      textColor = '#222222';
+    } else {
+      textColor = '#000000';   // BitmapText fast path (direct atlas blit)
+    }
+    return new TextProperties({ ...TEXT_PROPERTIES_BASE, textColor });
+  }
 
   // ---------- AtlasLRU ----------
 
@@ -376,6 +401,7 @@
       this.alive     = true;
       this.expireAt  = performance.now() + lifetimeMs;
       this.hadAtlasOnce = false;        // diagnostic: did we ever paint with both atlases loaded?
+      this.textProps = pickTextProps(); // frozen for the textbox's lifetime
 
       // Single measureText on the full string — sizes canvas to fit every glyph including
       // the smiley (BitmapTextInvariant). With the smiley included, max(actualAscent) is
@@ -388,7 +414,7 @@
       // vertically center the rendered text inside the canvas. This makes the composition
       // look intentional (centered with margin on all sides) rather than top-anchored
       // with Latin glyphs visibly low against the edge.
-      const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, TEXT_PROPERTIES);
+      const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, this.textProps);
       const m = (measurement && measurement.metrics) || {
         width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxDescent: 0,
       };
@@ -448,7 +474,7 @@
 
       BitmapText.drawTextFromAtlas(
         this.ctx, TEXT_CONTENT, this.paddingCssPx, this.baselineYCssPx,
-        this.fontProps, TEXT_PROPERTIES
+        this.fontProps, this.textProps
       );
 
       // Use hasAtlas() — not the status code — as the "needs repaint" signal. Status-code
@@ -502,8 +528,9 @@
   const LIFE_VAL   = document.getElementById('val-life');
   const K_INPUT    = document.getElementById('ctrl-k');
   const K_VAL      = document.getElementById('val-k');
-  const DPR_INPUT  = document.getElementById('ctrl-dpr');
-  const PAUSE_BTN  = document.getElementById('ctrl-pause');
+  const DPR_INPUT   = document.getElementById('ctrl-dpr');
+  const COLOR_INPUT = document.getElementById('ctrl-color');
+  const PAUSE_BTN   = document.getElementById('ctrl-pause');
 
   N_INPUT.oninput    = () => { N_VAL.textContent    = N_INPUT.value;    refreshWarn(); };
   LIFE_INPUT.oninput = () => { LIFE_VAL.textContent = LIFE_INPUT.value; };
