@@ -351,28 +351,23 @@ class TightAtlasReconstructor {
         continue;
       }
 
-      // Extract tight glyph from original atlas
-      const tempCanvas = BitmapText.getCanvasFactory()();
-      tempCanvas.width = bounds.width;
-      tempCanvas.height = bounds.height;
-      const tempCtx = tempCanvas.getContext('2d');
-
-      // Copy tight region from atlas to temp canvas (using grid position)
+      // Source rectangle inside the source atlas (cell origin + tight bounds offset).
       const srcX_PhysPx = Math.floor(cellX_PhysPx + bounds.left);
       const srcY_PhysPx = Math.floor(cellY_PhysPx + bounds.top);
       const srcWidth_PhysPx = Math.floor(bounds.width);
       const srcHeight_PhysPx = Math.floor(bounds.height);
 
-      tempCtx.drawImage(
+      // Single drawImage from source atlas straight into the tight atlas. Earlier
+      // versions copied via a per-glyph temp canvas (allocated + drawn-to + drawn-from),
+      // costing N canvas allocations and N redundant intermediate blits per atlas load.
+      // The 9-arg drawImage form does the slice + place atomically with no intermediate,
+      // so we just call it once per glyph and skip the round-trip. Verified to produce
+      // byte-identical output to the legacy two-step copy across all Node demo PNGs.
+      ctx.drawImage(
         sourceAtlasImage,
-        srcX_PhysPx, srcY_PhysPx,      // Source position in atlas (physical pixels)
-        srcWidth_PhysPx, srcHeight_PhysPx,  // Source dimensions (physical pixels)
-        0, 0,                           // Dest position in temp canvas
-        srcWidth_PhysPx, srcHeight_PhysPx   // Dest dimensions (physical pixels)
+        srcX_PhysPx, srcY_PhysPx, srcWidth_PhysPx, srcHeight_PhysPx,
+        xInTightAtlas_PhysPx, 0, srcWidth_PhysPx, srcHeight_PhysPx
       );
-
-      // Draw to tight atlas at sequential position
-      ctx.drawImage(tempCanvas, xInTightAtlas_PhysPx, 0);
 
       // ═══════════════════════════════════════════════════════════════════════
       // POSITIONING CALCULATION
