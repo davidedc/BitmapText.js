@@ -173,12 +173,12 @@ async function main() {
       const yPosition = 50 + (index * 50); // Same y positions as black text
       const text = `Hello 😊 World (size ${fontProperties.fontSize}) ✔`;
 
-      console.log(`Rendering blue "${text}" at x=220, y=${yPosition}`);
+      console.log(`Rendering blue "${text}" at x=360, y=${yPosition}`);
 
       const blueResult = BitmapText.drawTextFromAtlas(
         ctx,
         text,
-        220,  // x position in CSS pixels (right column)
+        360,  // x position in CSS pixels (right column)
         yPosition,  // y position in CSS pixels
         fontProperties,
         blueTextProperties
@@ -226,7 +226,7 @@ async function main() {
     console.log(`File size: ${fs.statSync(outputPath).size} bytes`);
     console.log(`\nThe PNG contains "Hello World" in two columns:`);
     console.log(`  - Left column (x=20): Black text (fast path) at ${fontSizes.join(', ')} sizes`);
-    console.log(`  - Right column (x=220): Blue text (colored slow path) at ${fontSizes.join(', ')} sizes`);
+    console.log(`  - Right column (x=360): Blue text (colored slow path) at ${fontSizes.join(', ')} sizes`);
     console.log(`Note: Sizes with missing atlas JS files will show placeholder rectangles.`);
 
   } catch (error) {
