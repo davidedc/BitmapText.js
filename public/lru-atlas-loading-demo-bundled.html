@@ -155,12 +155,12 @@
 
   const MIN_LIFETIME_MS = 1000;
 
-  // Latin-only text: keeps the canvas tightly sized to the rendered glyphs.
-  // (Earlier versions used "Hello World ☺" — but the smiley auto-redirects to
-  // BitmapTextInvariant whose chars typically have larger actualAscent than Arial caps,
-  // so canvases ended up sized for the smiley and Latin glyphs visually sat low. A
-  // dedicated "multi-font glyph" demo would be a better fit for that scenario.)
-  const TEXT_CONTENT = 'Hello, World!';
+  // The smiley auto-redirects to BitmapTextInvariant; rendering still happens in a single
+  // drawTextFromAtlas call (matching src/node/hello-world-bundled-main.js's approach) and
+  // the canvas is sized via a single measureText. Because the smiley's actualAscent
+  // typically exceeds Latin cap height, with a tight canvas Latin glyphs sit a few pixels
+  // below the canvas top — a typographic artifact we accept rather than working around.
+  const TEXT_CONTENT = 'Hello, World ☺';
   const TEXT_PROPERTIES = new TextProperties({
     isKerningEnabled: true,
     textBaseline: 'bottom',
@@ -257,16 +257,28 @@
     constructor(idString, lifetimeMs, lru) {
       this.idString  = idString;
       this.fontProps = FontProperties.fromIDString(idString);
+      // The smiley ☺ in TEXT_CONTENT auto-redirects to BitmapTextInvariant — a separate
+      // atlas at the same density+size, normal/normal. The textbox needs both atlases
+      // before it can render the full string with real glyphs.
+      const invariantProps = new FontProperties(
+        this.fontProps.pixelDensity,
+        'BitmapTextInvariant',
+        'normal',
+        'normal',
+        this.fontProps.fontSize
+      );
+      this.invariantIdString = invariantProps.idString;
       this.lru       = lru;
       this.alive     = true;
       this.expireAt  = performance.now() + lifetimeMs;
-      this.hadAtlasOnce = false;        // diagnostic: did we ever paint with our atlas loaded?
+      this.hadAtlasOnce = false;        // diagnostic: did we ever paint with both atlases loaded?
 
-      // Tight canvas sizing using measureText. Since TEXT_CONTENT is Latin-only there's no
-      // sub-font redirect, so actualBoundingBox{Ascent,Descent} reflects the rendered glyph
-      // extent precisely. Adding fontBoundingBoxDescent to y_CssPx accounts for the
-      // textBaseline='bottom' convention (y is the em-square bottom, not the alphabetic
-      // baseline).
+      // Tight canvas sizing from a single measureText on the full string. With the smiley
+      // included, max(actualAscent) is dominated by BitmapTextInvariant's smiley glyph —
+      // which usually exceeds Latin cap height — so Latin caps appear a few pixels below
+      // the top padding. We accept this typographic artifact rather than splitting into
+      // multiple measure/draw passes. Adding fontBoundingBoxDescent to y_CssPx accounts
+      // for the textBaseline='bottom' convention (y is the em-square bottom).
       const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, TEXT_PROPERTIES);
       const m = (measurement && measurement.metrics) || {
         width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxDescent: 0,
@@ -323,19 +335,27 @@
         this.fontProps, TEXT_PROPERTIES
       );
 
-      // Use hasAtlas() — not the status code — as the "needs repaint" signal. Once our
-      // primary atlas is loaded, paint() runs once and stops (no infinite repaint loop).
-      if (BitmapText.hasAtlas(this.idString)) {
+      // Use hasAtlas() — not the status code — as the "needs repaint" signal. Status-code
+      // branching would infinite-loop microtasks once primary loads but the invariant pair
+      // is still missing (PARTIAL_ATLAS resolves immediately on every retry). Both atlases
+      // need to be ready for the full visual.
+      const primaryReady   = BitmapText.hasAtlas(this.idString);
+      const invariantReady = BitmapText.hasAtlas(this.invariantIdString);
+
+      if (primaryReady && invariantReady) {
         if (!this.hadAtlasOnce) this.hadAtlasOnce = true;
-        this.lru.request(this.idString);  // bump recency only
+        this.lru.request(this.idString);
+        this.lru.request(this.invariantIdString);
         return;
       }
 
-      // Atlas not loaded — either initial load, or our atlas was evicted under us.
       if (this.hadAtlasOnce) this.lru.reloadCount++;
-      this.lru.request(this.idString)
+
+      const wantPrimary   = primaryReady   ? Promise.resolve('loaded') : this.lru.request(this.idString);
+      const wantInvariant = invariantReady ? Promise.resolve('loaded') : this.lru.request(this.invariantIdString);
+      Promise.all([wantPrimary, wantInvariant])
         .then(() => this.paint())
-        .catch(() => { /* load failed; textbox stays in placeholder mode for life */ });
+        .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
     }
 
     destroy() {
@@ -388,10 +408,11 @@
   function refreshWarn() {
     const N = parseInt(N_INPUT.value, 10);
     const K = parseInt(K_INPUT.value, 10);
-    // Each textbox holds one atlas warm. Steady-state working-set ≈ N (with some sharing
-    // when textboxes happen to pick the same idString). K should comfortably exceed N.
-    if (K <= N) {
-      warnEl.textContent = `Warning: K (${K}) ≤ N (${N}) — atlas thrashing expected. The cache invariant still holds.`;
+    // Each textbox holds up to 2 atlases warm (its primary font + the BitmapTextInvariant
+    // pair atlas needed for the smiley). Steady-state working-set ≈ 2N (with some sharing
+    // of the invariant atlas across textboxes at the same size).
+    if (K <= 2 * N) {
+      warnEl.textContent = `Warning: K (${K}) ≤ 2·N (${2 * N}) — each textbox needs up to 2 atlases (primary + BitmapTextInvariant pair). Thrashing expected. The cache invariant still holds.`;
     } else {
       warnEl.textContent = '';
     }
