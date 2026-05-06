@@ -247,7 +247,7 @@
   // ---------- Bootstrap ----------
 
   BitmapText.setFontDirectory('../font-assets/');
-  const isFileProtocol = window.location.href.includes('file://');
+  const isFileProtocol = window.location.protocol === 'file:';
 
   const stage    = document.getElementById('stage');
   const warnEl   = document.getElementById('warn');
@@ -302,12 +302,33 @@
   // Tracks "what's loaded" + recency. The actual atlas bytes live in AtlasDataStore;
   // the LRU is just an ordering structure that decides when to call BitmapText.loadFont
   // and BitmapText.unloadAtlas to keep the resident-atlas count <= capacity.
+  // Recent-load wall-clock durations (ms). Caps the buffer at LOAD_HISTORY_CAP
+  // so old samples decay; loadStats() returns p50/p95/max over what's there.
+  const LOAD_HISTORY_CAP = 50;
+
   class AtlasLRU {
     constructor(capacity) {
       this.capacity     = capacity;
       this.entries      = new Map();   // idString -> entry record (see below)
       this.pendingCount = 0;
       this.reloadCount  = 0;           // diagnostic: how many times we re-loaded an evicted atlas
+      this.loadDurationsMs = [];       // ring buffer of recent load wall times
+    }
+
+    // "I'm using this atlas right now — refresh its recency." No load side effect:
+    // returns silently if the atlas isn't tracked. Use this from contexts that
+    // constitute a real "use" of the atlas in the calling app's domain (e.g.
+    // editing text in a textbox), as opposed to passive on-screen presence
+    // (which the LRU has no way to observe and which the caller usually
+    // doesn't want to count). Pairs with request(): request = "load if
+    // missing + bump recency", beingUsed = "bump recency only".
+    beingUsed(idString) {
+      const e = this.entries.get(idString);
+      if (!e) return false;
+      const now = performance.now();
+      e.lastUsed = now;
+      e.pinUntil = now + PIN_GRACE_MS;
+      return true;
     }
 
     // Called by a TextBox at every paint. Returns a Promise that resolves when the
@@ -328,6 +349,7 @@
       }
 
       // Reserve and kick off the load.
+      const tStart = performance.now();
       const promise = BitmapText.loadFont(idString, { isFileProtocol })
         .then(() => {
           const x = this.entries.get(idString);
@@ -339,6 +361,7 @@
           x.lastUsed = performance.now();        // KEY: load completion = a fresh use
           x.pinUntil = x.lastUsed + PIN_GRACE_MS; // protect briefly so requester can paint
           this.pendingCount--;
+          this.#recordLoadDuration(performance.now() - tStart);
           return 'loaded';
         })
         .catch(err => {
@@ -351,6 +374,26 @@
       this.entries.set(idString, e);
       this.pendingCount++;
       return promise;
+    }
+
+    #recordLoadDuration(ms) {
+      this.loadDurationsMs.push(ms);
+      if (this.loadDurationsMs.length > LOAD_HISTORY_CAP) {
+        this.loadDurationsMs.shift();
+      }
+    }
+
+    // p50/p95/max wall-clock load duration (fetch + decode + reconstruction)
+    // over the last LOAD_HISTORY_CAP loads. Surfaces the actual signal behind
+    // the FPS spikes: the runtime emits per-load [atlas-fetch] / [atlas-reconstruct]
+    // log lines, but their per-line firehose makes them unreadable at 30+
+    // textboxes spawning. This collapses them to one number.
+    loadStats() {
+      const n = this.loadDurationsMs.length;
+      if (n === 0) return { p50: 0, p95: 0, max: 0, n: 0 };
+      const sorted = [...this.loadDurationsMs].sort((a, b) => a - b);
+      const pick = q => sorted[Math.min(n - 1, Math.floor(n * q))];
+      return { p50: pick(0.5), p95: pick(0.95), max: sorted[n - 1], n };
     }
 
     // Returns true if a victim was evicted, false if no eligible victim was found.
@@ -477,29 +520,32 @@
         this.fontProps, this.textProps
       );
 
+      // Always call request on both ids. For warm entries it's a recency bump that
+      // returns Promise.resolve('loaded'); for cold entries it kicks off the load.
+      // The unified call collapses the previous warm/cold split.
+      const both = this.#requestBoth();
+
       // Use hasAtlas() — not the status code — as the "needs repaint" signal. Status-code
       // branching would infinite-loop microtasks once primary loads but the invariant pair
       // is still missing (PARTIAL_ATLAS resolves immediately on every retry). Both atlases
       // need to be ready for the full visual.
-      const primaryReady   = BitmapText.hasAtlas(this.idString);
-      const invariantReady = BitmapText.hasAtlas(this.invariantIdString);
-
-      if (primaryReady && invariantReady) {
+      if (BitmapText.hasAtlas(this.idString) && BitmapText.hasAtlas(this.invariantIdString)) {
         this.wrapper.classList.remove('placeholder');
-        if (!this.hadAtlasOnce) this.hadAtlasOnce = true;
-        this.lru.request(this.idString);
-        this.lru.request(this.invariantIdString);
+        this.hadAtlasOnce = true;
         return;
       }
 
       this.wrapper.classList.add('placeholder');
       if (this.hadAtlasOnce) this.lru.reloadCount++;
+      both.then(() => this.paint())
+          .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
+    }
 
-      const wantPrimary   = primaryReady   ? Promise.resolve('loaded') : this.lru.request(this.idString);
-      const wantInvariant = invariantReady ? Promise.resolve('loaded') : this.lru.request(this.invariantIdString);
-      Promise.all([wantPrimary, wantInvariant])
-        .then(() => this.paint())
-        .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
+    #requestBoth() {
+      return Promise.all([
+        this.lru.request(this.idString),
+        this.lru.request(this.invariantIdString),
+      ]);
     }
 
     destroy() {
@@ -517,8 +563,7 @@
   let spawnTimer = null;
 
   // Shared diagnostic counters.
-  let totalSpawned        = 0;
-  let totalSpawnFailures  = 0;       // spawn loop hit the "all pinned" eviction floor
+  let totalSpawned = 0;
 
   // ---------- Slider wiring ----------
 
@@ -573,16 +618,9 @@
     while (onScreen.size < N) {
       const id = candidates[Math.floor(Math.random() * candidates.length)];
       const lifetime = MIN_LIFETIME_MS + Math.floor(Math.random() * (lifeMaxMs - MIN_LIFETIME_MS));
-      try {
-        const tb = new TextBox(id, lifetime, lru);
-        onScreen.add(tb);
-        totalSpawned++;
-      } catch (err) {
-        // Most likely cause: AtlasLRU saturated with pinned/loading entries. Pause spawning
-        // for one tick and let the system drain.
-        totalSpawnFailures++;
-        break;
-      }
+      const tb = new TextBox(id, lifetime, lru);
+      onScreen.add(tb);
+      totalSpawned++;
     }
   }
 
@@ -606,7 +644,7 @@
     ['lruPinned',     'Pinned'],
     ['reloadCount',   'Reloads'],
     ['totalSpawned',  'Spawned'],
-    ['spawnFailures', 'Stalls'],
+    ['loadP95',       'Load p95'],
   ];
 
   function buildStatsPanel() {
@@ -635,7 +673,8 @@
     setStat('lruPinned',     `${pinned}`);
     setStat('reloadCount',   `${lru.reloadCount}`);
     setStat('totalSpawned',  `${totalSpawned}`);
-    setStat('spawnFailures', `${totalSpawnFailures}`);
+    const ls = lru.loadStats();
+    setStat('loadP95',       ls.n > 0 ? `${ls.p95.toFixed(0)}ms` : '—');
   }
 
   function setStat(key, value, bad = false) {
