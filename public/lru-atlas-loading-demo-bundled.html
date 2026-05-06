@@ -93,6 +93,18 @@
     .textbox canvas {
       display: block;
     }
+    #fps-hist {
+      display: block;
+      border: 1px solid #ccc;
+      background: #fff;
+      vertical-align: middle;
+    }
+    .fps-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +132,10 @@
       </select>
     </label>
     <button id="ctrl-pause">Pause</button>
+    <span class="fps-label">
+      <span id="fps-text">— fps</span>
+      <canvas id="fps-hist" width="240" height="32" title="Frame durations (last 120 frames). Green ≤16.7ms (60fps), amber ≤33ms (30fps), red beyond."></canvas>
+    </span>
     <span id="ctrl-status" style="color:#666"></span>
   </div>
   <div id="warn" class="warn"></div>
@@ -552,8 +568,67 @@
       // Spawn loop on a fixed interval; expiry sweep + stats on rAF.
       spawnTimer = setInterval(spawnIfNeeded, SPAWN_INTERVAL_MS);
 
+      // FPS histogram: rolling buffer of last N frame durations (ms).
+      const HIST_FRAMES = 120;
+      const histBuf = new Float32Array(HIST_FRAMES);
+      let histIdx = 0;
+      let histFilled = 0;
+      let lastFrameMs = performance.now();
+      const HIST_MAX_MS = 50;   // y-axis cap; anything ≥50ms tops out the bar
+      const histCanvas = document.getElementById('fps-hist');
+      const hctx = histCanvas.getContext('2d');
+      const fpsText = document.getElementById('fps-text');
+
+      function drawHistogram() {
+        const w = histCanvas.width, h = histCanvas.height;
+        hctx.fillStyle = '#fff';
+        hctx.fillRect(0, 0, w, h);
+
+        // Guide line at 16.67ms (60fps) so eyeballing fluidity is easy.
+        hctx.strokeStyle = '#dcdcdc';
+        hctx.lineWidth = 1;
+        const y60 = Math.round(h - (16.67 / HIST_MAX_MS) * h) + 0.5;
+        hctx.beginPath(); hctx.moveTo(0, y60); hctx.lineTo(w, y60); hctx.stroke();
+
+        // Bars: oldest on the left, newest on the right.
+        const barW = w / HIST_FRAMES;
+        for (let i = 0; i < HIST_FRAMES; i++) {
+          const idx = (histIdx + i) % HIST_FRAMES;
+          const dur = histBuf[idx];
+          if (!dur) continue;
+          const clamped = Math.min(dur, HIST_MAX_MS);
+          const barH = Math.max(1, Math.round((clamped / HIST_MAX_MS) * h));
+          hctx.fillStyle = dur <= 17 ? '#4caf50'
+                         : dur <= 33 ? '#ffa000'
+                         : '#e53935';
+          hctx.fillRect(Math.floor(i * barW), h - barH, Math.max(1, Math.floor(barW)), barH);
+        }
+      }
+
+      function updateFps(now) {
+        const delta = now - lastFrameMs;
+        lastFrameMs = now;
+        histBuf[histIdx] = delta;
+        histIdx = (histIdx + 1) % HIST_FRAMES;
+        if (histFilled < HIST_FRAMES) histFilled++;
+
+        // Average over the last ~30 frames for a steady fps readout.
+        const sampleN = Math.min(30, histFilled);
+        let sum = 0;
+        for (let i = 0; i < sampleN; i++) {
+          const idx = (histIdx - 1 - i + HIST_FRAMES) % HIST_FRAMES;
+          sum += histBuf[idx];
+        }
+        const avgMs = sum / sampleN;
+        const fps = avgMs > 0 ? 1000 / avgMs : 0;
+        fpsText.textContent = `${fps.toFixed(0)} fps`;
+
+        drawHistogram();
+      }
+
       const tick = () => {
         const now = performance.now();
+        updateFps(now);
         reapExpired(now);
         updateStats();
         requestAnimationFrame(tick);
