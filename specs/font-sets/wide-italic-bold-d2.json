@@ -1,0 +1,13 @@
+{
+  "_comment": "Density-2 sizes 85-96 for Arial/Courier/Times across all style/weight combos. The 94 atlases that exceeded cwebp's 16383px width limit (single-row tight pack) live in this band — italic-bold pervasively, italic-normal/normal-bold sparsely. Generously over-covered: rebuilds ~276 configs total. AtlasBuilder wraps to multi-row only when needed; configs that fit single-row keep the 4-array bundle record shape.",
+  "fontSets": [
+    {
+      "name": "Wide density-2 — Arial/Courier/Times sizes 85–96 (all styles/weights)",
+      "density": [2],
+      "families": ["Arial", "Courier New", "Times New Roman"],
+      "styles": ["normal", "italic"],
+      "weights": ["normal", "bold"],
+      "sizes": [[85, 96, 0.5]]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "_comment": "Recovery spec — Arial / Courier New / Times New Roman sizes 9-84.5 (full style/weight matrix, both densities). The wide-d2 merge inadvertently dropped these records from the bundles (family-key drop instead of exact-key drop). The atlas .qoi/.webp files for these fonts are still on disk; we only need to regenerate the metrics + positioning bundle records. After the build, run merge-delta-bundles.js on the staging dir to fold the records back in.",
+  "fontSets": [
+    {
+      "name": "Recovery — Arial / Courier New / Times New Roman sizes 9-84.5",
+      "density": [1, 2],
+      "families": ["Arial", "Courier New", "Times New Roman"],
+      "styles": ["normal", "italic"],
+      "weights": ["normal", "bold"],
+      "sizes": [[9, 84.5, 0.5]]
+    }
+  ]
+}

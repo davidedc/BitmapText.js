@@ -1,0 +1,13 @@
+{
+  "_comment": "Tiny test spec — Arial italic-bold density-2 size 96. The largest single-row tight atlas in the corpus (~18556px), exceeds cwebp's 16383px limit. Used to validate multi-row wrap.",
+  "fontSets": [
+    {
+      "name": "Test multi-row wrap — single font",
+      "density": [2],
+      "families": ["Arial"],
+      "styles": ["italic"],
+      "weights": ["bold"],
+      "sizes": [96]
+    }
+  ]
+}
