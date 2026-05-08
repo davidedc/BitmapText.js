@@ -12,8 +12,6 @@
 // ARCHITECTURE:
 // - Immutable object representing atlas positioning for ONE font configuration
 // - Pre-computed lookups for optimal performance during glyph rendering
-// - xInAtlas values are reconstructed from tightWidth during deserialization (not serialized)
-// - Reconstruction happens once at load time, not per-character at render time
 // - All positioning data stored in memory for O(1) access during rendering
 // - Provides clean API for accessing glyph positioning within atlas
 // - Follows same immutable pattern as FontProperties and FontMetrics
@@ -31,14 +29,14 @@ class AtlasPositioning {
       throw new Error('AtlasPositioning constructor requires data object');
     }
 
-    // Atlas positioning data for glyph rendering
+    // Atlas positioning data for glyph rendering. xInAtlas / yInAtlas are
+    // populated either by AtlasPositioningFAB at build time, or by
+    // PositioningBundleStore at runtime (xInAtlas = cumsum(tightWidth),
+    // yInAtlas = 0 for the single-row tight atlas).
     this._tightWidth = data.tightWidth || {};
     this._tightHeight = data.tightHeight || {};
     this._dx = data.dx || {};
     this._dy = data.dy || {};
-    // NOTE: xInAtlas and yInAtlas are reconstructed from tightWidth during deserialization (not serialized to reduce file size)
-    // At build time: populated by AtlasPositioningFAB during atlas packing
-    // At runtime: reconstructed by TightAtlasReconstructor during atlas loading
     this._xInAtlas = data.xInAtlas || {};
     this._yInAtlas = data.yInAtlas || {};
 

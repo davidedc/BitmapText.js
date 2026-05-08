@@ -173,7 +173,45 @@ function startServer(port, rootDir) {
 }
 
 /**
- * Merge multiple ZIP files into one using native zip/unzip commands
+ * Decode a bundle .js wrapper into its envelope object.
+ * Bundles are wrapped as `BitmapText.rBundle('<base64>')` (metrics) or
+ * `BitmapText.pBundle(<density>,'<base64>')` (positioning), where the base64
+ * decodes via deflate-raw to JSON.
+ */
+function decodeBundleFile(filePath) {
+  const zlib = require('zlib');
+  const code = fs.readFileSync(filePath, 'utf8');
+  const m = code.match(/'([^']+)'/);
+  if (!m) throw new Error(`Could not parse base64 from ${filePath}`);
+  const buf = Buffer.from(m[1], 'base64');
+  const json = zlib.inflateRawSync(buf).toString('utf8');
+  return JSON.parse(json);
+}
+
+function encodeBundleFile(filePath, envelope, wrapPrefix) {
+  const zlib = require('zlib');
+  const json = JSON.stringify(envelope);
+  const compressed = zlib.deflateRawSync(Buffer.from(json, 'utf8'), { level: 9 });
+  const b64 = compressed.toString('base64');
+  fs.writeFileSync(filePath, `${wrapPrefix}'${b64}');\n`, 'utf8');
+}
+
+const _bundleSort = (a, b) => {
+  if (a[0] !== b[0]) return a[0] < b[0] ? -1 : 1;
+  if (a[1] !== b[1]) return a[1] - b[1];
+  const aw = typeof a[2] === 'number' ? a[2] : 0;
+  const bw = typeof b[2] === 'number' ? b[2] : 0;
+  if (aw !== bw) return aw - bw;
+  return a[3] - b[3];
+};
+
+/**
+ * Merge multiple ZIP files into one. Atlases (uniquely named per font config)
+ * concatenate trivially via overwrite-on-extract. Bundle files (metrics,
+ * positioning) recur in every batch with non-overlapping records — they need
+ * a record-level merge, otherwise the last batch's bundle silently wins and
+ * the final zip carries only that slice's records.
+ *
  * @param {string[]} batchPaths - Array of batch ZIP file paths
  * @param {string} outputPath - Final merged ZIP output path
  */
@@ -183,23 +221,86 @@ function mergeZips(batchPaths, outputPath) {
   try {
     console.log(`\n📦 Merging ${batchPaths.length} batch ZIP(s)...`);
 
-    // Extract all batch ZIPs to temp directory
+    // Pass 1: collect bundle records across all batches BEFORE the overwrite-merge.
+    const metricsRecords = new Map();              // key → record
+    const positioningByDensity = new Map();        // density → (key → record)
+    let metricsFormatVersion = null;
+    let positioningFormatVersion = null;
+
     for (let i = 0; i < batchPaths.length; i++) {
       const batchPath = batchPaths[i];
-      console.log(`   Extracting batch ${i + 1}/${batchPaths.length}...`);
-      // -o overwrite without prompting; identical files (e.g. metrics-bundle.js)
-      // recur in every batch and the prompt would otherwise block the merge.
-      execSync(`unzip -oq "${batchPath}" -d "${mergeTempDir}"`, {
-        stdio: 'pipe'
-      });
+      const perBatchDir = path.join(mergeTempDir, `batch-${i + 1}`);
+      fs.mkdirSync(perBatchDir, { recursive: true });
+      execSync(`unzip -oq "${batchPath}" -d "${perBatchDir}"`, { stdio: 'pipe' });
+
+      // Bundle files live under fontAssets/ inside the zip.
+      const folder = path.join(perBatchDir, 'fontAssets');
+      if (!fs.existsSync(folder)) continue;
+
+      const metricsPath = path.join(folder, 'metrics-bundle.js');
+      if (fs.existsSync(metricsPath)) {
+        const env = decodeBundleFile(metricsPath);
+        if (metricsFormatVersion === null) metricsFormatVersion = env.formatVersion;
+        for (const r of env.records || []) {
+          const key = `${r[0]}|${r[1]}|${r[2]}|${r[3]}`;
+          if (!metricsRecords.has(key)) metricsRecords.set(key, r);
+        }
+      }
+
+      for (const f of fs.readdirSync(folder)) {
+        const m = f.match(/^positioning-bundle-density-(.+)\.js$/);
+        if (!m) continue;
+        const density = parseFloat(m[1]);
+        const env = decodeBundleFile(path.join(folder, f));
+        if (positioningFormatVersion === null) positioningFormatVersion = env.formatVersion;
+        if (!positioningByDensity.has(density)) positioningByDensity.set(density, new Map());
+        const map = positioningByDensity.get(density);
+        for (const r of env.records || []) {
+          const key = `${r[0]}|${r[1]}|${r[2]}|${r[3]}`;
+          if (!map.has(key)) map.set(key, r);
+        }
+      }
     }
 
-    // Create final merged ZIP
+    // Pass 2: extract all batches into the staging dir (last-wins overwrite is
+    // fine for atlases; bundle files get rewritten with merged content below).
+    const stagingDir = path.join(mergeTempDir, '_final');
+    fs.mkdirSync(stagingDir, { recursive: true });
+    for (let i = 0; i < batchPaths.length; i++) {
+      console.log(`   Extracting batch ${i + 1}/${batchPaths.length}...`);
+      execSync(`unzip -oq "${batchPaths[i]}" -d "${stagingDir}"`, { stdio: 'pipe' });
+    }
+
+    const stagingFolder = path.join(stagingDir, 'fontAssets');
+
+    // Rewrite the merged metrics bundle.
+    if (metricsRecords.size > 0) {
+      const records = Array.from(metricsRecords.values()).sort(_bundleSort);
+      const envelope = { formatVersion: metricsFormatVersion, records };
+      encodeBundleFile(
+        path.join(stagingFolder, 'metrics-bundle.js'),
+        envelope,
+        'BitmapText.rBundle('
+      );
+      console.log(`   Merged metrics bundle: ${records.length} records`);
+    }
+
+    // Rewrite each per-density positioning bundle.
+    for (const [density, map] of positioningByDensity.entries()) {
+      const records = Array.from(map.values()).sort(_bundleSort);
+      const envelope = { formatVersion: positioningFormatVersion, density, records };
+      encodeBundleFile(
+        path.join(stagingFolder, `positioning-bundle-density-${density}.js`),
+        envelope,
+        `BitmapText.pBundle(${density},`
+      );
+      console.log(`   Merged positioning bundle (density ${density}): ${records.length} records`);
+    }
+
+    // Final zip from the merged staging dir.
     console.log(`   Creating merged ZIP...`);
     const absoluteOutputPath = path.resolve(outputPath);
-    execSync(`cd "${mergeTempDir}" && zip -q -r "${absoluteOutputPath}" .`, {
-      stdio: 'pipe'
-    });
+    execSync(`cd "${stagingDir}" && zip -q -r "${absoluteOutputPath}" .`, { stdio: 'pipe' });
 
     console.log(`✅ Merged ZIP created: ${outputPath}`);
 

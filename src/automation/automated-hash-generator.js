@@ -138,13 +138,39 @@ async function ensureFontInvariantLoaded(fontProperties) {
   console.log(`  Loading BitmapTextInvariant (${fontProperties.fontSize}px) for test copy 4 symbol rendering...`);
   await buildFont(symbolFontProps);
 
-  // Build and store atlas
+  // Build and store atlas. The atlas is already tight (single-row), so we just
+  // need to derive the runtime AtlasData from the FAB-emitted positioning.
   const atlasResult = AtlasDataStoreFAB.buildAtlas(symbolFontProps);
-  const tightData = AtlasDataStoreFAB.reconstructTightAtlas(
-    atlasResult.canvas,
-    symbolFontProps
-  );
+  const tightData = _buildTightAtlasData(atlasResult, symbolFontProps);
   BitmapText.setAtlasData(symbolFontProps, tightData);
+}
+
+/**
+ * Helper: build a runtime AtlasData (AtlasImage + AtlasPositioning) from the
+ * tight-atlas canvas and the per-glyph FAB positioning. xInAtlas is the running
+ * cumulative sum of tightWidth (matching the runtime PositioningBundleStore
+ * materialisation); yInAtlas is 0 (single-row tight atlas).
+ */
+function _buildTightAtlasData(atlasResult, fontProperties) {
+  const glyphs = AtlasDataStoreFAB.getGlyphsForFont(fontProperties);
+  const positioningFAB = new AtlasPositioningFAB();
+  positioningFAB.calculatePositioning(glyphs, fontProperties, FontMetricsStoreFAB);
+
+  // Assign xInAtlas/yInAtlas in the same order AtlasBuilder packed the canvas.
+  // Multi-row atlases (wide fonts that wouldn't fit in cwebp's 16383px limit)
+  // get per-glyph yInAtlas from atlasResult; xInAtlas resets at each row break.
+  let runningX = 0;
+  let prevY = 0;
+  for (const char of atlasResult.characters) {
+    const y = (atlasResult.yInAtlas && atlasResult.yInAtlas[char]) || 0;
+    if (y !== prevY) { runningX = 0; prevY = y; }
+    positioningFAB.setGlyphPositionInAtlas(char, runningX, y);
+    runningX += atlasResult.tightWidths[char] || 0;
+  }
+
+  const atlasImage = new AtlasImage(atlasResult.canvas);
+  const atlasPositioning = positioningFAB.extractAtlasPositioningInstance();
+  return new AtlasData(atlasImage, atlasPositioning);
 }
 
 /**
@@ -223,22 +249,20 @@ async function generateHashesForFont(fontProperties) {
   // Build the font first
   await buildFont(fontProperties);
 
-  // 1. Build Atlas Source (variable-width cells)
+  // 1. Build the (already-tight) atlas. After the refactor `atlasResult.canvas`
+  //    IS the tight atlas — single row, no padding. The legacy "atlas" vs "tight
+  //    atlas" distinction collapses to one canvas; we keep both hash keys to
+  //    minimise reference-hash churn (they have the same value now).
   const atlasResult = AtlasDataStoreFAB.buildAtlas(fontProperties);
-  const atlasSourceCtx = atlasResult.canvas.getContext('2d');
-  hashes[`${idString} atlas`] = atlasSourceCtx.getHashString();
+  const atlasCtx = atlasResult.canvas.getContext('2d');
+  const atlasHash = atlasCtx.getHashString();
+  hashes[`${idString} atlas`] = atlasHash;
+  hashes[`${idString} tight atlas`] = atlasHash;
 
-  // 2. Reconstruct Tight Atlas
-  const tightData = AtlasDataStoreFAB.reconstructTightAtlas(
-    atlasResult.canvas,
-    fontProperties
-  );
-
-  // Store in BitmapText for rendering
+  // 2. Build the runtime AtlasData using the FAB-emitted positioning, exactly
+  //    as the runtime PositioningBundleStore would materialise it.
+  const tightData = _buildTightAtlasData(atlasResult, fontProperties);
   BitmapText.setAtlasData(fontProperties, tightData);
-
-  const tightAtlasCtx = tightData.atlasImage.image.getContext('2d');
-  hashes[`${idString} tight atlas`] = tightAtlasCtx.getHashString();
 
   // 3. Positioning Hash (stored as comment in output)
   const positioningHash = AtlasPositioningFAB.getHash(tightData.atlasPositioning);

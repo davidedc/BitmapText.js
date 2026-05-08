@@ -281,15 +281,14 @@ npm run build-metrics-bundle
 ```
 
 **What it does:**
-- Reads any per-file `metrics-density-*.js` left in `font-assets/` (typically only present transiently after a font-assets-builder export, before the Node-side bundle build)
+- Reads any per-file `metrics-density-*.js` left in `font-assets/`. Note: the active build path (browser font-assets-builder via `tools/export-font-data.js`) emits `metrics-bundle.js` directly into its zip output, so this Node-side aggregator is a legacy alt-path retained for historical workflows.
 - Strips `pixelDensity` from `baseline[5]` (the bundle is density-agnostic — runtime injects density at expansion time)
 - Deduplicates density-1/density-2 pairs
 - Frames as JSON, deflate-raw compresses, base64-wraps in `BitmapText.rBundle("...")`
-- Writes `font-assets/metrics-bundle.js` (~1.1 MB for the full corpus, replacing ~18 MB of per-file metrics)
+- Writes `font-assets/metrics-bundle.js`
 
 **When to use:**
-- After dropping per-file metrics from a builder export into `font-assets/`, to (re)build the bundle
-- The browser font-assets-builder writes the bundle directly into its zip output, so this Node-side script is mainly for ad-hoc rebuilds and the watcher pipeline
+- Mostly historical. Normal flow: drop `fontAssets.zip` from the builder into `~/Downloads/`, the watcher extracts the prebuilt bundle directly into `font-assets/`.
 
 ### 9. Distribution / Minimum-Set Workflow
 
@@ -402,11 +401,10 @@ npm run build-bundle-all                            # Both (via npm)
 - **Node.js bundle:** dist/bitmaptext-node.js + dist/bitmaptext-node.min.js (33KB) + source map
 - **Compression:** 79% size reduction (149KB → 32KB browser, 153KB → 33KB node)
 
-**Browser bundle includes** (18 files):
-StatusCode, FontProperties, TextProperties, FontMetrics, CharacterSets, BitmapText, MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasReconstructionUtils, AtlasCellDimensions, TightAtlasReconstructor, AtlasDataStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
+**Browser bundle includes** (17 files):
+StatusCode, FontProperties, TextProperties, FontMetrics, InterpolatedFontMetrics, CharacterSets, BitmapText, MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasCellDimensions, AtlasDataStore, MetricsBundleStore, MetricsBundleDecoder, PositioningBundleStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
 
-**Node.js bundle includes** (20 files):
-All browser bundle files + QOIDecode + FontLoader-node (replaces FontLoader-browser)
+**Node.js bundle includes**: All browser bundle files + QOIDecode + FontLoader-node (replaces FontLoader-browser)
 
 **Node.js bundle excludes** (user provides):
 - Canvas implementation (node-canvas, skia-canvas, etc.)

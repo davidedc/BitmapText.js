@@ -119,6 +119,16 @@ function downloadFontAssets(options) {
     // Map keyed by `family|styleIdx|weightIdx|size`.
     const bundleRecords = new Map();
 
+    // Collect per-density positioning records. Map: density → array of records.
+    // Each record: [family, styleIdx, weightIdx, size, [tightWidth[], tightHeight[], dx[], dy[]]].
+    // Emitted as one `positioning-bundle-density-<density>.js` per density.
+    const positioningBundlesByDensity = new Map();
+
+    // Format version for both metrics and positioning bundles. Bumped when the
+    // on-disk bundle layout changes incompatibly. Must match the runtime's
+    // FontLoaderBase.BUNDLE_FORMAT_VERSION.
+    const BUNDLE_FORMAT_VERSION = 1;
+
     fontsToExport.forEach(fontConfig => {
         // Create FontPropertiesFAB for this specific font configuration
         const fontProperties = new FontPropertiesFAB(
@@ -345,35 +355,91 @@ function downloadFontAssets(options) {
         }
         // Note: `includeNonMinifiedMetrics` is no longer wired to per-file output;
         // the bundle is the only metrics artifact shipped.
+
+        // Build the per-(font, density) positioning record. Same glyphs we just
+        // packed into the tight atlas, in the same sorted-character order — the
+        // runtime PositioningBundleStore zips these arrays with the character
+        // set on materialisation.
+        //
+        // For multi-row atlases (wide italic-bold density-2 sizes that exceed
+        // cwebp's 16383px limit), AtlasBuilder returns per-glyph yInAtlas. Wire
+        // that into AtlasPositioningFAB so serialiseAsBundleRecord emits a 5th
+        // (yInAtlas) array. Single-row atlases get 4 arrays as before.
+        const positioningFAB = new AtlasPositioningFAB();
+        positioningFAB.calculatePositioning(glyphs, fontProperties, FontMetricsStoreFAB);
+        if (atlasResult.yInAtlas) {
+          for (const char of atlasResult.characters) {
+            // xInAtlas is implicit (runtime cumsums tightWidth within a row);
+            // pass 0 here — setGlyphPositionInAtlas just stores it for hashing
+            // and serialiseAsBundleRecord doesn't read xInAtlas.
+            positioningFAB.setGlyphPositionInAtlas(char, 0, atlasResult.yInAtlas[char] || 0);
+          }
+        }
+        const positioningArrays = positioningFAB.serialiseAsBundleRecord();
+
+        const densityNum = fontConfig.pixelDensity;
+        if (!positioningBundlesByDensity.has(densityNum)) {
+            positioningBundlesByDensity.set(densityNum, []);
+        }
+        positioningBundlesByDensity.get(densityNum).push({
+            family: fontFamilyFromID,
+            styleIdx,
+            weightIdx,
+            size: sizeNum,
+            arrays: positioningArrays,
+        });
     });
 
-    // Build the bundle promise; resolved after the per-font loop above writes its
-    // accumulated records to `bundleRecords`. We finalise the zip generation only
-    // after the bundle is in.
-    let bundlePromise;
-    {
-        const recordsArr = Array.from(bundleRecords.values()).sort((a, b) => {
-            if (a.family !== b.family) return a.family < b.family ? -1 : 1;
-            if (a.styleIdx !== b.styleIdx) return a.styleIdx - b.styleIdx;
-            const aw = typeof a.weightIdx === 'number' ? a.weightIdx : 0;
-            const bw = typeof b.weightIdx === 'number' ? b.weightIdx : 0;
-            if (aw !== bw) return aw - bw;
-            return a.size - b.size;
-        });
-        const bundleArray = recordsArr.map(r => [r.family, r.styleIdx, r.weightIdx, r.size, r.minified]);
-        const json = JSON.stringify(bundleArray);
-        console.log(`📦 Bundle: ${recordsArr.length} records, JSON size: ${json.length} bytes`);
-        bundlePromise = _deflateRawBase64InBrowser(json).then(b64 => {
+    // Comparator for deterministic record ordering — keeps bundle bytes stable
+    // across builds for the same font set.
+    const _bundleSort = (a, b) => {
+        if (a.family !== b.family) return a.family < b.family ? -1 : 1;
+        if (a.styleIdx !== b.styleIdx) return a.styleIdx - b.styleIdx;
+        const aw = typeof a.weightIdx === 'number' ? a.weightIdx : 0;
+        const bw = typeof b.weightIdx === 'number' ? b.weightIdx : 0;
+        if (aw !== bw) return aw - bw;
+        return a.size - b.size;
+    };
+
+    const folderDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60 * 1000);
+
+    // Metrics bundle. Envelope shape: { formatVersion, records: [...] }. The
+    // runtime refuses to load a mismatched version, so this version is in
+    // lockstep with FontLoaderBase.BUNDLE_FORMAT_VERSION.
+    const metricsBundlePromise = (() => {
+        const recordsArr = Array.from(bundleRecords.values()).sort(_bundleSort);
+        const records = recordsArr.map(r => [r.family, r.styleIdx, r.weightIdx, r.size, r.minified]);
+        const envelope = { formatVersion: BUNDLE_FORMAT_VERSION, records };
+        const json = JSON.stringify(envelope);
+        console.log(`📦 Metrics bundle: ${recordsArr.length} records, JSON size: ${json.length} bytes`);
+        return _deflateRawBase64InBrowser(json).then(b64 => {
             const wrapped = `BitmapText.rBundle('${b64}');\n`;
-            const folderDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60 * 1000);
             folder.file('metrics-bundle.js', wrapped, { date: folderDate });
             console.log(`📦 metrics-bundle.js: ${wrapped.length} bytes (${b64.length} base64 chars)`);
         });
+    })();
+
+    // Per-density positioning bundles. One file per density; consumers download
+    // only the bundle for the density their app uses.
+    const positioningBundlePromises = [];
+    for (const [density, records] of positioningBundlesByDensity.entries()) {
+        records.sort(_bundleSort);
+        const records5 = records.map(r => [r.family, r.styleIdx, r.weightIdx, r.size, r.arrays]);
+        const envelope = { formatVersion: BUNDLE_FORMAT_VERSION, density, records: records5 };
+        const json = JSON.stringify(envelope);
+        console.log(`📦 Positioning bundle (density ${density}): ${records.length} records, JSON size: ${json.length} bytes`);
+        positioningBundlePromises.push(
+            _deflateRawBase64InBrowser(json).then(b64 => {
+                const wrapped = `BitmapText.pBundle(${density},'${b64}');\n`;
+                folder.file(`positioning-bundle-density-${density}.js`, wrapped, { date: folderDate });
+                console.log(`📦 positioning-bundle-density-${density}.js: ${wrapped.length} bytes (${b64.length} base64 chars)`);
+            })
+        );
     }
 
-
-    // Wait for the bundle to be written, then generate the zip.
-    return bundlePromise.then(() => zip.generateAsync({ type: "base64" }))
+    // Wait for every bundle to be written, then generate the zip.
+    return Promise.all([metricsBundlePromise, ...positioningBundlePromises])
+        .then(() => zip.generateAsync({ type: "base64" }))
         .then(base64Content => {
             console.log('✅ ZIP generated successfully, ready for transfer');
 

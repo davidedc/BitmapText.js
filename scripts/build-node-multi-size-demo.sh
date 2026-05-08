@@ -36,11 +36,10 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/AtlasPositioning.js"
   "$SRC_DIR/runtime/AtlasImage.js"
   "$SRC_DIR/runtime/AtlasData.js"
-  "$SRC_DIR/builder/AtlasReconstructionUtils.js"
   "$SRC_DIR/utils/AtlasCellDimensions.js"
-  "$SRC_DIR/runtime/TightAtlasReconstructor.js"
   "$LIB_DIR/QOIDecode.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
+  "$SRC_DIR/runtime/PositioningBundleStore.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontLoaderBase.js"
   "$SRC_DIR/platform/FontLoader-node.js"
@@ -197,28 +196,12 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/AtlasData.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate AtlasReconstructionUtils
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// ATLAS RECONSTRUCTION UTILITIES" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/builder/AtlasReconstructionUtils.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
 # Concatenate AtlasCellDimensions
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "// ATLAS CELL DIMENSIONS UTILITY" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/utils/AtlasCellDimensions.js" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# Concatenate TightAtlasReconstructor (Runtime atlas reconstruction)
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// TIGHT ATLAS RECONSTRUCTOR" >> "$OUTPUT_FILE"
-echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/runtime/TightAtlasReconstructor.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate QOI decoder
@@ -251,6 +234,14 @@ echo "// METRICS BUNDLE DECODER" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/MetricsBundleDecoder.js" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# Concatenate PositioningBundleStore (before FontLoaderBase which depends on it)
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "// POSITIONING BUNDLE STORE" >> "$OUTPUT_FILE"
+echo "// ============================================================================" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/PositioningBundleStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate FontMetricsStore (before BitmapText)

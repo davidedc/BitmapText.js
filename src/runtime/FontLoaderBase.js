@@ -48,6 +48,22 @@ class FontLoaderBase {
   // `eval()` returns.
   static _bundleDecodePromise = null;
 
+  // Per-density singletons: resolves when the positioning bundle for a given
+  // density is fully loaded, decoded, and every record is registered into
+  // PositioningBundleStore. Materialisation of AtlasPositioning happens lazily
+  // on first PositioningBundleStore.getPositioning lookup.
+  static _positioningBundleReadyPromises = new Map(); // density → Promise
+
+  // Internal: set by `BitmapText.registerPositioningBundle` when the bundle
+  // script executes. The platform-specific `loadPositioningBundleFile` awaits
+  // this after `script.onload` / `eval()` returns.
+  static _positioningBundleDecodePromises = new Map(); // density → Promise
+
+  // Bundle envelope format version. Bumped when the on-disk bundle layout
+  // changes incompatibly. Asset files MUST emit this exact value, or the
+  // runtime refuses to load them.
+  static BUNDLE_FORMAT_VERSION = 1;
+
   // ============================================
   // Configuration
   // ============================================
@@ -97,7 +113,11 @@ class FontLoaderBase {
    * Decode the metrics bundle and register every record into MetricsBundleStore.
    * Called by `BitmapText.registerBundle` (which is called by the bundle JS file).
    *
-   * @param {string} b64 - Base64-encoded deflate-raw stream produced by build-metrics-bundle.js.
+   * Bundle envelope: `{ formatVersion: 1, records: [...] }`. The runtime refuses
+   * to load mismatched-version assets — stale grid-format atlases must be
+   * regenerated, not papered over.
+   *
+   * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
    * @returns {Promise<void>} Resolves once every record is registered.
    */
   static async processBundle(b64) {
@@ -108,7 +128,15 @@ class FontLoaderBase {
       throw new Error('FontLoader.processBundle: MetricsBundleStore not available');
     }
 
-    const records = await MetricsBundleDecoder.decode(b64);
+    const envelope = await MetricsBundleDecoder.decode(b64);
+    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+      throw new Error(
+        `FontLoader.processBundle: metrics-bundle.js formatVersion mismatch ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `Regenerate font-assets/ with the current build.`
+      );
+    }
+    const records = envelope.records;
 
     const styleByIdx = ['normal', 'italic', 'oblique'];
     const ids = [];
@@ -127,6 +155,49 @@ class FontLoaderBase {
     }
     if (typeof FontManifest !== 'undefined' && ids.length) {
       FontManifest.addFontIDs(ids);
+    }
+  }
+
+  /**
+   * Decode a per-density positioning bundle and register every record into
+   * PositioningBundleStore. Called by `BitmapText.registerPositioningBundle`
+   * (which is called by `positioning-bundle-density-<N>.js`).
+   *
+   * Bundle envelope: `{ formatVersion: 1, density: <N>, records: [...] }`.
+   *
+   * @param {number} density - Pixel density this bundle is for (1, 1.5, 2, ...).
+   * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
+   * @returns {Promise<void>} Resolves once every record is registered.
+   */
+  static async processPositioningBundle(density, b64) {
+    if (typeof MetricsBundleDecoder === 'undefined') {
+      throw new Error('FontLoader.processPositioningBundle: MetricsBundleDecoder not available');
+    }
+    if (typeof PositioningBundleStore === 'undefined') {
+      throw new Error('FontLoader.processPositioningBundle: PositioningBundleStore not available');
+    }
+
+    const envelope = await MetricsBundleDecoder.decode(b64);
+    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+      throw new Error(
+        `FontLoader.processPositioningBundle: positioning-bundle-density-${density}.js formatVersion mismatch ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `Regenerate font-assets/ with the current build.`
+      );
+    }
+    if (envelope.density !== density) {
+      throw new Error(
+        `FontLoader.processPositioningBundle: density mismatch ` +
+        `(envelope says ${envelope.density}, expected ${density})`
+      );
+    }
+    const records = envelope.records;
+
+    const styleByIdx = ['normal', 'italic', 'oblique'];
+    for (const [fontFamily, styleIdx, weightIdx, fontSize, arrays] of records) {
+      const fontStyle = styleByIdx[styleIdx];
+      const fontWeight = weightIdx === 0 ? 'normal' : (weightIdx === 1 ? 'bold' : String(weightIdx));
+      PositioningBundleStore.setRecord(density, fontFamily, fontStyle, fontWeight, fontSize, arrays);
     }
   }
 
@@ -259,6 +330,24 @@ class FontLoaderBase {
   }
 
   /**
+   * Ensure the positioning bundle for `pixelDensity` is loaded (idempotent
+   * singleton, per density). The first call for a density triggers the
+   * platform's `loadPositioningBundleFile`; subsequent calls return the
+   * same Promise.
+   * @param {number} pixelDensity
+   * @returns {Promise<void>} Resolves once every record is in PositioningBundleStore.
+   */
+  static async loadPositioningFile(pixelDensity) {
+    if (!FontLoaderBase._positioningBundleReadyPromises.has(pixelDensity)) {
+      FontLoaderBase._positioningBundleReadyPromises.set(
+        pixelDensity,
+        FontLoader.loadPositioningBundleFile(pixelDensity)
+      );
+    }
+    return FontLoaderBase._positioningBundleReadyPromises.get(pixelDensity);
+  }
+
+  /**
    * Load atlas file for a font
    * @abstract Must be implemented by derived classes
    * @param {string} idString - Font ID string
@@ -271,18 +360,20 @@ class FontLoaderBase {
   }
 
   // ============================================
-  // Shared Atlas Reconstruction Logic
+  // Shared Atlas Loading Logic
   // ============================================
 
   /**
-   * Load atlas from package (image + metrics) and reconstruct positioning. Async
-   * because TightAtlasReconstructor yields between glyph chunks to keep the host
-   * event loop responsive during dynamic atlas loads.
+   * Load atlas from package: wrap the image, look up the pre-shipped positioning
+   * for this font from PositioningBundleStore, store as AtlasData. The positioning
+   * bundle for this density is awaited inline (idempotent singleton — first call
+   * fetches, subsequent calls reuse the same Promise). No canvas readback, no
+   * pixel scan.
    *
    * @param {string} idString - Font ID string
-   * @param {HTMLImageElement|HTMLCanvasElement} atlasImage - Atlas source image
-   * @param {Object} bitmapTextClass - BitmapText class reference
-   * @returns {Promise<boolean>} True if atlas was reconstructed, false if pending metrics
+   * @param {HTMLImageElement|HTMLCanvasElement} atlasImage - Already-tight atlas
+   * @param {Object} bitmapTextClass - BitmapText class reference (unused; kept for API parity)
+   * @returns {Promise<boolean>} True on success, false if metrics not yet loaded
    */
   static async _loadAtlasFromPackage(idString, atlasImage, bitmapTextClass) {
     const fontProperties = FontProperties.fromIDString(idString);
@@ -290,42 +381,31 @@ class FontLoaderBase {
     // Clean up temporary package storage
     delete FontLoaderBase._tempAtlasPackages[idString];
 
-    // Get font metrics (required for reconstruction)
+    // Get font metrics (still required for the character set; the bundle records
+    // are positional arrays in sorted-character order).
     const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
 
     if (!fontMetrics) {
-      // Store atlas for later reconstruction when metrics become available
+      // Store atlas for later when metrics become available.
       FontLoaderBase._pendingAtlases.set(idString, { atlasImage, bitmapTextClass });
       return false;
     }
 
-    // Check if TightAtlasReconstructor is available
-    if (typeof TightAtlasReconstructor === 'undefined') {
-      throw new Error(`FontLoader: TightAtlasReconstructor required for font loading - not available for ${idString}`);
-    }
+    // Idempotent per density: first call kicks off the bundle fetch + decode;
+    // subsequent calls reuse the cached Promise.
+    await FontLoaderBase.loadPositioningFile(fontProperties.pixelDensity);
 
-    // Reconstruct tight atlas + positioning from Atlas image
-    const { atlasImage: tightAtlasImage, atlasPositioning, perf } =
-      await TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage);
-
-    // Diagnostic log: emit one line per atlas reconstruction with sub-phase timings.
-    // Helps locate which step (getImageData readback, bounds-find, or pack) is the
-    // dominant remaining contributor to dynamic-load FPS spikes. Gate later via a
-    // flag if needed; currently always-on while tuning.
-    if (perf && typeof console !== 'undefined' && console.log) {
-      const f = (n) => n.toFixed(1);
-      console.log(
-        `[atlas-reconstruct] ${idString}: ` +
-        `getImageData=${f(perf.getImageData)}ms ` +
-        `bounds=${f(perf.boundsTotal)}ms (${perf.boundsChunks} chunks, max ${f(perf.boundsMaxChunk)}ms) ` +
-        `pack=${f(perf.packTotal)}ms (${perf.packChunks} chunks, max ${f(perf.packMaxChunk)}ms)`
+    const atlasPositioning = PositioningBundleStore.getPositioning(fontProperties, fontMetrics);
+    if (!atlasPositioning) {
+      throw new Error(
+        `FontLoader: no positioning record for ${idString} ` +
+        `(density ${fontProperties.pixelDensity}) — positioning bundle missing this font?`
       );
     }
 
-    // Create AtlasData instance
-    const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);
+    const wrappedAtlasImage = new AtlasImage(atlasImage);
+    const atlasData = new AtlasData(wrappedAtlasImage, atlasPositioning);
 
-    // Store directly in AtlasDataStore
     AtlasDataStore.setAtlasData(fontProperties, atlasData);
 
     return true;

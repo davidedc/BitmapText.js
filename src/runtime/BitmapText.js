@@ -324,6 +324,18 @@ class BitmapText {
   }
 
   /**
+   * Ensure the per-density positioning bundle has been loaded, decoded, and
+   * registered. Idempotent and per-density. Apps that pick one density at
+   * startup pay the cost once for the density they actually use.
+   * @param {number} pixelDensity - Pixel density to load (1, 1.5, 2, ...)
+   * @returns {Promise<void>}
+   */
+  static async ensurePositioningBundleLoaded(pixelDensity) {
+    BitmapText.#ensureFontLoader();
+    return FontLoaderBase.loadPositioningFile(pixelDensity);
+  }
+
+  /**
    * Register the metrics bundle (called once by `font-assets/metrics-bundle.js`).
    *
    * Kicks off async base64 → deflate-raw → JSON decode. Stores the resulting
@@ -334,6 +346,21 @@ class BitmapText {
   static registerBundle(b64) {
     BitmapText.#ensureFontLoader();
     FontLoaderBase._bundleDecodePromise = FontLoaderBase.processBundle(b64);
+  }
+
+  /**
+   * Register a per-density positioning bundle (called once by
+   * `font-assets/positioning-bundle-density-<N>.js`).
+   *
+   * @param {number} pixelDensity - Pixel density this bundle is for.
+   * @param {string} b64 - Base64-encoded deflate-raw stream containing the bundle JSON.
+   */
+  static registerPositioningBundle(pixelDensity, b64) {
+    BitmapText.#ensureFontLoader();
+    FontLoaderBase._positioningBundleDecodePromises.set(
+      pixelDensity,
+      FontLoaderBase.processPositioningBundle(pixelDensity, b64)
+    );
   }
 
   /**
@@ -452,7 +479,12 @@ class BitmapText {
       }
     }
 
-    const hasInvariantFont = invariantFontMetrics !== null;
+    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
+    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
+    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
+    // path that branches on this flag dereferences the metrics, so it has to be
+    // a real truthy check, not `!== null` (which lets undefined slip through).
+    const hasInvariantFont = invariantFontMetrics != null;
 
     // Resolve all character aliases upfront using fast regex pass
     // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
@@ -643,7 +675,12 @@ class BitmapText {
       }
     }
 
-    const hasInvariantFont = invariantFontMetrics !== null;
+    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
+    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
+    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
+    // path that branches on this flag dereferences the metrics, so it has to be
+    // a real truthy check, not `!== null` (which lets undefined slip through).
+    const hasInvariantFont = invariantFontMetrics != null;
 
     // Resolve all character aliases upfront using fast regex pass
     // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
@@ -1065,7 +1102,12 @@ class BitmapText {
     const invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
     const invariantAtlasData = invariantFontMetrics ?
       AtlasDataStore.getAtlasData(invariantFontProps) : null;
-    const hasInvariantFont = invariantFontMetrics !== null;
+    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
+    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
+    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
+    // path that branches on this flag dereferences the metrics, so it has to be
+    // a real truthy check, not `!== null` (which lets undefined slip through).
+    const hasInvariantFont = invariantFontMetrics != null;
 
     // Track current font to minimize lookups
     let currentFontProps = fontProperties;
@@ -1705,4 +1747,5 @@ class BitmapText {
 
 // TIER 6b OPTIMIZATION: Short aliases for registration methods (saves ~15 bytes per file)
 BitmapText.rBundle = BitmapText.registerBundle;
+BitmapText.pBundle = BitmapText.registerPositioningBundle;
 BitmapText.a = BitmapText.registerAtlas;

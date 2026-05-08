@@ -68,11 +68,14 @@ class AtlasPositioningFAB extends AtlasPositioning {
 
       let characterMetrics = fontMetrics.getCharacterMetrics(char);
 
-      // Skip glyphs without valid tight canvas box, but set default metrics
+      // Empty glyph (no visible pixels — e.g. space): emit zero-sized entry to
+      // stay in lockstep with AtlasBuilder, which packs nothing for these. The
+      // runtime PositioningBundleStore computes xInAtlas as cumsum(tightWidth),
+      // so 0 here means subsequent glyphs aren't shifted in the atlas. drawImage
+      // with zero width is a no-op, so the render path tolerates this directly.
       if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
-        // Set minimal default metrics for glyphs without visible pixels
-        this._tightWidth[char] = 1;
-        this._tightHeight[char] = 1;
+        this._tightWidth[char] = 0;
+        this._tightHeight[char] = 0;
         this._dx[char] = 0;
         this._dy[char] = 0;
         continue;
@@ -88,9 +91,7 @@ class AtlasPositioningFAB extends AtlasPositioning {
         glyph.tightCanvasBox.topLeftCorner.y +
         1;
 
-      // Calculate positioning offsets for atlas rendering (all in physical pixels)
-      // CRITICAL: These formulas MUST exactly match TightAtlasReconstructor.js:339-347
-      // Any deviation will cause misalignment between atlas building and runtime rendering
+      // Calculate positioning offsets for atlas rendering (all in physical pixels).
       // dx_PhysPx: Horizontal offset accounting for actualBoundingBoxLeft and tight canvas left edge
       // dy_PhysPx: Vertical offset accounting for tight height, bottom distance, and pixelDensity baseline
       const dx_PhysPx = - Math.round(characterMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
@@ -113,6 +114,48 @@ class AtlasPositioningFAB extends AtlasPositioning {
   setGlyphPositionInAtlas(char, xPosition_PhysPx, yPosition_PhysPx = 0) {
     this._xInAtlas[char] = xPosition_PhysPx;
     this._yInAtlas[char] = yPosition_PhysPx;
+  }
+
+  /**
+   * Serialise this positioning into the per-(font, density) array shape used
+   * by the positioning bundle.
+   *
+   * Single-row atlas (most fonts): 4 arrays
+   *   [tightWidth[], tightHeight[], dx[], dy[]]
+   * yInAtlas is implicit (always 0); xInAtlas is implicit (cumsum of tightWidth).
+   *
+   * Multi-row atlas (e.g. wide italic-bold density-2 sizes whose total tight width
+   * would exceed cwebp's 16383px hard limit): 5 arrays
+   *   [tightWidth[], tightHeight[], dx[], dy[], yInAtlas[]]
+   * xInAtlas is still implicit — runtime cumsums tightWidth, resetting to 0
+   * whenever yInAtlas changes.
+   *
+   * Arrays are in sorted-character order (matches AtlasBuilder's pack order).
+   *
+   * @returns {(number[])[]}
+   */
+  serialiseAsBundleRecord() {
+    const characters = Object.keys(this._tightWidth).sort();
+    const n = characters.length;
+    const tightWidth = new Array(n);
+    const tightHeight = new Array(n);
+    const dx = new Array(n);
+    const dy = new Array(n);
+    const yInAtlas = new Array(n);
+    let multiRow = false;
+    for (let i = 0; i < n; i++) {
+      const char = characters[i];
+      tightWidth[i] = this._tightWidth[char];
+      tightHeight[i] = this._tightHeight[char];
+      dx[i] = this._dx[char];
+      dy[i] = this._dy[char];
+      const y = this._yInAtlas[char] || 0;
+      yInAtlas[i] = y;
+      if (y !== 0) multiRow = true;
+    }
+    return multiRow
+      ? [tightWidth, tightHeight, dx, dy, yInAtlas]
+      : [tightWidth, tightHeight, dx, dy];
   }
 
   /**

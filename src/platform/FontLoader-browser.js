@@ -23,6 +23,7 @@ class FontLoader extends FontLoaderBase {
   static JS_EXTENSION = '.js';
   static WEBP_EXTENSION = '.webp';
   static METRICS_BUNDLE_FILENAME = 'metrics-bundle.js';
+  static POSITIONING_BUNDLE_PREFIX = 'positioning-bundle-density-';
 
   // ============================================
   // Browser-Specific Loading Implementation
@@ -51,6 +52,37 @@ class FontLoader extends FontLoaderBase {
       script.onerror = () => {
         script.remove();
         reject(new Error(`Failed to load metrics bundle from ${script.src}`));
+      };
+
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Inject the per-density positioning-bundle script tag once and await full
+   * decode. Singleton-safe per density: `FontLoaderBase.loadPositioningFile`
+   * calls this only on the first invocation for each density.
+   * @param {number} pixelDensity
+   * @returns {Promise<void>} Resolves once every record is in PositioningBundleStore.
+   */
+  static async loadPositioningBundleFile(pixelDensity) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      const fontDirectory = FontLoaderBase.getFontDirectory();
+      script.src = `${fontDirectory}${FontLoader.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`;
+
+      script.onload = () => {
+        const decodePromise = FontLoaderBase._positioningBundleDecodePromises.get(pixelDensity);
+        if (!decodePromise) {
+          reject(new Error(`positioning-bundle-density-${pixelDensity}.js loaded but did not call BitmapText.registerPositioningBundle`));
+          return;
+        }
+        decodePromise.then(resolve, reject);
+      };
+
+      script.onerror = () => {
+        script.remove();
+        reject(new Error(`Failed to load positioning bundle from ${script.src}`));
       };
 
       document.head.appendChild(script);

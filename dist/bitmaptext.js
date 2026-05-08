@@ -15,9 +15,8 @@
  *   - BitmapText (core runtime with CHARACTER_SET)
  *   - MetricsExpander (minified metrics expansion)
  *   - Atlas classes (AtlasPositioning, AtlasImage, AtlasData)
- *   - TightAtlasReconstructor (runtime atlas reconstruction)
  *   - FontLoader (font loading with platform detection)
- *   - Atlas/Metrics stores (data storage)
+ *   - Atlas/Metrics/Positioning stores (data storage)
  *
  * Usage (Browser):
  *   <script src="dist/bitmaptext.min.js"></script>
@@ -1199,6 +1198,18 @@ class BitmapText {
   }
 
   /**
+   * Ensure the per-density positioning bundle has been loaded, decoded, and
+   * registered. Idempotent and per-density. Apps that pick one density at
+   * startup pay the cost once for the density they actually use.
+   * @param {number} pixelDensity - Pixel density to load (1, 1.5, 2, ...)
+   * @returns {Promise<void>}
+   */
+  static async ensurePositioningBundleLoaded(pixelDensity) {
+    BitmapText.#ensureFontLoader();
+    return FontLoaderBase.loadPositioningFile(pixelDensity);
+  }
+
+  /**
    * Register the metrics bundle (called once by `font-assets/metrics-bundle.js`).
    *
    * Kicks off async base64 → deflate-raw → JSON decode. Stores the resulting
@@ -1209,6 +1220,21 @@ class BitmapText {
   static registerBundle(b64) {
     BitmapText.#ensureFontLoader();
     FontLoaderBase._bundleDecodePromise = FontLoaderBase.processBundle(b64);
+  }
+
+  /**
+   * Register a per-density positioning bundle (called once by
+   * `font-assets/positioning-bundle-density-<N>.js`).
+   *
+   * @param {number} pixelDensity - Pixel density this bundle is for.
+   * @param {string} b64 - Base64-encoded deflate-raw stream containing the bundle JSON.
+   */
+  static registerPositioningBundle(pixelDensity, b64) {
+    BitmapText.#ensureFontLoader();
+    FontLoaderBase._positioningBundleDecodePromises.set(
+      pixelDensity,
+      FontLoaderBase.processPositioningBundle(pixelDensity, b64)
+    );
   }
 
   /**
@@ -1327,7 +1353,12 @@ class BitmapText {
       }
     }
 
-    const hasInvariantFont = invariantFontMetrics !== null;
+    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
+    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
+    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
+    // path that branches on this flag dereferences the metrics, so it has to be
+    // a real truthy check, not `!== null` (which lets undefined slip through).
+    const hasInvariantFont = invariantFontMetrics != null;
 
     // Resolve all character aliases upfront using fast regex pass
     // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
@@ -1518,7 +1549,12 @@ class BitmapText {
       }
     }
 
-    const hasInvariantFont = invariantFontMetrics !== null;
+    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
+    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
+    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
+    // path that branches on this flag dereferences the metrics, so it has to be
+    // a real truthy check, not `!== null` (which lets undefined slip through).
+    const hasInvariantFont = invariantFontMetrics != null;
 
     // Resolve all character aliases upfront using fast regex pass
     // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
@@ -1940,7 +1976,12 @@ class BitmapText {
     const invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
     const invariantAtlasData = invariantFontMetrics ?
       AtlasDataStore.getAtlasData(invariantFontProps) : null;
-    const hasInvariantFont = invariantFontMetrics !== null;
+    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
+    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
+    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
+    // path that branches on this flag dereferences the metrics, so it has to be
+    // a real truthy check, not `!== null` (which lets undefined slip through).
+    const hasInvariantFont = invariantFontMetrics != null;
 
     // Track current font to minimize lookups
     let currentFontProps = fontProperties;
@@ -2580,6 +2621,7 @@ class BitmapText {
 
 // TIER 6b OPTIMIZATION: Short aliases for registration methods (saves ~15 bytes per file)
 BitmapText.rBundle = BitmapText.registerBundle;
+BitmapText.pBundle = BitmapText.registerPositioningBundle;
 BitmapText.a = BitmapText.registerAtlas;
 
 // ============================================================================
@@ -3179,8 +3221,6 @@ class MetricsExpander {
 // ARCHITECTURE:
 // - Immutable object representing atlas positioning for ONE font configuration
 // - Pre-computed lookups for optimal performance during glyph rendering
-// - xInAtlas values are reconstructed from tightWidth during deserialization (not serialized)
-// - Reconstruction happens once at load time, not per-character at render time
 // - All positioning data stored in memory for O(1) access during rendering
 // - Provides clean API for accessing glyph positioning within atlas
 // - Follows same immutable pattern as FontProperties and FontMetrics
@@ -3198,14 +3238,14 @@ class AtlasPositioning {
       throw new Error('AtlasPositioning constructor requires data object');
     }
 
-    // Atlas positioning data for glyph rendering
+    // Atlas positioning data for glyph rendering. xInAtlas / yInAtlas are
+    // populated either by AtlasPositioningFAB at build time, or by
+    // PositioningBundleStore at runtime (xInAtlas = cumsum(tightWidth),
+    // yInAtlas = 0 for the single-row tight atlas).
     this._tightWidth = data.tightWidth || {};
     this._tightHeight = data.tightHeight || {};
     this._dx = data.dx || {};
     this._dy = data.dy || {};
-    // NOTE: xInAtlas and yInAtlas are reconstructed from tightWidth during deserialization (not serialized to reduce file size)
-    // At build time: populated by AtlasPositioningFAB during atlas packing
-    // At runtime: reconstructed by TightAtlasReconstructor during atlas loading
     this._xInAtlas = data.xInAtlas || {};
     this._yInAtlas = data.yInAtlas || {};
 
@@ -3603,77 +3643,17 @@ class AtlasData {
   }
 }
 // ============================================================================
-// AtlasReconstructionUtils.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/builder/AtlasReconstructionUtils.js
-// ============================================================================
-
-// AtlasReconstructionUtils - Shared utility for image data extraction
-// Used by TightAtlasReconstructor for atlas image processing
-//
-// ARCHITECTURAL DESIGN RATIONALE:
-// This utility class provides cross-platform image data extraction that works
-// in both browser and Node.js environments. It handles different image sources
-// (HTMLImageElement, Canvas, AtlasImage wrapper) and creates temporary canvases
-// as needed for pixel data access.
-//
-// By centralizing this logic here, we ensure:
-// - Zero code duplication across different reconstruction contexts
-// - Single source of truth for image data extraction
-// - Consistent cross-platform behavior (browser vs Node.js)
-// - Easy to unit test independently
-
-class AtlasReconstructionUtils {
-  // Private constructor - prevent instantiation following Effective Java patterns
-  constructor() {
-    throw new Error('AtlasReconstructionUtils cannot be instantiated - use static methods');
-  }
-
-  /**
-   * Gets ImageData from various image sources
-   * Handles: HTMLImageElement (PNG), Canvas (QOI), AtlasImage wrapper
-   * @param {Image|Canvas|AtlasImage} image - Image source
-   * @returns {ImageData} ImageData object with pixel data
-   * @throws {Error} If image is not a valid source
-   */
-  static getImageData(image) {
-    // Unwrap AtlasImage if needed
-    const actualImage = image?.image ? image.image : image;
-
-    if (!actualImage) {
-      throw new Error('getImageData: Invalid image source (null or undefined)');
-    }
-
-    // If Canvas, directly get image data
-    if (actualImage.getContext) {
-      const ctx = actualImage.getContext('2d');
-      return ctx.getImageData(0, 0, actualImage.width, actualImage.height);
-    }
-
-    // If Image element, draw to temporary canvas first
-    if (actualImage.naturalWidth !== undefined || actualImage.width !== undefined) {
-      // Create canvas using explicit double invocation
-      const canvas = BitmapText.getCanvasFactory()();
-      canvas.width = actualImage.naturalWidth || actualImage.width;
-      canvas.height = actualImage.naturalHeight || actualImage.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(actualImage, 0, 0);
-      return ctx.getImageData(0, 0, canvas.width, canvas.height);
-    }
-
-    throw new Error('getImageData: Image source is not a Canvas or Image element');
-  }
-}
-
-// ============================================================================
 // AtlasCellDimensions.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/utils/AtlasCellDimensions.js
 // ============================================================================
 
 // AtlasCellDimensions - Utility for calculating atlas cell dimensions
 //
-// Provides centralized formulas for calculating cell dimensions from character metrics.
-// These formulas MUST be consistent across AtlasBuilder and TightAtlasReconstructor.
+// Provides centralized formulas for calculating cell dimensions from character
+// metrics. These are CSS-pixel cell dimensions used by font metric measurement;
+// the runtime tight atlas is single-row and per-glyph dimensions live in the
+// positioning bundle.
 //
-// Cell dimensions follow the Atlas format (variable-width cells):
-// - Cell width: actualBoundingBoxLeft + actualBoundingBoxRight (varies per character)
+// - Cell width:  actualBoundingBoxLeft + actualBoundingBoxRight (varies per character)
 // - Cell height: fontBoundingBoxAscent + fontBoundingBoxDescent (constant per font)
 
 class AtlasCellDimensions {
@@ -3718,478 +3698,6 @@ class AtlasCellDimensions {
       width: this.getWidth(charMetrics),
       height: this.getHeight(charMetrics)
     };
-  }
-}
-
-// ============================================================================
-// TightAtlasReconstructor.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/TightAtlasReconstructor.js
-// ============================================================================
-
-// TightAtlasReconstructor - Core Runtime Class
-//
-// This is a CORE RUNTIME class designed for reconstructing tight atlases from
-// standard atlases via pixel scanning.
-//
-// DISTRIBUTION ROLE:
-// - Used by font-assets-builder.html and also by the runtime to reconstruct tight
-//   atlases for display and storage
-// - Reconstructs tight atlas + positioning data from atlas image
-//
-// ARCHITECTURE:
-// - Takes atlas image (square-ish grid layout) and FontMetrics
-// - Scans each character cell to find tight bounding box
-// - Repacks into tight atlas (single row)
-// - Calculates positioning data (dx, dy) using EXACT formulas from AtlasPositioningFAB
-//
-// GRID LAYOUT:
-// - Input atlas: Grid dimensions: ceil(sqrt(N)) columns (matches AtlasBuilder)
-// - Characters arranged: row = floor(charIndex / columns), col = charIndex % columns
-// - Output tight atlas: Single row (backward compatible)
-//
-// CRITICAL REQUIREMENTS:
-// - MUST use sorted character order (same as AtlasBuilder)
-// - dx/dy formulas MUST match AtlasPositioningFAB.js:87-88 exactly
-// - MUST handle multi-part glyphs (i, j with dots) correctly
-// - MUST use 4-step optimized tight bounds detection algorithm
-//
-class TightAtlasReconstructor {
-  // Private constructor - prevent instantiation following Effective Java patterns
-  constructor() {
-    throw new Error('TightAtlasReconstructor cannot be instantiated - use static methods');
-  }
-
-  // Number of glyphs processed per chunk before yielding to the host event loop.
-  // Spreads the per-load cost across multiple frames so the user-visible UI thread
-  // doesn't stall for the full duration of a 100+ glyph reconstruction.
-  static CHUNK_SIZE = 32;
-
-  // Macrotask yield. setTimeout(0) is a touch slower than MessageChannel postMessage
-  // but works identically in browsers and Node, which is what we need: the runtime is
-  // shared across both bundle targets.
-  static _yieldToHost() {
-    return new Promise(resolve => setTimeout(resolve, 0));
-  }
-
-  /**
-   * Main entry point - reconstructs tight atlas from standard atlas. Async so the
-   * reconstruction work yields to the event loop between glyph chunks, preventing
-   * a single big main-thread stall when many fonts load dynamically.
-   *
-   * PARAMETER ORDER: Standardized to (fontMetrics, data) for API consistency
-   *
-   * @param {FontMetrics} fontMetrics - Font metrics for cell dimensions (CSS pixels) and positioning
-   * @param {Image|Canvas|AtlasImage} atlasImage - Atlas image (variable-width cells, already at physical pixels)
-   * @returns {Promise<{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning, perf: object}>}
-   *   `perf` is a diagnostic object with timing breakdowns for the reconstruction
-   *   sub-phases (in milliseconds). Used by the caller to log per-load latency.
-   */
-  static async reconstructFromAtlas(fontMetrics, atlasImage) {
-    const perf = {
-      getImageData: 0,
-      boundsTotal: 0, boundsMaxChunk: 0, boundsChunks: 0,
-      packTotal:   0, packMaxChunk:   0, packChunks:   0,
-    };
-
-    // 1. Get ImageData from atlas for pixel scanning
-    const t_gid = performance.now();
-    const imageData = AtlasReconstructionUtils.getImageData(atlasImage);
-    perf.getImageData = performance.now() - t_gid;
-
-    // 2. Get SORTED character list (CRITICAL for determinism)
-    // Must match the order used in AtlasBuilder
-    const characters = fontMetrics.getAvailableCharacters().sort();
-
-    if (characters.length === 0) {
-      throw new Error('TightAtlasReconstructor: No characters found in FontMetrics');
-    }
-
-    console.debug(`TightAtlasReconstructor: Processing ${characters.length} characters`);
-
-    // 3. Calculate cell dimensions from font metrics
-    // Cell height is constant across all characters in this font
-    // Character metrics contain CSS pixel values, but we need to infer physical pixel dimensions
-    // from the actual atlas image by detecting pixelDensity from the ratio
-    const firstChar = characters[0];
-    const firstMetrics = fontMetrics.getCharacterMetrics(firstChar);
-
-    // Infer pixelDensity from first character's metrics vs atlas dimensions
-    // This works because: physical_pixels = CSS_pixels * pixelDensity
-    const height_CssPx = AtlasCellDimensions.getHeight(firstMetrics);
-    const pixelDensity = firstMetrics.pixelDensity || 1; // Use pixelDensity from metrics if available
-    const cellHeight_PhysPx = Math.round(height_CssPx * pixelDensity);
-
-    console.debug(`🔍 TightAtlasReconstructor: pixelDensity=${pixelDensity}, height_CssPx=${height_CssPx}, cellHeight_PhysPx=${cellHeight_PhysPx}`);
-
-    // 4. Calculate optimal grid dimensions based on character count (must match AtlasBuilder)
-    const gridDims = BitmapText.calculateOptimalGridDimensions(characters.length);
-    const GRID_COLUMNS = gridDims.columns;
-    const GRID_ROWS = gridDims.rows;
-
-    // 5. Calculate grid layout (matching AtlasBuilder)
-    // First pass: Calculate cell widths and column max widths
-    const cellWidths_PhysPx = [];
-    const columnMaxWidths_PhysPx = new Array(GRID_COLUMNS).fill(0);
-
-    for (let charIndex = 0; charIndex < characters.length; charIndex++) {
-      const char = characters[charIndex];
-      const charMetrics = fontMetrics.getCharacterMetrics(char);
-
-      // Cell width is variable per character (scale CSS pixels to physical pixels)
-      const width_CssPx = AtlasCellDimensions.getWidth(charMetrics);
-      const cellWidth_PhysPx = Math.round(width_CssPx * pixelDensity);
-
-      cellWidths_PhysPx[charIndex] = cellWidth_PhysPx;
-
-      // Track maximum width for this column
-      const col = charIndex % GRID_COLUMNS;
-      columnMaxWidths_PhysPx[col] = Math.max(columnMaxWidths_PhysPx[col], cellWidth_PhysPx);
-    }
-
-    // Calculate column X positions (cumulative sum of max widths)
-    const columnXPositions_PhysPx = [0];
-    for (let col = 0; col < GRID_COLUMNS - 1; col++) {
-      columnXPositions_PhysPx.push(columnXPositions_PhysPx[col] + columnMaxWidths_PhysPx[col]);
-    }
-
-    // 6. Scan each cell to find tight bounds within the atlas cell (grid layout)
-    const tightBounds = {};
-    const cellDebugInfo = []; // Track first 5 chars for debugging
-
-    let chunkStart = performance.now();
-    const recordChunk = (durArr, maxKey, totalKey, countKey) => {
-      const dur = performance.now() - chunkStart;
-      perf[totalKey] += dur;
-      if (dur > perf[maxKey]) perf[maxKey] = dur;
-      perf[countKey]++;
-      chunkStart = performance.now();
-    };
-
-    for (let charIndex = 0; charIndex < characters.length; charIndex++) {
-      const char = characters[charIndex];
-      const cellWidth_PhysPx = cellWidths_PhysPx[charIndex];
-
-      // Calculate grid position
-      const col = charIndex % GRID_COLUMNS;
-      const row = Math.floor(charIndex / GRID_COLUMNS);
-
-      const cellX_PhysPx = columnXPositions_PhysPx[col];
-      const cellY_PhysPx = row * cellHeight_PhysPx;
-
-      // Debug first few characters
-      if (cellDebugInfo.length < 5) {
-        cellDebugInfo.push(`${char}:w=${cellWidth_PhysPx},r=${row},c=${col},x=${cellX_PhysPx},y=${cellY_PhysPx}`);
-      }
-
-      // Find tight bounds within this cell using 4-step optimized algorithm
-      const bounds = this.findTightBounds(
-        imageData,
-        cellX_PhysPx,
-        cellY_PhysPx,
-        cellWidth_PhysPx,
-        cellHeight_PhysPx
-      );
-
-      if (bounds) {
-        tightBounds[char] = bounds;
-      }
-
-      // Yield to the host event loop every CHUNK_SIZE glyphs so a long bound-finding
-      // pass (~30+ ms for big fonts) can be split across multiple frames.
-      if ((charIndex + 1) % TightAtlasReconstructor.CHUNK_SIZE === 0) {
-        recordChunk(null, 'boundsMaxChunk', 'boundsTotal', 'boundsChunks');
-        await TightAtlasReconstructor._yieldToHost();
-        chunkStart = performance.now();
-      }
-    }
-    // Final partial chunk (the last <CHUNK_SIZE characters).
-    recordChunk(null, 'boundsMaxChunk', 'boundsTotal', 'boundsChunks');
-
-    console.debug(`🔍 Cell dimensions (first 5): ${cellDebugInfo.join(', ')} [Grid: ${GRID_COLUMNS}×${GRID_ROWS}]`);
-
-    // 7. Repack into tight atlas with positioning data
-    const packed = await this.packTightAtlas(
-      fontMetrics,
-      tightBounds,
-      characters,
-      atlasImage,
-      pixelDensity,
-      cellHeight_PhysPx,
-      cellWidths_PhysPx,
-      columnXPositions_PhysPx,
-      GRID_COLUMNS,
-      perf
-    );
-
-    return { atlasImage: packed.atlasImage, atlasPositioning: packed.atlasPositioning, perf };
-  }
-
-  /**
-   * Find tight bounds within a cell using 4-step optimized algorithm
-   * This scans for the minimal bounding box of non-transparent pixels
-   *
-   * @param {ImageData} imageData - Image data from original atlas
-   * @param {number} cellX_PhysPx - X position of cell in atlas (physical pixels)
-   * @param {number} cellY_PhysPx - Y position of cell in atlas (physical pixels, always 0)
-   * @param {number} cellWidth_PhysPx - Width of this character's cell (physical pixels)
-   * @param {number} cellHeight_PhysPx - Height of cell (physical pixels, constant for font)
-   * @returns {{left, top, width, height} | null} - Tight bounds relative to cell origin, or null if empty
-   */
-  static findTightBounds(imageData, cellX_PhysPx, cellY_PhysPx, cellWidth_PhysPx, cellHeight_PhysPx) {
-    const pixels = imageData.data;
-    const atlasWidth_PhysPx = imageData.width;
-
-    // Helper to get alpha value at position
-    // Optimized: pre-calculate stride and use bit shift for x*4
-    const stride = atlasWidth_PhysPx * 4;
-    const getAlpha = (x, y) => pixels[y * stride + (x << 2) + 3];
-
-    // STEP 1: Find bottom edge (scan UP from bottom) - early exit
-    // This finds the bottommost row with any non-transparent pixel
-    let bottom_PhysPx = -1;
-    for (let y = cellY_PhysPx + cellHeight_PhysPx - 1; y >= cellY_PhysPx && bottom_PhysPx === -1; y--) {
-      for (let x = cellX_PhysPx; x < cellX_PhysPx + cellWidth_PhysPx && bottom_PhysPx === -1; x++) {
-        if (getAlpha(x, y) > 0) {
-          bottom_PhysPx = y;
-        }
-      }
-    }
-
-    // Empty cell (no visible pixels)
-    if (bottom_PhysPx === -1) return null;
-
-    // STEP 2: Find top edge (scan DOWN, only to bottom) - early exit
-    // This finds the topmost row with any non-transparent pixel
-    let top_PhysPx = cellY_PhysPx;
-    for (let y = cellY_PhysPx; y <= bottom_PhysPx; y++) {
-      let found = false;
-      for (let x = cellX_PhysPx; x < cellX_PhysPx + cellWidth_PhysPx; x++) {
-        if (getAlpha(x, y) > 0) {
-          top_PhysPx = y;
-          found = true;
-          break;
-        }
-      }
-      if (found) break;
-    }
-
-    // STEP 3: Find left edge (scan columns, only vertical range found above) - early exit
-    // This finds the leftmost column with any non-transparent pixel
-    let left_PhysPx = cellX_PhysPx;
-    for (let x = cellX_PhysPx; x < cellX_PhysPx + cellWidth_PhysPx; x++) {
-      let found = false;
-      for (let y = top_PhysPx; y <= bottom_PhysPx; y++) {
-        if (getAlpha(x, y) > 0) {
-          left_PhysPx = x;
-          found = true;
-          break;
-        }
-      }
-      if (found) break;
-    }
-
-    // STEP 4: Find right edge (scan right→left, only vertical range) - early exit
-    // This finds the rightmost column with any non-transparent pixel
-    let right_PhysPx = cellX_PhysPx + cellWidth_PhysPx - 1;
-    for (let x = cellX_PhysPx + cellWidth_PhysPx - 1; x >= cellX_PhysPx; x--) {
-      let found = false;
-      for (let y = top_PhysPx; y <= bottom_PhysPx; y++) {
-        if (getAlpha(x, y) > 0) {
-          right_PhysPx = x;
-          found = true;
-          break;
-        }
-      }
-      if (found) break;
-    }
-
-    // Return bounds relative to cell origin (not absolute atlas coordinates)
-    return {
-      left: left_PhysPx - cellX_PhysPx,        // Relative to cell left edge (physical pixels)
-      top: top_PhysPx - cellY_PhysPx,          // Relative to cell top edge (physical pixels)
-      width: right_PhysPx - left_PhysPx + 1,   // Inclusive width (physical pixels)
-      height: bottom_PhysPx - top_PhysPx + 1   // Inclusive height (physical pixels)
-    };
-  }
-
-  /**
-   * Pack tight glyphs and calculate positioning data
-   *
-   * PARAMETER ORDER: Standardized to (fontMetrics, data, options) for API consistency
-   *
-   * @param {FontMetrics} fontMetrics - Font metrics for positioning calculations
-   * @param {Object} tightBounds - Map of char → {left, top, width, height} within cells
-   * @param {Array<string>} characters - Sorted array of characters
-   * @param {Image|Canvas} sourceAtlasImage - Source Atlas image for extraction
-   * @param {number} pixelDensity - Pixel density multiplier for positioning calculations
-   * @param {number} cellHeight_PhysPx - Cell height in physical pixels (for distanceBetweenBottomAndBottomOfCanvas calculation)
-   * @param {Array<number>} cellWidths_PhysPx - Width of each character cell in physical pixels
-   * @param {Array<number>} columnXPositions_PhysPx - X position of each column in grid
-   * @param {number} GRID_COLUMNS - Number of columns in grid layout (for calculating row/col from charIndex)
-   * @param {object} [perf] - Optional perf accumulator with packTotal/packMaxChunk/packChunks fields.
-   * @returns {Promise<{atlasImage: AtlasImage, atlasPositioning: AtlasPositioning}>}
-   */
-  static async packTightAtlas(fontMetrics, tightBounds, characters, sourceAtlasImage, pixelDensity, cellHeight_PhysPx, cellWidths_PhysPx, columnXPositions_PhysPx, GRID_COLUMNS, perf) {
-    // Calculate tight atlas dimensions (all in physical pixels)
-    let totalWidth_PhysPx = 0;
-    let maxHeight_PhysPx = 0;
-
-    for (const char of characters) {
-      if (tightBounds[char]) {
-        totalWidth_PhysPx += tightBounds[char].width;
-        maxHeight_PhysPx = Math.max(maxHeight_PhysPx, tightBounds[char].height);
-      }
-    }
-
-    // Create tight atlas canvas (explicit double invocation: get factory, call factory)
-    const tightCanvas = BitmapText.getCanvasFactory()();
-    tightCanvas.width = totalWidth_PhysPx;
-    tightCanvas.height = maxHeight_PhysPx;
-    const ctx = tightCanvas.getContext('2d');
-
-    // Initialize positioning data structure
-    let xInTightAtlas_PhysPx = 0;
-    const positioning = {
-      tightWidth: {},
-      tightHeight: {},
-      dx: {},
-      dy: {},
-      xInAtlas: {},
-      yInAtlas: {}
-    };
-
-    let packChunkStart = performance.now();
-
-    // Extract and pack each tight glyph
-    for (let charIndex = 0; charIndex < characters.length; charIndex++) {
-      const char = characters[charIndex];
-      const charMetrics = fontMetrics.getCharacterMetrics(char);
-
-      // Calculate grid position for source atlas
-      const col = charIndex % GRID_COLUMNS;
-      const row = Math.floor(charIndex / GRID_COLUMNS);
-
-      const cellX_PhysPx = columnXPositions_PhysPx[col];
-      const cellY_PhysPx = row * cellHeight_PhysPx;
-      const cellWidth_PhysPx = cellWidths_PhysPx[charIndex];
-
-      const bounds = tightBounds[char];
-      if (!bounds) {
-        // No visible pixels, skip to next character
-        continue;
-      }
-
-      // Source rectangle inside the source atlas (cell origin + tight bounds offset).
-      const srcX_PhysPx = Math.floor(cellX_PhysPx + bounds.left);
-      const srcY_PhysPx = Math.floor(cellY_PhysPx + bounds.top);
-      const srcWidth_PhysPx = Math.floor(bounds.width);
-      const srcHeight_PhysPx = Math.floor(bounds.height);
-
-      // Single drawImage from source atlas straight into the tight atlas. Earlier
-      // versions copied via a per-glyph temp canvas (allocated + drawn-to + drawn-from),
-      // costing N canvas allocations and N redundant intermediate blits per atlas load.
-      // The 9-arg drawImage form does the slice + place atomically with no intermediate,
-      // so we just call it once per glyph and skip the round-trip. Verified to produce
-      // byte-identical output to the legacy two-step copy across all Node demo PNGs.
-      ctx.drawImage(
-        sourceAtlasImage,
-        srcX_PhysPx, srcY_PhysPx, srcWidth_PhysPx, srcHeight_PhysPx,
-        xInTightAtlas_PhysPx, 0, srcWidth_PhysPx, srcHeight_PhysPx
-      );
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // POSITIONING CALCULATION
-      // ═══════════════════════════════════════════════════════════════════════
-      //
-      // We need to calculate dx/dy offsets for rendering the tight glyph.
-      // These formulas MUST match AtlasPositioningFAB.js:91-92 exactly.
-      //
-      // Coordinate System Overview:
-      //
-      //   Atlas Cell (variable-width):        Tight Bounds:
-      //   ┌──────────────────────────┐
-      //   │ actualBoundingBox        │        ┌──────────┐
-      //   │ ┌──────────────────┐     │        │  ████    │  ← Minimal box
-      //   │ │                  │     │   →    │  ████    │     around pixels
-      //   │ │    ████          │     │        └──────────┘
-      //   │ │    ████          │     │
-      //   │ └──────────────────┘     │        dx = horizontal offset to align
-      //   │ fontBoundingBox          │        dy = vertical offset from baseline
-      //   └──────────────────────────┘
-      //     ↑                          ↑
-      //     cellX_PhysPx             cellX_PhysPx + cellWidth_PhysPx
-      //
-      // dx: Horizontal offset from rendering position to tight glyph position
-      //     Components:
-      //     - actualBoundingBoxLeft: Distance from text baseline to left edge of actual glyph
-      //     - bounds.left: Left edge of tight bounds within cell
-      //     Formula: -actualBoundingBoxLeft * pixelDensity + bounds.left
-      //
-      // dy: Vertical offset from baseline to top of tight glyph
-      //     Components:
-      //     - bounds.height: Height of tight glyph
-      //     - distanceBetweenBottomAndBottomOfCanvas: Gap below glyph (accounts for descenders)
-      //     - pixelDensity: Scale factor for high-DPI displays
-      //     Formula: -bounds.height - distanceBetweenBottomAndBottomOfCanvas + pixelDensity
-      //
-      //     The distanceBetweenBottomAndBottomOfCanvas accounts for descenders (like 'g', 'y')
-      //     and ensures proper vertical alignment relative to the text baseline.
-      //
-      // Note: pixelDensity is passed as a parameter (charMetrics only contains CSS pixel measurements)
-
-      // Calculate distance from bottom of tight bounds to bottom of character canvas
-      // This is used in the dy calculation
-      // Note: bounds.top + bounds.height - 1 gives the Y coordinate of the bottom pixel (like bottomRightCorner.y)
-      const distanceBetweenBottomAndBottomOfCanvas_PhysPx =
-        cellHeight_PhysPx - (bounds.top + bounds.height - 1) - 1;
-
-      // Store positioning data (all in physical pixels)
-      positioning.tightWidth[char] = bounds.width;    // Physical pixels
-      positioning.tightHeight[char] = bounds.height;  // Physical pixels
-      positioning.xInAtlas[char] = xInTightAtlas_PhysPx;  // Physical pixels
-      positioning.yInAtlas[char] = 0;  // Tight atlas is single row
-
-      // EXACT dx formula from AtlasPositioningFAB.js:91 (physical pixels)
-      positioning.dx[char] =
-        - Math.round(charMetrics.actualBoundingBoxLeft) * pixelDensity
-        + bounds.left;
-
-      // EXACT dy formula from AtlasPositioningFAB.js:92 (physical pixels)
-      positioning.dy[char] =
-        - bounds.height
-        - distanceBetweenBottomAndBottomOfCanvas_PhysPx
-        + 1 * pixelDensity;
-
-      xInTightAtlas_PhysPx += bounds.width;
-
-      // Yield every CHUNK_SIZE glyphs so the per-glyph canvas allocation +
-      // drawImage cost (the dominant share of reconstruction time) is spread
-      // across multiple frames instead of one big stall.
-      if ((charIndex + 1) % TightAtlasReconstructor.CHUNK_SIZE === 0) {
-        if (perf) {
-          const dur = performance.now() - packChunkStart;
-          perf.packTotal += dur;
-          if (dur > perf.packMaxChunk) perf.packMaxChunk = dur;
-          perf.packChunks++;
-        }
-        await TightAtlasReconstructor._yieldToHost();
-        packChunkStart = performance.now();
-      }
-    }
-    // Final partial chunk.
-    if (perf) {
-      const dur = performance.now() - packChunkStart;
-      perf.packTotal += dur;
-      if (dur > perf.packMaxChunk) perf.packMaxChunk = dur;
-      perf.packChunks++;
-    }
-
-    // Create domain objects
-    const tightAtlasImage = new AtlasImage(tightCanvas);
-    const atlasPositioning = new AtlasPositioning(positioning);
-
-    console.debug(`TightAtlasReconstructor: Packed ${Object.keys(positioning.xInAtlas).length} glyphs into ${totalWidth_PhysPx}×${maxHeight_PhysPx} atlas`);
-
-    return { atlasImage: tightAtlasImage, atlasPositioning };
   }
 }
 
@@ -4395,6 +3903,132 @@ class MetricsBundleDecoder {
 }
 
 // ============================================================================
+// PositioningBundleStore.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/PositioningBundleStore.js
+// ============================================================================
+
+// PositioningBundleStore - Per-density store of pre-computed atlas positioning
+//
+// The positioning bundle ships per-(density, family, style, weight, size) records
+// in sorted-character order: [tightWidth[], tightHeight[], dx[], dy[]]. Replaces
+// the runtime pixel-scan reconstruction (TightAtlasReconstructor) — these values
+// were already computed at build time by AtlasPositioningFAB and are now shipped.
+//
+// xInAtlas is implicit: cumsum(tightWidth). yInAtlas is always 0 (single-row tight
+// atlas). Both are reconstituted at materialisation, not stored.
+//
+// Per-density (not density-agnostic like metrics): physical-pixel offsets and
+// rasteriser rounding genuinely differ across densities.
+
+class PositioningBundleStore {
+  // "density:family:style:weight:size" → { tightWidth: [], tightHeight: [], dx: [], dy: [] }
+  static #records = new Map();
+
+  // Cache of materialised AtlasPositioning instances, keyed by FontProperties.key.
+  static #atlasPositioning = new Map();
+
+  static #key(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize) {
+    return `${pixelDensity}:${fontFamily}:${fontStyle}:${fontWeight}:${fontSize}`;
+  }
+
+  static setRecord(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize, arrays) {
+    PositioningBundleStore.#records.set(
+      PositioningBundleStore.#key(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize),
+      arrays
+    );
+  }
+
+  static getRecord(fontProperties) {
+    return PositioningBundleStore.#records.get(
+      PositioningBundleStore.#key(
+        fontProperties.pixelDensity,
+        fontProperties.fontFamily,
+        fontProperties.fontStyle,
+        fontProperties.fontWeight,
+        fontProperties.fontSize
+      )
+    );
+  }
+
+  static hasRecord(fontProperties) {
+    return PositioningBundleStore.#records.has(
+      PositioningBundleStore.#key(
+        fontProperties.pixelDensity,
+        fontProperties.fontFamily,
+        fontProperties.fontStyle,
+        fontProperties.fontWeight,
+        fontProperties.fontSize
+      )
+    );
+  }
+
+  // Lazy-materialise an AtlasPositioning for `fontProperties`. Arrays are in the
+  // SAME sorted order as `fontMetrics.getAvailableCharacters().sort()` — same
+  // invariant the build pipeline (AtlasBuilder + AtlasPositioningFAB) uses.
+  //
+  // Record shapes:
+  //   4 arrays: [tightWidth, tightHeight, dx, dy] — single-row tight atlas;
+  //             yInAtlas is implicit 0, xInAtlas is cumsum(tightWidth).
+  //   5 arrays: [tightWidth, tightHeight, dx, dy, yInAtlas] — multi-row tight atlas
+  //             (used when total width would exceed cwebp's 16383px limit);
+  //             xInAtlas is cumsum(tightWidth) restarted on each y change.
+  static getPositioning(fontProperties, fontMetrics) {
+    const cached = PositioningBundleStore.#atlasPositioning.get(fontProperties.key);
+    if (cached) return cached;
+
+    const arrays = PositioningBundleStore.getRecord(fontProperties);
+    if (!arrays) return undefined;
+
+    const characters = fontMetrics.getAvailableCharacters().sort();
+    const [tightWidthArr, tightHeightArr, dxArr, dyArr, yInAtlasArr] = arrays;
+
+    if (tightWidthArr.length !== characters.length) {
+      throw new Error(
+        `PositioningBundleStore: record length ${tightWidthArr.length} does not match ` +
+        `character set length ${characters.length} for ${fontProperties.key}`
+      );
+    }
+
+    const tightWidth = {};
+    const tightHeight = {};
+    const dx = {};
+    const dy = {};
+    const xInAtlas = {};
+    const yInAtlas = {};
+
+    let runningX = 0;
+    let prevY = 0;
+    for (let i = 0; i < characters.length; i++) {
+      const char = characters[i];
+      tightWidth[char] = tightWidthArr[i];
+      tightHeight[char] = tightHeightArr[i];
+      dx[char] = dxArr[i];
+      dy[char] = dyArr[i];
+      const y = yInAtlasArr ? yInAtlasArr[i] : 0;
+      // Reset xInAtlas at the start of each new row, mirroring AtlasBuilder's pack order.
+      if (y !== prevY) { runningX = 0; prevY = y; }
+      xInAtlas[char] = runningX;
+      yInAtlas[char] = y;
+      runningX += tightWidthArr[i];
+    }
+
+    const positioning = new AtlasPositioning({
+      tightWidth, tightHeight, dx, dy, xInAtlas, yInAtlas
+    });
+    PositioningBundleStore.#atlasPositioning.set(fontProperties.key, positioning);
+    return positioning;
+  }
+
+  static size() {
+    return PositioningBundleStore.#records.size;
+  }
+
+  static clear() {
+    PositioningBundleStore.#records.clear();
+    PositioningBundleStore.#atlasPositioning.clear();
+  }
+}
+
+// ============================================================================
 // FontMetricsStore.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/FontMetricsStore.js
 // ============================================================================
 
@@ -4589,6 +4223,22 @@ class FontLoaderBase {
   // `eval()` returns.
   static _bundleDecodePromise = null;
 
+  // Per-density singletons: resolves when the positioning bundle for a given
+  // density is fully loaded, decoded, and every record is registered into
+  // PositioningBundleStore. Materialisation of AtlasPositioning happens lazily
+  // on first PositioningBundleStore.getPositioning lookup.
+  static _positioningBundleReadyPromises = new Map(); // density → Promise
+
+  // Internal: set by `BitmapText.registerPositioningBundle` when the bundle
+  // script executes. The platform-specific `loadPositioningBundleFile` awaits
+  // this after `script.onload` / `eval()` returns.
+  static _positioningBundleDecodePromises = new Map(); // density → Promise
+
+  // Bundle envelope format version. Bumped when the on-disk bundle layout
+  // changes incompatibly. Asset files MUST emit this exact value, or the
+  // runtime refuses to load them.
+  static BUNDLE_FORMAT_VERSION = 1;
+
   // ============================================
   // Configuration
   // ============================================
@@ -4638,7 +4288,11 @@ class FontLoaderBase {
    * Decode the metrics bundle and register every record into MetricsBundleStore.
    * Called by `BitmapText.registerBundle` (which is called by the bundle JS file).
    *
-   * @param {string} b64 - Base64-encoded deflate-raw stream produced by build-metrics-bundle.js.
+   * Bundle envelope: `{ formatVersion: 1, records: [...] }`. The runtime refuses
+   * to load mismatched-version assets — stale grid-format atlases must be
+   * regenerated, not papered over.
+   *
+   * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
    * @returns {Promise<void>} Resolves once every record is registered.
    */
   static async processBundle(b64) {
@@ -4649,7 +4303,15 @@ class FontLoaderBase {
       throw new Error('FontLoader.processBundle: MetricsBundleStore not available');
     }
 
-    const records = await MetricsBundleDecoder.decode(b64);
+    const envelope = await MetricsBundleDecoder.decode(b64);
+    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+      throw new Error(
+        `FontLoader.processBundle: metrics-bundle.js formatVersion mismatch ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `Regenerate font-assets/ with the current build.`
+      );
+    }
+    const records = envelope.records;
 
     const styleByIdx = ['normal', 'italic', 'oblique'];
     const ids = [];
@@ -4668,6 +4330,49 @@ class FontLoaderBase {
     }
     if (typeof FontManifest !== 'undefined' && ids.length) {
       FontManifest.addFontIDs(ids);
+    }
+  }
+
+  /**
+   * Decode a per-density positioning bundle and register every record into
+   * PositioningBundleStore. Called by `BitmapText.registerPositioningBundle`
+   * (which is called by `positioning-bundle-density-<N>.js`).
+   *
+   * Bundle envelope: `{ formatVersion: 1, density: <N>, records: [...] }`.
+   *
+   * @param {number} density - Pixel density this bundle is for (1, 1.5, 2, ...).
+   * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
+   * @returns {Promise<void>} Resolves once every record is registered.
+   */
+  static async processPositioningBundle(density, b64) {
+    if (typeof MetricsBundleDecoder === 'undefined') {
+      throw new Error('FontLoader.processPositioningBundle: MetricsBundleDecoder not available');
+    }
+    if (typeof PositioningBundleStore === 'undefined') {
+      throw new Error('FontLoader.processPositioningBundle: PositioningBundleStore not available');
+    }
+
+    const envelope = await MetricsBundleDecoder.decode(b64);
+    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+      throw new Error(
+        `FontLoader.processPositioningBundle: positioning-bundle-density-${density}.js formatVersion mismatch ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `Regenerate font-assets/ with the current build.`
+      );
+    }
+    if (envelope.density !== density) {
+      throw new Error(
+        `FontLoader.processPositioningBundle: density mismatch ` +
+        `(envelope says ${envelope.density}, expected ${density})`
+      );
+    }
+    const records = envelope.records;
+
+    const styleByIdx = ['normal', 'italic', 'oblique'];
+    for (const [fontFamily, styleIdx, weightIdx, fontSize, arrays] of records) {
+      const fontStyle = styleByIdx[styleIdx];
+      const fontWeight = weightIdx === 0 ? 'normal' : (weightIdx === 1 ? 'bold' : String(weightIdx));
+      PositioningBundleStore.setRecord(density, fontFamily, fontStyle, fontWeight, fontSize, arrays);
     }
   }
 
@@ -4800,6 +4505,24 @@ class FontLoaderBase {
   }
 
   /**
+   * Ensure the positioning bundle for `pixelDensity` is loaded (idempotent
+   * singleton, per density). The first call for a density triggers the
+   * platform's `loadPositioningBundleFile`; subsequent calls return the
+   * same Promise.
+   * @param {number} pixelDensity
+   * @returns {Promise<void>} Resolves once every record is in PositioningBundleStore.
+   */
+  static async loadPositioningFile(pixelDensity) {
+    if (!FontLoaderBase._positioningBundleReadyPromises.has(pixelDensity)) {
+      FontLoaderBase._positioningBundleReadyPromises.set(
+        pixelDensity,
+        FontLoader.loadPositioningBundleFile(pixelDensity)
+      );
+    }
+    return FontLoaderBase._positioningBundleReadyPromises.get(pixelDensity);
+  }
+
+  /**
    * Load atlas file for a font
    * @abstract Must be implemented by derived classes
    * @param {string} idString - Font ID string
@@ -4812,18 +4535,20 @@ class FontLoaderBase {
   }
 
   // ============================================
-  // Shared Atlas Reconstruction Logic
+  // Shared Atlas Loading Logic
   // ============================================
 
   /**
-   * Load atlas from package (image + metrics) and reconstruct positioning. Async
-   * because TightAtlasReconstructor yields between glyph chunks to keep the host
-   * event loop responsive during dynamic atlas loads.
+   * Load atlas from package: wrap the image, look up the pre-shipped positioning
+   * for this font from PositioningBundleStore, store as AtlasData. The positioning
+   * bundle for this density is awaited inline (idempotent singleton — first call
+   * fetches, subsequent calls reuse the same Promise). No canvas readback, no
+   * pixel scan.
    *
    * @param {string} idString - Font ID string
-   * @param {HTMLImageElement|HTMLCanvasElement} atlasImage - Atlas source image
-   * @param {Object} bitmapTextClass - BitmapText class reference
-   * @returns {Promise<boolean>} True if atlas was reconstructed, false if pending metrics
+   * @param {HTMLImageElement|HTMLCanvasElement} atlasImage - Already-tight atlas
+   * @param {Object} bitmapTextClass - BitmapText class reference (unused; kept for API parity)
+   * @returns {Promise<boolean>} True on success, false if metrics not yet loaded
    */
   static async _loadAtlasFromPackage(idString, atlasImage, bitmapTextClass) {
     const fontProperties = FontProperties.fromIDString(idString);
@@ -4831,42 +4556,31 @@ class FontLoaderBase {
     // Clean up temporary package storage
     delete FontLoaderBase._tempAtlasPackages[idString];
 
-    // Get font metrics (required for reconstruction)
+    // Get font metrics (still required for the character set; the bundle records
+    // are positional arrays in sorted-character order).
     const fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
 
     if (!fontMetrics) {
-      // Store atlas for later reconstruction when metrics become available
+      // Store atlas for later when metrics become available.
       FontLoaderBase._pendingAtlases.set(idString, { atlasImage, bitmapTextClass });
       return false;
     }
 
-    // Check if TightAtlasReconstructor is available
-    if (typeof TightAtlasReconstructor === 'undefined') {
-      throw new Error(`FontLoader: TightAtlasReconstructor required for font loading - not available for ${idString}`);
-    }
+    // Idempotent per density: first call kicks off the bundle fetch + decode;
+    // subsequent calls reuse the cached Promise.
+    await FontLoaderBase.loadPositioningFile(fontProperties.pixelDensity);
 
-    // Reconstruct tight atlas + positioning from Atlas image
-    const { atlasImage: tightAtlasImage, atlasPositioning, perf } =
-      await TightAtlasReconstructor.reconstructFromAtlas(fontMetrics, atlasImage);
-
-    // Diagnostic log: emit one line per atlas reconstruction with sub-phase timings.
-    // Helps locate which step (getImageData readback, bounds-find, or pack) is the
-    // dominant remaining contributor to dynamic-load FPS spikes. Gate later via a
-    // flag if needed; currently always-on while tuning.
-    if (perf && typeof console !== 'undefined' && console.log) {
-      const f = (n) => n.toFixed(1);
-      console.log(
-        `[atlas-reconstruct] ${idString}: ` +
-        `getImageData=${f(perf.getImageData)}ms ` +
-        `bounds=${f(perf.boundsTotal)}ms (${perf.boundsChunks} chunks, max ${f(perf.boundsMaxChunk)}ms) ` +
-        `pack=${f(perf.packTotal)}ms (${perf.packChunks} chunks, max ${f(perf.packMaxChunk)}ms)`
+    const atlasPositioning = PositioningBundleStore.getPositioning(fontProperties, fontMetrics);
+    if (!atlasPositioning) {
+      throw new Error(
+        `FontLoader: no positioning record for ${idString} ` +
+        `(density ${fontProperties.pixelDensity}) — positioning bundle missing this font?`
       );
     }
 
-    // Create AtlasData instance
-    const atlasData = new AtlasData(tightAtlasImage, atlasPositioning);
+    const wrappedAtlasImage = new AtlasImage(atlasImage);
+    const atlasData = new AtlasData(wrappedAtlasImage, atlasPositioning);
 
-    // Store directly in AtlasDataStore
     AtlasDataStore.setAtlasData(fontProperties, atlasData);
 
     return true;
@@ -4921,6 +4635,7 @@ class FontLoader extends FontLoaderBase {
   static JS_EXTENSION = '.js';
   static WEBP_EXTENSION = '.webp';
   static METRICS_BUNDLE_FILENAME = 'metrics-bundle.js';
+  static POSITIONING_BUNDLE_PREFIX = 'positioning-bundle-density-';
 
   // ============================================
   // Browser-Specific Loading Implementation
@@ -4949,6 +4664,37 @@ class FontLoader extends FontLoaderBase {
       script.onerror = () => {
         script.remove();
         reject(new Error(`Failed to load metrics bundle from ${script.src}`));
+      };
+
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Inject the per-density positioning-bundle script tag once and await full
+   * decode. Singleton-safe per density: `FontLoaderBase.loadPositioningFile`
+   * calls this only on the first invocation for each density.
+   * @param {number} pixelDensity
+   * @returns {Promise<void>} Resolves once every record is in PositioningBundleStore.
+   */
+  static async loadPositioningBundleFile(pixelDensity) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      const fontDirectory = FontLoaderBase.getFontDirectory();
+      script.src = `${fontDirectory}${FontLoader.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`;
+
+      script.onload = () => {
+        const decodePromise = FontLoaderBase._positioningBundleDecodePromises.get(pixelDensity);
+        if (!decodePromise) {
+          reject(new Error(`positioning-bundle-density-${pixelDensity}.js loaded but did not call BitmapText.registerPositioningBundle`));
+          return;
+        }
+        decodePromise.then(resolve, reject);
+      };
+
+      script.onerror = () => {
+        script.remove();
+        reject(new Error(`Failed to load positioning bundle from ${script.src}`));
       };
 
       document.head.appendChild(script);

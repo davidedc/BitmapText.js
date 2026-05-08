@@ -1,10 +1,11 @@
 // AtlasCellDimensions - Utility for calculating atlas cell dimensions
 //
-// Provides centralized formulas for calculating cell dimensions from character metrics.
-// These formulas MUST be consistent across AtlasBuilder and TightAtlasReconstructor.
+// Provides centralized formulas for calculating cell dimensions from character
+// metrics. These are CSS-pixel cell dimensions used by font metric measurement;
+// the runtime tight atlas is single-row and per-glyph dimensions live in the
+// positioning bundle.
 //
-// Cell dimensions follow the Atlas format (variable-width cells):
-// - Cell width: actualBoundingBoxLeft + actualBoundingBoxRight (varies per character)
+// - Cell width:  actualBoundingBoxLeft + actualBoundingBoxRight (varies per character)
 // - Cell height: fontBoundingBoxAscent + fontBoundingBoxDescent (constant per font)
 
 class AtlasCellDimensions {

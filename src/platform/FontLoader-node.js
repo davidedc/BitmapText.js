@@ -22,6 +22,7 @@ class FontLoader extends FontLoaderBase {
   static ATLAS_PREFIX = 'atlas-';
   static JS_EXTENSION = '.js';
   static METRICS_BUNDLE_FILENAME = 'metrics-bundle.js';
+  static POSITIONING_BUNDLE_PREFIX = 'positioning-bundle-density-';
 
   // ============================================
   // Node.js-Specific Loading Implementation
@@ -48,6 +49,38 @@ class FontLoader extends FontLoaderBase {
     const decodePromise = FontLoaderBase._bundleDecodePromise;
     if (!decodePromise) {
       throw new Error('metrics-bundle.js evaluated but did not call BitmapText.registerBundle');
+    }
+    return decodePromise;
+  }
+
+  /**
+   * Read + eval the per-density positioning bundle once, then await the decode
+   * promise that `BitmapText.registerPositioningBundle` set as a side effect of
+   * the eval.
+   * @param {number} pixelDensity
+   * @returns {Promise<void>} Resolves once every record is in PositioningBundleStore.
+   */
+  static async loadPositioningBundleFile(pixelDensity) {
+    if (typeof require === 'undefined') {
+      throw new Error('FontLoader.loadPositioningBundleFile requires Node.js environment');
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+
+    const fontDirectory = FontLoaderBase.getFontDirectory();
+    const bundlePath = path.resolve(
+      fontDirectory,
+      `${FontLoader.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`
+    );
+    const bundleCode = fs.readFileSync(bundlePath, 'utf8');
+    eval(bundleCode);
+
+    const decodePromise = FontLoaderBase._positioningBundleDecodePromises.get(pixelDensity);
+    if (!decodePromise) {
+      throw new Error(
+        `positioning-bundle-density-${pixelDensity}.js evaluated but did not call BitmapText.registerPositioningBundle`
+      );
     }
     return decodePromise;
   }
@@ -96,7 +129,7 @@ class FontLoader extends FontLoaderBase {
         imageData.data.set(decoded.data);
         ctx.putImageData(imageData, 0, 0);
 
-        // Reconstruct atlas (async — TightAtlasReconstructor yields between glyph chunks)
+        // Wrap the canvas + look up positioning from the per-density bundle.
         await FontLoaderBase._loadAtlasFromPackage(idString, canvas, bitmapTextClass);
       }
     } catch (error) {

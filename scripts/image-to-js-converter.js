@@ -11,7 +11,7 @@
 // - QOI files (for Node.js usage)
 //
 // The generated JS files call BitmapText.registerAtlas() to register the base64 data.
-// Atlas positioning data is NOT included - it will be reconstructed at runtime by TightAtlasReconstructor.
+// Atlas positioning data is NOT included here — it ships in the per-density positioning bundle.
 
 const fs = require('fs');
 const path = require('path');

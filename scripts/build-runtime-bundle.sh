@@ -77,12 +77,11 @@ COMMON_FILES=(
   "$SRC_DIR/runtime/AtlasPositioning.js"
   "$SRC_DIR/runtime/AtlasImage.js"
   "$SRC_DIR/runtime/AtlasData.js"
-  "$SRC_DIR/builder/AtlasReconstructionUtils.js"
   "$SRC_DIR/utils/AtlasCellDimensions.js"
-  "$SRC_DIR/runtime/TightAtlasReconstructor.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
   "$SRC_DIR/runtime/MetricsBundleStore.js"
   "$SRC_DIR/runtime/MetricsBundleDecoder.js"
+  "$SRC_DIR/runtime/PositioningBundleStore.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontManifest.js"
   "$SRC_DIR/runtime/FontLoaderBase.js"
@@ -154,9 +153,8 @@ build_bundle() {
  *   - BitmapText (core runtime with CHARACTER_SET)
  *   - MetricsExpander (minified metrics expansion)
  *   - Atlas classes (AtlasPositioning, AtlasImage, AtlasData)
- *   - TightAtlasReconstructor (runtime atlas reconstruction)
  *   - FontLoader (font loading with platform detection)
- *   - Atlas/Metrics stores (data storage)
+ *   - Atlas/Metrics/Positioning stores (data storage)
  *
  * Usage (Browser):
  *   <script src="dist/bitmaptext.min.js"></script>
@@ -214,6 +212,7 @@ if (typeof global !== 'undefined') {
   global.FontManifest = FontManifest;
   global.MetricsBundleStore = MetricsBundleStore;
   global.MetricsBundleDecoder = MetricsBundleDecoder;
+  global.PositioningBundleStore = PositioningBundleStore;
   global.QOIDecode = QOIDecode;
 }
 NODEJS_FOOTER
