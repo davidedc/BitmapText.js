@@ -8,7 +8,7 @@
 //   wrapper calls `BitmapText.registerBundle("<base64>")`, which sets
 //   `FontLoaderBase._bundleDecodePromise` to the async decode work. The decode
 //   uses `DecompressionStream('deflate-raw')` on Node 18+ or `zlib.inflateRawSync`
-//   on Node ≤ 17 (handled inside MetricsBundleDecoder).
+//   on Node ≤ 17 (handled inside BundleCodec).
 //
 // ATLAS:
 //   Per-font, unchanged: read QOI base64 wrapper, decode, paint into a canvas.

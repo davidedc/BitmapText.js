@@ -72,6 +72,7 @@ COMMON_FILES=(
   "$SRC_DIR/runtime/FontMetrics.js"
   "$SRC_DIR/runtime/InterpolatedFontMetrics.js"
   "$SRC_DIR/runtime/CharacterSets.js"
+  "$SRC_DIR/runtime/BundleCodec.js"
   "$SRC_DIR/runtime/BitmapText.js"
   "$SRC_DIR/builder/MetricsExpander.js"
   "$SRC_DIR/runtime/AtlasPositioning.js"
@@ -80,7 +81,6 @@ COMMON_FILES=(
   "$SRC_DIR/utils/AtlasCellDimensions.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
   "$SRC_DIR/runtime/MetricsBundleStore.js"
-  "$SRC_DIR/runtime/MetricsBundleDecoder.js"
   "$SRC_DIR/runtime/PositioningBundleStore.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontManifest.js"
@@ -211,8 +211,11 @@ if (typeof global !== 'undefined') {
   global.FontMetricsStore = FontMetricsStore;
   global.FontManifest = FontManifest;
   global.MetricsBundleStore = MetricsBundleStore;
-  global.MetricsBundleDecoder = MetricsBundleDecoder;
+  global.BundleCodec = BundleCodec;
   global.PositioningBundleStore = PositioningBundleStore;
+  global.CharacterSets = CharacterSets;
+  global.FontLoaderBase = FontLoaderBase;
+  global.AtlasPositioning = AtlasPositioning;
   global.QOIDecode = QOIDecode;
 }
 NODEJS_FOOTER

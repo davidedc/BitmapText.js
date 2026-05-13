@@ -1,15 +1,12 @@
-// Helper: deflate-raw + base64 encode a string in the browser using CompressionStream.
+// Helper: deflate-raw + base64 encode a string in the browser using
+// CompressionStream. Pairs with BundleCodec.decodeBundle on the runtime side.
+// Kept inline (not in BundleCodec) because the producer path is browser-only
+// and uses CompressionStream directly; BundleCodec's helpers are decode-only.
 async function _deflateRawBase64InBrowser(jsonString) {
     const u8 = new TextEncoder().encode(jsonString);
     const cs = new Response(u8).body.pipeThrough(new CompressionStream('deflate-raw'));
     const compressed = new Uint8Array(await new Response(cs).arrayBuffer());
-    // base64 in chunks to avoid stack overflow on very large inputs.
-    const CHUNK = 0x8000;
-    let binary = '';
-    for (let i = 0; i < compressed.length; i += CHUNK) {
-        binary += String.fromCharCode.apply(null, compressed.subarray(i, i + CHUNK));
-    }
-    return btoa(binary);
+    return BundleCodec.bytesToBase64(compressed);
 }
 
 // Helper: drop pixelDensity from baseline[5]. Bundle records are density-agnostic;
@@ -120,14 +117,9 @@ function downloadFontAssets(options) {
     const bundleRecords = new Map();
 
     // Collect per-density positioning records. Map: density → array of records.
-    // Each record: [family, styleIdx, weightIdx, size, [tightWidth[], tightHeight[], dx[], dy[]]].
+    // Each record: [family, styleIdx, weightIdx, size, [W_b64, H_b64, dx_b64, dy_b64]].
     // Emitted as one `positioning-bundle-density-<density>.js` per density.
     const positioningBundlesByDensity = new Map();
-
-    // Format version for both metrics and positioning bundles. Bumped when the
-    // on-disk bundle layout changes incompatibly. Must match the runtime's
-    // FontLoaderBase.BUNDLE_FORMAT_VERSION.
-    const BUNDLE_FORMAT_VERSION = 1;
 
     fontsToExport.forEach(fontConfig => {
         // Create FontPropertiesFAB for this specific font configuration
@@ -375,7 +367,7 @@ function downloadFontAssets(options) {
             positioningFAB.setGlyphPositionInAtlas(char, 0, atlasResult.yInAtlas[char] || 0);
           }
         }
-        const positioningArrays = positioningFAB.serialiseAsBundleRecord();
+        const positioningEncoded = positioningFAB.serialiseAsBundleRecord();
 
         const densityNum = fontConfig.pixelDensity;
         if (!positioningBundlesByDensity.has(densityNum)) {
@@ -386,7 +378,7 @@ function downloadFontAssets(options) {
             styleIdx,
             weightIdx,
             size: sizeNum,
-            arrays: positioningArrays,
+            arrays: positioningEncoded,
         });
     });
 
@@ -405,11 +397,11 @@ function downloadFontAssets(options) {
 
     // Metrics bundle. Envelope shape: { formatVersion, records: [...] }. The
     // runtime refuses to load a mismatched version, so this version is in
-    // lockstep with FontLoaderBase.BUNDLE_FORMAT_VERSION.
+    // lockstep with BitmapText.BUNDLE_SCHEMA_VERSION.
     const metricsBundlePromise = (() => {
         const recordsArr = Array.from(bundleRecords.values()).sort(_bundleSort);
         const records = recordsArr.map(r => [r.family, r.styleIdx, r.weightIdx, r.size, r.minified]);
-        const envelope = { formatVersion: BUNDLE_FORMAT_VERSION, records };
+        const envelope = { formatVersion: BitmapText.BUNDLE_SCHEMA_VERSION, records };
         const json = JSON.stringify(envelope);
         console.log(`📦 Metrics bundle: ${recordsArr.length} records, JSON size: ${json.length} bytes`);
         return _deflateRawBase64InBrowser(json).then(b64 => {
@@ -424,8 +416,8 @@ function downloadFontAssets(options) {
     const positioningBundlePromises = [];
     for (const [density, records] of positioningBundlesByDensity.entries()) {
         records.sort(_bundleSort);
-        const records5 = records.map(r => [r.family, r.styleIdx, r.weightIdx, r.size, r.arrays]);
-        const envelope = { formatVersion: BUNDLE_FORMAT_VERSION, density, records: records5 };
+        const recordsArr = records.map(r => [r.family, r.styleIdx, r.weightIdx, r.size, r.arrays]);
+        const envelope = { formatVersion: BitmapText.BUNDLE_SCHEMA_VERSION, density, records: recordsArr };
         const json = JSON.stringify(envelope);
         console.log(`📦 Positioning bundle (density ${density}): ${records.length} records, JSON size: ${json.length} bytes`);
         positioningBundlePromises.push(

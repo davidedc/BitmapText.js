@@ -407,7 +407,7 @@ npm run build-bundle-all                            # Both (via npm)
 - **Compression:** 79% size reduction (149KB → 32KB browser, 153KB → 33KB node)
 
 **Browser bundle includes** (17 files):
-StatusCode, FontProperties, TextProperties, FontMetrics, InterpolatedFontMetrics, CharacterSets, BitmapText, MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasCellDimensions, AtlasDataStore, MetricsBundleStore, MetricsBundleDecoder, PositioningBundleStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
+StatusCode, FontProperties, TextProperties, FontMetrics, InterpolatedFontMetrics, CharacterSets, BitmapText, MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasCellDimensions, AtlasDataStore, MetricsBundleStore, BundleCodec, PositioningBundleStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
 
 **Node.js bundle includes**: All browser bundle files + QOIDecode + FontLoader-node (replaces FontLoader-browser)
 

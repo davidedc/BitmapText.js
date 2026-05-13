@@ -29,7 +29,7 @@ const ctx = vm.createContext(sandbox);
 function runInCtx(code, filename) { vm.runInContext(code, ctx, { filename }); }
 
 (async () => {
-  // 1. Load runtime bundle (defines BitmapText, FontMetricsStore, MetricsBundleStore, MetricsBundleDecoder, FontLoader, ...).
+  // 1. Load runtime bundle (defines BitmapText, FontMetricsStore, MetricsBundleStore, BundleCodec, FontLoader, ...).
   runInCtx(fs.readFileSync(RUNTIME_BUNDLE, 'utf8'), RUNTIME_BUNDLE);
 
   // 2. Eval the metrics bundle. This calls BitmapText.rBundle("<b64>") which kicks off

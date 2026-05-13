@@ -40,7 +40,7 @@ FILES_TO_CHECK=(
   "$LIB_DIR/QOIDecode.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
   "$SRC_DIR/runtime/MetricsBundleStore.js"
-  "$SRC_DIR/runtime/MetricsBundleDecoder.js"
+  "$SRC_DIR/runtime/BundleCodec.js"
   "$SRC_DIR/runtime/PositioningBundleStore.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontLoaderBase.js"
@@ -225,12 +225,12 @@ echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/MetricsBundleStore.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-# Concatenate MetricsBundleDecoder (before FontLoaderBase which depends on it)
+# Concatenate BundleCodec (before FontLoaderBase which depends on it)
 echo "// ============================================================================" >> "$OUTPUT_FILE"
-echo "// METRICS BUNDLE DECODER" >> "$OUTPUT_FILE"
+echo "// BUNDLE CODEC" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/runtime/MetricsBundleDecoder.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/BundleCodec.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate PositioningBundleStore (before FontLoaderBase which depends on it)

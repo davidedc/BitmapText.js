@@ -117,22 +117,23 @@ class AtlasPositioningFAB extends AtlasPositioning {
   }
 
   /**
-   * Serialise this positioning into the per-(font, density) array shape used
-   * by the positioning bundle.
+   * Serialise this positioning into the per-(font, density) wire shape used
+   * by the positioning bundle. Each integer array is delta+zigzag+varint+base64
+   * encoded via BundleCodec.encodeDeltaVarIntB64.
    *
-   * Single-row atlas (most fonts): 4 arrays
-   *   [tightWidth[], tightHeight[], dx[], dy[]]
+   * Single-row atlas (most fonts): 4 base64 strings
+   *   [tightWidth, tightHeight, dx, dy]
    * yInAtlas is implicit (always 0); xInAtlas is implicit (cumsum of tightWidth).
    *
    * Multi-row atlas (e.g. wide italic-bold density-2 sizes whose total tight width
-   * would exceed cwebp's 16383px hard limit): 5 arrays
-   *   [tightWidth[], tightHeight[], dx[], dy[], yInAtlas[]]
+   * would exceed cwebp's 16383px hard limit): 5 base64 strings
+   *   [tightWidth, tightHeight, dx, dy, yInAtlas]
    * xInAtlas is still implicit — runtime cumsums tightWidth, resetting to 0
    * whenever yInAtlas changes.
    *
    * Arrays are in sorted-character order (matches AtlasBuilder's pack order).
    *
-   * @returns {(number[])[]}
+   * @returns {string[]}
    */
   serialiseAsBundleRecord() {
     const characters = Object.keys(this._tightWidth).sort();
@@ -153,9 +154,10 @@ class AtlasPositioningFAB extends AtlasPositioning {
       yInAtlas[i] = y;
       if (y !== 0) multiRow = true;
     }
+    const enc = BundleCodec.encodeDeltaVarIntB64;
     return multiRow
-      ? [tightWidth, tightHeight, dx, dy, yInAtlas]
-      : [tightWidth, tightHeight, dx, dy];
+      ? [enc(tightWidth), enc(tightHeight), enc(dx), enc(dy), enc(yInAtlas)]
+      : [enc(tightWidth), enc(tightHeight), enc(dx), enc(dy)];
   }
 
   /**

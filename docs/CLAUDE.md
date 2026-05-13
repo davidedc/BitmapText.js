@@ -126,7 +126,7 @@
   - **Glyph rendering**: src/builder/GlyphFAB.js (6-step pipeline: canvas setup, measurement, corrections, dimensions, rendering, preservation)
   - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)
   - **Font loading API**: src/runtime/BitmapText.js (static methods: loadFont, loadFonts - delegates to platform-specific FontLoader; registerBundle (rBundle), registerAtlas (a), ensureMetricsBundleLoaded - delegates to stores)
-  - **Metrics bundle decoder**: src/runtime/MetricsBundleDecoder.js (deflate-raw → JSON via DecompressionStream or zlib)
+  - **Metrics bundle decoder**: src/runtime/BundleCodec.js (deflate-raw → JSON via DecompressionStream or zlib)
   - **Metrics bundle store**: src/runtime/MetricsBundleStore.js (density-agnostic record cache; FontMetricsStore lazy-materialises from this)
   - **Font registry management**: src/runtime/FontManifest.js (replaces global bitmapTextManifest)
   - **Hash verification**: src/utils/canvas-extensions.js (getHash method for canvas pixel hash), src/runtime/AtlasPositioning.js (getHash method for positioning data hash)

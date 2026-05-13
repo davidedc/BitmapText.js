@@ -68,11 +68,6 @@ class FontLoaderBase {
   static _metricsScriptElement = null;             // HTMLScriptElement | null
   static _positioningScriptElements = new Map();   // density → HTMLScriptElement
 
-  // Bundle envelope format version. Bumped when the on-disk bundle layout
-  // changes incompatibly. Asset files MUST emit this exact value, or the
-  // runtime refuses to load them.
-  static BUNDLE_FORMAT_VERSION = 1;
-
   // ============================================
   // Configuration
   // ============================================
@@ -122,26 +117,26 @@ class FontLoaderBase {
    * Decode the metrics bundle and register every record into MetricsBundleStore.
    * Called by `BitmapText.registerBundle` (which is called by the bundle JS file).
    *
-   * Bundle envelope: `{ formatVersion: 1, records: [...] }`. The runtime refuses
-   * to load mismatched-version assets — stale grid-format atlases must be
-   * regenerated, not papered over.
+   * Bundle envelope: `{ formatVersion, records: [...] }` where formatVersion
+   * matches `BitmapText.BUNDLE_SCHEMA_VERSION`. The runtime refuses to load
+   * mismatched-version assets — stale bundles must be regenerated, not papered over.
    *
    * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
    * @returns {Promise<void>} Resolves once every record is registered.
    */
   static async processBundle(b64) {
-    if (typeof MetricsBundleDecoder === 'undefined') {
-      throw new Error('FontLoader.processBundle: MetricsBundleDecoder not available');
+    if (typeof BundleCodec === 'undefined') {
+      throw new Error('FontLoader.processBundle: BundleCodec not available');
     }
     if (typeof MetricsBundleStore === 'undefined') {
       throw new Error('FontLoader.processBundle: MetricsBundleStore not available');
     }
 
-    const envelope = await MetricsBundleDecoder.decode(b64);
-    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+    const envelope = await BundleCodec.decodeBundle(b64);
+    if (!envelope || envelope.formatVersion !== BitmapText.BUNDLE_SCHEMA_VERSION) {
       throw new Error(
         `FontLoader.processBundle: metrics-bundle.js formatVersion mismatch ` +
-        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${BitmapText.BUNDLE_SCHEMA_VERSION}). ` +
         `Regenerate font-assets/ with the current build.`
       );
     }
@@ -172,25 +167,25 @@ class FontLoaderBase {
    * PositioningBundleStore. Called by `BitmapText.registerPositioningBundle`
    * (which is called by `positioning-bundle-density-<N>.js`).
    *
-   * Bundle envelope: `{ formatVersion: 1, density: <N>, records: [...] }`.
+   * Bundle envelope: `{ formatVersion, density: <N>, records: [...] }`.
    *
    * @param {number} density - Pixel density this bundle is for (1, 1.5, 2, ...).
    * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
    * @returns {Promise<void>} Resolves once every record is registered.
    */
   static async processPositioningBundle(density, b64) {
-    if (typeof MetricsBundleDecoder === 'undefined') {
-      throw new Error('FontLoader.processPositioningBundle: MetricsBundleDecoder not available');
+    if (typeof BundleCodec === 'undefined') {
+      throw new Error('FontLoader.processPositioningBundle: BundleCodec not available');
     }
     if (typeof PositioningBundleStore === 'undefined') {
       throw new Error('FontLoader.processPositioningBundle: PositioningBundleStore not available');
     }
 
-    const envelope = await MetricsBundleDecoder.decode(b64);
-    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+    const envelope = await BundleCodec.decodeBundle(b64);
+    if (!envelope || envelope.formatVersion !== BitmapText.BUNDLE_SCHEMA_VERSION) {
       throw new Error(
         `FontLoader.processPositioningBundle: positioning-bundle-density-${density}.js formatVersion mismatch ` +
-        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${BitmapText.BUNDLE_SCHEMA_VERSION}). ` +
         `Regenerate font-assets/ with the current build.`
       );
     }

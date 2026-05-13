@@ -1,7 +1,10 @@
 // PositioningBundleStore - Per-density store of pre-computed atlas positioning
 //
 // The positioning bundle ships per-(density, family, style, weight, size) records
-// in sorted-character order: [tightWidth[], tightHeight[], dx[], dy[]]. Replaces
+// in sorted-character order. Each array is wire-encoded as a delta+zigzag+varint
+// base64 string by BundleCodec.encodeDeltaVarIntB64 (the same codec used by the
+// metrics value-lookup table). Decoded shape is [tightWidth[], tightHeight[],
+// dx[], dy[]] or 5-array form with yInAtlas[] for multi-row atlases. Replaces
 // the runtime pixel-scan reconstruction (TightAtlasReconstructor) — these values
 // were already computed at build time by AtlasPositioningFAB and are now shipped.
 //
@@ -57,21 +60,25 @@ class PositioningBundleStore {
   // SAME sorted order as `fontMetrics.getAvailableCharacters().sort()` — same
   // invariant the build pipeline (AtlasBuilder + AtlasPositioningFAB) uses.
   //
-  // Record shapes:
-  //   4 arrays: [tightWidth, tightHeight, dx, dy] — single-row tight atlas;
-  //             yInAtlas is implicit 0, xInAtlas is cumsum(tightWidth).
-  //   5 arrays: [tightWidth, tightHeight, dx, dy, yInAtlas] — multi-row tight atlas
-  //             (used when total width would exceed cwebp's 16383px limit);
-  //             xInAtlas is cumsum(tightWidth) restarted on each y change.
+  // Record shapes (each slot is a base64 string; decode via BundleCodec):
+  //   4 slots: [tightWidth, tightHeight, dx, dy] — single-row tight atlas;
+  //            yInAtlas is implicit 0, xInAtlas is cumsum(tightWidth).
+  //   5 slots: [tightWidth, tightHeight, dx, dy, yInAtlas] — multi-row tight atlas
+  //            (used when total width would exceed cwebp's 16383px limit);
+  //            xInAtlas is cumsum(tightWidth) restarted on each y change.
   static getPositioning(fontProperties, fontMetrics) {
     const cached = PositioningBundleStore.#atlasPositioning.get(fontProperties.key);
     if (cached) return cached;
 
-    const arrays = PositioningBundleStore.getRecord(fontProperties);
-    if (!arrays) return undefined;
+    const encoded = PositioningBundleStore.getRecord(fontProperties);
+    if (!encoded) return undefined;
 
     const characters = fontMetrics.getAvailableCharacters().sort();
-    const [tightWidthArr, tightHeightArr, dxArr, dyArr, yInAtlasArr] = arrays;
+    const tightWidthArr  = BundleCodec.decodeDeltaVarIntB64(encoded[0]);
+    const tightHeightArr = BundleCodec.decodeDeltaVarIntB64(encoded[1]);
+    const dxArr          = BundleCodec.decodeDeltaVarIntB64(encoded[2]);
+    const dyArr          = BundleCodec.decodeDeltaVarIntB64(encoded[3]);
+    const yInAtlasArr    = encoded.length === 5 ? BundleCodec.decodeDeltaVarIntB64(encoded[4]) : undefined;
 
     if (tightWidthArr.length !== characters.length) {
       throw new Error(

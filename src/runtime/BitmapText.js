@@ -51,6 +51,14 @@ class BitmapText {
   // Minimum renderable font size (sizes < 9 use interpolated metrics from 9)
   static MIN_RENDERABLE_SIZE = 9;
 
+  // Runtime↔asset bundle schema version. Stamped into the deflated envelope of
+  // every metrics-bundle.js / positioning-bundle-density-*.js. Bump when ANY
+  // wire-level or record-shape contract changes — codec swap, slot reordering,
+  // character-set convention shift, etc. The runtime refuses bundles whose
+  // envelope.formatVersion doesn't match this value. Atlases have no schema
+  // version (the wrapper API is stable and the inner WebP/QOI is self-describing).
+  static BUNDLE_SCHEMA_VERSION = 2;
+
   // Font asset naming conventions
   static METRICS_PREFIX = 'metrics-';
   static ATLAS_PREFIX = 'atlas-';

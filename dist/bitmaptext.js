@@ -869,6 +869,162 @@ class CharacterSets {
 }
 
 // ============================================================================
+// BundleCodec.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/BundleCodec.js
+// ============================================================================
+
+// BundleCodec - Shared codec primitives for metrics + positioning bundles
+//
+// Wire format for both bundle types (`font-assets/metrics-bundle.js` and
+// `font-assets/positioning-bundle-density-<N>.js`):
+//
+//     BitmapText.rBundle('<base64>');           // metrics
+//     BitmapText.pBundle(<density>, '<base64>'); // positioning
+//
+// where <base64> decodes to a `deflate-raw` stream of UTF-8 JSON. The decoded
+// JSON is the envelope:
+//
+//     { formatVersion: <N>, records: [...] }                 // metrics
+//     { formatVersion: <N>, density: <D>, records: [...] }   // positioning
+//
+// `formatVersion` is the runtime↔asset schema version; the single source of
+// truth is `BitmapText.BUNDLE_SCHEMA_VERSION`. This module knows nothing
+// about that number — it just decodes bytes.
+//
+// Inside each record's payload, integer streams are encoded as zigzag-varint
+// bytes, then base64 — sometimes with a delta pre-pass (for streams whose
+// values cluster after sorting or share local locality, like the metrics
+// value lookup table and every positioning array). Reusing one helper from
+// both the metrics expander and the positioning store keeps the encoders
+// and decoders in lockstep.
+
+class BundleCodec {
+  // ----- bytes <-> base64 -----
+
+  static base64ToBytes(b64) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(b64, 'base64');
+    }
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  static bytesToBase64(bytes) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('base64');
+    }
+    // Browser: chunked btoa to avoid stack overflow on large inputs.
+    const CHUNK = 0x8000;
+    let binary = '';
+    const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    for (let i = 0; i < arr.length; i += CHUNK) {
+      binary += String.fromCharCode.apply(null, arr.subarray(i, i + CHUNK));
+    }
+    return btoa(binary);
+  }
+
+  // ----- deflate-raw bundle envelope -----
+
+  static async decodeBundle(b64) {
+    const compressed = BundleCodec.base64ToBytes(b64);
+    const inflated = await BundleCodec.#inflateRaw(compressed);
+    const json = BundleCodec.#bytesToString(inflated);
+    return JSON.parse(json);
+  }
+
+  static async #inflateRaw(bytes) {
+    if (typeof DecompressionStream === 'function' && typeof Response === 'function') {
+      const stream = new Response(bytes).body.pipeThrough(new DecompressionStream('deflate-raw'));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    if (typeof require === 'function') {
+      const zlib = require('zlib');
+      const buf = zlib.inflateRawSync(bytes);
+      return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+    }
+    throw new Error('BundleCodec: no DecompressionStream and no zlib fallback available');
+  }
+
+  static #bytesToString(bytes) {
+    if (typeof TextDecoder === 'function') {
+      return new TextDecoder().decode(bytes);
+    }
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('utf8');
+    }
+    throw new Error('BundleCodec: no TextDecoder and no Buffer available');
+  }
+
+  // ----- zigzag + varint -----
+  //
+  // Zigzag interleaves signed ints into unsigned: 0,-1,1,-2,2,... → 0,1,2,3,4,...
+  // VarInt then encodes 7 bits per byte with MSB as continuation flag, so small
+  // magnitudes take 1 byte and large ones grow gracefully. Together they make
+  // small absolute values (and small deltas) costliest at 1 byte each.
+
+  static encodeVarInts(signedIntegers) {
+    const bytes = [];
+    for (const value of signedIntegers) {
+      let z = value >= 0 ? value * 2 : -value * 2 - 1;
+      while (z >= 128) {
+        bytes.push((z & 0x7F) | 0x80);
+        z >>>= 7;
+      }
+      bytes.push(z & 0x7F);
+    }
+    return new Uint8Array(bytes);
+  }
+
+  static decodeVarInts(bytes) {
+    const out = [];
+    let i = 0;
+    while (i < bytes.length) {
+      let v = 0;
+      let shift = 0;
+      let byte;
+      do {
+        byte = bytes[i++];
+        v |= (byte & 0x7F) << shift;
+        shift += 7;
+      } while (byte & 0x80);
+      out.push((v & 1) ? -(v + 1) / 2 : v / 2);
+    }
+    return out;
+  }
+
+  // ----- convenience pairs -----
+
+  static encodeVarIntB64(intArr) {
+    return BundleCodec.bytesToBase64(BundleCodec.encodeVarInts(intArr));
+  }
+
+  static decodeVarIntB64(b64) {
+    return BundleCodec.decodeVarInts(BundleCodec.base64ToBytes(b64));
+  }
+
+  // Delta-encode then zigzag-varint-base64. Reverse: decode varints, then
+  // prefix-sum. The metrics value-lookup table feeds magnitude-sorted ints
+  // here so deltas are small; positioning arrays use this directly on the
+  // raw per-glyph integer streams (heights, dy, etc. cluster naturally).
+  static encodeDeltaVarIntB64(intArr) {
+    if (intArr.length === 0) return '';
+    const d = [intArr[0]];
+    for (let i = 1; i < intArr.length; i++) d.push(intArr[i] - intArr[i - 1]);
+    return BundleCodec.encodeVarIntB64(d);
+  }
+
+  static decodeDeltaVarIntB64(b64) {
+    if (!b64) return [];
+    const deltas = BundleCodec.decodeVarIntB64(b64);
+    const out = new Array(deltas.length);
+    out[0] = deltas[0];
+    for (let i = 1; i < deltas.length; i++) out[i] = out[i - 1] + deltas[i];
+    return out;
+  }
+}
+
+// ============================================================================
 // BitmapText.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/BitmapText.js
 // ============================================================================
 
@@ -924,6 +1080,14 @@ class BitmapText {
 
   // Minimum renderable font size (sizes < 9 use interpolated metrics from 9)
   static MIN_RENDERABLE_SIZE = 9;
+
+  // Runtime↔asset bundle schema version. Stamped into the deflated envelope of
+  // every metrics-bundle.js / positioning-bundle-density-*.js. Bump when ANY
+  // wire-level or record-shape contract changes — codec swap, slot reordering,
+  // character-set convention shift, etc. The runtime refuses bundles whose
+  // envelope.formatVersion doesn't match this value. Atlases have no schema
+  // version (the wrapper API is stable and the inner WebP/QOI is self-describing).
+  static BUNDLE_SCHEMA_VERSION = 2;
 
   // Font asset naming conventions
   static METRICS_PREFIX = 'metrics-';
@@ -2662,581 +2826,184 @@ BitmapText.a = BitmapText.registerAtlas;
 // MetricsExpander.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/builder/MetricsExpander.js
 // ============================================================================
 
-// Static utility class for expanding minified font metrics data (runtime only)
-// Converts compact format back to FontMetrics instances for use by the rendering engine
-// NOTE: Requires BitmapText.js to be loaded first (uses CharacterSets.FONT_SPECIFIC_CHARS)
+// Static utility class for expanding minified font metrics data.
+//
+// Reverses MetricsMinifier.minify into a FontMetrics instance. Wire format
+// documented in MetricsMinifier — six slots `[kv, k, b, v, chars, s]`.
+// Requires BundleCodec.js + FontMetrics.js + CharacterSets.js to be loaded first.
 
 class MetricsExpander {
-  // Private constructor - prevent instantiation following Effective Java patterns
   constructor() {
     throw new Error('MetricsExpander cannot be instantiated - use static methods');
   }
 
   /**
-   * TIER 6c OPTIMIZATION: Decode base64 string to array of integers
-   * Reverses the base64 byte encoding from MetricsMinifier
+   * Expand a minified 6-slot record into a FontMetrics instance.
    *
-   * @param {string} base64 - Base64 encoded string
-   * @returns {Array<number>} Array of integers (0-255)
-   */
-  static #decodeFromBase64Bytes(base64) {
-    // In browser: use atob
-    // In Node.js: use Buffer
-    let bytes;
-
-    if (typeof Buffer !== 'undefined') {
-      // Node.js environment
-      bytes = Buffer.from(base64, 'base64');
-    } else {
-      // Browser environment
-      const binary = atob(base64);
-      bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-    }
-
-    return Array.from(bytes);
-  }
-
-  /**
-   * TIER 6c OPTIMIZATION: Decode varint+zigzag+base64 to signed integers
-   * Reverses the VarInt encoding from MetricsMinifier
-   *
-   * @param {string} base64 - Base64 encoded varint bytes
-   * @returns {Array<number>} Array of signed integers
-   */
-  static #decodeVarInts(base64) {
-    const bytes = this.#decodeFromBase64Bytes(base64);
-    const integers = [];
-    let i = 0;
-
-    while (i < bytes.length) {
-      // Decode VarInt: 7 bits per byte, MSB indicates continuation
-      let value = 0;
-      let shift = 0;
-      let byte;
-
-      do {
-        byte = bytes[i++];
-        value |= (byte & 0x7F) << shift;
-        shift += 7;
-      } while (byte & 0x80);
-
-      // Zigzag decoding: convert unsigned back to signed
-      // 0→0, 1→-1, 2→1, 3→-2, 4→2, ...
-      const signed = (value & 1) ? -(value + 1) / 2 : value / 2;
-      integers.push(signed);
-    }
-
-    return integers;
-  }
-
-  /**
-   * TIER 7 OPTIMIZATION: Decompress value lookup array from delta encoding + base64
-   *
-   * Reverses the compression:
-   * 1. Decode base64 → varint → zigzag → deltas
-   * 2. Reconstruct sorted values from deltas
-   * 3. Return as unsorted array (order doesn't matter for lookup)
-   *
-   * @param {string} base64 - Base64 encoded delta-compressed string
-   * @returns {Array<number>} Array of metric value integers
-   */
-  static #decompressValueArray(base64) {
-    // Decode base64 → deltas
-    const deltas = this.#decodeVarInts(base64);
-
-    // Reconstruct sorted values from deltas
-    const sorted = [deltas[0]]; // First value is absolute
-    for (let i = 1; i < deltas.length; i++) {
-      sorted.push(sorted[i - 1] + deltas[i]);
-    }
-
-    // Return as-is (order doesn't matter for value lookup)
-    // The indices in tuplets refer to sorted positions
-    return sorted;
-  }
-
-  /**
-   * Expands minified metrics back to FontMetrics instance for runtime use
-   *
-   * @param {Array} minified - 8-element minified metrics array [kv, k, b, v, t, g, s, cl]
-   * @param {Array<string>} [characterSet=CharacterSets.FONT_SPECIFIC_CHARS] - Character set to use for expansion
-   * @param {number} [overrideDensity] - Optional pixelDensity to inject (replaces baseline[5]).
-   *   Bundle records ship with density-agnostic data; the runtime supplies the desired density here.
-   * @returns {FontMetrics} FontMetrics instance with expanded data
-   * @throws {Error} If invalid format detected
+   * @param {Array} minified - 6-element [kv, k, b, v, chars, s]
+   * @param {Array<string>} [characterSet=CharacterSets.FONT_SPECIFIC_CHARS]
+   * @param {number} [overrideDensity] - Bundle records ship with pd=null; the
+   *   runtime supplies the density to inject into baseline[5] here.
+   * @returns {FontMetrics}
+   * @throws {Error} On format mismatch
    */
   static expand(minified, characterSet = CharacterSets.FONT_SPECIFIC_CHARS, overrideDensity) {
-    // Check if FontMetrics class is available
     if (typeof FontMetrics === 'undefined') {
       throw new Error('FontMetrics class not found. Please ensure FontMetrics.js is loaded before MetricsExpander.js');
     }
-
-    // Validate Tier 6c format: 8-element array only
-    if (!Array.isArray(minified) || minified.length !== 8) {
+    if (!Array.isArray(minified) || minified.length !== 6) {
       throw new Error(
-        `Invalid format - expected 8-element array (Tier 6c), got ${typeof minified === 'object' ? 'array' : typeof minified} with ${minified?.length || 0} elements.\n` +
+        `Invalid format - expected 6-element array, got ${typeof minified === 'object' ? 'array' : typeof minified} with ${minified?.length || 0} elements.\n` +
         `Please regenerate font assets with the current version.`
       );
     }
 
-    // Extract values from Tier 6c/7 array format
-    let [kv, k, b, v, t, g, s, cl] = minified;
+    const [kvInts, k, bArr, vEnc, charsEnc, s] = minified;
 
-    // Check if this is an uncompressed custom character set font
-    // Custom character sets have v as an object (characterMetrics), not an array or string
-    const isCustomCharacterSet = typeof v === 'object' && !Array.isArray(v) && v !== null;
+    // Value tables (×10000 ints → floats).
+    const kv = kvInts.map(MetricsExpander.#toFloat);
+    const v  = BundleCodec.decodeDeltaVarIntB64(vEnc).map(MetricsExpander.#toFloat);
 
-    let expandedData;
+    // Baseline. baseline[5] (pixelDensity) is null in the bundle; the runtime
+    // supplies it here.
+    if (!Array.isArray(bArr) || bArr.length !== 6) {
+      throw new Error(`Invalid baseline array - expected 6 elements, got ${bArr?.length}.`);
+    }
+    const baseline = {
+      fba: bArr[0], fbd: bArr[1], hb: bArr[2], ab: bArr[3], ib: bArr[4],
+      pd:  overrideDensity !== undefined ? overrideDensity : bArr[5],
+    };
 
-    if (isCustomCharacterSet) {
-      // Custom character set: v is already the characterMetrics object
-      console.debug(`🔍 MetricsExpander: Detected uncompressed custom character set font`);
-      expandedData = {
-        kerningTable: k,  // Already in object format
-        characterMetrics: v,  // Already in object format
-        spaceAdvancementOverrideForSmallSizesInPx: s
-      };
-    } else {
-      // Standard character font: use full decompression
-      // Convert integer values back to floats (divide by 10000)
-      kv = this.#convertIntegersToValues(kv);
-
-      // TIER 7: Handle value lookup array - can be array (Tier 6c) or base64 string (Tier 7)
-      if (typeof v === 'string') {
-        // Tier 7: Decompress from delta-encoded base64
-        v = this.#decompressValueArray(v);
-        v = this.#convertIntegersToValues(v);
-      } else if (Array.isArray(v)) {
-        // Tier 6c: Already an array of integers
-        v = this.#convertIntegersToValues(v);
-      } else {
-        throw new Error('Invalid value lookup format - expected array or string');
-      }
-
-      // Unflatten baseline array to object
-      b = this.#unflattenBaseline(b);
-
-      // Density injection: bundle records have baseline[5] = null (density-agnostic).
-      // Runtime supplies pixelDensity at expansion time.
-      if (overrideDensity !== undefined) {
-        b.pd = overrideDensity;
-      }
-
-      // Decode base64-encoded binary data
-      // t = VarInt+zigzag encoded flattened tuplets
-      // g = byte-encoded tuplet indices
-      t = this.#decodeVarInts(t);
-      g = this.#decodeFromBase64Bytes(g);
-
-      // Unflatten tuplet data from negative-delimiter format
-      t = this.#unflattenTuplets(t);
-
-      expandedData = {
-        kerningTable: this.#expandKerningTable(k, kv, characterSet),
-        characterMetrics: this.#expandCharacterMetrics(g, b, v, t, cl, characterSet),
-        spaceAdvancementOverrideForSmallSizesInPx: s
-      };
+    // Per-character 5-index stream.
+    const flat = BundleCodec.decodeVarIntB64(charsEnc);
+    const expectedLen = characterSet.length * 5;
+    if (flat.length !== expectedLen) {
+      throw new Error(
+        `Char stream length ${flat.length} does not match ${expectedLen} ` +
+        `(${characterSet.length} chars × 5). Bundle and runtime character sets disagree.`
+      );
     }
 
-    // Verify pixelDensity was preserved
-    const firstChar = Object.keys(expandedData.characterMetrics)[0];
-    const pixelDensity = expandedData.characterMetrics[firstChar]?.pixelDensity;
-    console.debug(`🔍 MetricsExpander: Restored pixelDensity=${pixelDensity} for ${Object.keys(expandedData.characterMetrics).length} characters`);
+    const expandedData = {
+      kerningTable: MetricsExpander.#expandKerningTable(k, kv, characterSet),
+      characterMetrics: MetricsExpander.#expandCharacterMetrics(flat, baseline, v, characterSet),
+      spaceAdvancementOverrideForSmallSizesInPx: s,
+    };
 
     return new FontMetrics(expandedData);
   }
 
-  /**
-   * Expands kerning table with range notation support
-   * TIER 3 OPTIMIZATION: Two-dimensional expansion (reverse order of compression)
-   * TIER 4 OPTIMIZATION: Value indexing (looks up actual kerning values from indices)
-   *   Pass 1 (left-side):  {"A-B":{"s":0}} → {"A":{"s":0},"B":{"s":0}}
-   *   Pass 2 (right-side): {"A":{"0-1":0}} → {"A":{"0":0,"1":0}}
-   *   Pass 3 (values):     {"A":{"s":0}} → {"A":{"s":20}} (lookup from kerningValueLookup[0])
-   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
-   * Later entries override earlier ones, allowing exceptions to ranges
-   * @param {Object} minified - Minified kerning table with indexed values
-   * @param {Array<string>} characterSet - Character set to use for range expansion
-   * @private
-   */
-  static #expandKerningTable(minified, kerningValueLookup, characterSet) {
-    // PASS 1: Expand left side (characters that come before)
-    const leftExpanded = this.#expandLeftSide(minified, characterSet);
+  // ----- internals -----
 
-    // PASS 2: Expand right side (characters that follow)
-    const rangeExpanded = {};
-    for (const [leftChar, pairs] of Object.entries(leftExpanded)) {
-      rangeExpanded[leftChar] = this.#expandKerningPairs(pairs, characterSet);
-    }
+  static #toFloat(n) { return n / 10000; }
 
-    // PASS 3 (TIER 4): Replace all indices with actual values from lookup table
+  // Reverse the 2D range compression + value indexing.
+  //   pass 1 (left):  "A-B":{"s":0} → {A:{s:0}, B:{s:0}}
+  //   pass 2 (right): {A:{"0-1":0}} → {A:{0:0, 1:0}}
+  //   pass 3 (values): A.s = kv[index]
+  static #expandKerningTable(minified, kv, characterSet) {
+    const leftExpanded = MetricsExpander.#expandLeftSide(minified, characterSet);
     const expanded = {};
-    for (const [leftChar, pairs] of Object.entries(rangeExpanded)) {
+    for (const [leftChar, pairs] of Object.entries(leftExpanded)) {
+      const rightExpanded = MetricsExpander.#expandKerningPairs(pairs, characterSet);
       expanded[leftChar] = {};
-      for (const [rightChar, index] of Object.entries(pairs)) {
-        expanded[leftChar][rightChar] = kerningValueLookup[index];
+      for (const [rightChar, index] of Object.entries(rightExpanded)) {
+        expanded[leftChar][rightChar] = kv[index];
       }
     }
-
     return expanded;
   }
 
-  /**
-   * Expands left side of kerning table (characters that come before)
-   * TIER 3 OPTIMIZATION: Two-dimensional expansion pass 1
-   * Handles left-side range notation like "A-C":{"s":20} → {"A":{"s":20},"B":{"s":20},"C":{"s":20}}
-   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
-   * @param {Array<string>} characterSet - Character set to use for range expansion
-   * @returns {Object} Left-expanded kerning table
-   * @private
-   */
   static #expandLeftSide(minified, characterSet) {
     const expanded = {};
-
-    // Process entries in order so later entries can override earlier ones
-    for (const [key, rightSideObj] of Object.entries(minified)) {
+    for (const [key, obj] of Object.entries(minified)) {
       if (key.includes('-') && key.length >= 3) {
-        // Potential range notation (e.g., "A-Z" or "0-9")
         const hyphenIndex = key.indexOf('-');
         const startChar = key.substring(0, hyphenIndex);
-        const endChar = key.substring(hyphenIndex + 1);
-
-        // Check if both start and end are single characters in the character set
+        const endChar   = key.substring(hyphenIndex + 1);
         if (startChar.length === 1 && endChar.length === 1) {
           const startIndex = characterSet.indexOf(startChar);
-          const endIndex = characterSet.indexOf(endChar);
-
+          const endIndex   = characterSet.indexOf(endChar);
           if (startIndex !== -1 && endIndex !== -1 && startIndex <= endIndex) {
-            // Valid range, expand it
-            for (let i = startIndex; i <= endIndex; i++) {
-              expanded[characterSet[i]] = rightSideObj;
-            }
+            for (let i = startIndex; i <= endIndex; i++) expanded[characterSet[i]] = obj;
             continue;
           }
         }
       }
-
-      // Not a range, or invalid range - treat as literal character
-      expanded[key] = rightSideObj;
+      expanded[key] = obj;
     }
-
     return expanded;
   }
 
-  /**
-   * Expands kerning pairs from compact string notation to individual character pairs
-   * TIER 6b OPTIMIZATION: Handles advanced compact notation with non-sequential grouping
-   *
-   * Parses compact strings like "-,.:;ac-egj-s" which means:
-   * - Dash at START is literal
-   * - Individual chars: comma, dot, colon, semicolon
-   * - Ranges: a, c-e (c,d,e), g, j-s (j,k,l,m,n,o,p,q,r,s)
-   *
-   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for range expansion
-   * @param {Array<string>} characterSet - Character set to use for range expansion
-   * @returns {Object} Expanded pairs like {"-":20,",":20,".":20,...,"s":20}
-   * @private
-   */
   static #expandKerningPairs(pairs, characterSet) {
     const expanded = {};
-
-    // Process entries in order so later entries can override earlier ones
     for (const [key, value] of Object.entries(pairs)) {
-      // Parse the compact string notation
-      const chars = this.#parseCompactCharString(key, characterSet);
-
-      // Assign value to all parsed characters
-      for (const char of chars) {
+      for (const char of MetricsExpander.#parseCompactCharString(key, characterSet)) {
         expanded[char] = value;
       }
     }
-
     return expanded;
   }
 
-  /**
-   * Parses compact character string notation
-   * TIER 6b OPTIMIZATION: Handles dash-at-start and range notation
-   *
-   * Format:
-   * - First char is dash → literal dash character
-   * - "a-z" → range from a to z
-   * - "abc" → individual characters a, b, c
-   * - "-,.:;ac-egj-s" → dash, comma, dot, colon, semicolon, a, c-e range, g, j-s range
-   *
-   * @param {string} compactStr - Compact string like "-,.:;ac-egj-s"
-   * @param {Array<string>} characterSet - Character set to use for range expansion
-   * @returns {string[]} Array of individual characters
-   * @private
-   */
+  // Dash-at-start = literal; X-Y in middle = range of length ≥ 3.
   static #parseCompactCharString(compactStr, characterSet) {
     const chars = [];
     let i = 0;
-
-    // Handle dash at start (literal)
-    if (compactStr[0] === '-') {
-      chars.push('-');
-      i = 1;
-    }
-
-    // Parse rest of string
+    if (compactStr[0] === '-') { chars.push('-'); i = 1; }
     while (i < compactStr.length) {
-      const currentChar = compactStr[i];
-
-      // Check if this is the start of a range pattern
+      const cur = compactStr[i];
       if (i + 2 < compactStr.length && compactStr[i + 1] === '-') {
-        // Pattern: "X-Y" where X and Y are single characters
-        const startChar = currentChar;
+        const startChar = cur;
         const endChar = compactStr[i + 2];
-
-        // Verify it's a valid range in the character set
         const startIndex = characterSet.indexOf(startChar);
-        const endIndex = characterSet.indexOf(endChar);
-
+        const endIndex   = characterSet.indexOf(endChar);
         if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-          // Valid range - expand it
-          for (let j = startIndex; j <= endIndex; j++) {
-            chars.push(characterSet[j]);
-          }
-          i += 3; // Skip X, -, Y
+          for (let j = startIndex; j <= endIndex; j++) chars.push(characterSet[j]);
+          i += 3;
         } else {
-          // Not a valid range - treat as individual characters
-          chars.push(currentChar);
+          chars.push(cur);
           i++;
         }
       } else {
-        // Individual character
-        chars.push(currentChar);
+        chars.push(cur);
         i++;
       }
     }
-
     return chars;
   }
 
-  /**
-   * Expands glyph metrics from arrays back to full objects
-   * TIER 2 OPTIMIZATION: Reconstructs from array of arrays using CharacterSets.FONT_SPECIFIC_CHARS
-   * TIER 4 OPTIMIZATION: Looks up actual values from indices using valueLookup table
-   * TIER 5a OPTIMIZATION: Decompresses variable-length tuplets (2/3/4/5 elements)
-   * TIER 5b OPTIMIZATION: Looks up tuplets from tuplet indices
-   * TIER 6b OPTIMIZATION: 2-element tuplets using common left index
-   *
-   * Tuplet decompression (deterministic based on length):
-   *   - Length 2: [w, a] → [w, CL, w, a, CL]  (w===r AND l===CL AND d===CL)
-   *   - Length 3: [w, l, a] → [w, l, w, a, l]  (w===r AND l===d)
-   *   - Length 4: [w, l, a, d] → [w, l, w, a, d]  (w===r only)
-   *   - Length 5: [w, l, r, a, d] (no decompression)
-   *
-   * Reconstructs full TextMetrics-compatible objects from compact arrays
-   * Always uses CharacterSets.FONT_SPECIFIC_CHARS for character order
-   * @param {Array} tupletIndices - Array of tuplet indices (single integers)
-   * @param {Object} metricsCommonToAllCharacters - Common metrics shared across all characters
-   * @param {Array} valueLookup - Value lookup table mapping indices to actual values
-   * @param {Array} tupletLookup - Tuplet lookup table mapping tuplet indices to index arrays
-   * @param {number} [commonLeftIndex] - Common left bounding box index (Tier 6b, optional)
-   * @param {Array<string>} characterSet - Character set to use for expansion
-   * @private
-   */
-  static #expandCharacterMetrics(tupletIndices, metricsCommonToAllCharacters, valueLookup, tupletLookup, commonLeftIndex, characterSet) {
+  // Per-character expansion: read 5 indices from the flat stream, look up
+  // values from the value table, attach the shared baseline fields.
+  static #expandCharacterMetrics(flat, baseline, v, characterSet) {
     const expanded = {};
-
-    // Convert character set to array if it isn't already (though it should be)
     const chars = Array.isArray(characterSet) ? characterSet : Array.from(characterSet);
-
-    // Reconstruct object by mapping array positions to characters
-    chars.forEach((char, index) => {
-      // TIER 5b: Look up tuplet from tuplet index
-      const tupletIndex = tupletIndices[index];
-      const compressed = tupletLookup[tupletIndex];
-
-      let indices;
-
-      // TIER 5+6b: Decompress tuplet based on length
-      if (compressed.length === 2) {
-        // Case D (TIER 6b): [w, a] → [w, CL, w, a, CL]
-        // All three patterns: w===r AND l===CL AND d===CL
-        if (commonLeftIndex === undefined) {
-          throw new Error(
-            `2-element tuplet found but no common left index provided.\n` +
-            `Character "${char}" at index ${index}: [${compressed.join(',')}]\n` +
-            `This indicates a corrupted Tier 6b font file. Please regenerate font assets.`
-          );
-        }
-        indices = [
-          compressed[0],    // width
-          commonLeftIndex,  // left = common left
-          compressed[0],    // right = width (pattern 1)
-          compressed[1],    // ascent
-          commonLeftIndex   // descent = common left (pattern 2)
-        ];
-      }
-      else if (compressed.length === 3) {
-        // Case C: [w, l, a] → [w, l, w, a, l]
-        // Both w===r and l===d
-        indices = [
-          compressed[0],  // width
-          compressed[1],  // left
-          compressed[0],  // right = width (pattern 1)
-          compressed[2],  // ascent
-          compressed[1]   // descent = left (pattern 2)
-        ];
-      }
-      else if (compressed.length === 4) {
-        // Case B: [w, l, a, d] → [w, l, w, a, d]
-        // Only w===r
-        indices = [
-          compressed[0],  // width
-          compressed[1],  // left
-          compressed[0],  // right = width (pattern 1)
-          compressed[2],  // ascent
-          compressed[3]   // descent
-        ];
-      }
-      else if (compressed.length === 5) {
-        // Case A: [w, l, r, a, d] - no decompression needed
-        indices = compressed;
-      }
-      else {
-        throw new Error(
-          `Invalid glyph tuplet length for character "${char}" at index ${index}.\n` +
-          `Expected 2, 3, 4, or 5 elements, got ${compressed.length}: [${compressed.join(',')}]\n` +
-          `This indicates a corrupted font file. Please regenerate font assets.`
-        );
-      }
-
-      // TIER 4: Look up actual values from indices
-      const width = valueLookup[indices[0]];
-      const actualBoundingBoxLeft = valueLookup[indices[1]];
-      const actualBoundingBoxRight = valueLookup[indices[2]];
-      const actualBoundingBoxAscent = valueLookup[indices[3]];
-      const actualBoundingBoxDescent = valueLookup[indices[4]];
-
-      expanded[char] = {
-        // Glyph-specific metrics looked up from value table
+    for (let i = 0; i < chars.length; i++) {
+      const base = i * 5;
+      const width                    = v[flat[base + 0]];
+      const actualBoundingBoxLeft    = v[flat[base + 1]];
+      const actualBoundingBoxRight   = v[flat[base + 2]];
+      const actualBoundingBoxAscent  = v[flat[base + 3]];
+      const actualBoundingBoxDescent = v[flat[base + 4]];
+      expanded[chars[i]] = {
         width,
         actualBoundingBoxLeft,
         actualBoundingBoxRight,
         actualBoundingBoxAscent,
         actualBoundingBoxDescent,
-
-        // Copy over the metrics common to all characters.
-        // This is a bit of a waste of memory, however this object needs to
-        // look as much as possible like a TextMetrics object, and this
-        // is what it looks like.
-        fontBoundingBoxAscent: metricsCommonToAllCharacters.fba,
-        fontBoundingBoxDescent: metricsCommonToAllCharacters.fbd,
-        emHeightAscent: metricsCommonToAllCharacters.fba,          // Same as fontBoundingBoxAscent
-        emHeightDescent: metricsCommonToAllCharacters.fbd,         // Same as fontBoundingBoxDescent
-        hangingBaseline: metricsCommonToAllCharacters.hb,
-        alphabeticBaseline: metricsCommonToAllCharacters.ab,
-        ideographicBaseline: metricsCommonToAllCharacters.ib,
-        pixelDensity: metricsCommonToAllCharacters.pd              // pixelDensity (CRITICAL for atlas reconstruction)
+        fontBoundingBoxAscent:  baseline.fba,
+        fontBoundingBoxDescent: baseline.fbd,
+        emHeightAscent:         baseline.fba,
+        emHeightDescent:        baseline.fbd,
+        hangingBaseline:        baseline.hb,
+        alphabeticBaseline:     baseline.ab,
+        ideographicBaseline:    baseline.ib,
+        pixelDensity:           baseline.pd,
       };
-    });
+    }
     return expanded;
   }
-
-  /**
-   * Converts array of integer values back to floats by dividing by 10000
-   * TIER 6 OPTIMIZATION: Integer to value conversion
-   *
-   * @param {number[]} integers - Array of integer values
-   * @returns {number[]} Array of float values
-   * @private
-   */
-  static #convertIntegersToValues(integers) {
-    return integers.map(int => int / 10000);
-  }
-
-  /**
-   * Unflattens baseline array back to object
-   * TIER 6 OPTIMIZATION: Baseline array → object
-   *
-   * @param {number[]} baselineArray - Array [fba, fbd, hb, ab, ib, pd]
-   * @returns {Object} Baseline object with {fba, fbd, hb, ab, ib, pd}
-   * @private
-   */
-  static #unflattenBaseline(baselineArray) {
-    if (!Array.isArray(baselineArray) || baselineArray.length !== 6) {
-      throw new Error(
-        `Invalid baseline array - expected 6 elements, got ${baselineArray?.length}.\n` +
-        `This indicates a corrupted font file. Please regenerate font assets.`
-      );
-    }
-
-    // Fixed order: fba, fbd, hb, ab, ib, pd
-    // baseline[5] (pd) is null in bundle records and is filled in by `expand`
-    // from its `overrideDensity` argument.
-    return {
-      fba: baselineArray[0],
-      fbd: baselineArray[1],
-      hb: baselineArray[2],
-      ab: baselineArray[3],
-      ib: baselineArray[4],
-      pd: baselineArray[5]
-    };
-  }
-
-  /**
-   * Unflattens tuplet data from negative delimiter format
-   * TIER 6b OPTIMIZATION: Tuplet array unflattening with negative delimiters
-   *
-   * Parses negative-delimited format and shifts back to 0-based indices.
-   * Negative numbers mark the end of each tuplet.
-   *
-   * Converts: [3,2,-15,1,2,16,-8] → [[2,1,14],[0,1,15,7]]
-   * Each tuplet ends with a negative number (1-based) which becomes last element (0-based)
-   *
-   * @param {number[]} flattened - Flattened array with negative delimiters (1-based indices)
-   * @returns {Array<Array<number>>} Array of tuplet arrays (0-based indices)
-   * @private
-   */
-  static #unflattenTuplets(flattened) {
-    const tuplets = [];
-    let currentTuplet = [];
-
-    for (let i = 0; i < flattened.length; i++) {
-      const value = flattened[i];
-
-      if (value < 0) {
-        // Negative marks end of tuplet
-        // Negate back and subtract 1 to get 0-based index
-        currentTuplet.push((-value) - 1);
-
-        // Validate tuplet length
-        if (currentTuplet.length < 2 || currentTuplet.length > 5) {
-          throw new Error(
-            `Invalid tuplet length ${currentTuplet.length} at position ${i}.\n` +
-            `Expected 2, 3, 4, or 5. This indicates a corrupted font file.\n` +
-            `Please regenerate font assets.`
-          );
-        }
-
-        tuplets.push(currentTuplet);
-        currentTuplet = [];
-      } else {
-        // Positive value: subtract 1 to get 0-based index
-        currentTuplet.push(value - 1);
-      }
-    }
-
-    // Check for incomplete tuplet at end
-    if (currentTuplet.length > 0) {
-      throw new Error(
-        `Incomplete tuplet at end of data.\n` +
-        `Found ${currentTuplet.length} elements without negative delimiter.\n` +
-        `This indicates a corrupted font file. Please regenerate font assets.`
-      );
-    }
-
-    return tuplets;
-  }
-
 }
+
 // ============================================================================
 // AtlasPositioning.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/AtlasPositioning.js
 // ============================================================================
@@ -3876,74 +3643,16 @@ class MetricsBundleStore {
 }
 
 // ============================================================================
-// MetricsBundleDecoder.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/MetricsBundleDecoder.js
-// ============================================================================
-
-// MetricsBundleDecoder - Async decode of the metrics bundle
-//
-// Bundle wire format:
-//   BitmapText.rBundle("<base64>");
-// where <base64> decodes to a `deflate-raw` stream. Decompressing that yields
-// UTF-8 JSON of:
-//   [
-//     ["FamilyName", styleIdx, weightIdx, size, <8-element minified array>],
-//     ...
-//   ]
-//
-// Browser and Node 18+ use the standard DecompressionStream + Response API.
-// Node ≤ 17 falls back to the built-in `zlib` module.
-
-class MetricsBundleDecoder {
-  static async decode(b64) {
-    const compressed = MetricsBundleDecoder.#base64ToBytes(b64);
-    const inflated = await MetricsBundleDecoder.#inflateRaw(compressed);
-    const json = MetricsBundleDecoder.#bytesToString(inflated);
-    return JSON.parse(json);
-  }
-
-  static #base64ToBytes(b64) {
-    if (typeof Buffer !== 'undefined') {
-      return Buffer.from(b64, 'base64');
-    }
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes;
-  }
-
-  static async #inflateRaw(bytes) {
-    if (typeof DecompressionStream === 'function' && typeof Response === 'function') {
-      const stream = new Response(bytes).body.pipeThrough(new DecompressionStream('deflate-raw'));
-      return new Uint8Array(await new Response(stream).arrayBuffer());
-    }
-    // Node ≤ 17: no global DecompressionStream. Fall back to zlib.
-    if (typeof require === 'function') {
-      const zlib = require('zlib');
-      const buf = zlib.inflateRawSync(bytes);
-      return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-    }
-    throw new Error('MetricsBundleDecoder: no DecompressionStream and no zlib fallback available');
-  }
-
-  static #bytesToString(bytes) {
-    if (typeof TextDecoder === 'function') {
-      return new TextDecoder().decode(bytes);
-    }
-    if (typeof Buffer !== 'undefined') {
-      return Buffer.from(bytes).toString('utf8');
-    }
-    throw new Error('MetricsBundleDecoder: no TextDecoder and no Buffer available');
-  }
-}
-
-// ============================================================================
 // PositioningBundleStore.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/PositioningBundleStore.js
 // ============================================================================
 
 // PositioningBundleStore - Per-density store of pre-computed atlas positioning
 //
 // The positioning bundle ships per-(density, family, style, weight, size) records
-// in sorted-character order: [tightWidth[], tightHeight[], dx[], dy[]]. Replaces
+// in sorted-character order. Each array is wire-encoded as a delta+zigzag+varint
+// base64 string by BundleCodec.encodeDeltaVarIntB64 (the same codec used by the
+// metrics value-lookup table). Decoded shape is [tightWidth[], tightHeight[],
+// dx[], dy[]] or 5-array form with yInAtlas[] for multi-row atlases. Replaces
 // the runtime pixel-scan reconstruction (TightAtlasReconstructor) — these values
 // were already computed at build time by AtlasPositioningFAB and are now shipped.
 //
@@ -3999,21 +3708,25 @@ class PositioningBundleStore {
   // SAME sorted order as `fontMetrics.getAvailableCharacters().sort()` — same
   // invariant the build pipeline (AtlasBuilder + AtlasPositioningFAB) uses.
   //
-  // Record shapes:
-  //   4 arrays: [tightWidth, tightHeight, dx, dy] — single-row tight atlas;
-  //             yInAtlas is implicit 0, xInAtlas is cumsum(tightWidth).
-  //   5 arrays: [tightWidth, tightHeight, dx, dy, yInAtlas] — multi-row tight atlas
-  //             (used when total width would exceed cwebp's 16383px limit);
-  //             xInAtlas is cumsum(tightWidth) restarted on each y change.
+  // Record shapes (each slot is a base64 string; decode via BundleCodec):
+  //   4 slots: [tightWidth, tightHeight, dx, dy] — single-row tight atlas;
+  //            yInAtlas is implicit 0, xInAtlas is cumsum(tightWidth).
+  //   5 slots: [tightWidth, tightHeight, dx, dy, yInAtlas] — multi-row tight atlas
+  //            (used when total width would exceed cwebp's 16383px limit);
+  //            xInAtlas is cumsum(tightWidth) restarted on each y change.
   static getPositioning(fontProperties, fontMetrics) {
     const cached = PositioningBundleStore.#atlasPositioning.get(fontProperties.key);
     if (cached) return cached;
 
-    const arrays = PositioningBundleStore.getRecord(fontProperties);
-    if (!arrays) return undefined;
+    const encoded = PositioningBundleStore.getRecord(fontProperties);
+    if (!encoded) return undefined;
 
     const characters = fontMetrics.getAvailableCharacters().sort();
-    const [tightWidthArr, tightHeightArr, dxArr, dyArr, yInAtlasArr] = arrays;
+    const tightWidthArr  = BundleCodec.decodeDeltaVarIntB64(encoded[0]);
+    const tightHeightArr = BundleCodec.decodeDeltaVarIntB64(encoded[1]);
+    const dxArr          = BundleCodec.decodeDeltaVarIntB64(encoded[2]);
+    const dyArr          = BundleCodec.decodeDeltaVarIntB64(encoded[3]);
+    const yInAtlasArr    = encoded.length === 5 ? BundleCodec.decodeDeltaVarIntB64(encoded[4]) : undefined;
 
     if (tightWidthArr.length !== characters.length) {
       throw new Error(
@@ -4293,11 +4006,6 @@ class FontLoaderBase {
   static _metricsScriptElement = null;             // HTMLScriptElement | null
   static _positioningScriptElements = new Map();   // density → HTMLScriptElement
 
-  // Bundle envelope format version. Bumped when the on-disk bundle layout
-  // changes incompatibly. Asset files MUST emit this exact value, or the
-  // runtime refuses to load them.
-  static BUNDLE_FORMAT_VERSION = 1;
-
   // ============================================
   // Configuration
   // ============================================
@@ -4347,26 +4055,26 @@ class FontLoaderBase {
    * Decode the metrics bundle and register every record into MetricsBundleStore.
    * Called by `BitmapText.registerBundle` (which is called by the bundle JS file).
    *
-   * Bundle envelope: `{ formatVersion: 1, records: [...] }`. The runtime refuses
-   * to load mismatched-version assets — stale grid-format atlases must be
-   * regenerated, not papered over.
+   * Bundle envelope: `{ formatVersion, records: [...] }` where formatVersion
+   * matches `BitmapText.BUNDLE_SCHEMA_VERSION`. The runtime refuses to load
+   * mismatched-version assets — stale bundles must be regenerated, not papered over.
    *
    * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
    * @returns {Promise<void>} Resolves once every record is registered.
    */
   static async processBundle(b64) {
-    if (typeof MetricsBundleDecoder === 'undefined') {
-      throw new Error('FontLoader.processBundle: MetricsBundleDecoder not available');
+    if (typeof BundleCodec === 'undefined') {
+      throw new Error('FontLoader.processBundle: BundleCodec not available');
     }
     if (typeof MetricsBundleStore === 'undefined') {
       throw new Error('FontLoader.processBundle: MetricsBundleStore not available');
     }
 
-    const envelope = await MetricsBundleDecoder.decode(b64);
-    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+    const envelope = await BundleCodec.decodeBundle(b64);
+    if (!envelope || envelope.formatVersion !== BitmapText.BUNDLE_SCHEMA_VERSION) {
       throw new Error(
         `FontLoader.processBundle: metrics-bundle.js formatVersion mismatch ` +
-        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${BitmapText.BUNDLE_SCHEMA_VERSION}). ` +
         `Regenerate font-assets/ with the current build.`
       );
     }
@@ -4397,25 +4105,25 @@ class FontLoaderBase {
    * PositioningBundleStore. Called by `BitmapText.registerPositioningBundle`
    * (which is called by `positioning-bundle-density-<N>.js`).
    *
-   * Bundle envelope: `{ formatVersion: 1, density: <N>, records: [...] }`.
+   * Bundle envelope: `{ formatVersion, density: <N>, records: [...] }`.
    *
    * @param {number} density - Pixel density this bundle is for (1, 1.5, 2, ...).
    * @param {string} b64 - Base64-encoded deflate-raw stream of the bundle JSON.
    * @returns {Promise<void>} Resolves once every record is registered.
    */
   static async processPositioningBundle(density, b64) {
-    if (typeof MetricsBundleDecoder === 'undefined') {
-      throw new Error('FontLoader.processPositioningBundle: MetricsBundleDecoder not available');
+    if (typeof BundleCodec === 'undefined') {
+      throw new Error('FontLoader.processPositioningBundle: BundleCodec not available');
     }
     if (typeof PositioningBundleStore === 'undefined') {
       throw new Error('FontLoader.processPositioningBundle: PositioningBundleStore not available');
     }
 
-    const envelope = await MetricsBundleDecoder.decode(b64);
-    if (!envelope || envelope.formatVersion !== FontLoaderBase.BUNDLE_FORMAT_VERSION) {
+    const envelope = await BundleCodec.decodeBundle(b64);
+    if (!envelope || envelope.formatVersion !== BitmapText.BUNDLE_SCHEMA_VERSION) {
       throw new Error(
         `FontLoader.processPositioningBundle: positioning-bundle-density-${density}.js formatVersion mismatch ` +
-        `(got ${envelope && envelope.formatVersion}, expected ${FontLoaderBase.BUNDLE_FORMAT_VERSION}). ` +
+        `(got ${envelope && envelope.formatVersion}, expected ${BitmapText.BUNDLE_SCHEMA_VERSION}). ` +
         `Regenerate font-assets/ with the current build.`
       );
     }
