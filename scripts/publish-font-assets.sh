@@ -57,13 +57,29 @@ if [ ! -f font-assets/metrics-bundle.js ]; then
     exit 1
 fi
 
+# Per-density positioning bundles. The runtime requires these for atlas loading
+# (see src/runtime/FontLoaderBase.js:_loadAtlasFromPackage). Without them, every
+# atlas load throws "no positioning record". They are part of the minimum set.
+POSITIONING_BUNDLES=$(find font-assets -maxdepth 1 -name 'positioning-bundle-density-*.js' -type f | sort)
+POSITIONING_COUNT=$(printf '%s\n' "$POSITIONING_BUNDLES" | grep -c . || true)
+if [ "$POSITIONING_COUNT" -eq 0 ]; then
+    echo "ERROR: no positioning-bundle-density-*.js files in font-assets/." >&2
+    echo "       Rebuild the assets via the font-assets-builder before publishing." >&2
+    exit 1
+fi
+
 WEBP_COUNT=$(find font-assets -maxdepth 1 -name 'atlas-*.webp' -type f | wc -l | tr -d ' ')
 if [ "$WEBP_COUNT" -eq 0 ]; then
     echo "ERROR: no atlas-*.webp files in font-assets/." >&2
     exit 1
 fi
-echo "  metrics-bundle.js : present"
-echo "  atlas-*.webp      : $WEBP_COUNT"
+DENSITIES=$(printf '%s\n' "$POSITIONING_BUNDLES" \
+    | sed -E 's|.*positioning-bundle-density-([^.]+)\.js|\1|' \
+    | paste -sd ',' - \
+    | sed 's/,/, /g')
+echo "  metrics-bundle.js              : present"
+echo "  positioning-bundle-density-*   : $POSITIONING_COUNT ($DENSITIES)"
+echo "  atlas-*.webp                   : $WEBP_COUNT"
 
 # Warn (don't fail) on uncommitted code changes.
 if ! git diff --quiet -- scripts/ src/ 2>/dev/null; then
@@ -127,9 +143,20 @@ echo "  Staging: $STAGING"
 
 # Use find -print | zip -@ (newline-delimited): atlas filenames contain spaces
 # but never newlines, so this is safe and avoids shell glob limits.
+#
+# Minimum-set contents:
+#   - metrics-bundle.js                 density-agnostic font metrics (single file)
+#   - positioning-bundle-density-*.js   per-density positioning records (one per density)
+#   - atlas-*.webp                      lossless WebP atlas images
+#
+# The positioning bundles are required at runtime — without them
+# `_loadAtlasFromPackage` throws "no positioning record". The rebuild step
+# never regenerates them; they ship as-is.
 ( cd "$REPO_ROOT" && \
   find font-assets -maxdepth 1 \
-       \( -name 'metrics-bundle.js' -o -name 'atlas-*.webp' \) \
+       \( -name 'metrics-bundle.js' \
+          -o -name 'positioning-bundle-density-*.js' \
+          -o -name 'atlas-*.webp' \) \
        -type f -print \
   | zip -@ -q "$STAGING/$ASSET_NAME" )
 
@@ -151,13 +178,14 @@ TITLE="font-assets minimum set ($TAG)"
 cat > "$NOTES_FILE" <<EOF
 # font-assets minimum set
 
-Pre-rendered bitmap-font assets for [BitmapText.js](https://github.com/${REPO_OWNER}/${REPO_NAME}). This is the **minimum distribution set** — \`metrics-bundle.js\` + every \`atlas-*.webp\` — from which the full \`font-assets/\` directory can be re-derived locally with one command.
+Pre-rendered bitmap-font assets for [BitmapText.js](https://github.com/${REPO_OWNER}/${REPO_NAME}). This is the **minimum distribution set** — \`metrics-bundle.js\` + every \`positioning-bundle-density-*.js\` + every \`atlas-*.webp\` — from which the full \`font-assets/\` directory can be re-derived locally with one command.
 
 ## What's inside
 
-- \`font-assets/metrics-bundle.js\` — single deflate-raw + base64 bundle of every font's metrics
+- \`font-assets/metrics-bundle.js\` — single deflate-raw + base64 bundle of every font's metrics (density-agnostic)
+- \`font-assets/positioning-bundle-density-*.js\` — ${POSITIONING_COUNT} per-density bundle(s) of pre-computed atlas positioning (densities: ${DENSITIES}); required at runtime by \`_loadAtlasFromPackage\` — atlas loads fail without them
 - \`font-assets/atlas-*.webp\` — ${WEBP_COUNT} lossless WebP atlas images
-- $((WEBP_COUNT + 1)) files total, ${ZIP_HUMAN} compressed
+- $((WEBP_COUNT + 1 + POSITIONING_COUNT)) files total, ${ZIP_HUMAN} compressed
 
 ## How to use
 

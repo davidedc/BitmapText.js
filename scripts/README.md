@@ -294,6 +294,11 @@ npm run build-metrics-bundle
 
 `font-assets/` is too large to commit (~800 MB full, ~72 MB minimum set). It is **not in the repo** — only `font-assets/.gitkeep` and `font-assets/README.md` are tracked. The asset bytes live in [GitHub Releases](https://github.com/davidedc/BitmapText.js/releases). Tag convention: `font-assets-YYYY-MM-DD`. Each release ships two assets — `font-assets-min.zip` and a matching `font-assets-min.zip.sha256` sidecar — so consumers can verify integrity without a separate hash transcription.
 
+**Minimum-set contents** (every release):
+- `metrics-bundle.js` — density-agnostic metrics (single file).
+- `positioning-bundle-density-*.js` — pre-computed per-glyph positioning, one file per density (currently 1 and 2). Required at runtime by `_loadAtlasFromPackage`; atlas loads throw without them. The rebuild step never regenerates these — they ship as-is.
+- `atlas-*.webp` — lossless WebP atlas images, one per (density, family, style, weight, size).
+
 The workflow has three scripts: one for consumers, one for maintainers, and the existing rebuilder used by both.
 
 #### 9.a Consume — `scripts/download-font-assets.sh`
@@ -323,10 +328,10 @@ Total time end-to-end: ~10 min on a typical machine. Uses only `curl`, `unzip`, 
 ```
 
 **What it does:**
-1. Pre-flight: confirms `metrics-bundle.js` + at least one `atlas-*.webp`; warns if `scripts/` or `src/` is dirty; checks that `gh` is installed and authed (skipped under `--dry-run`).
+1. Pre-flight: confirms `metrics-bundle.js`, at least one `positioning-bundle-density-*.js`, and at least one `atlas-*.webp`; warns if `scripts/` or `src/` is dirty; checks that `gh` is installed and authed (skipped under `--dry-run`).
 2. Defensive cleanup: deletes any stale `atlas-*.png` intermediates so they can't sneak into the zip.
 3. Auto-tag `font-assets-$(date +%Y-%m-%d)` (or `--tag` override). If the tag already has a release, prompts for overwrite confirmation.
-4. Builds `font-assets-min.zip` via `find … -print | zip -@` (newline-safe; atlas filenames have spaces but never newlines).
+4. Builds `font-assets-min.zip` via `find … -print | zip -@` (newline-safe; atlas filenames have spaces but never newlines). Includes `metrics-bundle.js`, every `positioning-bundle-density-*.js`, and every `atlas-*.webp`.
 5. Computes the SHA-256 sidecar from inside the staging dir so the file references just the basename (so `shasum -c` works for consumers).
 6. Generates release notes from a template parameterised with the tag, file count, and hash.
 7. Confirms with the user, then `git tag` + `git push origin <tag>` + `gh release create <tag> <zip> <sha256> --title … --notes-file …`.
@@ -336,7 +341,7 @@ Total time end-to-end: ~10 min on a typical machine. Uses only `curl`, `unzip`, 
 
 #### 9.c Re-derive — `scripts/rebuild-from-minimal.sh`
 
-Used by `download-font-assets.sh` after unzipping. Can also be run directly when you already have the minimum set in place.
+Used by `download-font-assets.sh` after unzipping. Can also be run directly when you already have the minimum set in place. Note: this script does NOT process `metrics-bundle.js` or `positioning-bundle-density-*.js` — those are shipped as-is in the zip and only need unzipping. It derives the per-atlas QOI + JS wrappers from the WebPs.
 
 ```bash
 ./scripts/rebuild-from-minimal.sh

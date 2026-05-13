@@ -47,7 +47,11 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Refuse to clobber a populated font-assets/ unless --force.
-if [ "$FORCE" -ne 1 ]; then
+# `find` on a missing font-assets/ exits non-zero, which under `set -e` + `pipefail`
+# would kill the script silently. Guard with -d so a totally-absent font-assets/ (the
+# state on some fresh clones, or after a manual `mv aside`) is treated as "empty,
+# proceed". The unzip step later re-creates the directory.
+if [ "$FORCE" -ne 1 ] && [ -d font-assets ]; then
     EXISTING_WEBP=$(find font-assets -maxdepth 1 -name 'atlas-*.webp' -type f 2>/dev/null | wc -l | tr -d ' ')
     if [ "$EXISTING_WEBP" -gt 0 ]; then
         echo "ERROR: font-assets/ already contains $EXISTING_WEBP atlas-*.webp file(s)." >&2
