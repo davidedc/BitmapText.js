@@ -59,6 +59,15 @@ class FontLoaderBase {
   // this after `script.onload` / `eval()` returns.
   static _positioningBundleDecodePromises = new Map(); // density → Promise
 
+  // Browser-only: references to the <script> elements injected by the platform
+  // loader. The browser override populates these in loadBundleFile and
+  // loadPositioningBundleFile; the unload* methods read them via the
+  // _removeMetricsScriptElement / _removePositioningScriptElement hooks below
+  // and detach them from document.head. Node leaves these untouched — its
+  // `eval`-based loader has no DOM to clean.
+  static _metricsScriptElement = null;             // HTMLScriptElement | null
+  static _positioningScriptElements = new Map();   // density → HTMLScriptElement
+
   // Bundle envelope format version. Bumped when the on-disk bundle layout
   // changes incompatibly. Asset files MUST emit this exact value, or the
   // runtime refuses to load them.
@@ -346,6 +355,73 @@ class FontLoaderBase {
     }
     return FontLoaderBase._positioningBundleReadyPromises.get(pixelDensity);
   }
+
+  // ============================================
+  // Bundle Unload API
+  // ============================================
+  //
+  // Mirrors the load pairs above. Each unload:
+  //   1. Wipes the data store entries (records + materialised caches).
+  //   2. Drops the cached ready/decode promises so a subsequent load re-fetches.
+  //   3. Calls the platform cleanup hook to detach the injected <script>
+  //      element (browser; no-op on Node).
+  //
+  // Idempotency: safe to call multiple times. Calling on a never-loaded bundle
+  // is a no-op (clear/delete on absent keys are no-ops; the cleanup hook
+  // tolerates a null/missing element).
+  //
+  // In-flight load race: if an atlas load is in flight at the moment of
+  // unloadPositioningBundle, its inner `loadPositioningFile(density)` may
+  // have already captured the promise from `_positioningBundleReadyPromises`
+  // BEFORE this method deletes that entry. The load will then complete and
+  // re-populate `PositioningBundleStore` with that density's records — a
+  // benign transient (the atlas still finishes loading correctly), but the
+  // bundle records reappear in the store. Callers that want a fully-clean
+  // unload should either (a) only call this after all in-flight loads of
+  // that density resolve, or (b) accept the transient and call unload again
+  // if needed. See public/lru-atlas-loading-demo-bundled.html for an example
+  // of strategy (a): the demo retires LRU entries of a density before
+  // calling unloadPositioningBundle for it.
+
+  /**
+   * Unload the metrics bundle: clear MetricsBundleStore records, drop the
+   * bundle ready/decode promises, and detach the <script> element (browser).
+   *
+   * FontManifest entries are NOT cleared — the manifest is a registry of
+   * known idStrings whose lifetime is decoupled from the records here.
+   * Clearing it would break enumerators that already cached its content;
+   * callers wanting a manifest reset can call `FontManifest.clear()`.
+   */
+  static unloadMetricsBundle() {
+    if (typeof MetricsBundleStore !== 'undefined') {
+      MetricsBundleStore.clear();
+    }
+    FontLoaderBase._bundleReadyPromise = null;
+    FontLoaderBase._bundleDecodePromise = null;
+    FontLoader._removeMetricsScriptElement();
+  }
+
+  /**
+   * Unload the per-density positioning bundle: clear PositioningBundleStore
+   * records for that density, drop the per-density ready/decode promises,
+   * and detach the <script> element (browser).
+   * @param {number} pixelDensity
+   */
+  static unloadPositioningBundle(pixelDensity) {
+    if (typeof PositioningBundleStore !== 'undefined') {
+      PositioningBundleStore.clearDensity(pixelDensity);
+    }
+    FontLoaderBase._positioningBundleReadyPromises.delete(pixelDensity);
+    FontLoaderBase._positioningBundleDecodePromises.delete(pixelDensity);
+    FontLoader._removePositioningScriptElement(pixelDensity);
+  }
+
+  // Platform cleanup hooks. Base impls are no-ops so Node inherits the right
+  // behaviour for free (its eval-based loader has no DOM to clean). The
+  // browser FontLoader overrides these to detach the <script> from
+  // document.head.
+  static _removeMetricsScriptElement() { /* no-op base impl */ }
+  static _removePositioningScriptElement(/* pixelDensity */) { /* no-op base impl */ }
 
   /**
    * Load atlas file for a font

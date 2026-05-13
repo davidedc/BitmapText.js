@@ -51,9 +51,13 @@ class FontLoader extends FontLoaderBase {
 
       script.onerror = () => {
         script.remove();
+        FontLoaderBase._metricsScriptElement = null;
         reject(new Error(`Failed to load metrics bundle from ${script.src}`));
       };
 
+      // Track the element so `BitmapText.unloadMetricsBundle()` can detach it
+      // later via the `_removeMetricsScriptElement` hook.
+      FontLoaderBase._metricsScriptElement = script;
       document.head.appendChild(script);
     });
   }
@@ -82,11 +86,30 @@ class FontLoader extends FontLoaderBase {
 
       script.onerror = () => {
         script.remove();
+        FontLoaderBase._positioningScriptElements.delete(pixelDensity);
         reject(new Error(`Failed to load positioning bundle from ${script.src}`));
       };
 
+      // Track the element so `BitmapText.unloadPositioningBundle(d)` can
+      // detach it later via the `_removePositioningScriptElement` hook.
+      FontLoaderBase._positioningScriptElements.set(pixelDensity, script);
       document.head.appendChild(script);
     });
+  }
+
+  // Cleanup hooks called by FontLoaderBase.unload*. Browser implementation
+  // detaches the tracked <script> element from document.head; Node inherits
+  // the base no-ops.
+  static _removeMetricsScriptElement() {
+    const el = FontLoaderBase._metricsScriptElement;
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    FontLoaderBase._metricsScriptElement = null;
+  }
+
+  static _removePositioningScriptElement(pixelDensity) {
+    const el = FontLoaderBase._positioningScriptElements.get(pixelDensity);
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    FontLoaderBase._positioningScriptElements.delete(pixelDensity);
   }
 
   /**

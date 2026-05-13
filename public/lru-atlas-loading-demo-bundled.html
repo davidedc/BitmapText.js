@@ -95,6 +95,37 @@
       margin-left: auto;     /* push status to the right edge of the row */
     }
 
+    /* Bundle-status pills — sits between the dropdown that drives it (DPR mode)
+       and the per-frame metrics row. All four states share the same geometry,
+       so transitions are pure color animations with no reflow. */
+    .bundle-pills {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 10px;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid #eee;
+    }
+    .bundle-pills .bundles-label { color: #888; }
+    .bundle-pills .pill {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #f5f5f5;
+      color: #666;
+    }
+    .bundle-pills .pill .label { color: #888; }
+    .bundle-pills .pill .state { font-weight: 600; }
+    .bundle-pills .pill.pill-not-loaded { background: #f0f0f0; color: #888;    }
+    .bundle-pills .pill.pill-loading    { background: #fff5e0; color: #8a5b00; }
+    .bundle-pills .pill.pill-loaded     { background: #e8f5e9; color: #2e7d32; }
+    .bundle-pills .pill.pill-error      { background: #fdecea; color: #b71c1c; }
+
     /* Metrics row: prominent FPS histogram on the left, stat pills filling the rest */
     .metrics-row {
       display: flex;
@@ -194,6 +225,7 @@
     <p><strong>What it shows.</strong> Dynamic, on-demand atlas loading with a bounded-size LRU cache. Many text boxes spawn at random positions with random font / style / weight / size and a random short lifetime; the page pulls in atlases as needed, and the LRU evicts and <strong>actually unloads</strong> old atlases so the resident-atlas count stays bounded — even under N &gt; K stress.</p>
     <p><strong>Why it matters.</strong> Real apps with large font catalogues can&rsquo;t hold every atlas in memory. This shows BitmapText.js&rsquo;s <code>BitmapText.loadFont</code> / <code>BitmapText.unloadAtlas</code> / <code>BitmapText.hasAtlas</code> primitives composing into a working memory-bounded loader, and confirms that <code>drawTextFromAtlas</code> already paints placeholder rectangles when an atlas is missing — so a textbox can render <em>before</em> its atlas exists and self-repaint when it arrives.</p>
     <p><strong>How.</strong> Each <code>TextBox</code> calls <code>drawTextFromAtlas</code> immediately at construction (placeholders if not yet loaded) and asks the LRU for its primary + smiley-pair atlases. The LRU returns <code>Promise.resolve()</code> if both are warm, otherwise it kicks off the missing loads — evicting the oldest non-pinned entry first if at capacity — and resolves once the loads complete; the textbox then repaints. <strong>Atlases-resident</strong> in the stats panel reads <code>AtlasDataStore.size()</code> directly, so it physically can&rsquo;t exceed K. The race where a freshly-loaded atlas could be evicted before its requester paints is defused by a 250 ms <em>pin window</em> on every recent touch and load completion. The FPS histogram (last 120 frames, color-coded by frame budget) makes any reconstruction-induced jank directly visible.</p>
+    <p><strong>Minimum-set bundle loading.</strong> The demo proactively loads only the positioning bundle the current DPR configuration needs (e.g. on a 1x screen in <em>Auto</em> mode, only <code>positioning-bundle-density-1.js</code>). The <strong>Bundles loaded</strong> row above shows live state for each bundle. Toggling the DPR dropdown — or dragging the window between monitors of different physical pixel density while in <em>Auto</em> — triggers a unified config-change path that <em>retires</em> textboxes + LRU entries of the removed density, then calls <code>BitmapText.unloadPositioningBundle(d)</code> to clear records, drop cached promises, and detach the injected <code>&lt;script&gt;</code> from <code>document.head</code>. The newly-needed bundle is fetched in parallel. Bundle state transitions (<code>loading</code>/<code>loaded</code>/<code>error</code>/<code>not-loaded</code>) all funnel through one mutator so the pills never lie.</p>
   </details>
 
   <div class="controls">
@@ -231,6 +263,7 @@
     <button id="ctrl-pause">Pause</button>
     <span class="status" id="ctrl-status"></span>
   </div>
+  <div class="bundle-pills" id="bundle-pills"></div>
   <div class="metrics-row">
     <div class="fps-block">
       <canvas id="fps-hist" width="960" height="128" title="Frame durations (last 120 frames). Green ≤16.7ms (60fps), amber ≤33ms (30fps), red beyond."></canvas>
@@ -267,6 +300,11 @@
   //    FontProperties.fromIDString(id)           parse idString → typed props
   //    new TextProperties({...})                 frozen text-rendering config
   //
+  //  Bundle management (this iteration of the demo):
+  //    BitmapText.ensurePositioningBundleLoaded(d)  idempotent per-density load
+  //    BitmapText.unloadPositioningBundle(d)        clear records + detach <script>
+  //    BitmapText.unloadMetricsBundle()             (available; not used here)
+  //
   //  Per-textbox runtime:
   //    BitmapText.measureText(t, fp, tp)         CSS-pixel sizing
   //    BitmapText.drawTextFromAtlas(ctx,...)     pixel-perfect blit, or
@@ -277,7 +315,7 @@
   //    BitmapText.unloadAtlas(idString)          drop atlas bytes
   //    AtlasDataStore.size()                     truth source: resident count
   //
-  //  ── Three cooperating layers ───────────────────────────────────────
+  //  ── Four cooperating layers ────────────────────────────────────────
   //
   //    AtlasLRU       bounded-size loader on top of loadFont / unloadAtlas;
   //                   keeps AtlasDataStore.size() ≤ K via LRU eviction with
@@ -294,6 +332,16 @@
   //                   reap expired → drainDirty (budget-bounded) →
   //                   updateStats. Replace this loop with your framework's
   //                   per-frame update.
+  //
+  //    Bundle loader  per-bundle state machine + pill UI on top of
+  //                   ensurePositioningBundleLoaded / unloadPositioningBundle.
+  //                   Owns minimum-set logic so only the positioning bundles
+  //                   the current DPR configuration needs are resident. The
+  //                   matchMedia listener routes screen-DPR changes into the
+  //                   same handleConfigChange path the dropdown uses, so
+  //                   dragging the window between monitors of different
+  //                   density unloads the now-unused bundle (records cleared,
+  //                   <script> tag removed) and loads the now-needed one.
   //
   //  ── Key invariants ─────────────────────────────────────────────────
   //
@@ -317,17 +365,21 @@
   //
   //  ── Adapting this to your framework ────────────────────────────────
   //
-  //    The three layers are independently reusable:
+  //    The four layers are independently reusable:
   //      AtlasLRU       lift verbatim into your asset / loader subsystem.
   //      TextBox.paint  body becomes whatever your renderer does for a
   //                     text element each frame (Pixi sprite update, your
   //                     own canvas-layer blit, …).
   //      drainDirty     replace with your existing per-tick loop;
   //                     tb.paint() swap-in is the only change.
+  //      Bundle loader  lift verbatim. The ensureBundle / unloadPositioningBundles
+  //                     helpers are framework-agnostic; the pill render is the
+  //                     only DOM-coupled piece and is trivial to swap.
   //
   //    No promise plumbing leaks into your render path — the only `.then`
-  //    in this file is the load-completion → dirty.add hand-off, fully
-  //    contained inside TextBox.paint().
+  //    in this file is the load-completion → dirty.add hand-off inside
+  //    TextBox.paint(), plus the ensureBundle state-transition .then which
+  //    fires-and-forgets at config-change boundaries (never on hot path).
   // ========================================================================
 
   // ---------- Bootstrap ----------
@@ -402,6 +454,41 @@
       textColor = '#000000';   // BitmapText fast path (direct atlas blit)
     }
     return new TextProperties({ ...TEXT_PROPERTIES_BASE, textColor });
+  }
+
+  // ---------- DPR resolution ----------
+  //
+  //  Single source of truth for "given the DPR dropdown value, which pixel
+  //  densities does this configuration require?". Used by BOTH the candidate-
+  //  font selector (`pickCandidates`) AND the proactive positioning-bundle
+  //  preloader (`ensureNeededBundles`). Keeping the rule in one place is
+  //  what guarantees the demo only fetches the minimum set.
+  //
+  //  `autoDensity()` re-reads `window.devicePixelRatio` on every call. The
+  //  OS-published value is mutable: it can change when the window is moved
+  //  between monitors with different physical pixel densities. Caching at
+  //  startup would be wrong. The matchMedia listener in
+  //  `// ---------- Config-change handling ----------` re-runs the demo's
+  //  config-change path when this value crosses the 1.5 boundary.
+  //
+  //  On disk only `positioning-bundle-density-1.js` and -2.js exist; the
+  //  demo never asks for fractional densities (1.5 etc.). The 1.5dppx
+  //  boundary is the only one that matters: <1.5 → density 1, ≥1.5 → density 2.
+
+  // matchMedia query: fires `change` only on threshold crossings (1x ↔ ≥1.5x).
+  // A 2x → 3x window move is silent — correct, since both map to density 2
+  // under the autoDensity rule.
+  const DPR_THRESHOLD_QUERY = '(min-resolution: 1.5dppx)';
+
+  function autoDensity() {
+    return (window.devicePixelRatio >= 1.5) ? 2 : 1;
+  }
+
+  function neededDensitiesForMode(mode) {
+    if (mode === '1')    return [1];
+    if (mode === '2')    return [2];
+    if (mode === 'both') return [1, 2];
+    return [autoDensity()];   // 'auto'
   }
 
   // ---------- AtlasLRU ----------
@@ -567,6 +654,163 @@
 
     get size()        { return this.entries.size; }
     get loadedCount() { return this.entries.size - this.pendingCount; }
+  }
+
+  // ---------- Bundle loading ----------
+  //
+  //  Minimum-set loader for the metrics + per-density positioning bundles on
+  //  top of BitmapText's public ensure/unload primitives. The runtime stores
+  //  themselves are owned by the runtime (MetricsBundleStore /
+  //  PositioningBundleStore); this layer is just a tiny state machine + UI
+  //  binding so the demo can:
+  //
+  //    1. Pre-fetch exactly the positioning bundles the current configuration
+  //       needs at startup (no implicit-on-first-atlas-request load).
+  //    2. Load additional bundles reactively when the configuration changes
+  //       (dropdown toggle OR matchMedia firing in 'auto' mode).
+  //    3. Unload bundles that the new configuration no longer needs — the
+  //       actual <script> tag is detached from document.head, and the
+  //       PositioningBundleStore records for that density are cleared.
+  //    4. Show the live state of each bundle in the pill row, so users can
+  //       observe the minimum set with their own eyes.
+  //
+  //  ── BitmapText.js API used here ────────────────────────────────────
+  //
+  //    BitmapText.ensureMetricsBundleLoaded()
+  //    BitmapText.ensurePositioningBundleLoaded(d)
+  //    BitmapText.unloadMetricsBundle()        // (defined; not used by the demo)
+  //    BitmapText.unloadPositioningBundle(d)   // the linchpin of the unload weave
+  //
+  //  ── State machine ──────────────────────────────────────────────────
+  //
+  //    Per-bundle state: 'not-loaded' | 'loading' | 'loaded' | 'error'.
+  //    All transitions go through `markBundleState`, which also re-renders
+  //    the pills — one write point keeps UI and data in sync. `'error'` is
+  //    treated like `'not-loaded'` by `ensureBundle`, so a subsequent
+  //    config change retries automatically.
+
+  // Keys are stable identifiers used by both the state map and the pill DOM
+  // elements (via `data-key`). Order is the order of pills in the panel.
+  const BUNDLE_KEYS = ['metrics', 'density-1', 'density-2'];
+  const BUNDLE_LABELS = {
+    'metrics':   'metrics-bundle.js',
+    'density-1': 'positioning-bundle-density-1.js',
+    'density-2': 'positioning-bundle-density-2.js',
+  };
+  const BUNDLE_STATE_TEXT = {
+    'not-loaded': 'not loaded',
+    'loading':    'loading…',
+    'loaded':     'loaded',
+    'error':      'error',
+  };
+
+  const bundleState    = new Map();   // key → 'not-loaded' | 'loading' | 'loaded' | 'error'
+  const bundlePromises = new Map();   // key → in-flight Promise (only while 'loading')
+  for (const k of BUNDLE_KEYS) bundleState.set(k, 'not-loaded');
+
+  function bundleKeyForDensity(d) { return `density-${d}`; }
+  function densityFromBundleKey(k) {
+    return k.startsWith('density-') ? parseInt(k.slice('density-'.length), 10) : null;
+  }
+
+  // Single mutator — every state change funnels through here so the UI is
+  // never out of sync with `bundleState`. Calling with the same state is
+  // harmless (a redundant render is cheap).
+  function markBundleState(key, state) {
+    bundleState.set(key, state);
+    renderBundlePills();
+  }
+
+  // State-aware idempotent wrapper around the BitmapText load primitives.
+  // `loaderFactory` is a thunk (not a bare promise) so the underlying API
+  // is only invoked after the state check decides this call needs to fire.
+  //
+  // 'loaded'    → resolved promise (no side effect)
+  // 'loading'   → cached in-flight promise (no double fire)
+  // 'not-loaded' or 'error' → mark 'loading', invoke thunk, attach state
+  //                           transitions on resolve/reject, store promise
+  //                           in bundlePromises so concurrent callers
+  //                           observe the same in-flight work.
+  //
+  // The .catch never re-throws — the demo must not crash on a missing
+  // bundle file. The 'error' state is preserved so the pill stays red,
+  // and the next config change will retry.
+  function ensureBundle(key, loaderFactory) {
+    const state = bundleState.get(key);
+    if (state === 'loaded')  return Promise.resolve();
+    if (state === 'loading') return bundlePromises.get(key);
+
+    markBundleState(key, 'loading');
+    const p = Promise.resolve()
+      .then(loaderFactory)
+      .then(
+        () => { markBundleState(key, 'loaded'); bundlePromises.delete(key); },
+        err => {
+          console.error(`[bundle-load:${key}]`, err);
+          markBundleState(key, 'error');
+          bundlePromises.delete(key);
+        }
+      );
+    bundlePromises.set(key, p);
+    return p;
+  }
+
+  // Driver: load every positioning bundle the current mode needs.
+  // Uses Promise.allSettled so one failing bundle doesn't mask another's
+  // success (pills reflect each bundle independently). Returned promise is
+  // for tests / debugging — callers (handleConfigChange, startup) fire
+  // and forget.
+  function ensureNeededBundles(mode) {
+    const densities = neededDensitiesForMode(mode);
+    const ps = densities.map(d =>
+      ensureBundle(bundleKeyForDensity(d), () => BitmapText.ensurePositioningBundleLoaded(d))
+    );
+    return Promise.allSettled(ps);
+  }
+
+  // Unload helper used by the config-change handler. Only operates on bundles
+  // currently in 'loaded' or 'error' state — never interrupts an in-flight
+  // load (the runtime's unloadPositioningBundle would still work, but the
+  // pending fetch would race with the next config change). If a load is
+  // mid-flight when this is called, leave it; on resolve it will flip to
+  // 'loaded', and the NEXT config change picks it up.
+  function unloadPositioningBundles(densities) {
+    for (const d of densities) {
+      const key = bundleKeyForDensity(d);
+      const state = bundleState.get(key);
+      if (state !== 'loaded' && state !== 'error') continue;
+      BitmapText.unloadPositioningBundle(d);
+      bundlePromises.delete(key);
+      markBundleState(key, 'not-loaded');
+    }
+  }
+
+  // Create the pill DOM nodes once. Called from Main before any state is
+  // touched, so the initial `renderBundlePills` paints all three pills as
+  // `not loaded` for ~1 frame before `ensureBundle('metrics', …)` flips
+  // metrics to `loading`.
+  function buildBundlePanel() {
+    const el = document.getElementById('bundle-pills');
+    el.innerHTML =
+      `<span class="bundles-label">Bundles loaded:</span>` +
+      BUNDLE_KEYS.map(k =>
+        `<span class="pill" data-key="${k}">` +
+          `<span class="label">${BUNDLE_LABELS[k]}</span>` +
+          `<span class="state">—</span>` +
+        `</span>`
+      ).join('');
+  }
+
+  // Sole DOM writer for the pills. Reads state from `bundleState` and
+  // updates className + state text. Idempotent.
+  function renderBundlePills() {
+    for (const k of BUNDLE_KEYS) {
+      const pill = document.querySelector(`#bundle-pills .pill[data-key="${k}"]`);
+      if (!pill) continue;
+      const state = bundleState.get(k);
+      pill.className = `pill pill-${state}`;
+      pill.querySelector('.state').textContent = BUNDLE_STATE_TEXT[state];
+    }
   }
 
   // ---------- TextBox ----------
@@ -798,12 +1042,7 @@
     refreshWarn();
   };
   BUDGET_INPUT.oninput = () => { BUDGET_VAL.textContent = BUDGET_INPUT.value; };
-  DPR_INPUT.onchange = () => {
-    candidates = pickCandidates(DPR_INPUT.value);
-    statusEl.textContent = candidates.length === 0
-      ? `No candidate fonts at DPR=${DPR_INPUT.value}. Try a different option.`
-      : `DPR=${DPR_INPUT.value}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;
-  };
+  DPR_INPUT.onchange = handleConfigChange;
   PAUSE_BTN.onclick = () => {
     paused = !paused;
     PAUSE_BTN.textContent = paused ? 'Resume' : 'Pause';
@@ -820,6 +1059,118 @@
     } else {
       warnEl.textContent = '';
     }
+  }
+
+  // ---------- Config-change handling ----------
+  //
+  //  Single entry point for: DPR dropdown change, matchMedia firing in 'auto'
+  //  mode (window dragged to a different-DPR screen), and any other call that
+  //  needs to align the demo with `DPR_INPUT.value`. Owns the unload-on-
+  //  -transition logic that keeps the resident bundle set minimal.
+  //
+  //  Transition algorithm:
+  //    1. Compute the new needed set from the dropdown.
+  //    2. Compute "currently in use" = densities present in {onScreen
+  //       textboxes, LRU entries, loaded bundles}. The third source is
+  //       what catches the "we loaded it under 'both' but never spawned
+  //       anything for it" case — it's still in use as far as the bundle
+  //       footprint is concerned.
+  //    3. retireDensities(oldNeeded − newNeeded): force-destroy textboxes
+  //       of removed densities + drop their loaded LRU/atlas entries.
+  //       This is what closes the in-flight-load race documented on
+  //       FontLoaderBase.unloadPositioningBundle: by the time we call the
+  //       unload, no atlas of that density is loading or about to load.
+  //    4. unloadPositioningBundles(removed): clears records, drops the
+  //       promise cache, detaches the <script> tag from document.head,
+  //       flips the pill to `not loaded`.
+  //    5. ensureNeededBundles(new): fire-and-forget. Newly-needed bundles
+  //       start loading; already-loaded ones coalesce in `ensureBundle`.
+  //    6. Update candidates + status; re-render pills.
+
+  // Read from THREE sources because each is a real reason the runtime is
+  // holding state for that density. The bundle-state source catches the
+  // case where a positioning bundle was loaded by a 'both' selection but
+  // had no textboxes spawn against it before the user toggled back; it's
+  // still in `_positioningBundleReadyPromises`, and we want the next
+  // transition to be able to unload it.
+  function densitiesInUse() {
+    const ds = new Set();
+    if (typeof onScreen !== 'undefined') {
+      for (const tb of onScreen) ds.add(tb.fontProps.pixelDensity);
+    }
+    if (typeof lru !== 'undefined' && lru) {
+      for (const id of lru.entries.keys()) {
+        ds.add(FontProperties.fromIDString(id).pixelDensity);
+      }
+    }
+    for (const k of BUNDLE_KEYS) {
+      if (k === 'metrics') continue;
+      if (bundleState.get(k) === 'loaded') {
+        ds.add(densityFromBundleKey(k));
+      }
+    }
+    return ds;
+  }
+
+  // Destroy on-screen textboxes + drop loaded LRU entries for the given
+  // densities. Mirrors AtlasLRU.#evictOne's policy: 'loading' entries
+  // survive (they can't be unloaded mid-flight; LRU will evict them when
+  // they resolve and pressure pushes them out). Skipping them here is
+  // also why `unloadPositioningBundles` only touches 'loaded'/'error'
+  // bundle states — a 'loading' bundle has at least one in-flight
+  // dependent (or will shortly), and unloading would race with it.
+  function retireDensities(densitiesSet) {
+    if (densitiesSet.size === 0) return;
+    if (typeof onScreen !== 'undefined') {
+      for (const tb of [...onScreen]) {
+        if (densitiesSet.has(tb.fontProps.pixelDensity)) {
+          tb.destroy();
+          onScreen.delete(tb);
+        }
+      }
+    }
+    if (typeof lru !== 'undefined' && lru) {
+      for (const id of [...lru.entries.keys()]) {
+        if (!densitiesSet.has(FontProperties.fromIDString(id).pixelDensity)) continue;
+        const e = lru.entries.get(id);
+        if (e && e.state === 'loaded') {
+          BitmapText.unloadAtlas(id);
+          lru.entries.delete(id);
+        }
+        // 'loading' entries are left alone (see banner comment above).
+      }
+    }
+  }
+
+  function handleConfigChange() {
+    const mode = DPR_INPUT.value;
+    const newNeeded = new Set(neededDensitiesForMode(mode));
+    const inUse     = densitiesInUse();
+    const toRetire  = new Set();
+    for (const d of inUse) if (!newNeeded.has(d)) toRetire.add(d);
+
+    retireDensities(toRetire);
+
+    candidates = pickCandidates(mode);
+    statusEl.textContent = candidates.length === 0
+      ? `No candidate fonts at DPR=${mode}. Try a different option.`
+      : `DPR=${mode}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;
+
+    unloadPositioningBundles([...toRetire]);   // flips pills, removes <script>, clears store
+    ensureNeededBundles(mode);                  // fire-and-forget; atlas loads have an internal safety net
+    renderBundlePills();
+  }
+
+  // Listen for screen-DPR threshold crossings. We gate on
+  // `DPR_INPUT.value === 'auto'` AT FIRE TIME, not attach time, so the user
+  // can toggle in/out of 'auto' without re-attaching the listener. The query
+  // only fires `change` on threshold crossings (1x ↔ ≥1.5x); a 2x→3x window
+  // move is silent (correct, since both still map to density 2).
+  function watchDPRChanges() {
+    const mq = window.matchMedia(DPR_THRESHOLD_QUERY);
+    mq.addEventListener('change', () => {
+      if (DPR_INPUT.value === 'auto') handleConfigChange();
+    });
   }
 
   // ---------- Spawn loop ----------
@@ -976,7 +1327,26 @@
   // would fail — so everything that touches them (lru creation, spawn
   // loop, rAF tick) is hung off the .then below.
 
+  // Order matters here:
+  //   1. buildStatsPanel + buildBundlePanel + renderBundlePills:
+  //        DOM scaffolding for the right-hand stats and the new bundle row.
+  //        Initial render paints all three bundle pills as "not loaded".
+  //   2. watchDPRChanges() is attached BEFORE the metrics-bundle load. The
+  //        user might drag the window between monitors during init; if the
+  //        listener weren't attached yet we'd miss the threshold crossing.
+  //        `handleConfigChange` is null-safe pre-LRU: `densitiesInUse()`
+  //        short-circuits on `typeof lru === 'undefined'`, `retireDensities`
+  //        guards `if (lru)`, and `unloadPositioningBundles` is safe with
+  //        no loaded bundles.
+  //   3. refreshWarn shows the K≤2N hint immediately.
+  //   4. ensureBundle('metrics', …) flips the metrics pill through
+  //        not-loaded → loading → loaded/error like the positioning ones.
+  //        On resolve, the rest of the boot (lru creation, spawn loop, rAF
+  //        tick) runs inside .then.
   buildStatsPanel();
+  buildBundlePanel();
+  renderBundlePills();
+  watchDPRChanges();
   refreshWarn();
   statusEl.textContent = 'Loading metrics bundle…';
 
@@ -984,23 +1354,26 @@
   // partition" rule, an *application* picks one DPR at startup. This demo deliberately
   // exposes a "Both (mix)" option so curious users can see what happens — each textbox
   // still has a single fontProperties.pixelDensity, the runtime renders each correctly,
-  // but on screen you'll see a mix of physical pixel densities.
+  // but on screen you'll see a mix of physical pixel densities. The mode→density rule
+  // lives in `neededDensitiesForMode` (see `// ---------- DPR resolution ----------`);
+  // this helper just derives prefixes from it so candidate selection and bundle
+  // pre-loading agree.
   function pickCandidates(mode) {
-    let prefixes;
-    if (mode === '1')        prefixes = ['density-1-0-'];
-    else if (mode === '2')   prefixes = ['density-2-0-'];
-    else if (mode === 'both') prefixes = ['density-1-0-', 'density-2-0-'];
-    else { /* auto */
-      const auto = (window.devicePixelRatio >= 1.5) ? 2 : 1;
-      prefixes = [`density-${auto}-0-`];
-    }
+    const prefixes = neededDensitiesForMode(mode).map(d => `density-${d}-0-`);
     return FontManifest.allFontIDs()
       .filter(id => prefixes.some(p => id.startsWith(p)))
       .filter(id => FontProperties.fromIDString(id).fontSize >= 9);
   }
 
-  BitmapText.ensureMetricsBundleLoaded()
+  ensureBundle('metrics', () => BitmapText.ensureMetricsBundleLoaded())
     .then(() => {
+      if (bundleState.get('metrics') !== 'loaded') {
+        // Metrics load failed — pill is red, can't proceed. ensureBundle's
+        // .catch already logged the underlying error.
+        statusEl.textContent = 'Failed to load metrics bundle. See console for details.';
+        return;
+      }
+
       candidates = pickCandidates(DPR_INPUT.value);
 
       if (candidates.length === 0) {
@@ -1013,6 +1386,13 @@
 
       statusEl.textContent =
         `DPR=${DPR_INPUT.value}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;
+
+      // Fire-and-forget: load only the positioning bundle(s) the current mode
+      // needs. Concurrent with the rest of the tick boot. If a textbox spawns
+      // before this finishes, the implicit positioning-bundle load inside
+      // `_loadAtlasFromPackage` awaits the same shared promise from
+      // `FontLoaderBase._positioningBundleReadyPromises` — no double fetch.
+      ensureNeededBundles(DPR_INPUT.value);
 
       // Spawn loop on a fixed interval; expiry sweep + stats on rAF.
       spawnTimer = setInterval(spawnIfNeeded, SPAWN_INTERVAL_MS);
@@ -1099,7 +1479,9 @@
       requestAnimationFrame(tick);
     })
     .catch(err => {
-      statusEl.textContent = `Failed to load metrics bundle: ${err && err.message ? err.message : err}`;
+      // ensureBundle swallows metrics-bundle errors (the pill turns red);
+      // this catch only fires if something else in the .then body throws.
+      statusEl.textContent = `Demo init failed: ${err && err.message ? err.message : err}`;
       console.error(err);
     });
 })();

@@ -118,4 +118,20 @@ class PositioningBundleStore {
     PositioningBundleStore.#records.clear();
     PositioningBundleStore.#atlasPositioning.clear();
   }
+
+  // Clear records + materialised AtlasPositionings for one density only.
+  // Both maps key on "${pixelDensity}:family:style:weight:size" (see #key above and
+  // FontProperties.key), so a prefix match is exact. Already-loaded AtlasData
+  // instances hold their own AtlasPositioning reference and keep rendering
+  // correctly until the atlas itself is unloaded — the cache here is only
+  // consulted on the next bundle->positioning materialisation.
+  static clearDensity(pixelDensity) {
+    const prefix = `${pixelDensity}:`;
+    for (const k of [...PositioningBundleStore.#records.keys()]) {
+      if (k.startsWith(prefix)) PositioningBundleStore.#records.delete(k);
+    }
+    for (const k of [...PositioningBundleStore.#atlasPositioning.keys()]) {
+      if (k.startsWith(prefix)) PositioningBundleStore.#atlasPositioning.delete(k);
+    }
+  }
 }

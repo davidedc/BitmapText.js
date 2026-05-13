@@ -1622,6 +1622,40 @@ class BitmapText {
     AtlasDataStore.clear();
   }
 
+  /**
+   * Unload the metrics bundle: clears MetricsBundleStore records, drops the
+   * cached bundle promises, and (in browser) detaches the injected <script>
+   * element from `document.head`. Safe to call when the bundle was never
+   * loaded.
+   *
+   * Note: this does NOT clear FontManifest; callers wanting a full reset can
+   * call `FontManifest.clear()` separately. See `FontLoaderBase.unloadMetricsBundle`
+   * for the in-flight-load race contract.
+   */
+  static unloadMetricsBundle() {
+    BitmapText.#ensureFontLoader();
+    FontLoaderBase.unloadMetricsBundle();
+  }
+
+  /**
+   * Unload the per-density positioning bundle: clears PositioningBundleStore
+   * records + materialised AtlasPositionings for that density, drops the
+   * cached per-density promises, and (in browser) detaches the injected
+   * <script> element from `document.head`. Safe to call when the bundle was
+   * never loaded.
+   *
+   * In-flight atlas loads of `pixelDensity` may complete after this call and
+   * transiently re-populate the store; callers needing a clean unload should
+   * first retire those loads. See `FontLoaderBase.unloadPositioningBundle`
+   * for the full contract.
+   *
+   * @param {number} pixelDensity
+   */
+  static unloadPositioningBundle(pixelDensity) {
+    BitmapText.#ensureFontLoader();
+    FontLoaderBase.unloadPositioningBundle(pixelDensity);
+  }
+
   // ============================================
   // Query API
   // ============================================
