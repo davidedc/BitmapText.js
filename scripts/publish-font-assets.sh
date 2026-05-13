@@ -148,6 +148,10 @@ echo "  Staging: $STAGING"
 #   - metrics-bundle.js                 density-agnostic font metrics (single file)
 #   - positioning-bundle-density-*.js   per-density positioning records (one per density)
 #   - atlas-*.webp                      lossless WebP atlas images
+#   - README.md, .gitkeep               repo-tracked meta files (kept in the zip so a
+#                                       fresh `download-font-assets.sh` into a clean
+#                                       clone leaves `git status` clean instead of
+#                                       showing them as deleted)
 #
 # The positioning bundles are required at runtime — without them
 # `_loadAtlasFromPackage` throws "no positioning record". The rebuild step
@@ -156,7 +160,9 @@ echo "  Staging: $STAGING"
   find font-assets -maxdepth 1 \
        \( -name 'metrics-bundle.js' \
           -o -name 'positioning-bundle-density-*.js' \
-          -o -name 'atlas-*.webp' \) \
+          -o -name 'atlas-*.webp' \
+          -o -name 'README.md' \
+          -o -name '.gitkeep' \) \
        -type f -print \
   | zip -@ -q "$STAGING/$ASSET_NAME" )
 
