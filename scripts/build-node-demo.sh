@@ -44,7 +44,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/PositioningBundleStore.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontLoaderBase.js"
-  "$SRC_DIR/platform/FontLoader-node.js"
+  "$SRC_DIR/platform/FontLoaderNode.js"
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
   "$SRC_DIR/runtime/BitmapText.js"
@@ -262,7 +262,7 @@ echo "// =======================================================================
 echo "// FONT LOADER - NODE.JS PLATFORM IMPLEMENTATION" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-cat "$SRC_DIR/platform/FontLoader-node.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/platform/FontLoaderNode.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate PNG encoding options

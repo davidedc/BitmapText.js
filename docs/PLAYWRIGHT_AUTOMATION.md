@@ -22,7 +22,7 @@ Whenever a change touches the runtime, font assets, or build/dedup tools, run th
 
 ```bash
 # 1. Hash regression — does the rendered output still match the reference DB?
-node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json --ci
+node scripts/verify-reference-hashes.js --spec=font-sets/test-font-spec.json --ci
 
 # 2. Node demos — does the Node-side rendering path still work?
 ./run-node-demos.sh
@@ -214,7 +214,7 @@ Batch generation of bitmap font assets from JSON specifications using Playwright
 
 ```bash
 # Basic usage
-node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
+node scripts/automated-font-builder.js --spec=font-sets/test-font-spec.json
 
 # Custom output directory
 node scripts/automated-font-builder.js --spec=my-fonts.json --output=./output
@@ -288,7 +288,7 @@ Automated generation of reference hashes for regression testing. The system buil
 
 ```bash
 # Generate hashes for a font set
-node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+node scripts/generate-reference-hashes.js --spec=font-sets/test-font-spec.json
 
 # Merge with existing reference hashes (incremental update)
 node scripts/generate-reference-hashes.js --spec=my-fonts.json --merge
@@ -347,7 +347,7 @@ Automated verification of font rendering hashes against reference hashes for reg
 
 ```bash
 # Basic usage
-node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+node scripts/verify-reference-hashes.js --spec=font-sets/test-font-spec.json
 
 # CI mode (minimal output, exit code only)
 node scripts/verify-reference-hashes.js --spec=my-fonts.json --ci
@@ -463,11 +463,11 @@ steps:
     run: npx playwright install webkit
 
   - name: Verify font hashes
-    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --ci
+    run: node scripts/verify-reference-hashes.js --spec=font-sets/production-fonts.json --ci
 
   - name: Upload report on failure
     if: failure()
-    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --json > hash-report.json
+    run: node scripts/verify-reference-hashes.js --spec=font-sets/production-fonts.json --json > hash-report.json
 
   - uses: actions/upload-artifact@v3
     if: failure()

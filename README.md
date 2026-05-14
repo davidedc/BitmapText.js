@@ -634,7 +634,7 @@ For development with maximum debugging flexibility, you can use individual sourc
   <script src="src/runtime/TightAtlasReconstructor.js"></script>
   <script src="src/runtime/AtlasReconstructionUtils.js"></script>
   <script src="src/runtime/AtlasCellDimensions.js"></script>
-  <script src="src/platform/FontLoader-browser.js"></script>
+  <script src="src/platform/FontLoaderBrowser.js"></script>
   <script src="src/runtime/FontLoaderBase.js"></script>
   <script src="src/builder/MetricsExpander.js"></script>
   <script src="src/runtime/BitmapText.js"></script>
@@ -779,7 +779,7 @@ For a middle ground between individual files and minified bundle, use the unmini
 ### Batch Generation (Recommended for Automation)
   Generate multiple font configurations automatically from JSON specifications:
   ```bash
-  node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
+  node scripts/automated-font-builder.js --spec=font-sets/test-font-spec.json
   ```
 
   See `docs/FONT_SET_FORMAT.md` for specification format details and `scripts/README.md` for complete usage documentation.

@@ -12,7 +12,7 @@
 #
 # Example:
 #   node scripts/automated-font-builder.js \
-#     --spec=specs/font-sets/bitmap-text-invariant.json \
+#     --spec=font-sets/bitmap-text-invariant.json \
 #     --output=/tmp
 #   ./scripts/merge-delta-build.sh /tmp/fontAssets.zip
 #

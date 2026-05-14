@@ -110,7 +110,7 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the single-size demo:
 1. **Main logic**: `src/node/hello-world-main.js`
-2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (Node.js implementation, used internally by BitmapText, class name: `FontLoader`)
+2. **Platform-specific font loading**: `src/platform/FontLoaderNode.js` (Node.js implementation, used internally by BitmapText, class name: `FontLoader`)
 3. **Font loading base**: `src/runtime/FontLoaderBase.js` (shared logic for both platforms)
 4. **Core rendering**: `src/runtime/BitmapText.js` (delegates to stores)
 5. **Storage**: `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js` (single source of truth)
@@ -119,7 +119,7 @@ cp font-assets/metrics-*.js examples/node/dist/font-assets/
 
 ### For the multi-size demo:
 1. **Main logic**: `src/node/hello-world-multi-size-main.js`
-2. **Platform-specific font loading**: `src/platform/FontLoader-node.js` (used internally by BitmapText, unified API, works same as browser)
+2. **Platform-specific font loading**: `src/platform/FontLoaderNode.js` (used internally by BitmapText, unified API, works same as browser)
 3. **Core rendering**: Same as above
 4. **Other components**: Same as above
 
@@ -173,7 +173,7 @@ Each bundled file contains these sections in order:
 9. **Reconstruction Utilities**: AtlasReconstructionUtils, TightAtlasReconstructor
 10. **Image Libraries**: QOI decoder, PNG encoder
 11. **Storage Classes**: AtlasDataStore, FontMetricsStore (single source of truth)
-12. **Font Loading**: FontLoaderBase, FontLoader (platform-specific, from src/platform/FontLoader-node.js)
+12. **Font Loading**: FontLoaderBase, FontLoader (platform-specific, from src/platform/FontLoaderNode.js)
 13. **Core Rendering**: BitmapText (delegates to stores)
 14. **Demo Logic**: The actual demo code from src/node/
 15. **Font Assets**: External font-assets/ directory (not inlined)

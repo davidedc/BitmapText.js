@@ -25,7 +25,7 @@
  *   2 - Errors during execution
  *
  * Examples:
- *   node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+ *   node scripts/verify-reference-hashes.js --spec=font-sets/test-font-spec.json
  *   node scripts/verify-reference-hashes.js --spec=my-fonts.json --ci
  *   node scripts/verify-reference-hashes.js --spec=my-fonts.json --verbose --json > report.json
  */
@@ -77,7 +77,7 @@ if (showHelp) {
   console.log('');
   console.log('Examples:');
   console.log('  # Basic verification');
-  console.log('  node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json');
+  console.log('  node scripts/verify-reference-hashes.js --spec=font-sets/test-font-spec.json');
   console.log('');
   console.log('  # CI mode (minimal output)');
   console.log('  node scripts/verify-reference-hashes.js --spec=my-fonts.json --ci');

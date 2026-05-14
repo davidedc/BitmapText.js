@@ -431,5 +431,5 @@ This allows generation of massive font sets (10,000+ configurations) without mem
 - **docs/ARCHITECTURE.md**: FontSetGenerator implementation details
 - **scripts/README.md**: Automated font builder script documentation
 - **scripts/automated-font-builder.js**: Automated font generation from JSON specifications
-- **specs/font-sets/test-font-spec.json**: Example font set specification (Arial 18, 18.5, 19)
+- **font-sets/test-font-spec.json**: Example font set specification (Arial 18, 18.5, 19)
 - **src/builder/FontPropertiesFAB.js**: Font property validation and construction

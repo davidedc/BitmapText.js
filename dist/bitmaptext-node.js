@@ -1240,8 +1240,8 @@ class BitmapText {
       throw new Error(
         'BitmapText: FontLoader not loaded.\n' +
         'Ensure platform-specific FontLoader is included before BitmapText.js:\n' +
-        '  - Browser: <script src="src/platform/FontLoader-browser.js"></script>\n' +
-        '  - Node.js: Include src/platform/FontLoader-node.js in bundle'
+        '  - Browser: <script src="src/platform/FontLoaderBrowser.js"></script>\n' +
+        '  - Node.js: Include src/platform/FontLoaderNode.js in bundle'
       );
     }
 
@@ -1494,55 +1494,15 @@ class BitmapText {
       };
     }
 
-    // PRE-CREATE font-invariant font properties ONCE for potential auto-redirect
-    const invariantFontProps = new FontProperties(
-      fontProperties.pixelDensity,
-      CharacterSets.INVARIANT_FONT_FAMILY,
-      'normal',
-      'normal',
-      fontProperties.fontSize
-    );
-
-    // PRE-FETCH font-invariant font data
-    let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
-
-    // If font-invariant font not found and size < 9, try interpolating from size 9
-    if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
-      const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
-
-      if (invariantMetricsAt9) {
-        // Create interpolated metrics wrapper for font-invariant font
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
-      }
-    }
-
-    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
-    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
-    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
-    // path that branches on this flag dereferences the metrics, so it has to be
-    // a real truthy check, not `!== null` (which lets undefined slip through).
-    const hasInvariantFont = invariantFontMetrics != null;
+    const { invariantFontProps, invariantFontMetrics, hasInvariantFont } =
+      BitmapText.#resolveInvariantFont(fontProperties);
 
     // Resolve all character aliases upfront using fast regex pass
     // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
     const resolvedText = CharacterSets.resolveString(text);
     const chars = [...resolvedText];
 
-    // Scan for missing glyphs (excluding spaces which are handled specially)
-    // Check each character against the appropriate font (base or font-invariant)
-    const missingChars = new Set();
-    for (const char of chars) {
-      if (char !== ' ') {
-        // Determine which font should handle this character
-        const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
-        const checkFontMetrics = isInvariant ? invariantFontMetrics : fontMetrics;
-
-        if (!checkFontMetrics.hasGlyph(char)) {
-          missingChars.add(char);
-        }
-      }
-    }
+    const missingChars = BitmapText.#scanForMissingChars(chars, fontMetrics, invariantFontMetrics, hasInvariantFont);
 
     // If any glyphs missing, can't calculate accurate metrics
     if (missingChars.size > 0) {
@@ -1689,56 +1649,15 @@ class BitmapText {
       };
     }
 
-    // PRE-CREATE font-invariant font properties ONCE (not per-character!)
-    // This avoids object allocation in hot rendering loop
-    const invariantFontProps = new FontProperties(
-      fontProperties.pixelDensity,
-      CharacterSets.INVARIANT_FONT_FAMILY,
-      'normal',  // Always normal style for font-invariant characters
-      'normal',  // Always normal weight for font-invariant characters
-      fontProperties.fontSize
-    );
-
-    // PRE-FETCH font-invariant font data ONCE
-    let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
-
-    // If font-invariant font not found and size < 9, try interpolating from size 9
-    if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
-      const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
-
-      if (invariantMetricsAt9) {
-        // Create interpolated metrics wrapper for font-invariant font
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
-      }
-    }
-
-    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
-    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
-    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
-    // path that branches on this flag dereferences the metrics, so it has to be
-    // a real truthy check, not `!== null` (which lets undefined slip through).
-    const hasInvariantFont = invariantFontMetrics != null;
+    const { invariantFontProps, invariantFontMetrics, hasInvariantFont } =
+      BitmapText.#resolveInvariantFont(fontProperties);
 
     // Resolve all character aliases upfront using fast regex pass
     // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
     const resolvedText = CharacterSets.resolveString(text);
     const chars = [...resolvedText];
 
-    // Scan for missing metrics (can't render without metrics)
-    // Check each character against the appropriate font (base or font-invariant)
-    const missingMetricsChars = new Set();
-    for (const char of chars) {
-      if (char !== ' ') {
-        // Determine which font should handle this character
-        const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
-        const checkFontMetrics = isInvariant ? invariantFontMetrics : fontMetrics;
-
-        if (!checkFontMetrics.hasGlyph(char)) {
-          missingMetricsChars.add(char);
-        }
-      }
-    }
+    const missingMetricsChars = BitmapText.#scanForMissingChars(chars, fontMetrics, invariantFontMetrics, hasInvariantFont);
 
     if (missingMetricsChars.size > 0) {
       return {
@@ -1903,6 +1822,74 @@ class BitmapText {
   // ============================================
   // Internal Rendering Helpers
   // ============================================
+
+  /**
+   * Pre-create and pre-fetch the font-invariant font's properties and metrics.
+   * Handles size<9 interpolation when the invariant font isn't directly available
+   * at the requested size. Shared by measureText and drawTextFromAtlas.
+   *
+   * @param {FontProperties} fontProperties - Caller's font properties
+   * @returns {{invariantFontProps: FontProperties, invariantFontMetrics: (FontMetrics|null), hasInvariantFont: boolean}}
+   * @private
+   */
+  static #resolveInvariantFont(fontProperties) {
+    // Pre-create font-invariant font properties (avoids per-character allocation
+    // in the hot rendering loop). Invariant font is always normal/normal.
+    const invariantFontProps = new FontProperties(
+      fontProperties.pixelDensity,
+      CharacterSets.INVARIANT_FONT_FAMILY,
+      'normal',
+      'normal',
+      fontProperties.fontSize
+    );
+
+    let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
+
+    // If invariant font not found and size < 9, try interpolating from size 9
+    if (!invariantFontMetrics && BitmapText.#shouldUseMinSize(fontProperties.fontSize)) {
+      const invariantMinSizeProps = BitmapText.#createFontPropsAtMinSize(invariantFontProps);
+      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
+      if (invariantMetricsAt9) {
+        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
+      }
+    }
+
+    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
+    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
+    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
+    // path that branches on this flag dereferences the metrics, so it has to be
+    // a real truthy check, not `!== null` (which lets undefined slip through).
+    const hasInvariantFont = invariantFontMetrics != null;
+
+    return { invariantFontProps, invariantFontMetrics, hasInvariantFont };
+  }
+
+  /**
+   * Scan an already-resolved character array for glyphs missing from the
+   * appropriate font (base or font-invariant). Shared by measureText and
+   * drawTextFromAtlas for pre-flight validation.
+   *
+   * @param {string[]} chars - Already-resolved character array (emoji→symbol applied)
+   * @param {FontMetrics} fontMetrics - Base font metrics
+   * @param {FontMetrics|null} invariantFontMetrics - Invariant font metrics (may be null)
+   * @param {boolean} hasInvariantFont - Whether the invariant font is available
+   * @returns {Set<string>} Set of characters missing from their target font
+   * @private
+   */
+  static #scanForMissingChars(chars, fontMetrics, invariantFontMetrics, hasInvariantFont) {
+    const missingChars = new Set();
+    for (const char of chars) {
+      if (char !== ' ') {
+        const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(char);
+        const checkFontMetrics = isInvariant ? invariantFontMetrics : fontMetrics;
+        if (!checkFontMetrics.hasGlyph(char)) {
+          missingChars.add(char);
+        }
+      }
+    }
+    return missingChars;
+  }
+
   // Get the advancement of the i-th character i.e. needed AFTER the i-th character
   // so that the i+1-th character is drawn at the right place
   // This depends on both the advancement specified by the glyph of the i-th character
@@ -2127,25 +2114,10 @@ class BitmapText {
 
     const metrics = measureResult.metrics;
 
-    // PRE-CREATE font-invariant font properties ONCE
-    const invariantFontProps = new FontProperties(
-      fontProperties.pixelDensity,
-      CharacterSets.INVARIANT_FONT_FAMILY,
-      'normal',
-      'normal',
-      fontProperties.fontSize
-    );
-
-    // PRE-FETCH font-invariant font data
-    const invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
+    const { invariantFontProps, invariantFontMetrics, hasInvariantFont } =
+      BitmapText.#resolveInvariantFont(fontProperties);
     const invariantAtlasData = invariantFontMetrics ?
       AtlasDataStore.getAtlasData(invariantFontProps) : null;
-    // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
-    // in the bundle (e.g. invariant font set covers sizes 9–72 while the regular
-    // font set goes to 96; sizes 73+ have no invariant entry). The auto-redirect
-    // path that branches on this flag dereferences the metrics, so it has to be
-    // a real truthy check, not `!== null` (which lets undefined slip through).
-    const hasInvariantFont = invariantFontMetrics != null;
 
     // Track current font to minimize lookups
     let currentFontProps = fontProperties;
@@ -2253,9 +2225,14 @@ class BitmapText {
 
       // Draw glyph to scratch canvas (skip spaces, they have no visual)
       if (currentChar !== ' ' && currentAtlasData.hasPositioning(currentChar)) {
-        const atlasPositioning = currentAtlasData.atlasPositioning.getPositioning(currentChar);
+        const ap = currentAtlasData.atlasPositioning;
         const atlasImage = currentAtlasData.atlasImage.image;
-        const { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
+        const xInAtlas = ap._xInAtlas[currentChar];
+        const yInAtlas = ap._yInAtlas[currentChar];
+        const tightWidth = ap._tightWidth[currentChar];
+        const tightHeight = ap._tightHeight[currentChar];
+        const dx = ap._dx[currentChar];
+        const dy = ap._dy[currentChar];
 
         // Draw original glyph (black) to scratch canvas at correct position
         BitmapText.#coloredGlyphCtx.drawImage(
@@ -2331,15 +2308,19 @@ class BitmapText {
     // 3. Draw colored glyph to main canvas
     if (!atlasData.hasPositioning(char)) return;
 
-    const atlasPositioning = atlasData.atlasPositioning.getPositioning(char);
+    const ap = atlasData.atlasPositioning;
     const atlasImage = atlasData.atlasImage.image;
-    const coloredGlyphCanvas = BitmapText.#createColoredGlyph(atlasImage, atlasPositioning, textColor);
-    BitmapText.#renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning);
+    const xInAtlas = ap._xInAtlas[char];
+    const yInAtlas = ap._yInAtlas[char];
+    const tightWidth = ap._tightWidth[char];
+    const tightHeight = ap._tightHeight[char];
+    const dx = ap._dx[char];
+    const dy = ap._dy[char];
+    const coloredGlyphCanvas = BitmapText.#createColoredGlyph(atlasImage, xInAtlas, yInAtlas, tightWidth, tightHeight, textColor);
+    BitmapText.#renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, tightWidth, tightHeight, dx, dy);
   }
 
-  static #createColoredGlyph(atlasImage, atlasPositioning, textColor) {
-    const { xInAtlas, yInAtlas, tightWidth, tightHeight } = atlasPositioning;
-
+  static #createColoredGlyph(atlasImage, xInAtlas, yInAtlas, tightWidth, tightHeight, textColor) {
     // Setup temporary canvas, same size as the glyph
     BitmapText.#coloredGlyphCanvas.width = tightWidth;
     BitmapText.#coloredGlyphCanvas.height = tightHeight;
@@ -2363,9 +2344,7 @@ class BitmapText {
     return BitmapText.#coloredGlyphCanvas;
   }
 
-  static #renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, atlasPositioning) {
-    const { tightWidth, tightHeight, dx, dy } = atlasPositioning;
-
+  static #renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, tightWidth, tightHeight, dx, dy) {
     // Round coordinates at draw stage for crisp, pixel-aligned rendering
     // Position tracking uses floats to avoid accumulation errors, but final
     // draw coordinates must be integers to prevent subpixel antialiasing
@@ -2388,9 +2367,14 @@ class BitmapText {
   static #drawCharacterDirect(ctx, char, position_PhysPx, atlasData, fontMetrics) {
     if (!atlasData.hasPositioning(char)) return;
 
-    const atlasPositioning = atlasData.atlasPositioning.getPositioning(char);
+    const ap = atlasData.atlasPositioning;
     const atlasImage = atlasData.atlasImage.image;
-    const { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy } = atlasPositioning;
+    const xInAtlas = ap._xInAtlas[char];
+    const yInAtlas = ap._yInAtlas[char];
+    const tightWidth = ap._tightWidth[char];
+    const tightHeight = ap._tightHeight[char];
+    const dx = ap._dx[char];
+    const dy = ap._dy[char];
 
     // Single drawImage operation: atlas → main canvas
     // Round coordinates at draw stage for crisp, pixel-aligned rendering
@@ -3061,22 +3045,6 @@ class AtlasPositioning {
       Object.freeze(this._yInAtlas);
       Object.freeze(this);
     }
-  }
-
-  /**
-   * Get positioning metrics for glyph rendering from atlas
-   * @param {string} char - Character (code point) to get positioning for
-   * @returns {Object} Object with xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy
-   */
-  getPositioning(char) {
-    return {
-      xInAtlas: this._xInAtlas[char],
-      yInAtlas: this._yInAtlas[char],
-      tightWidth: this._tightWidth[char],
-      tightHeight: this._tightHeight[char],
-      dx: this._dx[char],
-      dy: this._dy[char]
-    };
   }
 
   /**
@@ -4591,7 +4559,7 @@ function QOIDecode (arrayBuffer, byteOffset, byteLength, outputChannels) {
     };
 }
 // ============================================================================
-// FontLoader-node.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/platform/FontLoader-node.js
+// FontLoaderNode.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/platform/FontLoaderNode.js
 // ============================================================================
 
 // FontLoader - Node.js-Specific Font Loader

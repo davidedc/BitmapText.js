@@ -54,22 +54,6 @@ class AtlasPositioning {
   }
 
   /**
-   * Get positioning metrics for glyph rendering from atlas
-   * @param {string} char - Character (code point) to get positioning for
-   * @returns {Object} Object with xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy
-   */
-  getPositioning(char) {
-    return {
-      xInAtlas: this._xInAtlas[char],
-      yInAtlas: this._yInAtlas[char],
-      tightWidth: this._tightWidth[char],
-      tightHeight: this._tightHeight[char],
-      dx: this._dx[char],
-      dy: this._dy[char]
-    };
-  }
-
-  /**
    * Check if positioning data exists for a character
    * @param {string} char - Character (code point) to check
    * @returns {boolean} True if positioning data exists

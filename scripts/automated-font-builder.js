@@ -24,12 +24,12 @@
  *   --batch-size <n>     Max fonts per batch for memory management (default: 72)
  *
  * Examples:
- *   node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
- *   node scripts/automated-font-builder.js --spec=specs/font-sets/my-fonts.json --output=./output
+ *   node scripts/automated-font-builder.js --spec=font-sets/test-font-spec.json
+ *   node scripts/automated-font-builder.js --spec=font-sets/my-fonts.json --output=./output
  *
  * Font Set Specification:
  *   See docs/FONT_SET_FORMAT.md for complete format documentation and examples.
- *   Example specification available at: specs/font-sets/test-font-spec.json
+ *   Example specification available at: font-sets/test-font-spec.json
  */
 
 const { webkit } = require('playwright');
@@ -84,7 +84,7 @@ if (showHelp) {
   console.log('  --help, -h           Show this help message');
   console.log('');
   console.log('Examples:');
-  console.log('  node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json');
+  console.log('  node scripts/automated-font-builder.js --spec=font-sets/test-font-spec.json');
   console.log('  node scripts/automated-font-builder.js --spec=my-fonts.json --output=./fonts');
   console.log('  node scripts/automated-font-builder.js --spec=large-set.json --batch-size=50 --include-full');
   console.log('');

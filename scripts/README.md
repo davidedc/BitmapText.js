@@ -144,7 +144,7 @@ npm run demo
 - `src/builder/MetricsExpander.js` - Font metrics expansion
 - `lib/QOIDecode.js`, `lib/PngEncoder.js`, `lib/PngEncodingOptions.js` - Image libraries
 - `src/runtime/FontLoaderBase.js` - Abstract base class for font loading (shared logic)
-- `src/platform/FontLoader-node.js` - Node.js font loader implementation
+- `src/platform/FontLoaderNode.js` - Node.js font loader implementation
 - `src/runtime/AtlasDataStore.js`, `src/runtime/FontMetricsStore.js` - Storage classes
 
 **Output:**
@@ -281,7 +281,7 @@ npm run build-metrics-bundle
 ```
 
 **What it does:**
-- Reads any per-file `metrics-density-*.js` left in `font-assets/`. Note: the active build path (browser font-assets-builder via `tools/export-font-data.js`) emits `metrics-bundle.js` directly into its zip output, so this Node-side aggregator is a legacy alt-path retained for historical workflows.
+- Reads any per-file `metrics-density-*.js` left in `font-assets/`. Note: the active build path (browser font-assets-builder via `src/automation/export-font-data.js`) emits `metrics-bundle.js` directly into its zip output, so this Node-side aggregator is a legacy alt-path retained for historical workflows.
 - Strips `pixelDensity` from `baseline[5]` (the bundle is density-agnostic — runtime injects density at expansion time)
 - Deduplicates density-1/density-2 pairs
 - Frames as JSON, deflate-raw compresses, base64-wraps in `BitmapText.rBundle("...")`
@@ -407,9 +407,9 @@ npm run build-bundle-all                            # Both (via npm)
 - **Compression:** 79% size reduction (149KB → 32KB browser, 153KB → 33KB node)
 
 **Browser bundle includes** (17 files):
-StatusCode, FontProperties, TextProperties, FontMetrics, InterpolatedFontMetrics, CharacterSets, BitmapText, MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasCellDimensions, AtlasDataStore, MetricsBundleStore, BundleCodec, PositioningBundleStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoader-browser
+StatusCode, FontProperties, TextProperties, FontMetrics, InterpolatedFontMetrics, CharacterSets, BitmapText, MetricsExpander, AtlasPositioning, AtlasImage, AtlasData, AtlasCellDimensions, AtlasDataStore, MetricsBundleStore, BundleCodec, PositioningBundleStore, FontMetricsStore, FontManifest, FontLoaderBase, FontLoaderBrowser
 
-**Node.js bundle includes**: All browser bundle files + QOIDecode + FontLoader-node (replaces FontLoader-browser)
+**Node.js bundle includes**: All browser bundle files + QOIDecode + FontLoaderNode (replaces FontLoaderBrowser)
 
 **Node.js bundle excludes** (user provides):
 - Canvas implementation (node-canvas, skia-canvas, etc.)
@@ -501,13 +501,13 @@ node scripts/automated-font-builder.js --spec=<path-to-spec.json> [options]
 **Examples:**
 ```bash
 # Basic usage
-node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json
+node scripts/automated-font-builder.js --spec=font-sets/test-font-spec.json
 
 # Custom output directory
-node scripts/automated-font-builder.js --spec=specs/font-sets/my-fonts.json --output=./output
+node scripts/automated-font-builder.js --spec=font-sets/my-fonts.json --output=./output
 
 # Include full metrics for debugging
-node scripts/automated-font-builder.js --spec=specs/font-sets/test-font-spec.json --include-full
+node scripts/automated-font-builder.js --spec=font-sets/test-font-spec.json --include-full
 ```
 
 **What it does:**
@@ -574,7 +574,7 @@ node ../../scripts/image-to-js-converter.js . --all
 **Related files:**
 - `public/automated-font-builder.html` - Stripped-down builder page (no UI)
 - `src/automation/automated-builder.js` - Browser-side orchestration
-- `specs/font-sets/test-font-spec.json` - Example specification (Arial 18, 18.5, 19)
+- `font-sets/test-font-spec.json` - Example specification (Arial 18, 18.5, 19)
 
 ### 13. Reference Hash Generator Script
 ```bash
@@ -590,10 +590,10 @@ node scripts/generate-reference-hashes.js --spec=<path-to-spec.json> [options]
 **Examples:**
 ```bash
 # Generate hashes for a font set
-node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+node scripts/generate-reference-hashes.js --spec=font-sets/test-font-spec.json
 
 # Merge with existing reference hashes
-node scripts/generate-reference-hashes.js --spec=specs/font-sets/my-fonts.json --merge
+node scripts/generate-reference-hashes.js --spec=font-sets/my-fonts.json --merge
 
 # Custom output location
 node scripts/generate-reference-hashes.js --spec=my-fonts.json --output=./my-hashes.js
@@ -632,7 +632,7 @@ For each font configuration, generates ~12 hashes:
 ```javascript
 // Auto-generated reference hashes for BitmapText.js
 // Generated: 2025-11-17T10:40:29.092Z
-// Spec: specs/font-sets/test-font-spec.json
+// Spec: font-sets/test-font-spec.json
 
 // Positioning hashes (metadata, not pixel hashes):
 // density-1-0-Arial-style-normal-weight-normal-size-18-0 positioning: 632fe3
@@ -686,7 +686,7 @@ node scripts/verify-reference-hashes.js --spec=<path-to-spec.json> [options]
 **Examples:**
 ```bash
 # Basic verification
-node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+node scripts/verify-reference-hashes.js --spec=font-sets/test-font-spec.json
 
 # CI mode (minimal output, proper exit codes)
 node scripts/verify-reference-hashes.js --spec=my-fonts.json --ci
@@ -804,11 +804,11 @@ steps:
     run: npx playwright install webkit
 
   - name: Verify font hashes
-    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --ci
+    run: node scripts/verify-reference-hashes.js --spec=font-sets/production-fonts.json --ci
 
   - name: Upload report on failure
     if: failure()
-    run: node scripts/verify-reference-hashes.js --spec=specs/font-sets/production-fonts.json --json > hash-report.json
+    run: node scripts/verify-reference-hashes.js --spec=font-sets/production-fonts.json --json > hash-report.json
 
   - uses: actions/upload-artifact@v3
     if: failure()
@@ -820,10 +820,10 @@ steps:
 **2. Development Workflow**
 ```bash
 # After making font rendering changes, verify no regressions:
-node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json --verbose
+node scripts/verify-reference-hashes.js --spec=font-sets/test-font-spec.json --verbose
 
 # If intentional changes detected, regenerate reference hashes:
-node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
+node scripts/generate-reference-hashes.js --spec=font-sets/test-font-spec.json
 ```
 
 **3. Subset Verification**
@@ -864,7 +864,7 @@ Recommended as the third step of the standard verification sequence:
 
 ```bash
 # 1. hashes — does rendered output still match the reference DB?
-node scripts/verify-reference-hashes.js --spec=specs/font-sets/test-font-spec.json --ci
+node scripts/verify-reference-hashes.js --spec=font-sets/test-font-spec.json --ci
 
 # 2. node demos — does the Node-side rendering path still work?
 ./run-node-demos.sh

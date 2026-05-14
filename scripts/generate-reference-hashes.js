@@ -23,9 +23,9 @@
  *   --merge              Merge with existing hashes instead of overwriting
  *
  * Examples:
- *   node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json
- *   node scripts/generate-reference-hashes.js --spec=specs/font-sets/my-fonts.json --merge
- *   node scripts/generate-reference-hashes.js --spec=specs/font-sets/my-fonts.json --output=./my-hashes.js
+ *   node scripts/generate-reference-hashes.js --spec=font-sets/test-font-spec.json
+ *   node scripts/generate-reference-hashes.js --spec=font-sets/my-fonts.json --merge
+ *   node scripts/generate-reference-hashes.js --spec=font-sets/my-fonts.json --output=./my-hashes.js
  *
  * Font Set Specification:
  *   See docs/FONT_SET_FORMAT.md for complete format documentation and examples.
@@ -70,7 +70,7 @@ if (showHelp) {
   console.log('');
   console.log('Examples:');
   console.log('  # Generate hashes for a font set');
-  console.log('  node scripts/generate-reference-hashes.js --spec=specs/font-sets/test-font-spec.json');
+  console.log('  node scripts/generate-reference-hashes.js --spec=font-sets/test-font-spec.json');
   console.log('');
   console.log('  # Merge with existing hashes');
   console.log('  node scripts/generate-reference-hashes.js --spec=my-fonts.json --merge');

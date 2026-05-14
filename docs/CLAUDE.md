@@ -14,7 +14,7 @@
 
   - **Static runtime**: src/runtime/BitmapText.js (static class with zero-config API, delegates to stores)
   - **Store classes**: src/runtime/AtlasDataStore.js, src/runtime/FontMetricsStore.js (single source of truth for storage, used by BitmapText and FAB)
-  - **Platform-specific loaders**: src/platform/FontLoader-browser.js, src/platform/FontLoader-node.js (unified class name, selected at build time)
+  - **Platform-specific loaders**: src/platform/FontLoaderBrowser.js, src/platform/FontLoaderNode.js (unified class name, selected at build time)
   - **Configuration classes**: src/runtime/FontProperties.js, src/runtime/TextProperties.js
   - **Font assets building tools**: src/builder/*FAB.js files (extend runtime classes with building capabilities)
   - **Font data**: font-assets/metrics-bundle.js (single deflate-compressed bundle for ALL metrics, calls BitmapText.rBundle once) + atlas-*-{webp,qoi}.js per font (call BitmapText.a → delegates to stores)
@@ -49,7 +49,7 @@
   1. Font-invariant font (BitmapTextInvariant) uses custom character set (font-invariant characters)
   2. Build-time: `create-glyphs.js` selects character set based on font family
   3. Runtime: Fast font-invariant character detection using `string.includes()` (~1-2ns per character)
-  4. Font specification: `specs/font-sets/bitmap-text-invariant.json` defines font-invariant character set
+  4. Font specification: `font-sets/bitmap-text-invariant.json` defines font-invariant character set
   5. Rendering override: GlyphFAB.js uses Courier New for BitmapTextInvariant (monospacing)
   6. Auto-redirect: Font-invariant characters automatically use BitmapTextInvariant regardless of base font
 
@@ -110,7 +110,7 @@
   - **Atlas data combination**: src/runtime/AtlasData.js (combines AtlasImage + AtlasPositioning)
   - **Atlas store**: src/runtime/AtlasDataStore.js (single source of truth for atlas storage, used by BitmapText via delegation and by FAB)
   - **Metrics store**: src/runtime/FontMetricsStore.js (single source of truth for metrics storage, used by BitmapText via delegation and by FAB)
-  - **Platform-specific font loading**: src/platform/FontLoader-browser.js (browser), src/platform/FontLoader-node.js (Node.js) - unified class name, selected at build time
+  - **Platform-specific font loading**: src/platform/FontLoaderBrowser.js (browser), src/platform/FontLoaderNode.js (Node.js) - unified class name, selected at build time
   - **Font loading base class**: src/runtime/FontLoaderBase.js (shared logic for both platforms, stores data directly in AtlasDataStore/FontMetricsStore)
   - **Atlas reconstruction utilities**: src/builder/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
   - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
@@ -121,7 +121,7 @@
   - **Font-invariant character auto-redirect**: src/runtime/BitmapText.js lines 447-469 (measureText), lines 630-654, 767-782 (drawTextFromAtlas)
   - **Font-invariant glyph creation**: src/builder/create-glyphs.js (character set selection based on font family)
   - **Font-invariant font rendering override**: src/builder/GlyphFAB.js lines 67-69 (Courier New for monospacing)
-  - **Font-invariant font specification**: specs/font-sets/bitmap-text-invariant.json
+  - **Font-invariant font specification**: font-sets/bitmap-text-invariant.json
   - **Glyph creation utilities**: src/builder/create-glyphs.js (creates glyphs for all characters in character set)
   - **Glyph rendering**: src/builder/GlyphFAB.js (6-step pipeline: canvas setup, measurement, corrections, dimensions, rendering, preservation)
   - **Kerning calculation**: src/builder/KerningCalculator.js (service class for kerning table generation and pair calculations)

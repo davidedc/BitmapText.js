@@ -17,7 +17,7 @@ The hard problem: each engine's text rasterizer (Skia, Core Text, etc.) anti-ali
 - `src/runtime/` — production runtime (static `BitmapText`, immutable domain objects, internal stores). Goes into every bundle.
 - `src/builder/` — `*FAB.js` font-assets-builder classes. Extend runtime types; only loaded by the builder UI/automation.
 - `src/platform/` — browser vs. Node `FontLoader-*.js` + `canvas-mock.js`; selected at bundle time.
-- `src/specs/` + `specs/font-sets/` — JSON font-set specifications (schema in `docs/FONT_SET_FORMAT.md`).
+- `src/specs/` + `font-sets/` — JSON font-set specifications (schema in `docs/FONT_SET_FORMAT.md`).
 - `src/automation/`, `src/ui/` — browser-side orchestration for the builder/automation HTML pages.
 - `src/node/` — Node demo entrypoints (also bundled into `examples/node/dist/`).
 - `dist/` — checked-in browser + Node bundles. Rebuild via `npm run build`.

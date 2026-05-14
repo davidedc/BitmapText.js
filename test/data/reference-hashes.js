@@ -1,6 +1,6 @@
 // Auto-generated reference hashes for BitmapText.js
 // Generated: 2026-05-05T12:12:59.679Z
-// Spec: specs/font-sets/aa-affected-rebuild.json
+// Spec: font-sets/aa-affected-rebuild.json
 // Font configurations: 143
 // Total hashes: 1541
 //

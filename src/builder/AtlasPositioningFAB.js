@@ -195,10 +195,18 @@ class AtlasPositioningFAB extends AtlasPositioning {
    */
   getPositioningSummary() {
     const characters = this.getAvailableCharacters();
+    const firstChar = characters[0];
     return {
       characterCount: characters.length,
       characters: characters.slice(0, 10), // First 10 for brevity
-      samplePositioning: characters.length > 0 ? this.getPositioning(characters[0]) : null
+      samplePositioning: characters.length > 0 ? {
+        xInAtlas: this._xInAtlas[firstChar],
+        yInAtlas: this._yInAtlas[firstChar],
+        tightWidth: this._tightWidth[firstChar],
+        tightHeight: this._tightHeight[firstChar],
+        dx: this._dx[firstChar],
+        dy: this._dy[firstChar]
+      } : null
     };
   }
 
@@ -216,16 +224,15 @@ class AtlasPositioningFAB extends AtlasPositioning {
     // Build deterministic string representation
     const parts = [];
     for (const char of chars) {
-      const pos = atlasPositioningInstance.getPositioning(char);
       // Use fixed-precision to avoid floating point variations
       parts.push(
         `${char}:` +
-        `w${pos.tightWidth}` +
-        `h${pos.tightHeight}` +
-        `x${pos.dx}` +
-        `y${pos.dy}` +
-        `ax${pos.xInAtlas}` +
-        `ay${pos.yInAtlas}`
+        `w${atlasPositioningInstance._tightWidth[char]}` +
+        `h${atlasPositioningInstance._tightHeight[char]}` +
+        `x${atlasPositioningInstance._dx[char]}` +
+        `y${atlasPositioningInstance._dy[char]}` +
+        `ax${atlasPositioningInstance._xInAtlas[char]}` +
+        `ay${atlasPositioningInstance._yInAtlas[char]}`
       );
     }
 

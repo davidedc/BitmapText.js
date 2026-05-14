@@ -89,13 +89,13 @@ COMMON_FILES=(
 
 # Browser-specific files
 BROWSER_SPECIFIC_FILES=(
-  "$SRC_DIR/platform/FontLoader-browser.js"
+  "$SRC_DIR/platform/FontLoaderBrowser.js"
 )
 
 # Node-specific files
 NODE_SPECIFIC_FILES=(
   "$LIB_DIR/QOIDecode.js"
-  "$SRC_DIR/platform/FontLoader-node.js"
+  "$SRC_DIR/platform/FontLoaderNode.js"
 )
 
 # Function to verify files exist

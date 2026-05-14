@@ -445,11 +445,11 @@ The symbols were selected for common UI/text needs:
   **Font Loading (platform-specific FontLoader classes)**
   - Purpose: Load font data from pre-generated assets
   - Architecture: Platform-specific implementations with unified class name
-    - **src/platform/FontLoader-browser.js**: Browser implementation (class: `FontLoader`)
-    - **src/platform/FontLoader-node.js**: Node.js implementation (class: `FontLoader`)
+    - **src/platform/FontLoaderBrowser.js**: Browser implementation (class: `FontLoader`)
+    - **src/platform/FontLoaderNode.js**: Node.js implementation (class: `FontLoader`)
     - Platform selection: Build-time (which file is included), not runtime detection
     - Both extend FontLoaderBase for shared logic
-  - Browser Implementation (FontLoader-browser.js):
+  - Browser Implementation (FontLoaderBrowser.js):
     - Script tag loading for metrics JS files (call `BitmapText.registerMetrics()`)
     - Image element loading for WebP atlases (http://)
     - Script tag + base64 decoding for JS-wrapped atlases (file://)
@@ -457,7 +457,7 @@ The symbols were selected for common UI/text needs:
     - Promise-based async loading with progress callbacks
     - Auto-detects canvas creation: `document.createElement('canvas')`
     - Default font directory: './font-assets/' (from FontLoaderBase)
-  - Node.js Implementation (FontLoader-node.js):
+  - Node.js Implementation (FontLoaderNode.js):
     - Synchronous fs.readFileSync for metrics and atlas files
     - eval-based loading with BitmapText static scope
     - QOI decoding for atlas image data
@@ -1253,7 +1253,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 
   ### Runtime Font Loading Workflow (Static API)
   ```
-  Browser (uses src/platform/FontLoader-browser.js):
+  Browser (uses src/platform/FontLoaderBrowser.js):
     User → BitmapText.loadFonts(IDStrings, options)
       1. BitmapText delegates to FontLoader (platform-specific, included at build time)
       2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
@@ -1268,7 +1268,7 @@ BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
       5. Progress callbacks fire for each file (optional)
       6. Return Promise when complete
 
-  Node.js (uses src/platform/FontLoader-node.js):
+  Node.js (uses src/platform/FontLoaderNode.js):
     User → BitmapText.configure({ fontDirectory, canvasFactory }) → BitmapText.loadFonts(IDStrings, options)
       1. BitmapText delegates to FontLoader (platform-specific, included at build time)
       2. For each IDString: FontLoader.loadFont(IDString, bitmapTextClass)
