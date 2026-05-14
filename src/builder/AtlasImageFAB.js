@@ -150,25 +150,6 @@ class AtlasImageFAB extends AtlasImage {
   }
 
   /**
-   * Export to QOI format (if QOI encoder is available)
-   * @returns {Uint8Array|null} QOI encoded data or null if encoder not available
-   */
-  toQOI() {
-    // Check if QOI encoder is available
-    if (typeof QOIEncode === 'undefined') {
-      console.warn('QOI encoder not available - cannot export to QOI format');
-      return null;
-    }
-
-    const canvas = this.toCanvas();
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-    // QOI expects RGBA data
-    return QOIEncode(imageData.data, canvas.width, canvas.height, 4, 0);
-  }
-
-  /**
    * Create a copy of this atlas image
    * @returns {AtlasImageFAB} New AtlasImageFAB instance with copied image data
    */
