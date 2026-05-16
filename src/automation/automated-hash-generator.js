@@ -1,6 +1,10 @@
 // Automated Hash Generator
-// Generates reference hashes for all hash check types in font-assets-builder.html
-// This script runs in a browser context with all necessary dependencies loaded
+// Loaded by public/automated-hash-generator.html, the Playwright landing page
+// used by scripts/generate-reference-hashes.js and scripts/verify-reference-hashes.js.
+// Exposes generateAndExportHashes / generateHashesForFont / processFontSet /
+// initializeSpecs on window; the Node-side Playwright scripts call them via
+// page.evaluate(). The set of hash check types mirrors what the interactive
+// font-assets-builder.html displays.
 
 /**
  * Initialize specs from default-specs.js
