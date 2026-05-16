@@ -139,7 +139,7 @@
   - ✅ Zero configuration in browser
   - ✅ Minimal configuration in Node.js
 
-  **What's included:** StatusCode, FontProperties, TextProperties, BitmapText, FontLoader, Atlas/Metrics stores, MetricsExpander, TightAtlasReconstructor, and all supporting classes.
+  **What's included:** StatusCode, FontProperties, TextProperties, BitmapText, BitmapTextRegistration, FontLoader, Atlas/Metrics stores, MetricsExpander, and all supporting classes.
 
   **What's excluded (Node.js):** Canvas implementation (you provide), PNG encoder (image I/O not core library).
 
@@ -631,9 +631,7 @@ For development with maximum debugging flexibility, you can use individual sourc
   <script src="src/runtime/AtlasDataStore.js"></script>
   <script src="src/runtime/FontMetricsStore.js"></script>
   <script src="src/runtime/FontManifest.js"></script>
-  <script src="src/runtime/TightAtlasReconstructor.js"></script>
-  <script src="src/runtime/AtlasReconstructionUtils.js"></script>
-  <script src="src/runtime/AtlasCellDimensions.js"></script>
+  <script src="src/utils/AtlasCellDimensions.js"></script>
   <script src="src/platform/FontLoaderBrowser.js"></script>
   <script src="src/runtime/FontLoaderBase.js"></script>
   <script src="src/builder/MetricsExpander.js"></script>

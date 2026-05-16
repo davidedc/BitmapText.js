@@ -545,8 +545,8 @@ To support compound emojis would require:
   - Optimizes glyph packing and atlas generation
   - Generates minified metadata and export formats
   - Extraction method to convert AtlasImageFAB to AtlasImage instances
-  - Supports building atlases (buildAtlas - variable-width cells format)
-  - Supports tight atlas reconstruction (reconstructTightAtlas - converts variable-width atlas to tight atlas via pixel scanning)
+  - Supports building pre-tightened atlases (buildAtlas)
+  - Supports materialising runtime AtlasData from a build result (buildAtlasData)
 
   **AtlasPositioningFAB extends AtlasPositioning**
   - Font assets building capabilities for atlas positioning data management

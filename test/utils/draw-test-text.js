@@ -449,12 +449,9 @@ function buildAndDisplayAtlases(fontProperties) {
   addElementToDOM(sourceCanvas);
   addCanvasInfoToDOM(sourceCanvas, getHashMatchInfo(sourceCtx, fontProperties, 'atlas source'));
 
-  // Reconstruct Tight Atlas from Atlas
+  // Build runtime AtlasData from the (already-tight) atlas
   addElementToDOM(createDivWithText("Tight Atlas (reconstructed from source):"));
-  const reconstructedData = AtlasDataStoreFAB.reconstructTightAtlas(
-    atlasResult.canvas,
-    fontProperties
-  );
+  const reconstructedData = AtlasDataStoreFAB.buildAtlasData(atlasResult, fontProperties);
 
   // CRITICAL: Store the reconstructed tight atlas in both stores
   // AtlasDataStoreFAB for building pipeline, BitmapText for rendering

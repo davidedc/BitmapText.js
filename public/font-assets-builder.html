@@ -180,26 +180,10 @@
       console.timeEnd('  ├─ Atlas build');
       console.log(`  │  Tight atlas: ${atlasResult.canvas.width}×${atlasResult.canvas.height}`);
 
-      // Build runtime AtlasData using the FAB-emitted positioning, exactly as
-      // the runtime PositioningBundleStore would materialise it. Multi-row
-      // atlases (wide fonts that wouldn't fit in cwebp's 16383px limit) get
-      // per-glyph yInAtlas from atlasResult; xInAtlas resets at each row break.
+      // Build runtime AtlasData (mirrors how PositioningBundleStore materialises
+      // positioning at runtime — cumsum of tightWidth, reset on row break).
       console.time('  └─ Build positioning');
-      const glyphsForFont = AtlasDataStoreFAB.getGlyphsForFont(currentFontProperties);
-      const positioningFAB = new AtlasPositioningFAB();
-      positioningFAB.calculatePositioning(glyphsForFont, currentFontProperties, FontMetricsStoreFAB);
-      let _runningX = 0;
-      let _prevY = 0;
-      for (const _char of atlasResult.characters) {
-        const _y = (atlasResult.yInAtlas && atlasResult.yInAtlas[_char]) || 0;
-        if (_y !== _prevY) { _runningX = 0; _prevY = _y; }
-        positioningFAB.setGlyphPositionInAtlas(_char, _runningX, _y);
-        _runningX += atlasResult.tightWidths[_char] || 0;
-      }
-      const reconstructedAtlasData = new AtlasData(
-        new AtlasImage(atlasResult.canvas),
-        positioningFAB.extractAtlasPositioningInstance()
-      );
+      const reconstructedAtlasData = AtlasDataStoreFAB.buildAtlasData(atlasResult, currentFontProperties);
       console.timeEnd('  └─ Build positioning');
 
       const charCount = reconstructedAtlasData.atlasPositioning.getAvailableCharacters().length;

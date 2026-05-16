@@ -106,4 +106,33 @@ class AtlasDataStoreFAB extends AtlasDataStore {
     return AtlasBuilder.buildAtlas(fontMetrics, glyphs);
   }
 
+  /**
+   * Build a runtime AtlasData from a buildAtlas() result. Materialises the
+   * positioning data via AtlasPositioningFAB — the FAB-side equivalent of how
+   * PositioningBundleStore reconstructs xInAtlas at runtime (cumsum of
+   * tightWidth, reset on yInAtlas row break for multi-row atlases).
+   *
+   * @param {Object} atlasResult - Return of AtlasDataStoreFAB.buildAtlas:
+   *   {canvas, characters, tightWidths, yInAtlas, ...}
+   * @param {FontProperties} fontProperties - Font configuration
+   * @returns {AtlasData} Runtime-ready AtlasData (image + positioning)
+   */
+  static buildAtlasData(atlasResult, fontProperties) {
+    const glyphsForFont = AtlasDataStoreFAB.getGlyphsForFont(fontProperties);
+    const positioningFAB = new AtlasPositioningFAB();
+    positioningFAB.calculatePositioning(glyphsForFont, fontProperties, FontMetricsStoreFAB);
+    let runningX = 0;
+    let prevY = 0;
+    for (const char of atlasResult.characters) {
+      const y = atlasResult.yInAtlas[char];
+      if (y !== prevY) { runningX = 0; prevY = y; }
+      positioningFAB.setGlyphPositionInAtlas(char, runningX, y);
+      runningX += atlasResult.tightWidths[char];
+    }
+    return new AtlasData(
+      new AtlasImage(atlasResult.canvas),
+      positioningFAB.extractAtlasPositioningInstance()
+    );
+  }
+
 }

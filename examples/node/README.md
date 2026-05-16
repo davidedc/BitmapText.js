@@ -170,11 +170,10 @@ Each bundled file contains these sections in order:
 6. **Character Set**: CharacterSets class (standard character set)
 7. **Utility Functions**: MetricsExpander for font data expansion
 8. **Atlas Classes**: AtlasPositioning, AtlasImage, AtlasData
-9. **Reconstruction Utilities**: AtlasReconstructionUtils, TightAtlasReconstructor
-10. **Image Libraries**: QOI decoder, PNG encoder
-11. **Storage Classes**: AtlasDataStore, FontMetricsStore (single source of truth)
-12. **Font Loading**: FontLoaderBase, FontLoader (platform-specific, from src/platform/FontLoaderNode.js)
-13. **Core Rendering**: BitmapText (delegates to stores)
+9. **Image Libraries**: QOI decoder, PNG encoder
+10. **Storage Classes**: AtlasDataStore, FontMetricsStore (single source of truth)
+11. **Font Loading**: FontLoaderBase, FontLoader (platform-specific, from src/platform/FontLoaderNode.js)
+12. **Core Rendering**: BitmapText (delegates to stores)
 14. **Demo Logic**: The actual demo code from src/node/
 15. **Font Assets**: External font-assets/ directory (not inlined)
 

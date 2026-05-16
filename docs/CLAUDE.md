@@ -112,9 +112,7 @@
   - **Metrics store**: src/runtime/FontMetricsStore.js (single source of truth for metrics storage, used by BitmapText via delegation and by FAB)
   - **Platform-specific font loading**: src/platform/FontLoaderBrowser.js (browser), src/platform/FontLoaderNode.js (Node.js) - unified class name, selected at build time
   - **Font loading base class**: src/runtime/FontLoaderBase.js (shared logic for both platforms, stores data directly in AtlasDataStore/FontMetricsStore)
-  - **Atlas reconstruction utilities**: src/builder/AtlasReconstructionUtils.js (image data extraction for TightAtlasReconstructor)
-  - **Atlas building**: src/builder/AtlasBuilder.js (builds Atlas format with variable-width cells - used in export)
-  - **Tight atlas reconstruction**: src/runtime/TightAtlasReconstructor.js (runtime class - reconstructs tight atlases from Atlas format via pixel scanning)
+  - **Atlas building**: src/builder/AtlasBuilder.js (builds pre-tightened atlas; runtime consumes it directly + per-density positioning bundle)
   - **Character set configuration**: src/runtime/CharacterSets.js (static class - FONT_SPECIFIC_CHARS: standard characters; FONT_INVARIANT_CHARS: font-invariant characters; INVARIANT_FONT_FAMILY: 'BitmapTextInvariant')
   - **Character sets**: CharacterSets.FONT_SPECIFIC_CHARS (standard characters - ASCII, CP-1252 subset, Latin-1 Supplement), CharacterSets.FONT_INVARIANT_CHARS (font-invariant characters)
   - **Font-invariant character detection**: src/runtime/BitmapText.js lines 94-96 (#isInvariantCharacter fast detection helper)
