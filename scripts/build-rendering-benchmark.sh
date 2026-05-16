@@ -52,6 +52,7 @@ FILES_TO_CHECK=(
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
   "$SRC_DIR/runtime/BitmapText.js"
+  "$SRC_DIR/runtime/BitmapTextRegistration.js"
   "$SRC_DIR/shared/test-data.js"
   "$SRC_DIR/node/rendering-benchmark-main.js"
 )
@@ -134,6 +135,7 @@ echo "// =======================================================================
 echo "// BITMAP TEXT STATIC CLASS" >> "$UNBUNDLED_OUTPUT"
 echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"
 cat "$SRC_DIR/runtime/BitmapText.js" >> "$UNBUNDLED_OUTPUT"
+cat "$SRC_DIR/runtime/BitmapTextRegistration.js" >> "$UNBUNDLED_OUTPUT"
 echo "" >> "$UNBUNDLED_OUTPUT"
 
 echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"

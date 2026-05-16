@@ -46,6 +46,7 @@ FILES_TO_CHECK=(
   "$LIB_DIR/PngEncodingOptions.js"
   "$LIB_DIR/PngEncoder.js"
   "$SRC_DIR/runtime/BitmapText.js"
+  "$SRC_DIR/runtime/BitmapTextRegistration.js"
   "$SRC_DIR/node/small-sizes-main.js"
 )
 
@@ -165,6 +166,7 @@ echo "// BITMAP TEXT STATIC CLASS" >> "$OUTPUT_FILE"
 echo "// ============================================================================" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 cat "$SRC_DIR/runtime/BitmapText.js" >> "$OUTPUT_FILE"
+cat "$SRC_DIR/runtime/BitmapTextRegistration.js" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Concatenate expansion utility (depends on CharacterSets.FONT_SPECIFIC_CHARS)

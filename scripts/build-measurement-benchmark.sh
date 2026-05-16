@@ -50,6 +50,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/FontLoaderBase.js"
   "$SRC_DIR/platform/FontLoaderNode.js"
   "$SRC_DIR/runtime/BitmapText.js"
+  "$SRC_DIR/runtime/BitmapTextRegistration.js"
   "$SRC_DIR/shared/test-data.js"
   "$SRC_DIR/node/measurement-benchmark-main.js"
 )
@@ -132,6 +133,7 @@ echo "// =======================================================================
 echo "// BITMAP TEXT STATIC CLASS" >> "$UNBUNDLED_OUTPUT"
 echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"
 cat "$SRC_DIR/runtime/BitmapText.js" >> "$UNBUNDLED_OUTPUT"
+cat "$SRC_DIR/runtime/BitmapTextRegistration.js" >> "$UNBUNDLED_OUTPUT"
 echo "" >> "$UNBUNDLED_OUTPUT"
 
 echo "// ============================================================================" >> "$UNBUNDLED_OUTPUT"

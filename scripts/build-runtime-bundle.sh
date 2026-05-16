@@ -74,6 +74,7 @@ COMMON_FILES=(
   "$SRC_DIR/runtime/CharacterSets.js"
   "$SRC_DIR/runtime/BundleCodec.js"
   "$SRC_DIR/runtime/BitmapText.js"
+  "$SRC_DIR/runtime/BitmapTextRegistration.js"
   "$SRC_DIR/builder/MetricsExpander.js"
   "$SRC_DIR/runtime/AtlasPositioning.js"
   "$SRC_DIR/runtime/AtlasImage.js"
