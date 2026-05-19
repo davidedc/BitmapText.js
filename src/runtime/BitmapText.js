@@ -592,6 +592,9 @@ class BitmapText {
         ? BitmapText.#calcAdvancementInterpolated_PhysPx
         : BitmapText.#calcAdvancementCrisp_PhysPx;
 
+      // Hoist the colour-mode decision out of the per-glyph loop (constant per render).
+      const isBlackText = textColor === BitmapText.#DEFAULT_TEXT_COLOR;
+
       for (let i = 0; i < chars.length; i++) {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
@@ -613,22 +616,52 @@ class BitmapText {
           currentAtlasValid = atlasValid;
         }
 
-        // Check if atlas has a glyph for this character (excluding spaces)
+        // Spaces never draw anything (no atlas glyph, placeholder rectangle is a
+        // no-op for ' '), so we skip the whole branch and just advance.
         if (currentChar !== ' ') {
-          if (!currentAtlasValid || !currentAtlasData.hasPositioning(currentChar)) {
+          if (!currentAtlasValid) {
+            // Invalid atlas: track + placeholder rectangle from character metrics.
+            // (currentAtlasValid is hoisted; avoids a per-glyph _isValidAtlas call.)
             missingAtlasChars.add(currentChar);
             placeholdersUsed = true;
+            const characterMetrics = currentFontMetrics.getCharacterMetrics(currentChar);
+            if (characterMetrics) {
+              BitmapText.#drawPlaceholderRectangle(ctx, currentChar, position_PhysPx, characterMetrics, textColor);
+            }
+          } else {
+            // One dict lookup per non-space glyph; pre-checking with hasPositioning
+            // would redo the same lookup (it's `_placements[char] !== undefined`).
+            const p = currentAtlasData.atlasPositioning._placements[currentChar];
+            if (p === undefined) {
+              // Valid atlas but glyph absent — track, draw nothing.
+              missingAtlasChars.add(currentChar);
+              placeholdersUsed = true;
+            } else if (isBlackText) {
+              // FAST PATH: direct drawImage from atlas, no dispatch.
+              const atlasImage = currentAtlasData.atlasImage.image;
+              ctx.drawImage(
+                atlasImage,
+                p.xInAtlas, p.yInAtlas,
+                p.tightWidth, p.tightHeight,
+                Math.round(position_PhysPx.x + p.dx),
+                Math.round(position_PhysPx.y + p.dy),
+                p.tightWidth, p.tightHeight
+              );
+            } else {
+              // SLOW PATH: colored text. Reached only when the active font's atlas
+              // is valid but base atlas was invalid (colored normally batches up
+              // front via #drawColoredTextBatched); rare in practice.
+              const atlasImage = currentAtlasData.atlasImage.image;
+              const coloredGlyphCanvas = BitmapText.#createColoredGlyph(
+                atlasImage, p.xInAtlas, p.yInAtlas, p.tightWidth, p.tightHeight, textColor
+              );
+              BitmapText.#renderGlyphToMainCanvas(
+                ctx, coloredGlyphCanvas, position_PhysPx,
+                p.tightWidth, p.tightHeight, p.dx, p.dy
+              );
+            }
           }
         }
-
-        // Draw using appropriate font (either real glyph or placeholder)
-        BitmapText.#drawCharacter(ctx,
-          currentChar,
-          position_PhysPx,
-          currentAtlasData,
-          currentFontMetrics,
-          textColor
-        );
 
         // Calculate advancement using current font's metrics
         position_PhysPx.x += advancementFn_PhysPx(currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
@@ -1087,29 +1120,25 @@ class BitmapText {
         currentAtlasData = atlasData;
       }
 
-      // Track missing characters
-      if (currentChar !== ' ' && !currentAtlasData.hasPositioning(currentChar)) {
-        missingAtlasChars.add(currentChar);
-        placeholdersUsed = true;
-        // Advance position even for missing characters to maintain layout
-        position_PhysPx.x += advancementFn_PhysPx(currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
-        continue;
-      }
-
-      // Draw glyph to scratch canvas (skip spaces, they have no visual)
-      if (currentChar !== ' ' && currentAtlasData.hasPositioning(currentChar)) {
+      // One dict lookup per non-space glyph; pre-checking with hasPositioning
+      // would redo the same lookup (it's `_placements[char] !== undefined`).
+      // Spaces have no visual glyph and are skipped here; advancement still applies.
+      if (currentChar !== ' ') {
         const p = currentAtlasData.atlasPositioning._placements[currentChar];
-        const atlasImage = currentAtlasData.atlasImage.image;
-
-        // Draw original glyph (black) to scratch canvas at correct position
-        BitmapText.#coloredGlyphCtx.drawImage(
-          atlasImage,
-          p.xInAtlas, p.yInAtlas,
-          p.tightWidth, p.tightHeight,
-          Math.round(position_PhysPx.x + p.dx),
-          Math.round(position_PhysPx.y + p.dy),
-          p.tightWidth, p.tightHeight
-        );
+        if (p === undefined) {
+          missingAtlasChars.add(currentChar);
+          placeholdersUsed = true;
+        } else {
+          const atlasImage = currentAtlasData.atlasImage.image;
+          BitmapText.#coloredGlyphCtx.drawImage(
+            atlasImage,
+            p.xInAtlas, p.yInAtlas,
+            p.tightWidth, p.tightHeight,
+            Math.round(position_PhysPx.x + p.dx),
+            Math.round(position_PhysPx.y + p.dy),
+            p.tightWidth, p.tightHeight
+          );
+        }
       }
 
       // Advance position for next character
@@ -1147,40 +1176,9 @@ class BitmapText {
   }
 
   // Rendering optimizations:
-  // 1. ✓ IMPLEMENTED: Black text fast path (see #drawCharacterDirect for 2-3x speedup)
+  // 1. ✓ IMPLEMENTED: Black text fast path inlined into drawTextFromAtlas (no dispatch per glyph)
   // 2. ✓ IMPLEMENTED: Batch colored text rendering (single composite operation per text string)
   // 3. FUTURE: Cache colored glyphs in LRU cache to avoid re-coloring same characters
-  static #drawCharacter(ctx, char, position_PhysPx, atlasData, fontMetrics, textColor) {
-    // If atlasData is missing but metrics exist, draw simplified placeholder rectangle
-    if (!BitmapText._isValidAtlas(atlasData)) {
-      const characterMetrics = fontMetrics.getCharacterMetrics(char);
-      if (characterMetrics) {
-        BitmapText.#drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor);
-      }
-      return;
-    }
-
-    // FAST PATH: Black text renders directly from atlas (2-3x faster)
-    // Skips scratch canvas + composite operations when using default color
-    if (textColor === BitmapText.#DEFAULT_TEXT_COLOR) {
-      BitmapText.#drawCharacterDirect(ctx, char, position_PhysPx, atlasData, fontMetrics);
-      return;
-    }
-
-    // NOTE: Colored text now uses batch rendering in drawTextFromAtlas
-    // This method is kept for compatibility/fallback but should rarely be called for colored text
-    // SLOW PATH: Colored text requires double-pass rendering
-    // 1. Copy glyph from atlas to scratch canvas
-    // 2. Apply color using composite operation
-    // 3. Draw colored glyph to main canvas
-    if (!atlasData.hasPositioning(char)) return;
-
-    const p = atlasData.atlasPositioning._placements[char];
-    const atlasImage = atlasData.atlasImage.image;
-    const coloredGlyphCanvas = BitmapText.#createColoredGlyph(atlasImage, p.xInAtlas, p.yInAtlas, p.tightWidth, p.tightHeight, textColor);
-    BitmapText.#renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, p.tightWidth, p.tightHeight, p.dx, p.dy);
-  }
-
   static #createColoredGlyph(atlasImage, xInAtlas, yInAtlas, tightWidth, tightHeight, textColor) {
     // Setup temporary canvas, same size as the glyph
     BitmapText.#coloredGlyphCanvas.width = tightWidth;
@@ -1217,30 +1215,6 @@ class BitmapText {
       Math.round(position_PhysPx.x + dx),
       Math.round(position_PhysPx.y + dy),
       tightWidth, tightHeight
-    );
-  }
-
-  /**
-   * Fast path: Draw character directly from atlas (black text only)
-   * Skips scratch canvas and color composite operations for 2-3x faster rendering
-   * @private
-   */
-  static #drawCharacterDirect(ctx, char, position_PhysPx, atlasData, fontMetrics) {
-    if (!atlasData.hasPositioning(char)) return;
-
-    const p = atlasData.atlasPositioning._placements[char];
-    const atlasImage = atlasData.atlasImage.image;
-
-    // Single drawImage operation: atlas → main canvas.
-    // Round coordinates at draw stage for crisp, pixel-aligned rendering;
-    // position tracking accumulates as float, the final draw is integer.
-    ctx.drawImage(
-      atlasImage,
-      p.xInAtlas, p.yInAtlas,
-      p.tightWidth, p.tightHeight,
-      Math.round(position_PhysPx.x + p.dx),
-      Math.round(position_PhysPx.y + p.dy),
-      p.tightWidth, p.tightHeight
     );
   }
 
