@@ -98,10 +98,10 @@ npm run build-node-demos
 # or
 ./scripts/build-all-node-demos.sh
 
-# Individual standalone demos:
-./scripts/build-node-demo.sh                # hello-world.bundle.js
-./scripts/build-node-multi-size-demo.sh     # hello-world-multi-size.bundle.js
-./scripts/build-node-small-sizes-demo.sh    # small-sizes.bundle.js
+# Individual standalone demos (parameterised — pick the demo name):
+./scripts/build-node-demo.sh hello-world    # hello-world.bundle.js
+./scripts/build-node-demo.sh multi-size     # hello-world-multi-size.bundle.js
+./scripts/build-node-demo.sh small-sizes    # small-sizes.bundle.js
 
 # All bundled versions (use runtime bundle):
 ./scripts/build-node-bundled-demos.sh       # Builds 3 bundled versions
@@ -110,22 +110,23 @@ npm run build-node-demos
 npm run demo
 ```
 
-**Single-size demo (`build-node-demo.sh`):**
-- Concatenates existing source files into a single Node.js executable
+All three are produced by the parameterised `build-node-demo.sh <name>` (collapsed
+from three near-identical scripts):
+
+**`hello-world`:**
+- Concatenates source files into a single Node.js executable
 - Includes Canvas mock, utilities, image libraries, and core classes
 - Creates `examples/node/dist/hello-world.bundle.js` (~205KB) with proper permissions
-- Uses `src/node/hello-world-main.js` - renders "Hello World" at size 19
+- Uses `src/node/hello-world-main.js` — renders "Hello World" at size 19
 
-**Multi-size demo (`build-node-multi-size-demo.sh`):**
-- Same build process as single-size demo
+**`multi-size`:**
 - Creates `examples/node/dist/hello-world-multi-size.bundle.js` (~207KB)
-- Uses `src/node/hello-world-multi-size-main.js` - renders at sizes 18, 18.5, 19
+- Uses `src/node/hello-world-multi-size-main.js` — renders at sizes 18, 18.5, 19
 - Demonstrates placeholder rectangle fallback for missing atlases
 
-**Small-sizes demo (`build-node-small-sizes-demo.sh`):**
-- Same build process as above demos
+**`small-sizes`:**
 - Creates `examples/node/dist/small-sizes.bundle.js` (~214KB)
-- Uses `src/node/small-sizes-main.js` - tests sizes 0-9px
+- Uses `src/node/small-sizes-main.js` — tests sizes 0-9px
 - Demonstrates automatic metric interpolation for sizes < 9px
 - Two sections: visual rendering (placeholders) + measurements with boxes
 - Shows only 9px metrics needed for all small sizes
@@ -911,11 +912,10 @@ scripts/
 ├── qoi-to-png-converter.js       # QOI → PNG conversion (intermediate step)
 ├── image-to-js-converter.js      # Image → JS wrapper conversion (WebP/QOI)
 ├── qoi-memory-calculator.js      # QOI memory usage analyzer
-├── build-metrics-bundle.js       # Builds font-assets/metrics-bundle.js from per-file metrics
+├── common.sh                     # Shared shell helpers: $PROJECT_ROOT, log(), verify_files()
 ├── build-runtime-bundle.sh       # Builds production bundles
-├── build-node-demo.sh            # Builds hello-world.bundle.js
-├── build-node-multi-size-demo.sh # Builds hello-world-multi-size.bundle.js
-├── build-node-small-sizes-demo.sh# Builds small-sizes.bundle.js
+├── build-node-demo.sh            # Parameterised: builds hello-world|multi-size|small-sizes
+├── build-benchmark.sh            # Parameterised: builds measurement|rendering benchmarks
 ├── build-node-bundled-demos.sh   # Builds all 3 bundled demos (*-bundled.js)
 ├── build-all-node-demos.sh       # Builds all 6 Node.js demos
 ├── run-all-node-demos.sh         # Runs all 6 Node.js demos with summary

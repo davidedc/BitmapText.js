@@ -107,7 +107,6 @@ open profile-browser-manual.html
 - `README.md` - This file
 - `PERFORMANCE_ANALYSIS_REPORT.md` - Main analysis report
 - `SUMMARY.md` - Executive summary
-- `package.json` - Node.js dependencies (optional)
 
 ## Re-running Profiling
 
@@ -177,7 +176,7 @@ npm install puppeteer
 ## Troubleshooting
 
 ### "No profile generated"
-- Ensure benchmarks are built: `cd ../../scripts && ./build-measurement-benchmark.sh`
+- Ensure benchmarks are built: `cd ../.. && ./scripts/build-benchmark.sh measurement`
 - Check permissions: `chmod +x *.sh`
 
 ### "Cannot find module"

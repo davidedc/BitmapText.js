@@ -44,7 +44,13 @@
     "run-node-demos": "./scripts/run-all-node-demos.sh",
     "demo": "npm run build && npm run build-node-demos && npm run run-node-demos",
     "test": "node scripts/verify-reference-hashes.js --spec=font-sets/aa-affected-rebuild.json --ci",
-    "verify": "node scripts/verify-reference-hashes.js --spec=font-sets/aa-affected-rebuild.json"
+    "verify": "node scripts/verify-reference-hashes.js --spec=font-sets/aa-affected-rebuild.json",
+    "generate-hashes": "node scripts/generate-reference-hashes.js",
+    "check-atlas-binary": "node scripts/check-atlas-binary.js",
+    "verify-metrics-bundle": "node scripts/verify-metrics-bundle.js",
+    "smoke-test": "node scripts/playwright-smoke-loop.js",
+    "screenshot": "node scripts/screenshot-with-playwright.js",
+    "automated-font-builder": "node scripts/automated-font-builder.js"
   },
   "keywords": [
     "canvas",

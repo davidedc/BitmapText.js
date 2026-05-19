@@ -20,9 +20,9 @@ echo ""
 
 # Build standalone demo bundles (complete, self-contained)
 echo "🔨 Building standalone demo bundles..."
-./scripts/build-node-demo.sh
-./scripts/build-node-multi-size-demo.sh
-./scripts/build-node-small-sizes-demo.sh
+./scripts/build-node-demo.sh hello-world
+./scripts/build-node-demo.sh multi-size
+./scripts/build-node-demo.sh small-sizes
 echo ""
 
 # Build runtime-bundle demos (concatenate Canvas/PNG, load runtime bundle)

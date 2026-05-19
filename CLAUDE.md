@@ -7,7 +7,7 @@ The hard problem: each engine's text rasterizer (Skia, Core Text, etc.) anti-ali
 ## Stack
 
 - Pure ES2017+ JavaScript. No runtime deps. Node ≥ 12.
-- Browser bundle: `dist/bitmaptext.min.js` (~32 KB min, ~12 KB gz). Node bundle: `dist/bitmaptext-node.min.js`.
+- Browser bundle: `dist/bitmaptext.min.js` (~44 KB min, ~11 KB gz). Node bundle: `dist/bitmaptext-node.min.js` (~45 KB min, ~12 KB gz).
 - Atlas formats on disk: authoring `.qoi` → delivery `.webp` → self-registering `.js` wrappers (so `file://` works).
 - Metrics on disk: one `font-assets/metrics-bundle.js` (~1.1 MB) — base64 of a `deflate-raw` stream of JSON containing every (family, style, weight, size) record (density-agnostic). Decoded on first `loadFont` via `DecompressionStream` (browser, Node 18+) or `zlib.inflateRawSync` (Node ≤ 17). Replaced ~18 MB of per-file `metrics-density-*.js` files.
 - Dev tooling: Playwright + Puppeteer for headless build/hash CI; Python `http.server` for local serving.

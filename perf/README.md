@@ -83,7 +83,7 @@ src/
 
 Build scripts:
 scripts/
-└── build-rendering-benchmark.sh           # Builds both benchmark versions
+└── build-benchmark.sh                     # Parameterised: `./scripts/build-benchmark.sh measurement|rendering`
 ```
 
 ## Running Browser Tests
@@ -140,7 +140,7 @@ This script will:
 ### Manual Build & Run
 ```bash
 # Build benchmarks
-./scripts/build-rendering-benchmark.sh
+./scripts/build-benchmark.sh rendering
 
 # Run individual benchmarks
 node perf/node/dist/rendering-benchmark-unbundled.bundle.js
@@ -206,7 +206,7 @@ This script will:
 **Manual Build & Run:**
 ```bash
 # Build benchmarks
-./scripts/build-measurement-benchmark.sh
+./scripts/build-benchmark.sh measurement
 
 # Run individual benchmarks
 node perf/node/dist/measurement-benchmark-unbundled.bundle.js
@@ -439,18 +439,16 @@ testBlock: TEST_BLOCK_10_LINES  // Use 10-line blocks
 ## CI/CD Integration
 
 ### Automated Browser Tests
-Use headless browser testing:
+Use the profiling harness which drives the browser benchmark pages via Puppeteer:
 ```bash
-# Example with Puppeteer
-npm install puppeteer
-node scripts/run-browser-benchmark.js
+node perf/profiling/profile-browser-benchmarks.js
 ```
 
 ### Automated Node.js Tests
 ```bash
 # Run and save results
-node perf/node/rendering-benchmark.js
-# Results saved to perf/node/results-[timestamp].json
+node perf/node/dist/rendering-benchmark-bundled.js
+# Pipe stdout to a results-[timestamp].json file if you want history
 ```
 
 ### Performance Regression Detection

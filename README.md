@@ -101,7 +101,7 @@
 
   **Browser (Single Script Tag):**
   ```html
-  <!-- Single file: ~32KB minified + gzipped ~12KB -->
+  <!-- Single file: ~44KB minified + gzipped ~11KB -->
   <script src="dist/bitmaptext.min.js"></script>
 
   <script>
@@ -133,8 +133,8 @@
   ```
 
   **Benefits:**
-  - ✅ Single file load (32-33KB) vs 17 separate files (149KB)
-  - ✅ 79% size reduction through minification
+  - ✅ Single file load (44-45KB) vs 20 separate files (~184KB)
+  - ✅ 76% size reduction through minification
   - ✅ Source maps included for debugging
   - ✅ Zero configuration in browser
   - ✅ Minimal configuration in Node.js
@@ -160,7 +160,7 @@ Get up and running with the production-ready bundles in seconds.
   <body>
     <canvas id="myCanvas" width="400" height="100"></canvas>
 
-    <!-- Single script tag - complete runtime (~32KB minified) -->
+    <!-- Single script tag - complete runtime (~44KB minified) -->
     <script src="dist/bitmaptext.min.js"></script>
 
     <script>
@@ -662,7 +662,7 @@ For development with maximum debugging flexibility, you can use individual sourc
 - Better error messages with full context
 
 **Trade-offs:**
-- 17 separate files (149KB total unminified)
+- 20 separate files (~184KB total unminified)
 - Not recommended for production
 - Requires CORS-enabled server (use `python -m http.server` or `npx http-server`)
 
@@ -706,7 +706,7 @@ For a middle ground between individual files and minified bundle, use the unmini
 - No source map required
 
 **Trade-offs:**
-- Larger than minified (149KB vs 32KB)
+- Larger than minified (~184KB vs ~44KB)
 - All code in one file (harder to navigate than separate files)
 
 ## Building from Source
@@ -734,8 +734,8 @@ For a middle ground between individual files and minified bundle, use the unmini
 
 ### What Gets Built
 
-  - **dist/bitmaptext.min.js** - Browser bundle (32KB)
-  - **dist/bitmaptext-node.min.js** - Node.js bundle (33KB)
+  - **dist/bitmaptext.min.js** - Browser bundle (~44KB)
+  - **dist/bitmaptext-node.min.js** - Node.js bundle (~45KB)
   - Source maps and unminified versions for debugging
 
   For detailed rebuild instructions, see **[dist/README.md](dist/README.md#-rebuilding)**.

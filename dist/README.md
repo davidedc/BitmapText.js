@@ -5,13 +5,13 @@ Production-ready minified bundles for BitmapText.js bitmap text rendering librar
 ## 📦 Files
 
 ### Browser Bundle
-- **`bitmaptext.js`** - Unminified runtime (149KB, for debugging)
-- **`bitmaptext.min.js`** - Minified runtime (32KB, for production) ✨
+- **`bitmaptext.js`** - Unminified runtime (184KB, for debugging)
+- **`bitmaptext.min.js`** - Minified runtime (44KB, for production) ✨
 - **`bitmaptext.min.js.map`** - Source map for debugging minified code
 
 ### Node.js Bundle
-- **`bitmaptext-node.js`** - Unminified runtime (153KB, for debugging)
-- **`bitmaptext-node.min.js`** - Minified runtime (33KB, for production) ✨
+- **`bitmaptext-node.js`** - Unminified runtime (186KB, for debugging)
+- **`bitmaptext-node.min.js`** - Minified runtime (45KB, for production) ✨
 - **`bitmaptext-node.min.js.map`** - Source map for debugging minified code
 
 ---
@@ -151,8 +151,8 @@ You must provide separately:
 
 | Bundle | Unminified | Minified | Reduction |
 |--------|-----------|----------|-----------|
-| Browser | 149KB | **32KB** | 79% |
-| Node.js | 153KB | **33KB** | 79% |
+| Browser | 184KB | **44KB** | 76% |
+| Node.js | 186KB | **45KB** | 76% |
 
 **Note:** Font asset files are separate (metrics ~1-2KB each, atlases ~2-5KB each).
 

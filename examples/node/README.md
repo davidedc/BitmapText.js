@@ -137,10 +137,10 @@ npm run build-node-demos
 # or
 ./scripts/build-all-node-demos.sh
 
-# Build individual standalone demos:
-./scripts/build-node-demo.sh                # hello-world.bundle.js
-./scripts/build-node-multi-size-demo.sh     # hello-world-multi-size.bundle.js
-./scripts/build-node-small-sizes-demo.sh    # small-sizes.bundle.js
+# Build individual standalone demos (parameterised — pick the demo name):
+./scripts/build-node-demo.sh hello-world    # hello-world.bundle.js
+./scripts/build-node-demo.sh multi-size     # hello-world-multi-size.bundle.js
+./scripts/build-node-demo.sh small-sizes    # small-sizes.bundle.js
 
 # Build all bundled versions:
 ./scripts/build-node-bundled-demos.sh       # Builds all 3 bundled versions

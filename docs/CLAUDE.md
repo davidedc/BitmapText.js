@@ -85,7 +85,7 @@
     - `npm run demo` - Build everything and run all 6 Node.js demos (3 standalone + 3 bundled)
     - `npm run build-node-demos` - Build all Node.js demos only
     - `npm run run-node-demos` - Run all Node.js demos with summary
-    - Individual scripts: `./scripts/build-node-demo.sh`, `./scripts/build-node-multi-size-demo.sh`, `./scripts/build-node-small-sizes-demo.sh`
+    - Individual scripts (parameterised): `./scripts/build-node-demo.sh <hello-world|multi-size|small-sizes>`
 
   See README.md for complete testing approach and docs/PLAYWRIGHT_AUTOMATION.md for Playwright automation details.
 
