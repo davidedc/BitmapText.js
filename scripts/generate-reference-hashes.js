@@ -19,7 +19,7 @@
  * Options:
  *   --spec <file>        Font set specification JSON file (required)
  *   --output <file>      Output file (default: test/data/reference-hashes.js)
- *   --port <port>        HTTP server port (default: 8765)
+ *   --port <port>        HTTP server port
  *   --merge              Merge with existing hashes instead of overwriting
  *
  * Examples:
@@ -41,6 +41,7 @@ const {
   parseReferenceHashFile,
   calculateFontCount
 } = require('./hash-utils');
+const { DEFAULT_HTTP_PORT } = require('./cli-defaults');
 
 // Parse command line arguments
 const argParser = parseArgs(process.argv);
@@ -64,7 +65,7 @@ if (showHelp) {
   console.log('Options:');
   console.log('  --output <file>      Output file');
   console.log('                       (default: test/data/reference-hashes.js)');
-  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log(`  --port <port>        HTTP server port (default: ${DEFAULT_HTTP_PORT})`);
   console.log('  --merge              Merge with existing hashes instead of overwriting');
   console.log('  --help, -h           Show this help message');
   console.log('');
@@ -95,7 +96,7 @@ if (showHelp) {
 const config = {
   specFile: argParser.getArg('spec', null),
   outputFile: argParser.getArg('output', './test/data/reference-hashes.js'),
-  port: parseInt(argParser.getArg('port', '8765')),
+  port: parseInt(argParser.getArg('port', String(DEFAULT_HTTP_PORT))),
   merge: argParser.hasFlag('merge')
 };
 

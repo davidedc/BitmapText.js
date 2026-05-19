@@ -1,18 +1,16 @@
 // FontPropertiesFAB class for font assets building
 // Extends FontProperties with validation and utility methods
 // Properties always in order: pixelDensity, fontFamily, fontStyle, fontWeight, fontSize
+//
+// Validation vocabulary (STYLES, WEIGHTS) is sourced from FontValidationVocab
+// so FontSetGenerator stays in lock-step with this validator.
 class FontPropertiesFAB extends FontProperties {
-  // Valid values for validation
-  static VALID_STYLES = ['normal', 'italic', 'oblique'];
-  static VALID_WEIGHTS = ['normal', 'bold', 'bolder', 'lighter', 
-                          '100', '200', '300', '400', '500', '600', '700', '800', '900'];
-  
   constructor(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize) {
     // Validate all parameters before calling super
     FontPropertiesFAB.#validate(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
     super(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize);
   }
-  
+
   // Comprehensive validation
   static #validate(pixelDensity, fontFamily, fontStyle, fontWeight, fontSize) {
     if (!pixelDensity || pixelDensity <= 0) {
@@ -21,11 +19,11 @@ class FontPropertiesFAB extends FontProperties {
     if (!fontFamily || typeof fontFamily !== 'string') {
       throw new Error(`Invalid fontFamily: ${fontFamily} - must be non-empty string`);
     }
-    if (!FontPropertiesFAB.VALID_STYLES.includes(fontStyle)) {
-      throw new Error(`Invalid fontStyle: ${fontStyle} - must be one of: ${FontPropertiesFAB.VALID_STYLES.join(', ')}`);
+    if (!FontValidationVocab.STYLES.includes(fontStyle)) {
+      throw new Error(`Invalid fontStyle: ${fontStyle} - must be one of: ${FontValidationVocab.STYLES.join(', ')}`);
     }
-    if (!FontPropertiesFAB.VALID_WEIGHTS.includes(fontWeight)) {
-      throw new Error(`Invalid fontWeight: ${fontWeight} - must be one of: ${FontPropertiesFAB.VALID_WEIGHTS.join(', ')}`);
+    if (!FontValidationVocab.WEIGHTS.includes(fontWeight)) {
+      throw new Error(`Invalid fontWeight: ${fontWeight} - must be one of: ${FontValidationVocab.WEIGHTS.join(', ')}`);
     }
     if (!fontSize || fontSize <= 0) {
       throw new Error(`Invalid fontSize: ${fontSize} - must be positive number`);

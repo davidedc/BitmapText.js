@@ -79,6 +79,8 @@ FILES_TO_CHECK=(
   "$SRC_DIR/utils/AtlasCellDimensions.js"
   "$LIB_DIR/QOIDecode.js"
   "$SRC_DIR/runtime/AtlasDataStore.js"
+  "$SRC_DIR/runtime/MetricsBundleStore.js"
+  "$SRC_DIR/runtime/BundleCodec.js"
   "$SRC_DIR/runtime/PositioningBundleStore.js"
   "$SRC_DIR/runtime/FontMetricsStore.js"
   "$SRC_DIR/runtime/FontLoaderBase.js"
@@ -86,6 +88,7 @@ FILES_TO_CHECK=(
   "$SRC_DIR/runtime/BitmapText.js"
   "$SRC_DIR/runtime/BitmapTextRegistration.js"
   "$SRC_DIR/shared/test-data.js"
+  "$SRC_DIR/node/_demo-helpers.js"
   "$SRC_DIR/node/$MAIN_FILE"
 )
 if [[ "$INCLUDE_PNG_CODEC" == "yes" ]]; then
@@ -168,6 +171,8 @@ section "$UNBUNDLED_OUTPUT" "ATLAS DATA CLASS"                       "$SRC_DIR/r
 section "$UNBUNDLED_OUTPUT" "ATLAS CELL DIMENSIONS"                  "$SRC_DIR/utils/AtlasCellDimensions.js"
 section "$UNBUNDLED_OUTPUT" "QOI DECODER"                            "$LIB_DIR/QOIDecode.js"
 section "$UNBUNDLED_OUTPUT" "ATLAS DATA STORE"                       "$SRC_DIR/runtime/AtlasDataStore.js"
+section "$UNBUNDLED_OUTPUT" "METRICS BUNDLE STORE"                   "$SRC_DIR/runtime/MetricsBundleStore.js"
+section "$UNBUNDLED_OUTPUT" "BUNDLE CODEC"                           "$SRC_DIR/runtime/BundleCodec.js"
 section "$UNBUNDLED_OUTPUT" "POSITIONING BUNDLE STORE"               "$SRC_DIR/runtime/PositioningBundleStore.js"
 section "$UNBUNDLED_OUTPUT" "FONT METRICS STORE"                     "$SRC_DIR/runtime/FontMetricsStore.js"
 section "$UNBUNDLED_OUTPUT" "FONT LOADER BASE"                       "$SRC_DIR/runtime/FontLoaderBase.js"
@@ -179,6 +184,7 @@ if [[ "$INCLUDE_PNG_CODEC" == "yes" ]]; then
 fi
 
 section "$UNBUNDLED_OUTPUT" "TEST DATA"                              "$SRC_DIR/shared/test-data.js"
+section "$UNBUNDLED_OUTPUT" "DEMO HELPERS"                           "$SRC_DIR/node/_demo-helpers.js"
 section "$UNBUNDLED_OUTPUT" "BENCHMARK LOGIC"                        "$SRC_DIR/node/$MAIN_FILE" yes
 
 chmod +x "$UNBUNDLED_OUTPUT"
@@ -246,6 +252,12 @@ echo "" >> "$BUNDLED_OUTPUT"
   echo "// TEST DATA"
   echo "// ============================================================================"
   cat "$SRC_DIR/shared/test-data.js"
+  echo ""
+  echo "// ============================================================================"
+  echo "// DEMO HELPERS"
+  echo "// ============================================================================"
+  echo ""
+  cat "$SRC_DIR/node/_demo-helpers.js"
   echo ""
   echo "// ============================================================================"
   echo "// BENCHMARK LOGIC"

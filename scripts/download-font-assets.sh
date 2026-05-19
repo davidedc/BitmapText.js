@@ -43,8 +43,9 @@ if [ "$SHOW_HELP" -eq 1 ]; then
     exit 0
 fi
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$REPO_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+cd "$PROJECT_ROOT"
 
 # Refuse to clobber a populated font-assets/ unless --force.
 # `find` on a missing font-assets/ exits non-zero, which under `set -e` + `pipefail`
@@ -102,7 +103,7 @@ fi
 
 echo ""
 echo "Unpacking into font-assets/..."
-unzip -oq "$ZIP_TMP" -d "$REPO_ROOT"
+unzip -oq "$ZIP_TMP" -d "$PROJECT_ROOT"
 
 # Sanity report.
 WEBP_COUNT=$(find font-assets -maxdepth 1 -name 'atlas-*.webp' -type f | wc -l | tr -d ' ')

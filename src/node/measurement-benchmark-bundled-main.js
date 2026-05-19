@@ -38,28 +38,6 @@ require('../../../dist/bitmaptext-node.min.js');
 // BENCHMARK LOGIC
 // ============================================================================
 
-/**
- * Measure execution time with high iteration count
- */
-function measurePerformance(fn, iterations = 10000) {
-  // Warm up (avoid JIT compilation effects)
-  for (let i = 0; i < 100; i++) fn();
-
-  // Actual measurement
-  const start = performance.now();
-  for (let i = 0; i < iterations; i++) {
-    fn();
-  }
-  const elapsed = performance.now() - start;
-
-  return {
-    totalTime: elapsed,
-    avgTime: elapsed / iterations,
-    opsPerSec: (1000 * iterations) / elapsed,
-    iterations
-  };
-}
-
 // ============================================================
 // Main Benchmark Function
 // ============================================================

@@ -91,6 +91,14 @@ EOF
   echo "const path = require('path');" >> "$output_file"
   echo "" >> "$output_file"
 
+  # Helpers shared by all Node demos / benchmarks (getStatusName, measure*).
+  echo "// ============================================================================" >> "$output_file"
+  echo "// DEMO HELPERS" >> "$output_file"
+  echo "// ============================================================================" >> "$output_file"
+  echo "" >> "$output_file"
+  cat "$SRC_DIR/node/_demo-helpers.js" >> "$output_file"
+  echo "" >> "$output_file"
+
   # Add demo logic (strip the require statements since we concatenated dependencies)
   echo "// ============================================================================" >> "$output_file"
   echo "// DEMO LOGIC" >> "$output_file"

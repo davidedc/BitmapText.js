@@ -1686,6 +1686,24 @@ class BitmapText {
     return new InterpolatedFontMetrics(metricsAt9, targetSize);
   }
 
+  /**
+   * Try to materialise interpolated metrics for a sub-9px size by looking up
+   * the font's size-9 metrics in the store. Returns null when the size-9 entry
+   * isn't in the bundle either; callers handle the null case (error return or
+   * silent fallback). Shared by measureText, drawTextFromAtlas, and
+   * #resolveInvariantFont.
+   *
+   * @param {FontProperties} fontProperties - sub-9px font properties
+   * @returns {InterpolatedFontMetrics|null}
+   * @private
+   */
+  static #lookupInterpolatedMetricsForSmallSize(fontProperties) {
+    const minSizeProps = BitmapText._createFontPropsAtMinSize(fontProperties);
+    const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
+    if (!metricsAt9) return null;
+    return BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
+  }
+
   // ============================================
   // Rendering API
   // ============================================
@@ -1739,13 +1757,8 @@ class BitmapText {
 
     // If metrics not found and size < 9, try interpolating from size 9
     if (!fontMetrics && BitmapText._shouldUseMinSize(fontProperties.fontSize)) {
-      const minSizeProps = BitmapText._createFontPropsAtMinSize(fontProperties);
-      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
-
-      if (metricsAt9) {
-        // Create interpolated metrics wrapper
-        fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
-      } else {
+      fontMetrics = BitmapText.#lookupInterpolatedMetricsForSmallSize(fontProperties);
+      if (!fontMetrics) {
         // Even 9px metrics don't exist
         return {
           metrics: null,
@@ -1891,12 +1904,11 @@ class BitmapText {
     let forceInvalidAtlas = false;
 
     // For sizes < 9, always use interpolated metrics from 9 and force placeholder mode
+    // (the rasterization floor invariant — atlases below 9px don't exist).
     if (BitmapText._shouldUseMinSize(fontProperties.fontSize)) {
-      const minSizeProps = BitmapText._createFontPropsAtMinSize(fontProperties);
-      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
-
-      if (!metricsAt9) {
-        // Size 9 metrics don't exist - can't render
+      fontMetrics = BitmapText.#lookupInterpolatedMetricsForSmallSize(fontProperties);
+      if (!fontMetrics) {
+        // Size 9 metrics don't exist either - can't render
         return {
           rendered: false,
           status: createErrorStatus(StatusCode.NO_METRICS, {
@@ -1906,9 +1918,6 @@ class BitmapText {
           })
         };
       }
-
-      // Create interpolated metrics wrapper and force placeholder mode
-      fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
       forceInvalidAtlas = true; // Always use placeholders for sizes < 9
     } else if (!fontMetrics) {
       // Normal size but metrics not found
@@ -2022,6 +2031,9 @@ class BitmapText {
         ? BitmapText.#calcAdvancementInterpolated_PhysPx
         : BitmapText.#calcAdvancementCrisp_PhysPx;
 
+      // Hoist the colour-mode decision out of the per-glyph loop (constant per render).
+      const isBlackText = textColor === BitmapText.#DEFAULT_TEXT_COLOR;
+
       for (let i = 0; i < chars.length; i++) {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
@@ -2043,22 +2055,52 @@ class BitmapText {
           currentAtlasValid = atlasValid;
         }
 
-        // Check if atlas has a glyph for this character (excluding spaces)
+        // Spaces never draw anything (no atlas glyph, placeholder rectangle is a
+        // no-op for ' '), so we skip the whole branch and just advance.
         if (currentChar !== ' ') {
-          if (!currentAtlasValid || !currentAtlasData.hasPositioning(currentChar)) {
+          if (!currentAtlasValid) {
+            // Invalid atlas: track + placeholder rectangle from character metrics.
+            // (currentAtlasValid is hoisted; avoids a per-glyph _isValidAtlas call.)
             missingAtlasChars.add(currentChar);
             placeholdersUsed = true;
+            const characterMetrics = currentFontMetrics.getCharacterMetrics(currentChar);
+            if (characterMetrics) {
+              BitmapText.#drawPlaceholderRectangle(ctx, currentChar, position_PhysPx, characterMetrics, textColor);
+            }
+          } else {
+            // One dict lookup per non-space glyph; pre-checking with hasPositioning
+            // would redo the same lookup (it's `_placements[char] !== undefined`).
+            const p = currentAtlasData.atlasPositioning._placements[currentChar];
+            if (p === undefined) {
+              // Valid atlas but glyph absent — track, draw nothing.
+              missingAtlasChars.add(currentChar);
+              placeholdersUsed = true;
+            } else if (isBlackText) {
+              // FAST PATH: direct drawImage from atlas, no dispatch.
+              const atlasImage = currentAtlasData.atlasImage.image;
+              ctx.drawImage(
+                atlasImage,
+                p.xInAtlas, p.yInAtlas,
+                p.tightWidth, p.tightHeight,
+                Math.round(position_PhysPx.x + p.dx),
+                Math.round(position_PhysPx.y + p.dy),
+                p.tightWidth, p.tightHeight
+              );
+            } else {
+              // SLOW PATH: colored text. Reached only when the active font's atlas
+              // is valid but base atlas was invalid (colored normally batches up
+              // front via #drawColoredTextBatched); rare in practice.
+              const atlasImage = currentAtlasData.atlasImage.image;
+              const coloredGlyphCanvas = BitmapText.#createColoredGlyph(
+                atlasImage, p.xInAtlas, p.yInAtlas, p.tightWidth, p.tightHeight, textColor
+              );
+              BitmapText.#renderGlyphToMainCanvas(
+                ctx, coloredGlyphCanvas, position_PhysPx,
+                p.tightWidth, p.tightHeight, p.dx, p.dy
+              );
+            }
           }
         }
-
-        // Draw using appropriate font (either real glyph or placeholder)
-        BitmapText.#drawCharacter(ctx,
-          currentChar,
-          position_PhysPx,
-          currentAtlasData,
-          currentFontMetrics,
-          textColor
-        );
 
         // Calculate advancement using current font's metrics
         position_PhysPx.x += advancementFn_PhysPx(currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
@@ -2117,13 +2159,11 @@ class BitmapText {
 
     let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If invariant font not found and size < 9, try interpolating from size 9
+    // If invariant font not found and size < 9, try interpolating from size 9.
+    // Silent null on failure: the caller treats hasInvariantFont = false as "no
+    // invariant available" and falls back to the base font.
     if (!invariantFontMetrics && BitmapText._shouldUseMinSize(fontProperties.fontSize)) {
-      const invariantMinSizeProps = BitmapText._createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
-      if (invariantMetricsAt9) {
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
-      }
+      invariantFontMetrics = BitmapText.#lookupInterpolatedMetricsForSmallSize(invariantFontProps);
     }
 
     // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
@@ -2517,29 +2557,25 @@ class BitmapText {
         currentAtlasData = atlasData;
       }
 
-      // Track missing characters
-      if (currentChar !== ' ' && !currentAtlasData.hasPositioning(currentChar)) {
-        missingAtlasChars.add(currentChar);
-        placeholdersUsed = true;
-        // Advance position even for missing characters to maintain layout
-        position_PhysPx.x += advancementFn_PhysPx(currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
-        continue;
-      }
-
-      // Draw glyph to scratch canvas (skip spaces, they have no visual)
-      if (currentChar !== ' ' && currentAtlasData.hasPositioning(currentChar)) {
+      // One dict lookup per non-space glyph; pre-checking with hasPositioning
+      // would redo the same lookup (it's `_placements[char] !== undefined`).
+      // Spaces have no visual glyph and are skipped here; advancement still applies.
+      if (currentChar !== ' ') {
         const p = currentAtlasData.atlasPositioning._placements[currentChar];
-        const atlasImage = currentAtlasData.atlasImage.image;
-
-        // Draw original glyph (black) to scratch canvas at correct position
-        BitmapText.#coloredGlyphCtx.drawImage(
-          atlasImage,
-          p.xInAtlas, p.yInAtlas,
-          p.tightWidth, p.tightHeight,
-          Math.round(position_PhysPx.x + p.dx),
-          Math.round(position_PhysPx.y + p.dy),
-          p.tightWidth, p.tightHeight
-        );
+        if (p === undefined) {
+          missingAtlasChars.add(currentChar);
+          placeholdersUsed = true;
+        } else {
+          const atlasImage = currentAtlasData.atlasImage.image;
+          BitmapText.#coloredGlyphCtx.drawImage(
+            atlasImage,
+            p.xInAtlas, p.yInAtlas,
+            p.tightWidth, p.tightHeight,
+            Math.round(position_PhysPx.x + p.dx),
+            Math.round(position_PhysPx.y + p.dy),
+            p.tightWidth, p.tightHeight
+          );
+        }
       }
 
       // Advance position for next character
@@ -2577,40 +2613,9 @@ class BitmapText {
   }
 
   // Rendering optimizations:
-  // 1. ✓ IMPLEMENTED: Black text fast path (see #drawCharacterDirect for 2-3x speedup)
+  // 1. ✓ IMPLEMENTED: Black text fast path inlined into drawTextFromAtlas (no dispatch per glyph)
   // 2. ✓ IMPLEMENTED: Batch colored text rendering (single composite operation per text string)
   // 3. FUTURE: Cache colored glyphs in LRU cache to avoid re-coloring same characters
-  static #drawCharacter(ctx, char, position_PhysPx, atlasData, fontMetrics, textColor) {
-    // If atlasData is missing but metrics exist, draw simplified placeholder rectangle
-    if (!BitmapText._isValidAtlas(atlasData)) {
-      const characterMetrics = fontMetrics.getCharacterMetrics(char);
-      if (characterMetrics) {
-        BitmapText.#drawPlaceholderRectangle(ctx, char, position_PhysPx, characterMetrics, textColor);
-      }
-      return;
-    }
-
-    // FAST PATH: Black text renders directly from atlas (2-3x faster)
-    // Skips scratch canvas + composite operations when using default color
-    if (textColor === BitmapText.#DEFAULT_TEXT_COLOR) {
-      BitmapText.#drawCharacterDirect(ctx, char, position_PhysPx, atlasData, fontMetrics);
-      return;
-    }
-
-    // NOTE: Colored text now uses batch rendering in drawTextFromAtlas
-    // This method is kept for compatibility/fallback but should rarely be called for colored text
-    // SLOW PATH: Colored text requires double-pass rendering
-    // 1. Copy glyph from atlas to scratch canvas
-    // 2. Apply color using composite operation
-    // 3. Draw colored glyph to main canvas
-    if (!atlasData.hasPositioning(char)) return;
-
-    const p = atlasData.atlasPositioning._placements[char];
-    const atlasImage = atlasData.atlasImage.image;
-    const coloredGlyphCanvas = BitmapText.#createColoredGlyph(atlasImage, p.xInAtlas, p.yInAtlas, p.tightWidth, p.tightHeight, textColor);
-    BitmapText.#renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, p.tightWidth, p.tightHeight, p.dx, p.dy);
-  }
-
   static #createColoredGlyph(atlasImage, xInAtlas, yInAtlas, tightWidth, tightHeight, textColor) {
     // Setup temporary canvas, same size as the glyph
     BitmapText.#coloredGlyphCanvas.width = tightWidth;
@@ -2647,30 +2652,6 @@ class BitmapText {
       Math.round(position_PhysPx.x + dx),
       Math.round(position_PhysPx.y + dy),
       tightWidth, tightHeight
-    );
-  }
-
-  /**
-   * Fast path: Draw character directly from atlas (black text only)
-   * Skips scratch canvas and color composite operations for 2-3x faster rendering
-   * @private
-   */
-  static #drawCharacterDirect(ctx, char, position_PhysPx, atlasData, fontMetrics) {
-    if (!atlasData.hasPositioning(char)) return;
-
-    const p = atlasData.atlasPositioning._placements[char];
-    const atlasImage = atlasData.atlasImage.image;
-
-    // Single drawImage operation: atlas → main canvas.
-    // Round coordinates at draw stage for crisp, pixel-aligned rendering;
-    // position tracking accumulates as float, the final draw is integer.
-    ctx.drawImage(
-      atlasImage,
-      p.xInAtlas, p.yInAtlas,
-      p.tightWidth, p.tightHeight,
-      Math.round(position_PhysPx.x + p.dx),
-      Math.round(position_PhysPx.y + p.dy),
-      p.tightWidth, p.tightHeight
     );
   }
 
@@ -3465,54 +3446,11 @@ class AtlasPositioning {
   }
 
   /**
-   * Check if atlas position (xInAtlas, yInAtlas) exists for a character. In the
-   * current materialisation path both are always set when a placement exists,
-   * so this is a subset of hasPositioning — retained for builder-side validators
-   * that may set placements in stages.
-   * @param {string} char
-   * @returns {boolean}
-   */
-  hasAtlasPosition(char) {
-    const p = this._placements[char];
-    return p !== undefined && p.xInAtlas !== undefined && p.yInAtlas !== undefined;
-  }
-
-  /**
    * Get all available characters in this atlas positioning.
    * @returns {string[]}
    */
   getAvailableCharacters() {
     return Object.keys(this._placements);
-  }
-
-  getTightWidth(char) {
-    const p = this._placements[char];
-    return p && p.tightWidth;
-  }
-
-  getTightHeight(char) {
-    const p = this._placements[char];
-    return p && p.tightHeight;
-  }
-
-  getXInAtlas(char) {
-    const p = this._placements[char];
-    return p && p.xInAtlas;
-  }
-
-  getYInAtlas(char) {
-    const p = this._placements[char];
-    return p && p.yInAtlas;
-  }
-
-  getDx(char) {
-    const p = this._placements[char];
-    return p && p.dx;
-  }
-
-  getDy(char) {
-    const p = this._placements[char];
-    return p && p.dy;
   }
 }
 
@@ -4077,6 +4015,219 @@ class AtlasDataStore {
   // Get count of stored atlases
   static size() {
     return AtlasDataStore.#atlases.size;
+  }
+}
+
+// ============================================================================
+// METRICS BUNDLE STORE
+// ============================================================================
+// MetricsBundleStore - Density-agnostic store of minified metrics records
+//
+// The metrics bundle ships one record per (fontFamily, fontStyle, fontWeight, fontSize)
+// with no density baked in. This store holds those records after bundle decode,
+// keyed by `family:style:weight:size`. FontMetricsStore lazy-materialises a
+// density-specific FontMetrics from a record on first lookup.
+//
+// Density-1 and density-2 metrics differ only in `pixelDensity`; the bundle
+// stores the record once and the runtime injects density at materialisation time.
+
+class MetricsBundleStore {
+  static #records = new Map(); // "family:style:weight:size" → minified array
+
+  static #key(fontFamily, fontStyle, fontWeight, fontSize) {
+    return `${fontFamily}:${fontStyle}:${fontWeight}:${fontSize}`;
+  }
+
+  static setRecord(fontFamily, fontStyle, fontWeight, fontSize, minified) {
+    MetricsBundleStore.#records.set(
+      MetricsBundleStore.#key(fontFamily, fontStyle, fontWeight, fontSize),
+      minified
+    );
+  }
+
+  static getRecord(fontProperties) {
+    return MetricsBundleStore.#records.get(
+      MetricsBundleStore.#key(
+        fontProperties.fontFamily,
+        fontProperties.fontStyle,
+        fontProperties.fontWeight,
+        fontProperties.fontSize
+      )
+    );
+  }
+
+  static hasRecord(fontProperties) {
+    return MetricsBundleStore.#records.has(
+      MetricsBundleStore.#key(
+        fontProperties.fontFamily,
+        fontProperties.fontStyle,
+        fontProperties.fontWeight,
+        fontProperties.fontSize
+      )
+    );
+  }
+
+  static size() {
+    return MetricsBundleStore.#records.size;
+  }
+
+  static clear() {
+    MetricsBundleStore.#records.clear();
+  }
+}
+
+// ============================================================================
+// BUNDLE CODEC
+// ============================================================================
+// BundleCodec - Shared codec primitives for metrics + positioning bundles
+//
+// Wire format for both bundle types (`font-assets/metrics-bundle.js` and
+// `font-assets/positioning-bundle-density-<N>.js`):
+//
+//     BitmapText.rBundle('<base64>');           // metrics
+//     BitmapText.pBundle(<density>, '<base64>'); // positioning
+//
+// where <base64> decodes to a `deflate-raw` stream of UTF-8 JSON. The decoded
+// JSON is the envelope:
+//
+//     { formatVersion: <N>, records: [...] }                 // metrics
+//     { formatVersion: <N>, density: <D>, records: [...] }   // positioning
+//
+// `formatVersion` is the runtime↔asset schema version; the single source of
+// truth is `BitmapText.BUNDLE_SCHEMA_VERSION`. This module knows nothing
+// about that number — it just decodes bytes.
+//
+// Inside each record's payload, integer streams are encoded as zigzag-varint
+// bytes, then base64 — sometimes with a delta pre-pass (for streams whose
+// values cluster after sorting or share local locality, like the metrics
+// value lookup table and every positioning array). Reusing one helper from
+// both the metrics expander and the positioning store keeps the encoders
+// and decoders in lockstep.
+
+class BundleCodec {
+  // ----- bytes <-> base64 -----
+
+  static base64ToBytes(b64) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(b64, 'base64');
+    }
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  static bytesToBase64(bytes) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('base64');
+    }
+    // Browser: chunked btoa to avoid stack overflow on large inputs.
+    const CHUNK = 0x8000;
+    let binary = '';
+    const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    for (let i = 0; i < arr.length; i += CHUNK) {
+      binary += String.fromCharCode.apply(null, arr.subarray(i, i + CHUNK));
+    }
+    return btoa(binary);
+  }
+
+  // ----- deflate-raw bundle envelope -----
+
+  static async decodeBundle(b64) {
+    const compressed = BundleCodec.base64ToBytes(b64);
+    const inflated = await BundleCodec.#inflateRaw(compressed);
+    const json = BundleCodec.#bytesToString(inflated);
+    return JSON.parse(json);
+  }
+
+  static async #inflateRaw(bytes) {
+    if (typeof DecompressionStream === 'function' && typeof Response === 'function') {
+      const stream = new Response(bytes).body.pipeThrough(new DecompressionStream('deflate-raw'));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    if (typeof require === 'function') {
+      const zlib = require('zlib');
+      const buf = zlib.inflateRawSync(bytes);
+      return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+    }
+    throw new Error('BundleCodec: no DecompressionStream and no zlib fallback available');
+  }
+
+  static #bytesToString(bytes) {
+    if (typeof TextDecoder === 'function') {
+      return new TextDecoder().decode(bytes);
+    }
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(bytes).toString('utf8');
+    }
+    throw new Error('BundleCodec: no TextDecoder and no Buffer available');
+  }
+
+  // ----- zigzag + varint -----
+  //
+  // Zigzag interleaves signed ints into unsigned: 0,-1,1,-2,2,... → 0,1,2,3,4,...
+  // VarInt then encodes 7 bits per byte with MSB as continuation flag, so small
+  // magnitudes take 1 byte and large ones grow gracefully. Together they make
+  // small absolute values (and small deltas) costliest at 1 byte each.
+
+  static encodeVarInts(signedIntegers) {
+    const bytes = [];
+    for (const value of signedIntegers) {
+      let z = value >= 0 ? value * 2 : -value * 2 - 1;
+      while (z >= 128) {
+        bytes.push((z & 0x7F) | 0x80);
+        z >>>= 7;
+      }
+      bytes.push(z & 0x7F);
+    }
+    return new Uint8Array(bytes);
+  }
+
+  static decodeVarInts(bytes) {
+    const out = [];
+    let i = 0;
+    while (i < bytes.length) {
+      let v = 0;
+      let shift = 0;
+      let byte;
+      do {
+        byte = bytes[i++];
+        v |= (byte & 0x7F) << shift;
+        shift += 7;
+      } while (byte & 0x80);
+      out.push((v & 1) ? -(v + 1) / 2 : v / 2);
+    }
+    return out;
+  }
+
+  // ----- convenience pairs -----
+
+  static encodeVarIntB64(intArr) {
+    return BundleCodec.bytesToBase64(BundleCodec.encodeVarInts(intArr));
+  }
+
+  static decodeVarIntB64(b64) {
+    return BundleCodec.decodeVarInts(BundleCodec.base64ToBytes(b64));
+  }
+
+  // Delta-encode then zigzag-varint-base64. Reverse: decode varints, then
+  // prefix-sum. The metrics value-lookup table feeds magnitude-sorted ints
+  // here so deltas are small; positioning arrays use this directly on the
+  // raw per-glyph integer streams (heights, dy, etc. cluster naturally).
+  static encodeDeltaVarIntB64(intArr) {
+    if (intArr.length === 0) return '';
+    const d = [intArr[0]];
+    for (let i = 1; i < intArr.length; i++) d.push(intArr[i] - intArr[i - 1]);
+    return BundleCodec.encodeVarIntB64(d);
+  }
+
+  static decodeDeltaVarIntB64(b64) {
+    if (!b64) return [];
+    const deltas = BundleCodec.decodeVarIntB64(b64);
+    const out = new Array(deltas.length);
+    out[0] = deltas[0];
+    for (let i = 1; i < deltas.length; i++) out[i] = out[i - 1] + deltas[i];
+    return out;
   }
 }
 
@@ -4992,26 +5143,29 @@ if (typeof module !== 'undefined' && module.exports) {
 // Browser globals will be available via script tag
 
 // ============================================================================
-// BENCHMARK LOGIC
+// DEMO HELPERS
 // ============================================================================
+// Helpers shared by Node demo + benchmark entrypoints (src/node/*-main.js).
+// Concatenated into both standalone bundles (build-node-demo.sh) and runtime-
+// bundle versions (build-node-bundled-demos.sh / build-benchmark.sh); not
+// loaded standalone. StatusCode is in scope by the time this runs.
 
-/**
- * BitmapText.js Measurement Performance Benchmark (Unbundled Version)
- *
- * Tests measureText() performance with adaptive timing.
- * This is the unbundled standalone version - all dependencies concatenated.
- *
- * Usage: node measurement-benchmark-unbundled.bundle.js
- * Output: JSON results to stdout
- */
+// Map a StatusCode numeric value to its short symbolic name. Used for compact
+// log output in the demos (e.g. "Status: NO_METRICS"); runtime's
+// getStatusDescription is verbose English and not interchangeable.
+function getStatusName(code) {
+  const statusNames = {
+    [StatusCode.SUCCESS]: 'SUCCESS',
+    [StatusCode.NO_METRICS]: 'NO_METRICS',
+    [StatusCode.PARTIAL_METRICS]: 'PARTIAL_METRICS',
+    [StatusCode.NO_ATLAS]: 'NO_ATLAS',
+    [StatusCode.PARTIAL_ATLAS]: 'PARTIAL_ATLAS'
+  };
+  return statusNames[code] || `UNKNOWN(${code})`;
+}
 
-// ============================================================
-// Performance Measurement Functions
-// ============================================================
-
-/**
- * Measure execution time with high iteration count
- */
+// Measurement benchmark: time per call over a fixed iteration count after a
+// 100-call warm-up. Used by measurement-benchmark-*-main.js.
 function measurePerformance(fn, iterations = 10000) {
   // Warm up (avoid JIT compilation effects)
   for (let i = 0; i < 100; i++) fn();
@@ -5030,6 +5184,56 @@ function measurePerformance(fn, iterations = 10000) {
     iterations
   };
 }
+
+// Rendering benchmark: adaptive iteration count — ramps until the run lasts
+// minDuration ms, then measures one more pass. Used by rendering-benchmark-*-
+// main.js.
+function measureTime(fn, minDuration = 100) {
+  let iterations = 1;
+  let duration = 0;
+
+  // Find appropriate iteration count
+  while (duration < minDuration && iterations < 10000) {
+    const start = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      fn();
+    }
+    duration = performance.now() - start;
+
+    if (duration < minDuration) {
+      iterations *= 10;
+    }
+  }
+
+  // Perform final measurement
+  const start = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    fn();
+  }
+  const totalTime = performance.now() - start;
+  const avgTime = totalTime / iterations;
+
+  return {
+    iterations,
+    totalTime,
+    avgTime,
+    opsPerSecond: 1000 / avgTime
+  };
+}
+
+// ============================================================================
+// BENCHMARK LOGIC
+// ============================================================================
+
+/**
+ * BitmapText.js Measurement Performance Benchmark (Unbundled Version)
+ *
+ * Tests measureText() performance with adaptive timing.
+ * This is the unbundled standalone version - all dependencies concatenated.
+ *
+ * Usage: node measurement-benchmark-unbundled.bundle.js
+ * Output: JSON results to stdout
+ */
 
 // ============================================================
 // Main Benchmark Function

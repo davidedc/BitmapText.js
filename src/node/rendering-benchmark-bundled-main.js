@@ -43,42 +43,6 @@ require('../../../dist/bitmaptext-node.min.js');
 // ============================================================================
 
 /**
- * Measure execution time with adaptive iteration count
- */
-function measureTime(fn, minDuration = 100) {
-  let iterations = 1;
-  let duration = 0;
-
-  // Find appropriate iteration count
-  while (duration < minDuration && iterations < 10000) {
-    const start = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      fn();
-    }
-    duration = performance.now() - start;
-
-    if (duration < minDuration) {
-      iterations *= 10;
-    }
-  }
-
-  // Perform final measurement
-  const start = performance.now();
-  for (let i = 0; i < iterations; i++) {
-    fn();
-  }
-  const totalTime = performance.now() - start;
-  const avgTime = totalTime / iterations;
-
-  return {
-    iterations,
-    totalTime,
-    avgTime,
-    opsPerSecond: 1000 / avgTime
-  };
-}
-
-/**
  * Test BitmapText rendering
  */
 function testBitmapText(blockCount, textColor) {

@@ -12,7 +12,7 @@
  * Options:
  *   --spec <file>        Font set specification JSON file (required)
  *   --hashes <file>      Reference hash file (default: test/data/reference-hashes.js)
- *   --port <port>        HTTP server port (default: 8765)
+ *   --port <port>        HTTP server port
  *   --verbose            Show all fonts, not just mismatches
  *   --ci                 CI mode: minimal output, exit code only
  *   --fail-fast          Exit on first mismatch
@@ -39,6 +39,7 @@ const {
   parseReferenceHashFile,
   calculateFontCount
 } = require('./hash-utils');
+const { DEFAULT_HTTP_PORT } = require('./cli-defaults');
 
 // Parse CLI arguments
 const argParser = parseArgs(process.argv);
@@ -61,7 +62,7 @@ if (showHelp) {
   console.log('Options:');
   console.log('  --hashes <file>      Reference hash file');
   console.log('                       (default: test/data/reference-hashes.js)');
-  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log(`  --port <port>        HTTP server port (default: ${DEFAULT_HTTP_PORT})`);
   console.log('  --verbose            Show all fonts, not just mismatches');
   console.log('  --ci                 CI mode: minimal output, exit code only');
   console.log('  --fail-fast          Exit on first mismatch');
@@ -94,7 +95,7 @@ if (showHelp) {
 const config = {
   specFile: argParser.getArg('spec', null),
   hashesFile: argParser.getArg('hashes', './test/data/reference-hashes.js'),
-  port: parseInt(argParser.getArg('port', '8765')),
+  port: parseInt(argParser.getArg('port', String(DEFAULT_HTTP_PORT))),
   verbose: argParser.hasFlag('verbose'),
   ci: argParser.hasFlag('ci'),
   failFast: argParser.hasFlag('fail-fast'),

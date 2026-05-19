@@ -45,8 +45,9 @@ if [ "$SHOW_HELP" -eq 1 ]; then
     exit 0
 fi
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$REPO_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+cd "$PROJECT_ROOT"
 
 # --- Pre-flight ---------------------------------------------------------------
 
@@ -156,7 +157,7 @@ echo "  Staging: $STAGING"
 # The positioning bundles are required at runtime — without them
 # `_loadAtlasFromPackage` throws "no positioning record". The rebuild step
 # never regenerates them; they ship as-is.
-( cd "$REPO_ROOT" && \
+( cd "$PROJECT_ROOT" && \
   find font-assets -maxdepth 1 \
        \( -name 'metrics-bundle.js' \
           -o -name 'positioning-bundle-density-*.js' \

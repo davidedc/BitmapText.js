@@ -6,39 +6,18 @@
 
 set -e  # Exit on error
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Logging functions
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $(date '+%H:%M:%S') - $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $(date '+%H:%M:%S') - $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $(date '+%H:%M:%S') - $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $(date '+%H:%M:%S') - $1"
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 # Default directory
 DIRECTORY="${1:-font-assets}"
 
-log_info "PNG to WebP Converter starting..."
-log_info "Target directory: $DIRECTORY"
+log "INFO" "PNG to WebP Converter starting..."
+log "INFO" "Target directory: $DIRECTORY"
 
 # Check if cwebp is installed
 if ! command -v cwebp &> /dev/null; then
-    log_error "cwebp command not found!"
+    log "ERROR" "cwebp command not found!"
     echo ""
     echo "WebP tools are required for this script."
     echo ""
@@ -59,11 +38,11 @@ fi
 
 # Verify cwebp version
 CWEBP_VERSION=$(cwebp -version 2>&1 | head -n 1)
-log_info "Found cwebp: $CWEBP_VERSION"
+log "INFO" "Found cwebp: $CWEBP_VERSION"
 
 # Check if directory exists
 if [ ! -d "$DIRECTORY" ]; then
-    log_error "Directory not found: $DIRECTORY"
+    log "ERROR" "Directory not found: $DIRECTORY"
     exit 1
 fi
 
@@ -71,11 +50,11 @@ fi
 NUM_PNG_FILES=$(find "$DIRECTORY" -maxdepth 1 -name "atlas-*.png" -type f -print0 | tr -cd '\0' | wc -c | tr -d ' ')
 
 if [ "$NUM_PNG_FILES" -eq 0 ]; then
-    log_warning "No atlas-*.png files found in $DIRECTORY"
+    log "WARNING" "No atlas-*.png files found in $DIRECTORY"
     exit 0
 fi
 
-log_info "Found ${NUM_PNG_FILES} PNG file(s) to convert"
+log "INFO" "Found ${NUM_PNG_FILES} PNG file(s) to convert"
 echo ""
 
 # Statistics
@@ -90,7 +69,7 @@ while IFS= read -r -d '' PNG_FILE; do
     BASENAME=$(basename "$PNG_FILE" .png)
     WEBP_FILE="${DIRECTORY}/${BASENAME}.webp"
 
-    log_info "Converting: $BASENAME.png → $BASENAME.webp"
+    log "INFO" "Converting: $BASENAME.png → $BASENAME.webp"
 
     # Get original file size
     PNG_SIZE=$(stat -f%z "$PNG_FILE" 2>/dev/null || stat -c%s "$PNG_FILE" 2>/dev/null)
@@ -107,9 +86,9 @@ while IFS= read -r -d '' PNG_FILE; do
 
         # Check for zero-byte WebP file (indicates silent conversion failure)
         if [ "$WEBP_SIZE" -eq 0 ]; then
-            log_warning "WebP conversion produced zero-byte file for: $BASENAME.png"
-            log_warning "This typically happens when image dimensions exceed WebP's 16383px limit"
-            log_warning "Keeping original PNG file instead"
+            log "WARNING" "WebP conversion produced zero-byte file for: $BASENAME.png"
+            log "WARNING" "This typically happens when image dimensions exceed WebP's 16383px limit"
+            log "WARNING" "Keeping original PNG file instead"
             rm "$WEBP_FILE"
             FAILED=$((FAILED + 1))
         else
@@ -119,11 +98,11 @@ while IFS= read -r -d '' PNG_FILE; do
             SAVINGS=$((PNG_SIZE - WEBP_SIZE))
             PERCENT=$(awk "BEGIN {printf \"%.1f\", ($SAVINGS / $PNG_SIZE) * 100}")
 
-            log_success "Converted: $PNG_SIZE bytes → $WEBP_SIZE bytes (saved $SAVINGS bytes, ${PERCENT}%)"
+            log "SUCCESS" "Converted: $PNG_SIZE bytes → $WEBP_SIZE bytes (saved $SAVINGS bytes, ${PERCENT}%)"
 
             # Delete source PNG file
             rm "$PNG_FILE"
-            log_success "Deleted source PNG: $PNG_FILE"
+            log "SUCCESS" "Deleted source PNG: $PNG_FILE"
 
             CONVERTED=$((CONVERTED + 1))
         fi
@@ -132,15 +111,15 @@ while IFS= read -r -d '' PNG_FILE; do
         if [ -f "$WEBP_FILE" ]; then
             WEBP_SIZE=$(stat -f%z "$WEBP_FILE" 2>/dev/null || stat -c%s "$WEBP_FILE" 2>/dev/null)
             if [ "$WEBP_SIZE" -eq 0 ]; then
-                log_warning "WebP conversion failed and produced zero-byte file for: $BASENAME.png"
-                log_warning "This typically happens when image dimensions exceed WebP's 16383px limit"
-                log_warning "Keeping original PNG file and removing invalid WebP"
+                log "WARNING" "WebP conversion failed and produced zero-byte file for: $BASENAME.png"
+                log "WARNING" "This typically happens when image dimensions exceed WebP's 16383px limit"
+                log "WARNING" "Keeping original PNG file and removing invalid WebP"
                 rm "$WEBP_FILE"
             else
-                log_error "Failed to convert: $PNG_FILE (but WebP file exists with size $WEBP_SIZE)"
+                log "ERROR" "Failed to convert: $PNG_FILE (but WebP file exists with size $WEBP_SIZE)"
             fi
         else
-            log_error "Failed to convert: $PNG_FILE"
+            log "ERROR" "Failed to convert: $PNG_FILE"
         fi
         FAILED=$((FAILED + 1))
     fi
@@ -150,11 +129,11 @@ done < <(find "$DIRECTORY" -maxdepth 1 -name "atlas-*.png" -type f -print0)
 
 # Final statistics
 echo "=================================================="
-log_info "Conversion complete!"
+log "INFO" "Conversion complete!"
 echo ""
-log_info "Files converted: $CONVERTED"
+log "INFO" "Files converted: $CONVERTED"
 if [ $FAILED -gt 0 ]; then
-    log_warning "Files failed: $FAILED"
+    log "WARNING" "Files failed: $FAILED"
 fi
 echo ""
 
@@ -162,11 +141,11 @@ if [ $CONVERTED -gt 0 ]; then
     TOTAL_SAVINGS=$((TOTAL_PNG_SIZE - TOTAL_WEBP_SIZE))
     TOTAL_PERCENT=$(awk "BEGIN {printf \"%.1f\", ($TOTAL_SAVINGS / $TOTAL_PNG_SIZE) * 100}")
 
-    log_info "Total PNG size:  $TOTAL_PNG_SIZE bytes"
-    log_info "Total WebP size: $TOTAL_WEBP_SIZE bytes"
-    log_success "Total savings:   $TOTAL_SAVINGS bytes (${TOTAL_PERCENT}%)"
+    log "INFO" "Total PNG size:  $TOTAL_PNG_SIZE bytes"
+    log "INFO" "Total WebP size: $TOTAL_WEBP_SIZE bytes"
+    log "SUCCESS" "Total savings:   $TOTAL_SAVINGS bytes (${TOTAL_PERCENT}%)"
     echo ""
-    log_success "All source PNG files have been deleted"
+    log "SUCCESS" "All source PNG files have been deleted"
 fi
 
 echo "=================================================="

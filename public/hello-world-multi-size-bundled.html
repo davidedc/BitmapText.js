@@ -74,17 +74,11 @@
     const canvas = document.getElementById('demo-canvas');
     const ctx = canvas.getContext('2d');
 
-    // Function to create IDString from font size
-    function createIDString(fontSize) {
-      // Handle fractional sizes: 18.5 becomes "18-5", whole numbers get "-0" suffix
-      const sizeStr = fontSize.toString().replace('.', '-');
-      // Add "-0" suffix for whole numbers (18 -> "18-0"), fractional already have second part (18.5 -> "18-5")
-      const finalSizeStr = sizeStr.includes('-') ? sizeStr : `${sizeStr}-0`;
-      return `density-1-0-Arial-style-normal-weight-normal-size-${finalSizeStr}`;
-    }
-
-    // Create IDStrings for all font sizes
-    const IDStrings = fontSizes.map(createIDString);
+    // Create IDStrings for all font sizes via FontProperties.idString
+    // (single source of truth for the density-...-Arial-...-size-... wire format).
+    const IDStrings = fontSizes.map(
+      size => new FontProperties(1, 'Arial', 'normal', 'normal', size).idString
+    );
 
     // Configure font directory (required since we're in public/ subdirectory)
     BitmapText.setFontDirectory('../font-assets/');

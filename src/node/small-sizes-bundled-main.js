@@ -60,18 +60,6 @@ const textProperties = new TextProperties({
   textColor: '#000000'
 });
 
-// Helper function to get status name from code
-function getStatusName(code) {
-  const statusNames = {
-    [StatusCode.SUCCESS]: 'SUCCESS',
-    [StatusCode.NO_METRICS]: 'NO_METRICS',
-    [StatusCode.PARTIAL_METRICS]: 'PARTIAL_METRICS',
-    [StatusCode.NO_ATLAS]: 'NO_ATLAS',
-    [StatusCode.PARTIAL_ATLAS]: 'PARTIAL_ATLAS'
-  };
-  return statusNames[code] || `UNKNOWN(${code})`;
-}
-
 async function main() {
   try {
     console.log('BitmapText.js Node.js Small Sizes Demo (Runtime Bundle)');

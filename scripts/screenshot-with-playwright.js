@@ -18,7 +18,7 @@
  *   --output <file>      Output filename (default: screenshot-playwright.png)
  *   --canvas-only        Screenshot only the canvas element (default: full page)
  *   --wait <ms>          Additional wait time in ms (default: 1000)
- *   --port <port>        HTTP server port (default: 8765)
+ *   --port <port>        HTTP server port
  *
  * Examples:
  *   node scripts/screenshot-with-playwright.js
@@ -30,6 +30,7 @@ const { chromium } = require('playwright');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { DEFAULT_HTTP_PORT } = require('./cli-defaults');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -59,7 +60,7 @@ if (showHelp) {
   console.log('  --output <file>      Output filename (default: screenshot-playwright.png)');
   console.log('  --canvas-only        Screenshot only canvas element (default: full page)');
   console.log('  --wait <ms>          Additional wait time in ms (default: 1000)');
-  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log(`  --port <port>        HTTP server port (default: ${DEFAULT_HTTP_PORT})`);
   console.log('  --help, -h           Show this help message');
   console.log('');
   console.log('Examples:');
@@ -80,7 +81,7 @@ const config = {
   output: getArg('output', 'screenshot-playwright.png'),
   canvasOnly: hasFlag('canvas-only'),
   waitTime: parseInt(getArg('wait', '1000')),
-  port: parseInt(getArg('port', '8765'))
+  port: parseInt(getArg('port', String(DEFAULT_HTTP_PORT)))
 };
 
 // Simple HTTP server

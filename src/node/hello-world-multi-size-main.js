@@ -27,23 +27,6 @@ const textProperties = new TextProperties({
   textColor: '#000000'         // Black color
 });
 
-// Function to create IDString from FontProperties (uses pre-computed idString)
-function createIDString(fontProperties) {
-  return fontProperties.idString;
-}
-
-// Helper function to get status name from code
-function getStatusName(code) {
-  const statusNames = {
-    [StatusCode.SUCCESS]: 'SUCCESS',
-    [StatusCode.NO_METRICS]: 'NO_METRICS',
-    [StatusCode.PARTIAL_METRICS]: 'PARTIAL_METRICS',
-    [StatusCode.NO_ATLAS]: 'NO_ATLAS',
-    [StatusCode.PARTIAL_ATLAS]: 'PARTIAL_ATLAS'
-  };
-  return statusNames[code] || `UNKNOWN(${code})`;
-}
-
 async function main() {
   try {
     console.log('BitmapText.js Node.js Multi-Size Demo - Loading font data...');
@@ -57,7 +40,7 @@ async function main() {
     });
 
     // Create IDStrings for all font configurations (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
-    const arialIDStrings = fontPropertiesArray.map(createIDString);
+    const arialIDStrings = fontPropertiesArray.map(fp => fp.idString);
 
     // Create BitmapTextInvariant IDStrings for each size
     const symbolIDStrings = fontSizes.map(size => {

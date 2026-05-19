@@ -12,10 +12,8 @@
 
 class FontSetGenerator {
 
-  // Validation constants (same as FontPropertiesFAB)
-  static VALID_STYLES = ['normal', 'italic', 'oblique'];
-  static VALID_WEIGHTS = ['normal', 'bold', 'bolder', 'lighter',
-                          '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+  // Validation vocabulary (STYLES, WEIGHTS) is sourced from FontValidationVocab
+  // so this generator stays in lock-step with FontPropertiesFAB's validator.
 
   // Internal state for iteration
   #spec;
@@ -195,13 +193,13 @@ class FontSetGenerator {
     }
 
     // Validate font style
-    if (!FontSetGenerator.VALID_STYLES.includes(style)) {
-      throw new Error(`${setName}: Invalid fontStyle: ${style} - must be one of: ${FontSetGenerator.VALID_STYLES.join(', ')}`);
+    if (!FontValidationVocab.STYLES.includes(style)) {
+      throw new Error(`${setName}: Invalid fontStyle: ${style} - must be one of: ${FontValidationVocab.STYLES.join(', ')}`);
     }
 
     // Validate font weight
-    if (!FontSetGenerator.VALID_WEIGHTS.includes(weight)) {
-      throw new Error(`${setName}: Invalid fontWeight: ${weight} - must be one of: ${FontSetGenerator.VALID_WEIGHTS.join(', ')}`);
+    if (!FontValidationVocab.WEIGHTS.includes(weight)) {
+      throw new Error(`${setName}: Invalid fontWeight: ${weight} - must be one of: ${FontValidationVocab.WEIGHTS.join(', ')}`);
     }
 
     // Validate font size

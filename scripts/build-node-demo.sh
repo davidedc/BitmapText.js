@@ -89,6 +89,7 @@ FILES_TO_CHECK=(
   "$LIB_DIR/PngEncoder.js"
   "$SRC_DIR/runtime/BitmapText.js"
   "$SRC_DIR/runtime/BitmapTextRegistration.js"
+  "$SRC_DIR/node/_demo-helpers.js"
   "$SRC_DIR/node/$MAIN_FILE"
 )
 
@@ -178,6 +179,9 @@ section "FONT LOADER BASE CLASS"                               "$SRC_DIR/runtime
 section "FONT LOADER - NODE.JS PLATFORM IMPLEMENTATION"        "$SRC_DIR/platform/FontLoaderNode.js"
 section "PNG ENCODING OPTIONS"                                 "$LIB_DIR/PngEncodingOptions.js"
 section "PNG ENCODER"                                          "$LIB_DIR/PngEncoder.js"
+
+# Helpers shared by all Node demos / benchmarks (getStatusName, measure*).
+section "DEMO HELPERS"                                         "$SRC_DIR/node/_demo-helpers.js"
 
 # Main execution (strip first line: source has its own //-comment header)
 section "MAIN EXECUTION - $DEMO_DESC"                          "$SRC_DIR/node/$MAIN_FILE" yes

@@ -19,7 +19,7 @@
  * Options:
  *   --spec <file>        Font set specification JSON file (required)
  *   --output <dir>       Output directory (default: ./font-assets-output)
- *   --port <port>        HTTP server port (default: 8765)
+ *   --port <port>        HTTP server port
  *   --include-full       Include non-minified metrics (default: false)
  *   --batch-size <n>     Max fonts per batch for memory management (default: 72)
  *
@@ -38,6 +38,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
+const { DEFAULT_HTTP_PORT } = require('./cli-defaults');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -78,7 +79,7 @@ if (showHelp) {
   console.log('Options:');
   console.log('  --output <dir>       Output directory');
   console.log('                       (default: ./automatically-generated-font-assets)');
-  console.log('  --port <port>        HTTP server port (default: 8765)');
+  console.log(`  --port <port>        HTTP server port (default: ${DEFAULT_HTTP_PORT})`);
   console.log('  --include-full       Include non-minified metrics files');
   console.log('  --batch-size <n>     Max fonts per batch for memory management (default: 72)');
   console.log('  --help, -h           Show this help message');
@@ -103,7 +104,7 @@ if (showHelp) {
 const config = {
   specFile: getArg('spec', null),
   outputDir: getArg('output', './automatically-generated-font-assets'),
-  port: parseInt(getArg('port', '8765')),
+  port: parseInt(getArg('port', String(DEFAULT_HTTP_PORT))),
   includeFullMetrics: hasFlag('include-full'),
   batchSize: parseInt(getArg('batch-size', '72'))
 };
