@@ -66,35 +66,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Configuration
+# Configuration. $PROJECT_ROOT, ANSI colours, log() come from common.sh.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 DOWNLOADS_DIR="$HOME/Downloads"
 FONT_ASSETS_FILE="$DOWNLOADS_DIR/fontAssets.zip"
 DATA_DIR="font-assets"
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKUP_DIR="$DATA_DIR"
-
-function log() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local color=""
-    
-    case $level in
-        "INFO") color="$BLUE" ;;
-        "SUCCESS") color="$GREEN" ;;
-        "WARNING") color="$YELLOW" ;;
-        "ERROR") color="$RED" ;;
-    esac
-    
-    echo -e "[$timestamp] ${color}[$level]${NC} $message"
-}
 
 function cleanup_on_exit() {
     log "INFO" "Script interrupted, cleaning up..."

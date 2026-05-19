@@ -52,7 +52,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Building BitmapText.js runtime bundles..."
 
 # Project root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 # Define paths
 SRC_DIR="$PROJECT_ROOT/src"

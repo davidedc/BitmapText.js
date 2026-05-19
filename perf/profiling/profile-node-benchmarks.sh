@@ -23,8 +23,8 @@ mkdir -p "$PROFILE_OUTPUT_DIR/analysis"
 # Check if benchmarks are built
 if [ ! -f "$NODE_DIST_DIR/measurement-benchmark-unbundled.bundle.js" ]; then
   echo "❌ Benchmarks not built. Building now..."
-  "$PROJECT_ROOT/scripts/build-measurement-benchmark.sh"
-  "$PROJECT_ROOT/scripts/build-rendering-benchmark.sh"
+  "$PROJECT_ROOT/scripts/build-benchmark.sh" measurement
+  "$PROJECT_ROOT/scripts/build-benchmark.sh" rendering
 fi
 
 # Check if 0x is installed (for flame graphs)

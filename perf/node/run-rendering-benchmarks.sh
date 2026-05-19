@@ -22,7 +22,7 @@ mkdir -p "$DIST_DIR"
 # ============================================================================
 
 echo "[1/5] Building benchmarks..."
-"$PROJECT_ROOT/scripts/build-rendering-benchmark.sh"
+"$PROJECT_ROOT/scripts/build-benchmark.sh" rendering
 echo ""
 
 # ============================================================================

@@ -2,32 +2,10 @@
 
 # Test script for the font data pipeline (runs once without monitoring)
 
-# Get the directory of this script and project root
+# Get the directory of this script and project root (via common.sh)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-function log() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local color=""
-    
-    case $level in
-        "INFO") color="$BLUE" ;;
-        "SUCCESS") color="$GREEN" ;;
-        "WARNING") color="$YELLOW" ;;
-        "ERROR") color="$RED" ;;
-    esac
-    
-    echo -e "[$timestamp] ${color}[$level]${NC} $message"
-}
+source "$SCRIPT_DIR/common.sh"
+# $PROJECT_ROOT, ANSI colours, log() now available from common.sh.
 
 function test_pipeline() {
     local downloads_dir="$HOME/Downloads"

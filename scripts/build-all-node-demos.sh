@@ -13,17 +13,14 @@ echo ""
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Build standalone bundles (concatenate all dependencies)
+# Build standalone bundles (concatenate all dependencies). The parameterised
+# build-node-demo.sh covers all three variants.
 echo "[1/4] Building standalone demos..."
 echo "----------------------------------------------------------------------"
-"$SCRIPT_DIR/build-node-demo.sh"
-echo ""
-
-"$SCRIPT_DIR/build-node-multi-size-demo.sh"
-echo ""
-
-"$SCRIPT_DIR/build-node-small-sizes-demo.sh"
-echo ""
+for demo in hello-world multi-size small-sizes; do
+  "$SCRIPT_DIR/build-node-demo.sh" "$demo"
+  echo ""
+done
 
 # Build runtime-bundle versions (use production runtime bundle)
 echo "[2/4] Building runtime-bundle demos..."
