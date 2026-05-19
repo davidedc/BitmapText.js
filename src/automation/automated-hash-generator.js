@@ -5,41 +5,9 @@
 // initializeSpecs on window; the Node-side Playwright scripts call them via
 // page.evaluate(). The set of hash check types mirrors what the interactive
 // font-assets-builder.html displays.
-
-/**
- * Initialize specs from default-specs.js
- * @returns {Specs} Parsed specs object
- */
-function initializeSpecs() {
-  console.log('Initializing kerning specs...');
-  const specsParser = new SpecsParser();
-  const specs = specsParser.parseSpecsIfChanged(specsDefault);
-  BitmapTextFAB.setSpecs(specs);
-  console.log('✓ Specs initialized');
-  return specs;
-}
-
-/**
- * Build font assets for a single font configuration
- * Creates glyphs and builds kerning table
- * @param {FontProperties} fontProperties - Font configuration
- */
-async function buildFont(fontProperties) {
-  // Create glyphs - includes both standard chars + custom character set if defined
-  // This ensures symbol fonts like BitmapTextInvariant have the actual symbols rendered
-  createGlyphsAndAddToFullStore(fontProperties);
-
-  // Build kerning table
-  BitmapTextFAB.buildKerningTableIfDoesntExist(fontProperties);
-
-  // Clean up DOM canvases to prevent WebKit memory exhaustion
-  // Remove canvases from DOM but preserve data for hash calculations
-  // Canvas data persists in GlyphFAB instances (this.tightCanvas, this.canvasCopy)
-  const canvases = document.querySelectorAll('canvas');
-  canvases.forEach(c => {
-    c.remove();  // Remove from DOM but keep data intact
-  });
-}
+//
+// initializeSpecs / buildFont live in src/automation/automation-utils.js
+// (shared with automated-builder.js).
 
 /**
  * Create canvas and render test text for hash calculation

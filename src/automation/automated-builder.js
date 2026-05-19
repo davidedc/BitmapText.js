@@ -1,56 +1,8 @@
 // Automated Font Builder
-// Orchestrates font asset generation from FontSetGenerator specifications
-// This script is designed to run in a browser context with all necessary dependencies loaded
-
-/**
- * Initialize specs from default-specs.js
- * Parses the spec text and sets it on BitmapTextFAB
- * @returns {Specs} Parsed specs object
- */
-function initializeSpecs() {
-  console.log('Initializing kerning specs...');
-
-  // Create SpecsParser instance and parse default specs
-  // (loaded from src/specs/default-specs.js as specsDefault)
-  const specsParser = new SpecsParser();
-  const specs = specsParser.parseSpecsIfChanged(specsDefault);
-
-  // Set specs on BitmapTextFAB for kerning calculations
-  BitmapTextFAB.setSpecs(specs);
-
-  console.log('✓ Specs initialized');
-  return specs;
-}
-
-/**
- * Build font assets for a single font configuration
- * Creates glyphs and builds kerning table
- * @param {FontProperties} fontProperties - Font configuration
- */
-async function buildFont(fontProperties) {
-  const startTime = performance.now();
-
-  console.log(`Building ${fontProperties.idString}...`);
-
-  // 1. Create glyphs - includes both standard chars + custom character set if defined
-  // This is the most time-consuming step (canvas rendering)
-  createGlyphsAndAddToFullStore(fontProperties);
-
-  // 2. Build kerning table if it doesn't exist
-  // This calculates kerning adjustments for character pairs
-  BitmapTextFAB.buildKerningTableIfDoesntExist(fontProperties);
-
-  // 3. Clean up DOM canvases to prevent WebKit memory exhaustion
-  // Remove canvases from DOM but preserve dimensions/data for later export
-  // Canvas data persists in GlyphFAB instances (this.tightCanvas, this.canvasCopy)
-  const canvases = document.querySelectorAll('canvas');
-  canvases.forEach(c => {
-    c.remove();  // Remove from DOM but keep data intact
-  });
-
-  const duration = (performance.now() - startTime).toFixed(0);
-  console.log(`✓ Built ${fontProperties.idString} in ${duration}ms`);
-}
+// Orchestrates font asset generation from FontSetGenerator specifications.
+// Runs in a browser context with all necessary dependencies loaded.
+// initializeSpecs / buildFont live in src/automation/automation-utils.js
+// (shared with automated-hash-generator.js).
 
 /**
  * Process an entire font set specification
