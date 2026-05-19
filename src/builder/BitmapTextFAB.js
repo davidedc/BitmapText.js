@@ -129,7 +129,6 @@ class BitmapTextFAB extends BitmapText {
 
     // Convert to array of code points for proper Unicode handling
     const chars = [...text];
-    let drawnCount = 0;
     for (let i = 0; i < chars.length; i++) {
       const char = chars[i];
       const nextChar = chars[i + 1];
@@ -140,7 +139,6 @@ class BitmapTextFAB extends BitmapText {
       const characterMetrics = fontMetrics.getCharacterMetrics(char);
 
       if (glyph?.tightCanvas) {
-        drawnCount++;
         // Some glyphs protrude to the left of the x_PhysPx that you specify, i.e. their
         // actualBoundingBoxLeft > 0, for example it's quite large for the
         // italic f in Times New Roman. The other glyphs that don't protrude to the left
@@ -193,12 +191,6 @@ class BitmapTextFAB extends BitmapText {
         const drawX = xPos_PhysPx + leftSpacing_PhysPx;
         const drawY = yPos_PhysPx;
 
-        // TODO: Remove debug logging before production release
-        // Debug first character of first call
-        if (i === 0 && drawnCount === 1) {
-          console.log(`[DEBUG] First drawImage call: char="${char}", canvas=${glyph.tightCanvas.width}x${glyph.tightCanvas.height}, x=${drawX}, y=${drawY}, y_PhysPx=${y_PhysPx}, tightCanvas.height=${glyph.tightCanvas.height}`);
-        }
-
         ctx.drawImage(
           glyph.tightCanvas,
           drawX,
@@ -210,7 +202,5 @@ class BitmapTextFAB extends BitmapText {
         BitmapText.calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics) *
         fontProperties.pixelDensity;
     }
-    // TODO: Remove debug logging before production release
-    console.log(`[DEBUG] drawTextViaIndividualCanvasesNotViaAtlas drew ${drawnCount} glyphs for text: "${text.substring(0, 20)}..."`);
   }
 }

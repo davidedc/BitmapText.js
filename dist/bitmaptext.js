@@ -1286,6 +1286,24 @@ class BitmapText {
     return new InterpolatedFontMetrics(metricsAt9, targetSize);
   }
 
+  /**
+   * Try to materialise interpolated metrics for a sub-9px size by looking up
+   * the font's size-9 metrics in the store. Returns null when the size-9 entry
+   * isn't in the bundle either; callers handle the null case (error return or
+   * silent fallback). Shared by measureText, drawTextFromAtlas, and
+   * #resolveInvariantFont.
+   *
+   * @param {FontProperties} fontProperties - sub-9px font properties
+   * @returns {InterpolatedFontMetrics|null}
+   * @private
+   */
+  static #lookupInterpolatedMetricsForSmallSize(fontProperties) {
+    const minSizeProps = BitmapText._createFontPropsAtMinSize(fontProperties);
+    const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
+    if (!metricsAt9) return null;
+    return BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
+  }
+
   // ============================================
   // Rendering API
   // ============================================
@@ -1339,13 +1357,8 @@ class BitmapText {
 
     // If metrics not found and size < 9, try interpolating from size 9
     if (!fontMetrics && BitmapText._shouldUseMinSize(fontProperties.fontSize)) {
-      const minSizeProps = BitmapText._createFontPropsAtMinSize(fontProperties);
-      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
-
-      if (metricsAt9) {
-        // Create interpolated metrics wrapper
-        fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
-      } else {
+      fontMetrics = BitmapText.#lookupInterpolatedMetricsForSmallSize(fontProperties);
+      if (!fontMetrics) {
         // Even 9px metrics don't exist
         return {
           metrics: null,
@@ -1491,12 +1504,11 @@ class BitmapText {
     let forceInvalidAtlas = false;
 
     // For sizes < 9, always use interpolated metrics from 9 and force placeholder mode
+    // (the rasterization floor invariant — atlases below 9px don't exist).
     if (BitmapText._shouldUseMinSize(fontProperties.fontSize)) {
-      const minSizeProps = BitmapText._createFontPropsAtMinSize(fontProperties);
-      const metricsAt9 = FontMetricsStore.getFontMetrics(minSizeProps);
-
-      if (!metricsAt9) {
-        // Size 9 metrics don't exist - can't render
+      fontMetrics = BitmapText.#lookupInterpolatedMetricsForSmallSize(fontProperties);
+      if (!fontMetrics) {
+        // Size 9 metrics don't exist either - can't render
         return {
           rendered: false,
           status: createErrorStatus(StatusCode.NO_METRICS, {
@@ -1506,9 +1518,6 @@ class BitmapText {
           })
         };
       }
-
-      // Create interpolated metrics wrapper and force placeholder mode
-      fontMetrics = BitmapText.#createInterpolatedFontMetrics(metricsAt9, fontProperties.fontSize);
       forceInvalidAtlas = true; // Always use placeholders for sizes < 9
     } else if (!fontMetrics) {
       // Normal size but metrics not found
@@ -1750,13 +1759,11 @@ class BitmapText {
 
     let invariantFontMetrics = FontMetricsStore.getFontMetrics(invariantFontProps);
 
-    // If invariant font not found and size < 9, try interpolating from size 9
+    // If invariant font not found and size < 9, try interpolating from size 9.
+    // Silent null on failure: the caller treats hasInvariantFont = false as "no
+    // invariant available" and falls back to the base font.
     if (!invariantFontMetrics && BitmapText._shouldUseMinSize(fontProperties.fontSize)) {
-      const invariantMinSizeProps = BitmapText._createFontPropsAtMinSize(invariantFontProps);
-      const invariantMetricsAt9 = FontMetricsStore.getFontMetrics(invariantMinSizeProps);
-      if (invariantMetricsAt9) {
-        invariantFontMetrics = BitmapText.#createInterpolatedFontMetrics(invariantMetricsAt9, fontProperties.fontSize);
-      }
+      invariantFontMetrics = BitmapText.#lookupInterpolatedMetricsForSmallSize(invariantFontProps);
     }
 
     // FontMetricsStore.getFontMetrics returns `undefined` when the font isn't
@@ -3046,54 +3053,11 @@ class AtlasPositioning {
   }
 
   /**
-   * Check if atlas position (xInAtlas, yInAtlas) exists for a character. In the
-   * current materialisation path both are always set when a placement exists,
-   * so this is a subset of hasPositioning — retained for builder-side validators
-   * that may set placements in stages.
-   * @param {string} char
-   * @returns {boolean}
-   */
-  hasAtlasPosition(char) {
-    const p = this._placements[char];
-    return p !== undefined && p.xInAtlas !== undefined && p.yInAtlas !== undefined;
-  }
-
-  /**
    * Get all available characters in this atlas positioning.
    * @returns {string[]}
    */
   getAvailableCharacters() {
     return Object.keys(this._placements);
-  }
-
-  getTightWidth(char) {
-    const p = this._placements[char];
-    return p && p.tightWidth;
-  }
-
-  getTightHeight(char) {
-    const p = this._placements[char];
-    return p && p.tightHeight;
-  }
-
-  getXInAtlas(char) {
-    const p = this._placements[char];
-    return p && p.xInAtlas;
-  }
-
-  getYInAtlas(char) {
-    const p = this._placements[char];
-    return p && p.yInAtlas;
-  }
-
-  getDx(char) {
-    const p = this._placements[char];
-    return p && p.dx;
-  }
-
-  getDy(char) {
-    const p = this._placements[char];
-    return p && p.dy;
   }
 }
 

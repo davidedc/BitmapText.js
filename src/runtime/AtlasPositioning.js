@@ -43,53 +43,10 @@ class AtlasPositioning {
   }
 
   /**
-   * Check if atlas position (xInAtlas, yInAtlas) exists for a character. In the
-   * current materialisation path both are always set when a placement exists,
-   * so this is a subset of hasPositioning — retained for builder-side validators
-   * that may set placements in stages.
-   * @param {string} char
-   * @returns {boolean}
-   */
-  hasAtlasPosition(char) {
-    const p = this._placements[char];
-    return p !== undefined && p.xInAtlas !== undefined && p.yInAtlas !== undefined;
-  }
-
-  /**
    * Get all available characters in this atlas positioning.
    * @returns {string[]}
    */
   getAvailableCharacters() {
     return Object.keys(this._placements);
-  }
-
-  getTightWidth(char) {
-    const p = this._placements[char];
-    return p && p.tightWidth;
-  }
-
-  getTightHeight(char) {
-    const p = this._placements[char];
-    return p && p.tightHeight;
-  }
-
-  getXInAtlas(char) {
-    const p = this._placements[char];
-    return p && p.xInAtlas;
-  }
-
-  getYInAtlas(char) {
-    const p = this._placements[char];
-    return p && p.yInAtlas;
-  }
-
-  getDx(char) {
-    const p = this._placements[char];
-    return p && p.dx;
-  }
-
-  getDy(char) {
-    const p = this._placements[char];
-    return p && p.dy;
   }
 }
