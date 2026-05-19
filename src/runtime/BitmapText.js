@@ -333,13 +333,8 @@ class BitmapText {
       };
     }
 
-    const { invariantFontProps, invariantFontMetrics, hasInvariantFont } =
-      BitmapText.#resolveInvariantFont(fontProperties);
-
-    // Resolve all character aliases upfront using fast regex pass
-    // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
-    const resolvedText = CharacterSets.resolveString(text);
-    const chars = [...resolvedText];
+    const { invariantFontProps, invariantFontMetrics, hasInvariantFont, chars } =
+      BitmapText.#resolveRenderContext(text, fontProperties);
 
     const missingChars = BitmapText.#scanForMissingChars(chars, fontMetrics, invariantFontMetrics, hasInvariantFont);
 
@@ -371,6 +366,11 @@ class BitmapText {
     let actualBoundingBoxRight_CssPx;
     let advancement_CssPx = 0;
 
+    // Hoist the rounding-mode decision out of the per-glyph loop (constant per render).
+    const advancementFn_CssPx = fontMetrics.isInterpolatedMetrics
+      ? BitmapText.#calcAdvancementInterpolated_CssPx
+      : BitmapText.#calcAdvancementCrisp_CssPx;
+
     for (let i = 0; i < chars.length; i++) {
       const char = chars[i];
       const nextChar = chars[i + 1];
@@ -390,7 +390,7 @@ class BitmapText {
       actualBoundingBoxAscent = Math.max(actualBoundingBoxAscent, characterMetrics.actualBoundingBoxAscent);
       actualBoundingBoxDescent = Math.min(actualBoundingBoxDescent, characterMetrics.actualBoundingBoxDescent);
 
-      advancement_CssPx = this.calculateAdvancement_CssPx(currentFontMetrics, currentFontProps, char, nextChar, textProperties, characterMetrics);
+      advancement_CssPx = advancementFn_CssPx(currentFontMetrics, currentFontProps, char, nextChar, textProperties, characterMetrics);
       width_CssPx += advancement_CssPx;
     }
 
@@ -488,13 +488,8 @@ class BitmapText {
       };
     }
 
-    const { invariantFontProps, invariantFontMetrics, hasInvariantFont } =
-      BitmapText.#resolveInvariantFont(fontProperties);
-
-    // Resolve all character aliases upfront using fast regex pass
-    // This is 2-386x faster than per-character resolution (see CharacterSets.resolveString)
-    const resolvedText = CharacterSets.resolveString(text);
-    const chars = [...resolvedText];
+    const { invariantFontProps, invariantFontMetrics, hasInvariantFont, chars } =
+      BitmapText.#resolveRenderContext(text, fontProperties);
 
     const missingMetricsChars = BitmapText.#scanForMissingChars(chars, fontMetrics, invariantFontMetrics, hasInvariantFont);
 
@@ -577,7 +572,8 @@ class BitmapText {
       // Use optimized batch rendering for colored text
       // This reduces composite operations from N (per character) to 1 (per text string)
       const batchResult = BitmapText.#drawColoredTextBatched(
-        ctx, text, chars, position_PhysPx, atlasData, fontMetrics, fontProperties, textProperties
+        ctx, text, chars, position_PhysPx, atlasData, fontMetrics, fontProperties, textProperties,
+        invariantFontProps, invariantFontMetrics, hasInvariantFont
       );
 
       // Merge batch results into tracking sets
@@ -588,6 +584,14 @@ class BitmapText {
     } else {
       // Black text or invalid atlas: use character-by-character rendering
       // Note: chars array is already resolved (emojis→symbols) from resolvedText
+      //
+      // Hoist the rounding-mode decision out of the per-glyph loop. fontMetrics
+      // is constant for this render; if it's interpolated, all glyph advancements
+      // stay as floats; otherwise we round per-glyph.
+      const advancementFn_PhysPx = fontMetrics.isInterpolatedMetrics
+        ? BitmapText.#calcAdvancementInterpolated_PhysPx
+        : BitmapText.#calcAdvancementCrisp_PhysPx;
+
       for (let i = 0; i < chars.length; i++) {
         const currentChar = chars[i];
         const nextChar = chars[i + 1];
@@ -627,8 +631,7 @@ class BitmapText {
         );
 
         // Calculate advancement using current font's metrics
-        position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
-          currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
+        position_PhysPx.x += advancementFn_PhysPx(currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
       }
     }
 
@@ -704,6 +707,27 @@ class BitmapText {
   }
 
   /**
+   * Resolve render context (invariant font + alias-resolved char array) — the
+   * shared prologue of measureText and drawTextFromAtlas. Both begin with the
+   * same three steps: resolve the font-invariant variant, alias-resolve the
+   * text, spread to a char array. Called once per render (not per glyph), so
+   * the extra function-call cost is irrelevant.
+   *
+   * @param {string} text - Raw input text
+   * @param {FontProperties} fontProperties - Caller's font properties
+   * @returns {{invariantFontProps: FontProperties, invariantFontMetrics: (FontMetrics|null), hasInvariantFont: boolean, chars: string[]}}
+   * @private
+   */
+  static #resolveRenderContext(text, fontProperties) {
+    const { invariantFontProps, invariantFontMetrics, hasInvariantFont } =
+      BitmapText.#resolveInvariantFont(fontProperties);
+    // Resolve all character aliases upfront using fast regex pass
+    // (2-386x faster than per-character resolution; see CharacterSets.resolveString)
+    const chars = [...CharacterSets.resolveString(text)];
+    return { invariantFontProps, invariantFontMetrics, hasInvariantFont, chars };
+  }
+
+  /**
    * Scan an already-resolved character array for glyphs missing from the
    * appropriate font (base or font-invariant). Shared by measureText and
    * drawTextFromAtlas for pre-flight validation.
@@ -729,71 +753,77 @@ class BitmapText {
     return missingChars;
   }
 
-  // Get the advancement of the i-th character i.e. needed AFTER the i-th character
-  // so that the i+1-th character is drawn at the right place
-  // This depends on both the advancement specified by the glyph of the i-th character
-  // AND by the kerning correction depending on the pair of the i-th and i+1-th characters
+  // Advancement = cursor delta AFTER drawing the i-th character (so the i+1-th
+  // sits in the right place). Composed from the glyph's metric advancement plus
+  // the kerning correction for the (i, i+1) pair.
+  //
+  // STRUCTURE: the shared float computation lives in #computeAdvancement_CssPx_Float;
+  // four specialised wrappers select unit (CssPx / PhysPx) and rounding mode
+  // (crisp / interpolated) so the per-glyph hot path is a monomorphic call to a
+  // single non-branching function — the isInterpolatedMetrics decision is hoisted
+  // out of the loop by the caller (see drawTextFromAtlas / measureText). The
+  // public dispatcher `calculateAdvancement_CssPx` is retained for the FAB caller
+  // (BitmapTextFAB.js) where per-call overhead doesn't matter.
 
-  static calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics = null) {
-    if (!textProperties) {
-      textProperties = new TextProperties();
+  /**
+   * Shared float computation: characterMetrics.width (or space override),
+   * minus kerning correction in 1/1000-em units scaled by fontSize.
+   * Returns an unrounded CSS-px float. Has NO defensive null checks — all callers
+   * must pass real textProperties and characterMetrics.
+   * @private
+   */
+  static #computeAdvancement_CssPx_Float(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics) {
+    let x_CssPx;
+    if (char === " ") {
+      const spaceOverride = fontMetrics.getSpaceAdvancementOverride();
+      x_CssPx = (spaceOverride !== null) ? spaceOverride : characterMetrics.width;
+    } else {
+      x_CssPx = characterMetrics.width;
     }
+    const kerningCorrection = BitmapText.#getKerningCorrection(fontMetrics, char, nextChar, textProperties);
+    return x_CssPx - fontProperties.fontSize * kerningCorrection / BitmapText.KERNING_UNIT_DIVISOR;
+  }
+
+  // Hot-path PhysPx variants — look up characterMetrics, apply rounding mode,
+  // multiply by pixelDensity. Called once per glyph from the per-glyph loops in
+  // drawTextFromAtlas and #drawColoredTextBatched (via hoisted local reference).
+  static #calcAdvancementCrisp_PhysPx(fontMetrics, fontProperties, char, nextChar, textProperties) {
+    const characterMetrics = fontMetrics.getCharacterMetrics(char);
+    const x_CssPx = BitmapText.#computeAdvancement_CssPx_Float(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
+    return Math.round(x_CssPx) * fontProperties.pixelDensity;
+  }
+
+  static #calcAdvancementInterpolated_PhysPx(fontMetrics, fontProperties, char, nextChar, textProperties) {
+    const characterMetrics = fontMetrics.getCharacterMetrics(char);
+    const x_CssPx = BitmapText.#computeAdvancement_CssPx_Float(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
+    return x_CssPx * fontProperties.pixelDensity;
+  }
+
+  // CssPx variants for measureText — characterMetrics is passed in (caller already
+  // looked it up to read ascent/descent), no density multiply.
+  static #calcAdvancementCrisp_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics) {
+    const x_CssPx = BitmapText.#computeAdvancement_CssPx_Float(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
+    return Math.round(x_CssPx);
+  }
+
+  static #calcAdvancementInterpolated_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics) {
+    return BitmapText.#computeAdvancement_CssPx_Float(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
+  }
+
+  // Public API kept for BitmapTextFAB.js (builder-side kerning preview). Not hot;
+  // a single conditional at the end is fine here.
+  static calculateAdvancement_CssPx(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics = null) {
     if (!characterMetrics) {
       characterMetrics = fontMetrics.getCharacterMetrics(char);
     }
-    let x_CssPx = 0;
-
-    // LIMITATION: Only handles standard space (U+0020), not other Unicode space characters
-
-    // Handle space first ------------------------------------------
-    // You could add the space advancement as we got it from the browser
-    // (remember that the space doesn't have the tightCanvasBox)
-    // but since at small sizes we meddle with kerning quite a bit, we want
-    // to also meddle with this to try to make the width of text
-    // similar to what the browser paints normally.
-    // console.log(characterMetrics.width + " " + x_CSS_Px);
-    // deal with the size of the " " character
-    if (char === " ") {
-      const spaceAdvancementOverrideForSmallSizesInPx_CssPx = fontMetrics.getSpaceAdvancementOverride();
-      if (spaceAdvancementOverrideForSmallSizesInPx_CssPx !== null) {
-        x_CssPx += spaceAdvancementOverrideForSmallSizesInPx_CssPx;
-      }
-      else {
-        x_CssPx += characterMetrics.width;
-      }
-    }
-    // Non-space characters
-    else {
-      x_CssPx += characterMetrics.width;
-    }
-
-    // Apply kerning correction
-    let kerningCorrection = BitmapText.#getKerningCorrection(fontMetrics, char, nextChar, textProperties);
-
-    // Kerning adjustments are measured in 1/1000 em units (font-size relative).
-    // We convert to pixels by multiplying font size by the kerning correction
-    // and dividing by 1000. This keeps kerning proportional to font size while
-    // maintaining precision in the stored kerning values.
-    x_CssPx -= fontProperties.fontSize * kerningCorrection / BitmapText.KERNING_UNIT_DIVISOR;
-
-    // For interpolated metrics (sizes < 9), preserve float precision for linear scaling
-    // For normal metrics (sizes ≥ 9), round to integers for crisp pixel-aligned rendering
-    if (fontMetrics.isInterpolatedMetrics) {
-      return x_CssPx;  // Float positioning for placeholder rectangles
-    } else {
-      return Math.round(x_CssPx);  // Integer positioning for crisp atlas glyphs
-    }
+    const x_CssPx = BitmapText.#computeAdvancement_CssPx_Float(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics);
+    return fontMetrics.isInterpolatedMetrics ? x_CssPx : Math.round(x_CssPx);
   }
 
   static #getKerningCorrection(fontMetrics, char, nextChar, textProperties) {
-    if (!textProperties) {
-      textProperties = new TextProperties();
-    }
-
     if (textProperties.isKerningEnabled && nextChar) {
       return fontMetrics.getKerningAdjustment(char, nextChar);
     }
-
     return 0;
   }
 
@@ -939,7 +969,8 @@ class BitmapText {
    * @param {TextProperties} textProperties - Text rendering configuration
    * @returns {{missingAtlasChars: Set, placeholdersUsed: boolean}} Status information
    */
-  static #drawColoredTextBatched(ctx, text, chars, startPosition_PhysPx, atlasData, fontMetrics, fontProperties, textProperties) {
+  static #drawColoredTextBatched(ctx, text, chars, startPosition_PhysPx, atlasData, fontMetrics, fontProperties, textProperties,
+                                  invariantFontProps, invariantFontMetrics, hasInvariantFont) {
     const missingAtlasChars = new Set();
     let placeholdersUsed = false;
 
@@ -953,8 +984,8 @@ class BitmapText {
 
     const metrics = measureResult.metrics;
 
-    const { invariantFontProps, invariantFontMetrics, hasInvariantFont } =
-      BitmapText.#resolveInvariantFont(fontProperties);
+    // invariantFontProps / invariantFontMetrics / hasInvariantFont are passed by the
+    // single caller (drawTextFromAtlas) so we don't redo #resolveInvariantFont here.
     const invariantAtlasData = invariantFontMetrics ?
       AtlasDataStore.getAtlasData(invariantFontProps) : null;
 
@@ -1031,6 +1062,11 @@ class BitmapText {
       y: baselineY_PhysPx
     };
 
+    // Hoist the rounding-mode decision out of the per-glyph loop (constant per render).
+    const advancementFn_PhysPx = fontMetrics.isInterpolatedMetrics
+      ? BitmapText.#calcAdvancementInterpolated_PhysPx
+      : BitmapText.#calcAdvancementCrisp_PhysPx;
+
     // Note: chars array is already resolved (emojis→symbols) from caller
     for (let i = 0; i < chars.length; i++) {
       const currentChar = chars[i];
@@ -1056,36 +1092,28 @@ class BitmapText {
         missingAtlasChars.add(currentChar);
         placeholdersUsed = true;
         // Advance position even for missing characters to maintain layout
-        position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
-          currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties
-        );
+        position_PhysPx.x += advancementFn_PhysPx(currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties);
         continue;
       }
 
       // Draw glyph to scratch canvas (skip spaces, they have no visual)
       if (currentChar !== ' ' && currentAtlasData.hasPositioning(currentChar)) {
-        const ap = currentAtlasData.atlasPositioning;
+        const p = currentAtlasData.atlasPositioning._placements[currentChar];
         const atlasImage = currentAtlasData.atlasImage.image;
-        const xInAtlas = ap._xInAtlas[currentChar];
-        const yInAtlas = ap._yInAtlas[currentChar];
-        const tightWidth = ap._tightWidth[currentChar];
-        const tightHeight = ap._tightHeight[currentChar];
-        const dx = ap._dx[currentChar];
-        const dy = ap._dy[currentChar];
 
         // Draw original glyph (black) to scratch canvas at correct position
         BitmapText.#coloredGlyphCtx.drawImage(
           atlasImage,
-          xInAtlas, yInAtlas,
-          tightWidth, tightHeight,
-          Math.round(position_PhysPx.x + dx),
-          Math.round(position_PhysPx.y + dy),
-          tightWidth, tightHeight
+          p.xInAtlas, p.yInAtlas,
+          p.tightWidth, p.tightHeight,
+          Math.round(position_PhysPx.x + p.dx),
+          Math.round(position_PhysPx.y + p.dy),
+          p.tightWidth, p.tightHeight
         );
       }
 
       // Advance position for next character
-      position_PhysPx.x += BitmapText.#calculateCharacterAdvancement_PhysPx(
+      position_PhysPx.x += advancementFn_PhysPx(
         currentFontMetrics, currentFontProps, currentChar, nextChar, textProperties
       );
     }
@@ -1147,16 +1175,10 @@ class BitmapText {
     // 3. Draw colored glyph to main canvas
     if (!atlasData.hasPositioning(char)) return;
 
-    const ap = atlasData.atlasPositioning;
+    const p = atlasData.atlasPositioning._placements[char];
     const atlasImage = atlasData.atlasImage.image;
-    const xInAtlas = ap._xInAtlas[char];
-    const yInAtlas = ap._yInAtlas[char];
-    const tightWidth = ap._tightWidth[char];
-    const tightHeight = ap._tightHeight[char];
-    const dx = ap._dx[char];
-    const dy = ap._dy[char];
-    const coloredGlyphCanvas = BitmapText.#createColoredGlyph(atlasImage, xInAtlas, yInAtlas, tightWidth, tightHeight, textColor);
-    BitmapText.#renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, tightWidth, tightHeight, dx, dy);
+    const coloredGlyphCanvas = BitmapText.#createColoredGlyph(atlasImage, p.xInAtlas, p.yInAtlas, p.tightWidth, p.tightHeight, textColor);
+    BitmapText.#renderGlyphToMainCanvas(ctx, coloredGlyphCanvas, position_PhysPx, p.tightWidth, p.tightHeight, p.dx, p.dy);
   }
 
   static #createColoredGlyph(atlasImage, xInAtlas, yInAtlas, tightWidth, tightHeight, textColor) {
@@ -1206,26 +1228,19 @@ class BitmapText {
   static #drawCharacterDirect(ctx, char, position_PhysPx, atlasData, fontMetrics) {
     if (!atlasData.hasPositioning(char)) return;
 
-    const ap = atlasData.atlasPositioning;
+    const p = atlasData.atlasPositioning._placements[char];
     const atlasImage = atlasData.atlasImage.image;
-    const xInAtlas = ap._xInAtlas[char];
-    const yInAtlas = ap._yInAtlas[char];
-    const tightWidth = ap._tightWidth[char];
-    const tightHeight = ap._tightHeight[char];
-    const dx = ap._dx[char];
-    const dy = ap._dy[char];
 
-    // Single drawImage operation: atlas → main canvas
-    // Round coordinates at draw stage for crisp, pixel-aligned rendering
-    // Position tracking uses floats to avoid accumulation errors, but final
-    // draw coordinates must be integers to prevent subpixel antialiasing
+    // Single drawImage operation: atlas → main canvas.
+    // Round coordinates at draw stage for crisp, pixel-aligned rendering;
+    // position tracking accumulates as float, the final draw is integer.
     ctx.drawImage(
       atlasImage,
-      xInAtlas, yInAtlas,
-      tightWidth, tightHeight,
-      Math.round(position_PhysPx.x + dx),
-      Math.round(position_PhysPx.y + dy),
-      tightWidth, tightHeight
+      p.xInAtlas, p.yInAtlas,
+      p.tightWidth, p.tightHeight,
+      Math.round(position_PhysPx.x + p.dx),
+      Math.round(position_PhysPx.y + p.dy),
+      p.tightWidth, p.tightHeight
     );
   }
 
@@ -1286,11 +1301,6 @@ class BitmapText {
       Math.round(width_PhysPx),
       Math.round(height_PhysPx)
     );
-  }
-
-  static #calculateCharacterAdvancement_PhysPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties) {
-    return this.calculateAdvancement_CssPx(fontMetrics, fontProperties, currentChar, nextChar, textProperties)
-      * fontProperties.pixelDensity;
   }
 
   /**

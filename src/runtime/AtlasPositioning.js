@@ -1,140 +1,95 @@
 // AtlasPositioning - Core Runtime Class
 //
-// This is a CORE RUNTIME class designed for minimal bundle size (~2-3KB).
-// It encapsulates atlas positioning data for a single font configuration as an immutable domain object.
+// Immutable value object holding atlas positioning data for ONE font configuration.
+// Storage shape is a single `_placements` dict whose values are flat per-character
+// objects { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy }. One dict lookup
+// per glyph in the hot path; V8 sees a stable hidden class for the placement
+// objects (all fields written in the same order at construction in
+// PositioningBundleStore.getPositioning) and inlines field reads as fixed offsets.
 //
 // DISTRIBUTION ROLE:
 // - Part of "runtime-only" distribution for production applications
-// - Extended by AtlasPositioningFAB for font assets building capabilities (if needed)
-// - Contains only essential positioning data and accessor methods
-// - No font generation, validation, or optimization code
+// - Extended by AtlasPositioningFAB for font assets building capabilities
 //
-// ARCHITECTURE:
-// - Immutable object representing atlas positioning for ONE font configuration
-// - Pre-computed lookups for optimal performance during glyph rendering
-// - All positioning data stored in memory for O(1) access during rendering
-// - Provides clean API for accessing glyph positioning within atlas
-// - Follows same immutable pattern as FontProperties and FontMetrics
-//
-// SEPARATION RATIONALE:
-// - Encapsulates related atlas positioning data together
-// - Eliminates repeated parameter passing for positioning lookups
-// - Serves as domain object for atlas positioning
-// - Enables cleaner, more object-oriented API
+// IMMUTABILITY:
+// - Frozen by default. AtlasPositioningFAB passes { mutable: true } during build.
+// - When non-mutable, both the dict and each placement object are frozen.
 //
 class AtlasPositioning {
   constructor(data, options = {}) {
-    // Validate input data structure
     if (!data || typeof data !== 'object') {
       throw new Error('AtlasPositioning constructor requires data object');
     }
 
-    // Atlas positioning data for glyph rendering. xInAtlas / yInAtlas are
-    // populated either by AtlasPositioningFAB at build time, or by
-    // PositioningBundleStore at runtime (xInAtlas = cumsum(tightWidth),
-    // yInAtlas = 0 for the single-row tight atlas).
-    this._tightWidth = data.tightWidth || {};
-    this._tightHeight = data.tightHeight || {};
-    this._dx = data.dx || {};
-    this._dy = data.dy || {};
-    this._xInAtlas = data.xInAtlas || {};
-    this._yInAtlas = data.yInAtlas || {};
+    // _placements[char] = { xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy }
+    this._placements = data.placements || {};
 
-    // Freeze for immutability (safe to use as value object)
-    // Skip freezing if this is for font assets building (FAB)
     if (!options.mutable) {
-      Object.freeze(this._tightWidth);
-      Object.freeze(this._tightHeight);
-      Object.freeze(this._dx);
-      Object.freeze(this._dy);
-      Object.freeze(this._xInAtlas);
-      Object.freeze(this._yInAtlas);
+      for (const char in this._placements) {
+        Object.freeze(this._placements[char]);
+      }
+      Object.freeze(this._placements);
       Object.freeze(this);
     }
   }
 
   /**
-   * Check if positioning data exists for a character
-   * @param {string} char - Character (code point) to check
-   * @returns {boolean} True if positioning data exists
+   * Check if positioning data exists for a character.
+   * @param {string} char
+   * @returns {boolean}
    */
   hasPositioning(char) {
-    return this._xInAtlas[char] !== undefined &&
-           this._yInAtlas[char] !== undefined &&
-           this._tightWidth[char] !== undefined &&
-           this._tightHeight[char] !== undefined;
+    return this._placements[char] !== undefined;
   }
 
   /**
-   * Check if atlas position (xInAtlas, yInAtlas) exists for a character
-   * @param {string} char - Character (code point) to check
-   * @returns {boolean} True if atlas position exists
+   * Check if atlas position (xInAtlas, yInAtlas) exists for a character. In the
+   * current materialisation path both are always set when a placement exists,
+   * so this is a subset of hasPositioning — retained for builder-side validators
+   * that may set placements in stages.
+   * @param {string} char
+   * @returns {boolean}
    */
   hasAtlasPosition(char) {
-    return this._xInAtlas[char] !== undefined &&
-           this._yInAtlas[char] !== undefined;
+    const p = this._placements[char];
+    return p !== undefined && p.xInAtlas !== undefined && p.yInAtlas !== undefined;
   }
 
   /**
-   * Get all available characters in this atlas positioning
-   * @returns {string[]} Array of available characters
+   * Get all available characters in this atlas positioning.
+   * @returns {string[]}
    */
   getAvailableCharacters() {
-    return Object.keys(this._xInAtlas);
+    return Object.keys(this._placements);
   }
 
-  /**
-   * Get tight width for a character
-   * @param {string} char - Character (code point) to get width for
-   * @returns {number|undefined} Tight width or undefined if not found
-   */
   getTightWidth(char) {
-    return this._tightWidth[char];
+    const p = this._placements[char];
+    return p && p.tightWidth;
   }
 
-  /**
-   * Get tight height for a character
-   * @param {string} char - Character (code point) to get height for
-   * @returns {number|undefined} Tight height or undefined if not found
-   */
   getTightHeight(char) {
-    return this._tightHeight[char];
+    const p = this._placements[char];
+    return p && p.tightHeight;
   }
 
-  /**
-   * Get X position in atlas for a character
-   * @param {string} char - Character (code point) to get X position for
-   * @returns {number|undefined} X position in atlas or undefined if not found
-   */
   getXInAtlas(char) {
-    return this._xInAtlas[char];
+    const p = this._placements[char];
+    return p && p.xInAtlas;
   }
 
-  /**
-   * Get Y position in atlas for a character
-   * @param {string} char - Character (code point) to get Y position for
-   * @returns {number|undefined} Y position in atlas or undefined if not found
-   */
   getYInAtlas(char) {
-    return this._yInAtlas[char];
+    const p = this._placements[char];
+    return p && p.yInAtlas;
   }
 
-  /**
-   * Get dx offset for a character
-   * @param {string} char - Character (code point) to get dx for
-   * @returns {number|undefined} dx offset or undefined if not found
-   */
   getDx(char) {
-    return this._dx[char];
+    const p = this._placements[char];
+    return p && p.dx;
   }
 
-  /**
-   * Get dy offset for a character
-   * @param {string} char - Character (code point) to get dy for
-   * @returns {number|undefined} dy offset or undefined if not found
-   */
   getDy(char) {
-    return this._dy[char];
+    const p = this._placements[char];
+    return p && p.dy;
   }
-
 }

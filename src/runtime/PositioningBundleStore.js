@@ -87,32 +87,28 @@ class PositioningBundleStore {
       );
     }
 
-    const tightWidth = {};
-    const tightHeight = {};
-    const dx = {};
-    const dy = {};
-    const xInAtlas = {};
-    const yInAtlas = {};
-
+    // Materialise one placement object per character. Fields are written in a
+    // fixed order so V8 pins a stable hidden class — see AtlasPositioning header.
+    // xInAtlas is the cumsum of tightWidth, reset whenever yInAtlas changes
+    // (multi-row atlases). yInAtlas is implicit 0 for the single-row form.
+    const placements = {};
     let runningX = 0;
     let prevY = 0;
     for (let i = 0; i < characters.length; i++) {
-      const char = characters[i];
-      tightWidth[char] = tightWidthArr[i];
-      tightHeight[char] = tightHeightArr[i];
-      dx[char] = dxArr[i];
-      dy[char] = dyArr[i];
       const y = yInAtlasArr ? yInAtlasArr[i] : 0;
-      // Reset xInAtlas at the start of each new row, mirroring AtlasBuilder's pack order.
       if (y !== prevY) { runningX = 0; prevY = y; }
-      xInAtlas[char] = runningX;
-      yInAtlas[char] = y;
+      placements[characters[i]] = {
+        xInAtlas: runningX,
+        yInAtlas: y,
+        tightWidth: tightWidthArr[i],
+        tightHeight: tightHeightArr[i],
+        dx: dxArr[i],
+        dy: dyArr[i]
+      };
       runningX += tightWidthArr[i];
     }
 
-    const positioning = new AtlasPositioning({
-      tightWidth, tightHeight, dx, dy, xInAtlas, yInAtlas
-    });
+    const positioning = new AtlasPositioning({ placements });
     PositioningBundleStore.#atlasPositioning.set(fontProperties.key, positioning);
     return positioning;
   }

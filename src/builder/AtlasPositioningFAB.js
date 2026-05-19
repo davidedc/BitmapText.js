@@ -1,83 +1,66 @@
 // AtlasPositioningFAB - Font Assets Building Class for Atlas Positioning
 //
-// This class extends AtlasPositioning to provide font assets building capabilities
-// for atlas positioning data including glyph dimensions and positioning calculations.
+// Extends AtlasPositioning with mutable building helpers used during font asset
+// generation. Storage is the same `_placements[char] = {xInAtlas, yInAtlas,
+// tightWidth, tightHeight, dx, dy}` dict the runtime uses — the FAB sets the
+// per-glyph metrics first (calculatePositioning), then fills in atlas placement
+// coordinates (setGlyphPositionInAtlas) after AtlasBuilder lays out the rows.
+// extractAtlasPositioningInstance produces a frozen runtime AtlasPositioning by
+// deep-cloning the placement dict.
 //
 // DISTRIBUTION ROLE:
 // - Part of "full toolkit" distribution for font assets building applications
-// - Extends AtlasPositioning with building, calculation, and optimization features
-// - Provides extraction methods to create clean runtime AtlasPositioning instances
-//
-// ARCHITECTURE:
-// - Inherits all runtime functionality from AtlasPositioning
-// - Uses mutable option to prevent freezing during building operations
-// - Calculates positioning data from glyph canvas bounds and font metrics
-// - Manages xInAtlas positions during atlas building process
-//
-// SEPARATION OF CONCERNS:
-// - AtlasPositioningFAB: Handles ONLY atlas positioning calculations
-// - FontMetricsFAB: Handles ONLY font metrics, kerning, and character measurements
-// - Clear separation eliminates mixed responsibilities
-//
-// KEY CAPABILITIES:
-// - Calculate positioning from glyph canvas data
-// - Set xInAtlas positions during atlas building
-// - Extract clean immutable AtlasPositioning instances
+// - NOT included in the runtime-only bundle.
 class AtlasPositioningFAB extends AtlasPositioning {
   constructor(data = {}) {
-    // Call super with mutable option to prevent freezing during building
     super(data, { mutable: true });
   }
 
   /**
-   * Extract a clean immutable AtlasPositioning instance for runtime use
-   * This removes FAB-specific functionality and provides only runtime data
-   * @returns {AtlasPositioning} Clean runtime AtlasPositioning instance
+   * Extract a clean immutable AtlasPositioning instance for runtime use.
+   * Deep-copies each placement object so subsequent FAB mutations don't leak
+   * into the frozen runtime instance.
+   * @returns {AtlasPositioning}
    */
   extractAtlasPositioningInstance() {
-    return new AtlasPositioning({
-      tightWidth: { ...this._tightWidth },
-      tightHeight: { ...this._tightHeight },
-      dx: { ...this._dx },
-      dy: { ...this._dy },
-      xInAtlas: { ...this._xInAtlas },
-      yInAtlas: { ...this._yInAtlas }
-    });
+    const placements = {};
+    for (const char in this._placements) {
+      placements[char] = { ...this._placements[char] };
+    }
+    return new AtlasPositioning({ placements });
   }
 
   /**
-   * Calculate and set atlas positioning data from glyph data
-   * This method calculates positioning data needed for atlas building and rendering
+   * Calculate and set atlas positioning data from glyph data.
+   * Sets {tightWidth, tightHeight, dx, dy} per character with xInAtlas/yInAtlas
+   * initialised to 0 — atlas coordinates are filled in by setGlyphPositionInAtlas
+   * once AtlasBuilder has laid out the rows.
    * @param {Object} glyphs - Object mapping characters to glyph data
    * @param {FontProperties} fontProperties - Font configuration for positioning calculations
    * @param {FontMetricsStore} fontMetricsStore - Store to get character metrics from
    */
   calculatePositioning(glyphs, fontProperties, fontMetricsStore) {
-    // ⚠️ CRITICAL FIX: Use sorted character order for determinism
-    // JavaScript for...in iteration order is not guaranteed to be stable
+    // CRITICAL: Use sorted character order for determinism
     const sortedChars = Object.keys(glyphs).sort();
 
     for (const char of sortedChars) {
-      let glyph = glyphs[char];
+      const glyph = glyphs[char];
 
-      // Get character metrics from FontMetricsStore
       const fontMetrics = fontMetricsStore.getFontMetrics(fontProperties);
       if (!fontMetrics) {
         throw new Error(`No font metrics found for: ${fontProperties.key}`);
       }
 
-      let characterMetrics = fontMetrics.getCharacterMetrics(char);
+      const characterMetrics = fontMetrics.getCharacterMetrics(char);
 
-      // Empty glyph (no visible pixels — e.g. space): emit zero-sized entry to
-      // stay in lockstep with AtlasBuilder, which packs nothing for these. The
-      // runtime PositioningBundleStore computes xInAtlas as cumsum(tightWidth),
-      // so 0 here means subsequent glyphs aren't shifted in the atlas. drawImage
-      // with zero width is a no-op, so the render path tolerates this directly.
+      // Empty glyph (no visible pixels — e.g. space): emit zero-sized placement
+      // so we stay in lockstep with AtlasBuilder, which packs nothing here.
       if (!glyph.tightCanvasBox?.bottomRightCorner || !glyph.tightCanvasBox?.topLeftCorner) {
-        this._tightWidth[char] = 0;
-        this._tightHeight[char] = 0;
-        this._dx[char] = 0;
-        this._dy[char] = 0;
+        this._placements[char] = {
+          xInAtlas: 0, yInAtlas: 0,
+          tightWidth: 0, tightHeight: 0,
+          dx: 0, dy: 0
+        };
         continue;
       }
 
@@ -91,29 +74,39 @@ class AtlasPositioningFAB extends AtlasPositioning {
         glyph.tightCanvasBox.topLeftCorner.y +
         1;
 
-      // Calculate positioning offsets for atlas rendering (all in physical pixels).
-      // dx_PhysPx: Horizontal offset accounting for actualBoundingBoxLeft and tight canvas left edge
-      // dy_PhysPx: Vertical offset accounting for tight height, bottom distance, and pixelDensity baseline
+      // Atlas-positioning offsets (physical pixels).
+      // dx: horizontal offset for actualBoundingBoxLeft and tight canvas left edge.
+      // dy: vertical offset for tight height, bottom distance, and pixelDensity baseline.
       const dx_PhysPx = - Math.round(characterMetrics.actualBoundingBoxLeft) * fontProperties.pixelDensity + glyph.tightCanvasBox.topLeftCorner.x;
       const dy_PhysPx = - tightHeight_PhysPx - glyph.tightCanvas.distanceBetweenBottomAndBottomOfCanvas_PhysPx + 1 * fontProperties.pixelDensity;
 
-      // Set the calculated metrics (stored in physical pixels)
-      this._tightWidth[char] = tightWidth_PhysPx;
-      this._tightHeight[char] = tightHeight_PhysPx;
-      this._dx[char] = dx_PhysPx;
-      this._dy[char] = dy_PhysPx;
+      this._placements[char] = {
+        xInAtlas: 0,
+        yInAtlas: 0,
+        tightWidth: tightWidth_PhysPx,
+        tightHeight: tightHeight_PhysPx,
+        dx: dx_PhysPx,
+        dy: dy_PhysPx
+      };
     }
   }
 
   /**
-   * Set glyph position in atlas after atlas is built
+   * Set glyph position in atlas after atlas is built.
    * @param {string} char - Character to set position for
    * @param {number} xPosition_PhysPx - X position in atlas (physical pixels)
-   * @param {number} yPosition_PhysPx - Y position in atlas (physical pixels, defaults to 0 for backward compatibility)
+   * @param {number} yPosition_PhysPx - Y position in atlas (physical pixels, defaults to 0)
    */
   setGlyphPositionInAtlas(char, xPosition_PhysPx, yPosition_PhysPx = 0) {
-    this._xInAtlas[char] = xPosition_PhysPx;
-    this._yInAtlas[char] = yPosition_PhysPx;
+    let p = this._placements[char];
+    if (!p) {
+      // Caller is setting position before calculatePositioning ran for this char.
+      // Create a placeholder; tightWidth/tightHeight/dx/dy stay at 0 until later.
+      p = { xInAtlas: 0, yInAtlas: 0, tightWidth: 0, tightHeight: 0, dx: 0, dy: 0 };
+      this._placements[char] = p;
+    }
+    p.xInAtlas = xPosition_PhysPx;
+    p.yInAtlas = yPosition_PhysPx;
   }
 
   /**
@@ -121,22 +114,17 @@ class AtlasPositioningFAB extends AtlasPositioning {
    * by the positioning bundle. Each integer array is delta+zigzag+varint+base64
    * encoded via BundleCodec.encodeDeltaVarIntB64.
    *
-   * Single-row atlas (most fonts): 4 base64 strings
-   *   [tightWidth, tightHeight, dx, dy]
-   * yInAtlas is implicit (always 0); xInAtlas is implicit (cumsum of tightWidth).
-   *
-   * Multi-row atlas (e.g. wide italic-bold density-2 sizes whose total tight width
-   * would exceed cwebp's 16383px hard limit): 5 base64 strings
-   *   [tightWidth, tightHeight, dx, dy, yInAtlas]
-   * xInAtlas is still implicit — runtime cumsums tightWidth, resetting to 0
-   * whenever yInAtlas changes.
+   * Single-row atlas: 4 base64 strings [tightWidth, tightHeight, dx, dy]
+   *   yInAtlas implicit (always 0); xInAtlas implicit (cumsum of tightWidth).
+   * Multi-row atlas:  5 base64 strings [tightWidth, tightHeight, dx, dy, yInAtlas]
+   *   xInAtlas still implicit — runtime cumsums tightWidth, resetting on yInAtlas change.
    *
    * Arrays are in sorted-character order (matches AtlasBuilder's pack order).
    *
    * @returns {string[]}
    */
   serialiseAsBundleRecord() {
-    const characters = Object.keys(this._tightWidth).sort();
+    const characters = Object.keys(this._placements).sort();
     const n = characters.length;
     const tightWidth = new Array(n);
     const tightHeight = new Array(n);
@@ -145,12 +133,12 @@ class AtlasPositioningFAB extends AtlasPositioning {
     const yInAtlas = new Array(n);
     let multiRow = false;
     for (let i = 0; i < n; i++) {
-      const char = characters[i];
-      tightWidth[i] = this._tightWidth[char];
-      tightHeight[i] = this._tightHeight[char];
-      dx[i] = this._dx[char];
-      dy[i] = this._dy[char];
-      const y = this._yInAtlas[char] || 0;
+      const p = this._placements[characters[i]];
+      tightWidth[i] = p.tightWidth;
+      tightHeight[i] = p.tightHeight;
+      dx[i] = p.dx;
+      dy[i] = p.dy;
+      const y = p.yInAtlas || 0;
       yInAtlas[i] = y;
       if (y !== 0) multiRow = true;
     }
@@ -161,82 +149,65 @@ class AtlasPositioningFAB extends AtlasPositioning {
   }
 
   /**
-   * Validate that all required positioning data is present for expected characters
-   * @param {string[]} expectedChars - Array of characters that should have positioning
-   * @returns {string[]} Array of missing positioning data (empty if all present)
+   * Validate that all required positioning data is present for expected characters.
+   * @param {string[]} expectedChars - Characters that should have positioning
+   * @returns {string[]} Array of missing positioning descriptions (empty if all present)
    */
   validatePositioning(expectedChars) {
     const missingPositioning = [];
-
     for (const char of expectedChars) {
       if (!this.hasPositioning(char)) {
         missingPositioning.push(`${char}: missing positioning`);
       }
     }
-
     return missingPositioning;
   }
 
   /**
-   * Clear all positioning data
+   * Clear all positioning data.
    */
   clearPositioning() {
-    this._tightWidth = {};
-    this._tightHeight = {};
-    this._dx = {};
-    this._dy = {};
-    this._xInAtlas = {};
-    this._yInAtlas = {};
+    this._placements = {};
   }
 
   /**
-   * Get summary of positioning data for debugging
+   * Get summary of positioning data for debugging.
    * @returns {Object} Summary statistics
    */
   getPositioningSummary() {
     const characters = this.getAvailableCharacters();
     const firstChar = characters[0];
+    const sample = characters.length > 0 ? this._placements[firstChar] : null;
     return {
       characterCount: characters.length,
-      characters: characters.slice(0, 10), // First 10 for brevity
-      samplePositioning: characters.length > 0 ? {
-        xInAtlas: this._xInAtlas[firstChar],
-        yInAtlas: this._yInAtlas[firstChar],
-        tightWidth: this._tightWidth[firstChar],
-        tightHeight: this._tightHeight[firstChar],
-        dx: this._dx[firstChar],
-        dy: this._dy[firstChar]
-      } : null
+      characters: characters.slice(0, 10),
+      samplePositioning: sample ? { ...sample } : null
     };
   }
 
   /**
-   * Generate a deterministic hash of the positioning data for any AtlasPositioning instance
-   * Uses a simple but stable algorithm that works cross-browser/cross-platform
-   * NOTE: This is a static method that accepts an AtlasPositioning instance (runtime or FAB)
-   * @param {AtlasPositioning} atlasPositioningInstance - Instance to hash
+   * Generate a deterministic hash of the positioning data for any
+   * AtlasPositioning instance. Uses a simple FNV-1a variant.
+   * @param {AtlasPositioning} atlasPositioningInstance
    * @returns {string} 6-character hex hash
    */
   static getHash(atlasPositioningInstance) {
-    // Get sorted characters for deterministic ordering
     const chars = atlasPositioningInstance.getAvailableCharacters().sort();
 
-    // Build deterministic string representation
     const parts = [];
     for (const char of chars) {
-      // Use fixed-precision to avoid floating point variations
+      const p = atlasPositioningInstance._placements[char];
       parts.push(
         `${char}:` +
-        `w${atlasPositioningInstance._tightWidth[char]}` +
-        `h${atlasPositioningInstance._tightHeight[char]}` +
-        `x${atlasPositioningInstance._dx[char]}` +
-        `y${atlasPositioningInstance._dy[char]}` +
-        `ax${atlasPositioningInstance._xInAtlas[char]}` +
-        `ay${atlasPositioningInstance._yInAtlas[char]}`
+        `w${p.tightWidth}` +
+        `h${p.tightHeight}` +
+        `x${p.dx}` +
+        `y${p.dy}` +
+        `ax${p.xInAtlas}` +
+        `ay${p.yInAtlas}`
       );
     }
 
-    // Simple hash function (FNV-1a variant)
     const str = parts.join('|');
     let hash = 2166136261; // FNV offset basis
     for (let i = 0; i < str.length; i++) {
@@ -244,7 +215,6 @@ class AtlasPositioningFAB extends AtlasPositioning {
       hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
     }
 
-    // Return as 6-character hex (24 bits)
     return (hash >>> 0).toString(16).substring(0, 6).padStart(6, '0');
   }
 }
