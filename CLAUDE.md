@@ -11,12 +11,13 @@ The hard problem: each engine's text rasterizer (Skia, Core Text, etc.) anti-ali
 - Atlas formats on disk: authoring `.qoi` → delivery `.webp` → self-registering `.js` wrappers (so `file://` works).
 - One `font-assets/metrics-bundle.js` (~1.1 MB) carries every font's metrics — density-agnostic, deflate-raw + base64. Decoded on first `loadFont` via `DecompressionStream` (browser, Node ≥ 18) or `zlib.inflateRawSync` (Node ≤ 17). Replaced ~18 MB of per-file `metrics-density-*.js` files.
 - Dev tooling: Playwright + Puppeteer for headless build/hash CI; Python `http.server` for local serving.
+- Embedder integration surface: `BitmapText.configure({fontDirectory, canvasFactory, fontLoader})` plus the symmetric setters (`setFontDirectory`, `setCanvasFactory`, `setFontLoader`). Used by embedders (e.g. SWCanvas) and workers; standalone users never need to touch them — the platform loader self-registers automatically.
 
 ## Repo map
 
 - `src/runtime/` — production runtime (static `BitmapText`, immutable domain objects, internal stores). Ships in every bundle.
 - `src/builder/` — `*FAB.js` font-assets-builder classes. Extend runtime types with mutability. Builder-only EXCEPT `MetricsExpander.js`, which also ships in the runtime bundle. The canonical list of files in the runtime bundle is `COMMON_FILES` in `scripts/build-runtime-bundle.sh` — consult it before claiming a file is or isn't in the runtime.
-- `src/platform/` — browser vs. Node `FontLoader*.js` + `canvas-mock.js`; chosen at bundle time.
+- `src/platform/` — browser vs. Node `FontLoader*.js` (declaring `BitmapTextFontLoaderBrowser` / `BitmapTextFontLoaderNode` respectively) + `canvas-mock.js`; chosen at bundle time. Each platform file self-registers via `BitmapText.setFontLoader(...)` in a footer that runs only when the environment matches (`typeof document !== 'undefined'` for Browser; `typeof document === 'undefined' && typeof require === 'function'` for Node). Workers fall through to neither — embedders in workers must call `setFontLoader` explicitly.
 - `src/specs/` + `font-sets/` — JSON font-set specifications (schema in `docs/FONT_SET_FORMAT.md`).
 - `src/automation/`, `src/ui/`, `src/node/` — browser-side builder/automation orchestration, builder UI, Node demo entrypoints.
 - `dist/` — checked-in browser + Node bundles.

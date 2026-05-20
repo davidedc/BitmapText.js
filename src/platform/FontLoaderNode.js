@@ -1,4 +1,4 @@
-// FontLoader - Node.js-Specific Font Loader
+// BitmapTextFontLoaderNode - Node.js-Specific Font Loader
 //
 // Node implementation of the FontLoaderBase abstract methods.
 //
@@ -13,7 +13,7 @@
 // ATLAS:
 //   Per-font, unchanged: read QOI base64 wrapper, decode, paint into a canvas.
 
-class FontLoader extends FontLoaderBase {
+class BitmapTextFontLoaderNode extends FontLoaderBase {
 
   // ============================================
   // File Name Constants
@@ -35,14 +35,14 @@ class FontLoader extends FontLoaderBase {
    */
   static async loadBundleFile() {
     if (typeof require === 'undefined') {
-      throw new Error('FontLoader.loadBundleFile requires Node.js environment');
+      throw new Error('BitmapTextFontLoaderNode.loadBundleFile requires Node.js environment');
     }
 
     const fs = require('fs');
     const path = require('path');
 
     const fontDirectory = FontLoaderBase.getFontDirectory();
-    const bundlePath = path.resolve(fontDirectory, FontLoader.METRICS_BUNDLE_FILENAME);
+    const bundlePath = path.resolve(fontDirectory, BitmapTextFontLoaderNode.METRICS_BUNDLE_FILENAME);
     const bundleCode = fs.readFileSync(bundlePath, 'utf8');
     eval(bundleCode);
 
@@ -62,7 +62,7 @@ class FontLoader extends FontLoaderBase {
    */
   static async loadPositioningBundleFile(pixelDensity) {
     if (typeof require === 'undefined') {
-      throw new Error('FontLoader.loadPositioningBundleFile requires Node.js environment');
+      throw new Error('BitmapTextFontLoaderNode.loadPositioningBundleFile requires Node.js environment');
     }
 
     const fs = require('fs');
@@ -71,7 +71,7 @@ class FontLoader extends FontLoaderBase {
     const fontDirectory = FontLoaderBase.getFontDirectory();
     const bundlePath = path.resolve(
       fontDirectory,
-      `${FontLoader.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`
+      `${BitmapTextFontLoaderNode.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`
     );
     const bundleCode = fs.readFileSync(bundlePath, 'utf8');
     eval(bundleCode);
@@ -94,14 +94,14 @@ class FontLoader extends FontLoaderBase {
    */
   static async loadAtlasFile(idString, isFileProtocol, bitmapTextClass) {
     if (typeof require === 'undefined') {
-      throw new Error('FontLoader.loadAtlasFile requires Node.js environment');
+      throw new Error('BitmapTextFontLoaderNode.loadAtlasFile requires Node.js environment');
     }
 
     const fs = require('fs');
     const path = require('path');
 
     const fontDirectory = FontLoaderBase.getFontDirectory();
-    const atlasPath = path.resolve(fontDirectory, `${FontLoader.ATLAS_PREFIX}${idString}-qoi${FontLoader.JS_EXTENSION}`);
+    const atlasPath = path.resolve(fontDirectory, `${BitmapTextFontLoaderNode.ATLAS_PREFIX}${idString}-qoi${BitmapTextFontLoaderNode.JS_EXTENSION}`);
 
     try {
       const atlasCode = fs.readFileSync(atlasPath, 'utf8');
@@ -114,7 +114,7 @@ class FontLoader extends FontLoaderBase {
       if (pkg && pkg.base64Data) {
         // Decode QOI
         if (typeof QOIDecode === 'undefined') {
-          throw new Error('FontLoader: QOIDecode not available - required for atlas loading');
+          throw new Error('BitmapTextFontLoaderNode: QOIDecode not available - required for atlas loading');
         }
 
         const qoiData = Uint8Array.from(atob(pkg.base64Data), c => c.charCodeAt(0));
@@ -137,4 +137,20 @@ class FontLoader extends FontLoaderBase {
       console.warn('Will use placeholder rectangles');
     }
   }
+}
+
+// Self-register only in a require()-capable, DOM-less environment:
+//   - `typeof document === 'undefined'` rules out browser-main-thread.
+//   - `typeof require === 'function'` rules out web workers (no `document`,
+//     no `require`).
+// In a worker, NEITHER this footer nor FontLoaderBrowser's auto-registers —
+// the embedder must call BitmapText.setFontLoader explicitly. Fail-loud beats
+// silently auto-registering the wrong loader (the failure mode of checking
+// only `typeof window === 'undefined'`).
+//
+// `typeof BitmapText !== 'undefined'` is paranoia in case load ordering ever
+// changes; in normal concatenation BitmapText loads before this file and the
+// guard is a no-op.
+if (typeof document === 'undefined' && typeof require === 'function' && typeof BitmapText !== 'undefined') {
+  BitmapText.setFontLoader(BitmapTextFontLoaderNode);
 }

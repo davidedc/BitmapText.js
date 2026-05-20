@@ -15,8 +15,8 @@ if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' |
 // - Contains no font generation code to keep bundle size minimal
 //
 // ARCHITECTURE:
-// - Facade pattern: Delegates storage to AtlasDataStore/FontMetricsStore, font loading to FontLoader
-// - fontDirectory configuration owned by FontLoader (this class delegates get/set)
+// - Facade pattern: Delegates storage to AtlasDataStore/FontMetricsStore, font loading to the platform font loader
+// - fontDirectory configuration owned by the platform font loader (this class delegates get/set)
 // - Auto-detects environment (browser vs Node.js) for canvas creation
 // - Draws text by looking up glyphs from atlases and positioning them with metrics/kerning
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
@@ -109,8 +109,8 @@ class BitmapText {
   // Font data storage delegated to AtlasDataStore and FontMetricsStore
   // (no private maps - stores are the single source of truth)
 
-  // Configuration (user overrides, delegates to FontLoader for defaults)
-  // fontDirectory is owned by FontLoader (it's the component that uses it)
+  // Configuration (user overrides, delegates to the platform font loader for defaults)
+  // fontDirectory is owned by the platform font loader (it's the component that uses it)
   static #canvasFactory = (typeof document !== 'undefined' ? () => document.createElement('canvas') : null);         // Optional user override
 
   // Rendering resources (lazy-initialized on first render)
@@ -118,7 +118,7 @@ class BitmapText {
   static #coloredGlyphCtx = null;       // 2D context for scratch canvas
 
   // Font loader (platform-specific, set at runtime)
-  static _fontLoader = null;            // FontLoaderBrowser or FontLoaderNode
+  static _fontLoader = null;            // BitmapTextFontLoaderBrowser or BitmapTextFontLoaderNode
 
   // ============================================
   // Configuration API (Optional)
@@ -126,7 +126,7 @@ class BitmapText {
 
   /**
    * Set font directory (overrides default)
-   * Delegates to FontLoader which owns this configuration
+   * Delegates to the platform font loader which owns this configuration
    * @param {string} path - Path to font assets directory
    */
   static setFontDirectory(path) {
@@ -136,7 +136,7 @@ class BitmapText {
 
   /**
    * Get font directory (returns override or default)
-   * Delegates to FontLoader which owns this configuration
+   * Delegates to the platform font loader which owns this configuration
    * @returns {string} Font directory path
    */
   static getFontDirectory() {
@@ -182,10 +182,34 @@ class BitmapText {
   }
 
   /**
+   * Explicitly register a platform font loader class.
+   *
+   * Standalone browser/Node bundles don't need this — each platform file
+   * self-registers via this same API at script load time (see the footers of
+   * src/platform/FontLoaderBrowser.js and …Node.js). Use this only when:
+   *   - running in a context where neither footer auto-registers (e.g. web
+   *     workers, sandboxed iframes, embedder bundles that ship a custom loader)
+   *   - tests want to inject a stub
+   *
+   * Assigns the class (not an instance), matching the convention used by the
+   * platform self-registration footers.
+   *
+   * @param {Function} loaderClass - A class extending FontLoaderBase
+   * @example
+   *   class MyLoader extends FontLoaderBase { … }
+   *   BitmapText.setFontLoader(MyLoader);
+   *   await BitmapText.loadFont(fontProps.idString);
+   */
+  static setFontLoader(loaderClass) {
+    BitmapText._fontLoader = loaderClass;
+  }
+
+  /**
    * Configure multiple options at once
    * @param {Object} options - Configuration options
    * @param {string} [options.fontDirectory] - Font assets directory
    * @param {Function} [options.canvasFactory] - Canvas factory function
+   * @param {Function} [options.fontLoader] - Platform font loader class (extends FontLoaderBase)
    */
   static configure(options = {}) {
     if (options.fontDirectory !== undefined) {
@@ -194,28 +218,29 @@ class BitmapText {
     if (options.canvasFactory !== undefined) {
       BitmapText.setCanvasFactory(options.canvasFactory);
     }
+    if (options.fontLoader !== undefined) {
+      BitmapText.setFontLoader(options.fontLoader);
+    }
   }
 
   /**
-   * Ensure font loader is initialized
+   * Ensure a platform font loader has been registered.
+   *
+   * Standalone browser/Node bundles auto-register via the platform files'
+   * self-registration footers. If neither footer ran (e.g. web worker, sandboxed
+   * context, embedder that strips the platform files), the embedder must call
+   * BitmapText.setFontLoader(MyLoader) before any font-loading API.
+   *
    * @private
    */
   static _ensureFontLoader() {
-    if (BitmapText._fontLoader) {
-      return;
-    }
-
-    // Check if platform-specific FontLoader is available
-    if (typeof FontLoader === 'undefined') {
-      throw new Error(
-        'BitmapText: FontLoader not loaded.\n' +
-        'Ensure platform-specific FontLoader is included before BitmapText.js:\n' +
-        '  - Browser: <script src="src/platform/FontLoaderBrowser.js"></script>\n' +
-        '  - Node.js: Include src/platform/FontLoaderNode.js in bundle'
-      );
-    }
-
-    BitmapText._fontLoader = FontLoader;
+    if (BitmapText._fontLoader) return;
+    throw new Error(
+      'BitmapText: no font loader registered. ' +
+      'Ensure a platform-specific loader is loaded before calling font-loading APIs ' +
+      '(BitmapTextFontLoaderBrowser in browsers, BitmapTextFontLoaderNode in Node), ' +
+      'or call BitmapText.setFontLoader(yourLoaderClass) explicitly.'
+    );
   }
 
   /**
@@ -1308,7 +1333,7 @@ class BitmapText {
   static __resetForTesting() {
     FontMetricsStore.clear();
     AtlasDataStore.clear();
-    // Clear FontLoader state
+    // Clear platform font loader state
     if (FontLoaderBase._loadingPromises) {
       FontLoaderBase._loadingPromises.clear();
     }
@@ -1318,7 +1343,7 @@ class BitmapText {
     if (FontLoaderBase._pendingAtlases) {
       FontLoaderBase._pendingAtlases.clear();
     }
-    // Reset FontLoader configuration
+    // Reset platform font loader configuration
     if (FontLoaderBase.setFontDirectory) {
       FontLoaderBase.setFontDirectory(null);
     }

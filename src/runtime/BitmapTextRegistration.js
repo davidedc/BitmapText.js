@@ -133,7 +133,7 @@ BitmapText.registerPositioningBundle = function(pixelDensity, b64) {
 
 /**
  * Register atlas from atlas-*.js file (base64 only, positioning reconstructed later)
- * Delegates to FontLoader which handles platform-specific details
+ * Delegates to the platform font loader which handles platform-specific details
  * @param {number} density - Pixel density (e.g., 1 or 1.5)
  * @param {string} fontFamily - Font family name (e.g., 'Arial')
  * @param {number} styleIdx - Style index (0=normal, 1=italic, 2=oblique)
@@ -148,7 +148,7 @@ BitmapText.registerAtlas = function(density, fontFamily, styleIdx, weightIdx, si
 };
 
 // ============================================
-// Loading API (Delegates to FontLoader)
+// Loading API (Delegates to the platform font loader)
 // ============================================
 
 /**

@@ -205,6 +205,7 @@ if (typeof global !== 'undefined') {
   global.PositioningBundleStore = PositioningBundleStore;
   global.CharacterSets = CharacterSets;
   global.FontLoaderBase = FontLoaderBase;
+  global.BitmapTextFontLoaderNode = BitmapTextFontLoaderNode;
   global.AtlasPositioning = AtlasPositioning;
   global.QOIDecode = QOIDecode;
 }

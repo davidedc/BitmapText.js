@@ -15,7 +15,7 @@
 // - Owns fontDirectory configuration (#fontDirectory private field)
 // - Works with BitmapText's internal stores (#fontMetrics, #atlasData)
 // - Uses Template Method Pattern for platform-specific operations
-// - BitmapText delegates fontDirectory get/set to FontLoader (this class owns what it uses)
+// - BitmapText delegates fontDirectory get/set to the platform font loader (this class owns what it uses)
 //
 // LOADING FLOW:
 // 1. loadFonts() orchestrates loading of multiple fonts
@@ -328,7 +328,7 @@ class FontLoaderBase {
    */
   static async loadMetricsFile(/* idString, bitmapTextClass */) {
     if (!FontLoaderBase._bundleReadyPromise) {
-      FontLoaderBase._bundleReadyPromise = FontLoader.loadBundleFile();
+      FontLoaderBase._bundleReadyPromise = BitmapText._fontLoader.loadBundleFile();
     }
     return FontLoaderBase._bundleReadyPromise;
   }
@@ -345,7 +345,7 @@ class FontLoaderBase {
     if (!FontLoaderBase._positioningBundleReadyPromises.has(pixelDensity)) {
       FontLoaderBase._positioningBundleReadyPromises.set(
         pixelDensity,
-        FontLoader.loadPositioningBundleFile(pixelDensity)
+        BitmapText._fontLoader.loadPositioningBundleFile(pixelDensity)
       );
     }
     return FontLoaderBase._positioningBundleReadyPromises.get(pixelDensity);
@@ -393,7 +393,7 @@ class FontLoaderBase {
     }
     FontLoaderBase._bundleReadyPromise = null;
     FontLoaderBase._bundleDecodePromise = null;
-    FontLoader._removeMetricsScriptElement();
+    BitmapText._fontLoader?._removeMetricsScriptElement();
   }
 
   /**
@@ -408,13 +408,13 @@ class FontLoaderBase {
     }
     FontLoaderBase._positioningBundleReadyPromises.delete(pixelDensity);
     FontLoaderBase._positioningBundleDecodePromises.delete(pixelDensity);
-    FontLoader._removePositioningScriptElement(pixelDensity);
+    BitmapText._fontLoader?._removePositioningScriptElement(pixelDensity);
   }
 
   // Platform cleanup hooks. Base impls are no-ops so Node inherits the right
   // behaviour for free (its eval-based loader has no DOM to clean). The
-  // browser FontLoader overrides these to detach the <script> from
-  // document.head.
+  // browser BitmapTextFontLoaderBrowser overrides these to detach the
+  // <script> from document.head.
   static _removeMetricsScriptElement() { /* no-op base impl */ }
   static _removePositioningScriptElement(/* pixelDensity */) { /* no-op base impl */ }
 

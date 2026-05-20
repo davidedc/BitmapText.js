@@ -47,6 +47,7 @@
     "generate-hashes": "node scripts/generate-reference-hashes.js",
     "check-atlas-binary": "node scripts/check-atlas-binary.js",
     "verify-metrics-bundle": "node scripts/verify-metrics-bundle.js",
+    "test-loader-injection": "node scripts/check-loader-injection.js",
     "smoke-test": "node scripts/playwright-smoke-loop.js",
     "screenshot": "node scripts/screenshot-with-playwright.js",
     "automated-font-builder": "node scripts/automated-font-builder.js"

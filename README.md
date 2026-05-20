@@ -1326,6 +1326,17 @@ try {
 
   **Note**: End users of the static BitmapText API don't need to interact with these classes directly.
 
+## Embedder Integration
+
+  Most users don't need this section — the standalone browser and Node bundles work without any configuration. Embedders integrating BitmapText into other rendering systems (e.g. software canvases, web workers, custom platforms) have an opt-in extension surface:
+
+  - `BitmapText.configure({ fontDirectory, canvasFactory, fontLoader })` — set any subset at once. All four keys are independently optional.
+  - `BitmapText.setFontDirectory(path)` — override where atlas/metric files live.
+  - `BitmapText.setCanvasFactory(factory)` — provide a custom factory for output canvases (the canvases BitmapText draws *into*). Useful when running in Node without `node-canvas`, or when targeting a software-canvas backend.
+  - `BitmapText.setFontLoader(loaderClass)` — register a custom platform loader (extends `FontLoaderBase`). The Browser and Node platform files self-register their respective loaders (`BitmapTextFontLoaderBrowser` / `BitmapTextFontLoaderNode`) automatically when their environment is detected. Workers fall through to neither auto-registration footer — they must call `setFontLoader` explicitly.
+
+  See `CLAUDE.md` (project root) for the constraint set governing this surface — hot-path discipline, the universal invariants, and the three-gate verification methodology.
+
 ## Build Instructions
 
 ### Development Setup

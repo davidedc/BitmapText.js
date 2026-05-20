@@ -1045,8 +1045,8 @@ if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' |
 // - Contains no font generation code to keep bundle size minimal
 //
 // ARCHITECTURE:
-// - Facade pattern: Delegates storage to AtlasDataStore/FontMetricsStore, font loading to FontLoader
-// - fontDirectory configuration owned by FontLoader (this class delegates get/set)
+// - Facade pattern: Delegates storage to AtlasDataStore/FontMetricsStore, font loading to the platform font loader
+// - fontDirectory configuration owned by the platform font loader (this class delegates get/set)
 // - Auto-detects environment (browser vs Node.js) for canvas creation
 // - Draws text by looking up glyphs from atlases and positioning them with metrics/kerning
 // - Uses textBaseline='bottom' positioning (y = bottom of text bounding box)
@@ -1139,8 +1139,8 @@ class BitmapText {
   // Font data storage delegated to AtlasDataStore and FontMetricsStore
   // (no private maps - stores are the single source of truth)
 
-  // Configuration (user overrides, delegates to FontLoader for defaults)
-  // fontDirectory is owned by FontLoader (it's the component that uses it)
+  // Configuration (user overrides, delegates to the platform font loader for defaults)
+  // fontDirectory is owned by the platform font loader (it's the component that uses it)
   static #canvasFactory = (typeof document !== 'undefined' ? () => document.createElement('canvas') : null);         // Optional user override
 
   // Rendering resources (lazy-initialized on first render)
@@ -1148,7 +1148,7 @@ class BitmapText {
   static #coloredGlyphCtx = null;       // 2D context for scratch canvas
 
   // Font loader (platform-specific, set at runtime)
-  static _fontLoader = null;            // FontLoaderBrowser or FontLoaderNode
+  static _fontLoader = null;            // BitmapTextFontLoaderBrowser or BitmapTextFontLoaderNode
 
   // ============================================
   // Configuration API (Optional)
@@ -1156,7 +1156,7 @@ class BitmapText {
 
   /**
    * Set font directory (overrides default)
-   * Delegates to FontLoader which owns this configuration
+   * Delegates to the platform font loader which owns this configuration
    * @param {string} path - Path to font assets directory
    */
   static setFontDirectory(path) {
@@ -1166,7 +1166,7 @@ class BitmapText {
 
   /**
    * Get font directory (returns override or default)
-   * Delegates to FontLoader which owns this configuration
+   * Delegates to the platform font loader which owns this configuration
    * @returns {string} Font directory path
    */
   static getFontDirectory() {
@@ -1212,10 +1212,34 @@ class BitmapText {
   }
 
   /**
+   * Explicitly register a platform font loader class.
+   *
+   * Standalone browser/Node bundles don't need this — each platform file
+   * self-registers via this same API at script load time (see the footers of
+   * src/platform/FontLoaderBrowser.js and …Node.js). Use this only when:
+   *   - running in a context where neither footer auto-registers (e.g. web
+   *     workers, sandboxed iframes, embedder bundles that ship a custom loader)
+   *   - tests want to inject a stub
+   *
+   * Assigns the class (not an instance), matching the convention used by the
+   * platform self-registration footers.
+   *
+   * @param {Function} loaderClass - A class extending FontLoaderBase
+   * @example
+   *   class MyLoader extends FontLoaderBase { … }
+   *   BitmapText.setFontLoader(MyLoader);
+   *   await BitmapText.loadFont(fontProps.idString);
+   */
+  static setFontLoader(loaderClass) {
+    BitmapText._fontLoader = loaderClass;
+  }
+
+  /**
    * Configure multiple options at once
    * @param {Object} options - Configuration options
    * @param {string} [options.fontDirectory] - Font assets directory
    * @param {Function} [options.canvasFactory] - Canvas factory function
+   * @param {Function} [options.fontLoader] - Platform font loader class (extends FontLoaderBase)
    */
   static configure(options = {}) {
     if (options.fontDirectory !== undefined) {
@@ -1224,28 +1248,29 @@ class BitmapText {
     if (options.canvasFactory !== undefined) {
       BitmapText.setCanvasFactory(options.canvasFactory);
     }
+    if (options.fontLoader !== undefined) {
+      BitmapText.setFontLoader(options.fontLoader);
+    }
   }
 
   /**
-   * Ensure font loader is initialized
+   * Ensure a platform font loader has been registered.
+   *
+   * Standalone browser/Node bundles auto-register via the platform files'
+   * self-registration footers. If neither footer ran (e.g. web worker, sandboxed
+   * context, embedder that strips the platform files), the embedder must call
+   * BitmapText.setFontLoader(MyLoader) before any font-loading API.
+   *
    * @private
    */
   static _ensureFontLoader() {
-    if (BitmapText._fontLoader) {
-      return;
-    }
-
-    // Check if platform-specific FontLoader is available
-    if (typeof FontLoader === 'undefined') {
-      throw new Error(
-        'BitmapText: FontLoader not loaded.\n' +
-        'Ensure platform-specific FontLoader is included before BitmapText.js:\n' +
-        '  - Browser: <script src="src/platform/FontLoaderBrowser.js"></script>\n' +
-        '  - Node.js: Include src/platform/FontLoaderNode.js in bundle'
-      );
-    }
-
-    BitmapText._fontLoader = FontLoader;
+    if (BitmapText._fontLoader) return;
+    throw new Error(
+      'BitmapText: no font loader registered. ' +
+      'Ensure a platform-specific loader is loaded before calling font-loading APIs ' +
+      '(BitmapTextFontLoaderBrowser in browsers, BitmapTextFontLoaderNode in Node), ' +
+      'or call BitmapText.setFontLoader(yourLoaderClass) explicitly.'
+    );
   }
 
   /**
@@ -2338,7 +2363,7 @@ class BitmapText {
   static __resetForTesting() {
     FontMetricsStore.clear();
     AtlasDataStore.clear();
-    // Clear FontLoader state
+    // Clear platform font loader state
     if (FontLoaderBase._loadingPromises) {
       FontLoaderBase._loadingPromises.clear();
     }
@@ -2348,7 +2373,7 @@ class BitmapText {
     if (FontLoaderBase._pendingAtlases) {
       FontLoaderBase._pendingAtlases.clear();
     }
-    // Reset FontLoader configuration
+    // Reset platform font loader configuration
     if (FontLoaderBase.setFontDirectory) {
       FontLoaderBase.setFontDirectory(null);
     }
@@ -2499,7 +2524,7 @@ BitmapText.registerPositioningBundle = function(pixelDensity, b64) {
 
 /**
  * Register atlas from atlas-*.js file (base64 only, positioning reconstructed later)
- * Delegates to FontLoader which handles platform-specific details
+ * Delegates to the platform font loader which handles platform-specific details
  * @param {number} density - Pixel density (e.g., 1 or 1.5)
  * @param {string} fontFamily - Font family name (e.g., 'Arial')
  * @param {number} styleIdx - Style index (0=normal, 1=italic, 2=oblique)
@@ -2514,7 +2539,7 @@ BitmapText.registerAtlas = function(density, fontFamily, styleIdx, weightIdx, si
 };
 
 // ============================================
-// Loading API (Delegates to FontLoader)
+// Loading API (Delegates to the platform font loader)
 // ============================================
 
 /**
@@ -3718,7 +3743,7 @@ class FontManifest {
 // - Owns fontDirectory configuration (#fontDirectory private field)
 // - Works with BitmapText's internal stores (#fontMetrics, #atlasData)
 // - Uses Template Method Pattern for platform-specific operations
-// - BitmapText delegates fontDirectory get/set to FontLoader (this class owns what it uses)
+// - BitmapText delegates fontDirectory get/set to the platform font loader (this class owns what it uses)
 //
 // LOADING FLOW:
 // 1. loadFonts() orchestrates loading of multiple fonts
@@ -4031,7 +4056,7 @@ class FontLoaderBase {
    */
   static async loadMetricsFile(/* idString, bitmapTextClass */) {
     if (!FontLoaderBase._bundleReadyPromise) {
-      FontLoaderBase._bundleReadyPromise = FontLoader.loadBundleFile();
+      FontLoaderBase._bundleReadyPromise = BitmapText._fontLoader.loadBundleFile();
     }
     return FontLoaderBase._bundleReadyPromise;
   }
@@ -4048,7 +4073,7 @@ class FontLoaderBase {
     if (!FontLoaderBase._positioningBundleReadyPromises.has(pixelDensity)) {
       FontLoaderBase._positioningBundleReadyPromises.set(
         pixelDensity,
-        FontLoader.loadPositioningBundleFile(pixelDensity)
+        BitmapText._fontLoader.loadPositioningBundleFile(pixelDensity)
       );
     }
     return FontLoaderBase._positioningBundleReadyPromises.get(pixelDensity);
@@ -4096,7 +4121,7 @@ class FontLoaderBase {
     }
     FontLoaderBase._bundleReadyPromise = null;
     FontLoaderBase._bundleDecodePromise = null;
-    FontLoader._removeMetricsScriptElement();
+    BitmapText._fontLoader?._removeMetricsScriptElement();
   }
 
   /**
@@ -4111,13 +4136,13 @@ class FontLoaderBase {
     }
     FontLoaderBase._positioningBundleReadyPromises.delete(pixelDensity);
     FontLoaderBase._positioningBundleDecodePromises.delete(pixelDensity);
-    FontLoader._removePositioningScriptElement(pixelDensity);
+    BitmapText._fontLoader?._removePositioningScriptElement(pixelDensity);
   }
 
   // Platform cleanup hooks. Base impls are no-ops so Node inherits the right
   // behaviour for free (its eval-based loader has no DOM to clean). The
-  // browser FontLoader overrides these to detach the <script> from
-  // document.head.
+  // browser BitmapTextFontLoaderBrowser overrides these to detach the
+  // <script> from document.head.
   static _removeMetricsScriptElement() { /* no-op base impl */ }
   static _removePositioningScriptElement(/* pixelDensity */) { /* no-op base impl */ }
 
@@ -4209,7 +4234,7 @@ class FontLoaderBase {
 // FontLoaderBrowser.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/platform/FontLoaderBrowser.js
 // ============================================================================
 
-// FontLoader - Browser-Specific Font Loader
+// BitmapTextFontLoaderBrowser - Browser-Specific Font Loader
 //
 // Browser implementation of the FontLoaderBase abstract methods.
 //
@@ -4225,7 +4250,7 @@ class FontLoaderBase {
 //   Per-font, as before — direct WebP fetch over HTTP(S), or base64-WebP via a
 //   `<script>` tag under `file://`.
 
-class FontLoader extends FontLoaderBase {
+class BitmapTextFontLoaderBrowser extends FontLoaderBase {
   // ============================================
   // File Name Constants
   // ============================================
@@ -4249,7 +4274,7 @@ class FontLoader extends FontLoaderBase {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      script.src = `${fontDirectory}${FontLoader.METRICS_BUNDLE_FILENAME}`;
+      script.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.METRICS_BUNDLE_FILENAME}`;
 
       script.onload = () => {
         const decodePromise = FontLoaderBase._bundleDecodePromise;
@@ -4284,7 +4309,7 @@ class FontLoader extends FontLoaderBase {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      script.src = `${fontDirectory}${FontLoader.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`;
+      script.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`;
 
       script.onload = () => {
         const decodePromise = FontLoaderBase._positioningBundleDecodePromises.get(pixelDensity);
@@ -4332,9 +4357,9 @@ class FontLoader extends FontLoaderBase {
    */
   static async loadAtlasFile(idString, isFileProtocol, bitmapTextClass) {
     if (isFileProtocol) {
-      return FontLoader._loadAtlasFromJS(idString, bitmapTextClass);
+      return BitmapTextFontLoaderBrowser._loadAtlasFromJS(idString, bitmapTextClass);
     } else {
-      return FontLoader._loadAtlasFromWebP(idString, bitmapTextClass);
+      return BitmapTextFontLoaderBrowser._loadAtlasFromWebP(idString, bitmapTextClass);
     }
   }
 
@@ -4355,7 +4380,7 @@ class FontLoader extends FontLoaderBase {
       const tFetchStart = performance.now();
       const imageScript = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      imageScript.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}-webp${FontLoader.JS_EXTENSION}`;
+      imageScript.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.ATLAS_PREFIX}${idString}-webp${BitmapTextFontLoaderBrowser.JS_EXTENSION}`;
 
       imageScript.onload = () => {
         const pkg = FontLoaderBase._tempAtlasPackages[idString];
@@ -4425,7 +4450,7 @@ class FontLoader extends FontLoaderBase {
       const tFetchStart = performance.now();
       const img = new Image();
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      img.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.WEBP_EXTENSION}`;
+      img.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.ATLAS_PREFIX}${idString}${BitmapTextFontLoaderBrowser.WEBP_EXTENSION}`;
 
       img.onload = async () => {
         const tImgOnload = performance.now();
@@ -4456,5 +4481,20 @@ class FontLoader extends FontLoaderBase {
       };
     });
   }
+}
+
+// Self-register if `document` is available. `document` (not `window`) is the
+// precise test — this loader uses <script>-tag injection (see line 39, etc.)
+// which needs the DOM, not just "is this a browser-ish global". Web workers
+// have `self` but no `document`, and this loader cannot function there;
+// FontLoaderNode's matching footer also opts out in workers, so an embedder
+// running in a worker MUST call BitmapText.setFontLoader explicitly — that's
+// fail-loud, which beats silently auto-registering the wrong loader.
+//
+// `typeof BitmapText !== 'undefined'` is paranoia in case load ordering ever
+// changes; in normal concatenation BitmapText loads before this file and the
+// guard is a no-op.
+if (typeof document !== 'undefined' && typeof BitmapText !== 'undefined') {
+  BitmapText.setFontLoader(BitmapTextFontLoaderBrowser);
 }
 

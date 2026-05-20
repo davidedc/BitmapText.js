@@ -1,4 +1,4 @@
-// FontLoader - Browser-Specific Font Loader
+// BitmapTextFontLoaderBrowser - Browser-Specific Font Loader
 //
 // Browser implementation of the FontLoaderBase abstract methods.
 //
@@ -14,7 +14,7 @@
 //   Per-font, as before — direct WebP fetch over HTTP(S), or base64-WebP via a
 //   `<script>` tag under `file://`.
 
-class FontLoader extends FontLoaderBase {
+class BitmapTextFontLoaderBrowser extends FontLoaderBase {
   // ============================================
   // File Name Constants
   // ============================================
@@ -38,7 +38,7 @@ class FontLoader extends FontLoaderBase {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      script.src = `${fontDirectory}${FontLoader.METRICS_BUNDLE_FILENAME}`;
+      script.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.METRICS_BUNDLE_FILENAME}`;
 
       script.onload = () => {
         const decodePromise = FontLoaderBase._bundleDecodePromise;
@@ -73,7 +73,7 @@ class FontLoader extends FontLoaderBase {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      script.src = `${fontDirectory}${FontLoader.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`;
+      script.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.POSITIONING_BUNDLE_PREFIX}${pixelDensity}.js`;
 
       script.onload = () => {
         const decodePromise = FontLoaderBase._positioningBundleDecodePromises.get(pixelDensity);
@@ -121,9 +121,9 @@ class FontLoader extends FontLoaderBase {
    */
   static async loadAtlasFile(idString, isFileProtocol, bitmapTextClass) {
     if (isFileProtocol) {
-      return FontLoader._loadAtlasFromJS(idString, bitmapTextClass);
+      return BitmapTextFontLoaderBrowser._loadAtlasFromJS(idString, bitmapTextClass);
     } else {
-      return FontLoader._loadAtlasFromWebP(idString, bitmapTextClass);
+      return BitmapTextFontLoaderBrowser._loadAtlasFromWebP(idString, bitmapTextClass);
     }
   }
 
@@ -144,7 +144,7 @@ class FontLoader extends FontLoaderBase {
       const tFetchStart = performance.now();
       const imageScript = document.createElement('script');
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      imageScript.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}-webp${FontLoader.JS_EXTENSION}`;
+      imageScript.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.ATLAS_PREFIX}${idString}-webp${BitmapTextFontLoaderBrowser.JS_EXTENSION}`;
 
       imageScript.onload = () => {
         const pkg = FontLoaderBase._tempAtlasPackages[idString];
@@ -214,7 +214,7 @@ class FontLoader extends FontLoaderBase {
       const tFetchStart = performance.now();
       const img = new Image();
       const fontDirectory = FontLoaderBase.getFontDirectory();
-      img.src = `${fontDirectory}${FontLoader.ATLAS_PREFIX}${idString}${FontLoader.WEBP_EXTENSION}`;
+      img.src = `${fontDirectory}${BitmapTextFontLoaderBrowser.ATLAS_PREFIX}${idString}${BitmapTextFontLoaderBrowser.WEBP_EXTENSION}`;
 
       img.onload = async () => {
         const tImgOnload = performance.now();
@@ -245,4 +245,19 @@ class FontLoader extends FontLoaderBase {
       };
     });
   }
+}
+
+// Self-register if `document` is available. `document` (not `window`) is the
+// precise test — this loader uses <script>-tag injection (see line 39, etc.)
+// which needs the DOM, not just "is this a browser-ish global". Web workers
+// have `self` but no `document`, and this loader cannot function there;
+// FontLoaderNode's matching footer also opts out in workers, so an embedder
+// running in a worker MUST call BitmapText.setFontLoader explicitly — that's
+// fail-loud, which beats silently auto-registering the wrong loader.
+//
+// `typeof BitmapText !== 'undefined'` is paranoia in case load ordering ever
+// changes; in normal concatenation BitmapText loads before this file and the
+// guard is a no-op.
+if (typeof document !== 'undefined' && typeof BitmapText !== 'undefined') {
+  BitmapText.setFontLoader(BitmapTextFontLoaderBrowser);
 }
