@@ -233,19 +233,4 @@ class AtlasImageFAB extends AtlasImage {
     };
   }
 
-  /**
-   * Get detailed information about this atlas image for debugging
-   * @returns {Object} Extended debug information
-   */
-  getDebugInfo() {
-    const baseInfo = super.getDebugInfo();
-    const validation = this.validateForRendering();
-
-    return {
-      ...baseInfo,
-      validation: validation,
-      memoryUsage: this.width * this.height * 4, // RGBA bytes
-      aspectRatio: this.width / this.height
-    };
-  }
 }

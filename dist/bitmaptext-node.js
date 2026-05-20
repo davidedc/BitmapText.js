@@ -3138,73 +3138,6 @@ class AtlasImage {
            this.width > 0 &&
            this.height > 0;
   }
-
-  /**
-   * Check if the image is ready for rendering operations
-   * @returns {boolean} True if image can be used for drawing operations
-   */
-  canRender() {
-    if (!this.isValid()) return false;
-
-    // For Image elements, check if they're loaded
-    if (this.image instanceof Image) {
-      return this.image.complete && this.image.naturalWidth > 0;
-    }
-
-    // Canvas elements are always ready if they have valid dimensions
-    return true;
-  }
-
-  /**
-   * Get the type of the underlying image element
-   * @returns {string} 'canvas' or 'image'
-   */
-  getImageType() {
-    if (this.image instanceof HTMLCanvasElement ||
-        (typeof OffscreenCanvas !== 'undefined' && this.image instanceof OffscreenCanvas)) {
-      return 'canvas';
-    }
-    if (this.image instanceof Image || this.image instanceof HTMLImageElement) {
-      return 'image';
-    }
-    return 'unknown';
-  }
-
-  /**
-   * Get a canvas context for drawing operations (if image is a canvas)
-   * @param {string} contextType - Context type (default: '2d')
-   * @returns {CanvasRenderingContext2D|null} Canvas context or null if not a canvas
-   */
-  getContext(contextType = '2d') {
-    if (this.getImageType() === 'canvas') {
-      return this.image.getContext(contextType);
-    }
-    return null;
-  }
-
-  /**
-   * Check if this atlas image equals another atlas image
-   * @param {AtlasImage} other - Another AtlasImage instance
-   * @returns {boolean} True if they reference the same image
-   */
-  equals(other) {
-    if (!(other instanceof AtlasImage)) return false;
-    return this.image === other.image;
-  }
-
-  /**
-   * Get debug information about this atlas image
-   * @returns {Object} Debug information
-   */
-  getDebugInfo() {
-    return {
-      type: this.getImageType(),
-      width: this.width,
-      height: this.height,
-      isValid: this.isValid(),
-      canRender: this.canRender()
-    };
-  }
 }
 // ============================================================================
 // AtlasData.js - Source: /Users/davidedellacasa/code/BitmapText.js/src/runtime/AtlasData.js
@@ -3256,37 +3189,11 @@ class AtlasData {
   }
 
   /**
-   * Check if positioning data exists for a character
-   * Null-safe convenience method that delegates to the AtlasPositioning instance.
-   * This demonstrates the delegation pattern: AtlasData wraps AtlasPositioning
-   * and provides a simplified interface for checking character availability.
-   * @param {string} char - Character (code point) to check
-   * @returns {boolean} True if positioning data exists
-   */
-  hasPositioning(char) {
-    if (!this.atlasPositioning) return false;
-
-    // Delegate to AtlasPositioning instance
-    return this.atlasPositioning.hasPositioning(char);
-  }
-
-  /**
    * Check if this atlas data is valid for rendering
    * @returns {boolean} True if atlas has valid image and dimensions
    */
   isValid() {
     return this.atlasImage?.isValid();
-  }
-
-  /**
-   * Get all available characters in this atlas
-   * @returns {string[]} Array of available characters
-   */
-  getAvailableCharacters() {
-    if (!this.atlasPositioning) return [];
-
-    // Delegate to AtlasPositioning instance
-    return this.atlasPositioning.getAvailableCharacters();
   }
 
   /**
@@ -3303,41 +3210,6 @@ class AtlasData {
    */
   get height() {
     return this.atlasImage.height;
-  }
-
-  /**
-   * Check if the atlas can be rendered
-   * @returns {boolean} True if atlas is ready for rendering operations
-   */
-  canRender() {
-    return this.atlasImage?.canRender();
-  }
-
-  /**
-   * Check if this atlas data equals another atlas data
-   * @param {AtlasData} other - Another AtlasData instance
-   * @returns {boolean} True if they reference the same image and positioning
-   */
-  equals(other) {
-    if (!(other instanceof AtlasData)) return false;
-    return this.atlasImage.equals(other.atlasImage) &&
-           this.atlasPositioning === other.atlasPositioning;
-  }
-
-  /**
-   * Get debug information about this atlas data
-   * @returns {Object} Debug information
-   */
-  getDebugInfo() {
-    return {
-      atlasImage: this.atlasImage ? this.atlasImage.getDebugInfo() : null,
-      atlasPositioning: this.atlasPositioning ? {
-        availableCharacters: this.atlasPositioning.getAvailableCharacters().length,
-        characters: this.atlasPositioning.getAvailableCharacters().slice(0, 10) // First 10 for brevity
-      } : null,
-      isValid: this.isValid(),
-      canRender: this.canRender()
-    };
   }
 }
 // ============================================================================

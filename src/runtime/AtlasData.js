@@ -44,37 +44,11 @@ class AtlasData {
   }
 
   /**
-   * Check if positioning data exists for a character
-   * Null-safe convenience method that delegates to the AtlasPositioning instance.
-   * This demonstrates the delegation pattern: AtlasData wraps AtlasPositioning
-   * and provides a simplified interface for checking character availability.
-   * @param {string} char - Character (code point) to check
-   * @returns {boolean} True if positioning data exists
-   */
-  hasPositioning(char) {
-    if (!this.atlasPositioning) return false;
-
-    // Delegate to AtlasPositioning instance
-    return this.atlasPositioning.hasPositioning(char);
-  }
-
-  /**
    * Check if this atlas data is valid for rendering
    * @returns {boolean} True if atlas has valid image and dimensions
    */
   isValid() {
     return this.atlasImage?.isValid();
-  }
-
-  /**
-   * Get all available characters in this atlas
-   * @returns {string[]} Array of available characters
-   */
-  getAvailableCharacters() {
-    if (!this.atlasPositioning) return [];
-
-    // Delegate to AtlasPositioning instance
-    return this.atlasPositioning.getAvailableCharacters();
   }
 
   /**
@@ -91,40 +65,5 @@ class AtlasData {
    */
   get height() {
     return this.atlasImage.height;
-  }
-
-  /**
-   * Check if the atlas can be rendered
-   * @returns {boolean} True if atlas is ready for rendering operations
-   */
-  canRender() {
-    return this.atlasImage?.canRender();
-  }
-
-  /**
-   * Check if this atlas data equals another atlas data
-   * @param {AtlasData} other - Another AtlasData instance
-   * @returns {boolean} True if they reference the same image and positioning
-   */
-  equals(other) {
-    if (!(other instanceof AtlasData)) return false;
-    return this.atlasImage.equals(other.atlasImage) &&
-           this.atlasPositioning === other.atlasPositioning;
-  }
-
-  /**
-   * Get debug information about this atlas data
-   * @returns {Object} Debug information
-   */
-  getDebugInfo() {
-    return {
-      atlasImage: this.atlasImage ? this.atlasImage.getDebugInfo() : null,
-      atlasPositioning: this.atlasPositioning ? {
-        availableCharacters: this.atlasPositioning.getAvailableCharacters().length,
-        characters: this.atlasPositioning.getAvailableCharacters().slice(0, 10) // First 10 for brevity
-      } : null,
-      isValid: this.isValid(),
-      canRender: this.canRender()
-    };
   }
 }
