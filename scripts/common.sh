@@ -58,3 +58,24 @@ verify_files() {
         fi
     done
 }
+
+# Append a //-banner + cat to an output file.
+# Usage: section OUT TITLE FILE [strip_first_line]
+section() {
+    local out="$1"
+    local title="$2"
+    local file="$3"
+    local strip_first_line="${4:-no}"
+    {
+        echo "// ============================================================================"
+        echo "// $title"
+        echo "// ============================================================================"
+        echo ""
+        if [[ "$strip_first_line" == "yes" ]]; then
+            tail -n +2 "$file"
+        else
+            cat "$file"
+        fi
+        echo ""
+    } >> "$out"
+}

@@ -97,25 +97,6 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking source files..."
 verify_files "${FILES_TO_CHECK[@]}"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] All source files found ✓"
 
-# --- Helper: append a banner + cat ----------------------------------------
-section() {
-  local title="$1"
-  local file="$2"
-  local strip_first_line="${3:-no}"
-  {
-    echo "// ============================================================================"
-    echo "// $title"
-    echo "// ============================================================================"
-    echo ""
-    if [[ "$strip_first_line" == "yes" ]]; then
-      tail -n +2 "$file"
-    else
-      cat "$file"
-    fi
-    echo ""
-  } >> "$OUTPUT_FILE"
-}
-
 # --- Build the output -----------------------------------------------------
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Concatenating files..."
 
@@ -143,15 +124,15 @@ cat > "$OUTPUT_FILE" << EOF
 EOF
 
 # Canvas mock (strip first line: it's a //-comment header from the source)
-section "MINIMAL CANVAS MOCK - Only what BitmapText.js needs" "$SRC_DIR/platform/canvas-mock.js" yes
+section "$OUTPUT_FILE" "MINIMAL CANVAS MOCK - Only what BitmapText.js needs" "$SRC_DIR/platform/canvas-mock.js" yes
 
 # Runtime classes (must come in dependency order)
-section "STATUS CODE CONSTANTS AND HELPERS"                    "$SRC_DIR/runtime/StatusCode.js"
-section "FONT PROPERTIES CLASS"                                "$SRC_DIR/runtime/FontProperties.js"
-section "TEXT PROPERTIES CLASS"                                "$SRC_DIR/runtime/TextProperties.js"
-section "FONT METRICS CLASS"                                   "$SRC_DIR/runtime/FontMetrics.js"
-section "INTERPOLATED FONT METRICS CLASS"                      "$SRC_DIR/runtime/InterpolatedFontMetrics.js"
-section "CHARACTER SETS CONFIGURATION"                         "$SRC_DIR/runtime/CharacterSets.js"
+section "$OUTPUT_FILE" "STATUS CODE CONSTANTS AND HELPERS"             "$SRC_DIR/runtime/StatusCode.js"
+section "$OUTPUT_FILE" "FONT PROPERTIES CLASS"                         "$SRC_DIR/runtime/FontProperties.js"
+section "$OUTPUT_FILE" "TEXT PROPERTIES CLASS"                         "$SRC_DIR/runtime/TextProperties.js"
+section "$OUTPUT_FILE" "FONT METRICS CLASS"                            "$SRC_DIR/runtime/FontMetrics.js"
+section "$OUTPUT_FILE" "INTERPOLATED FONT METRICS CLASS"               "$SRC_DIR/runtime/InterpolatedFontMetrics.js"
+section "$OUTPUT_FILE" "CHARACTER SETS CONFIGURATION"                  "$SRC_DIR/runtime/CharacterSets.js"
 
 # BitmapText (depends on CharacterSets) — emitted together with its registration glue.
 {
@@ -164,27 +145,27 @@ section "CHARACTER SETS CONFIGURATION"                         "$SRC_DIR/runtime
   echo ""
 } >> "$OUTPUT_FILE"
 
-section "EXPANSION UTILITY - MetricsExpander.js"               "$SRC_DIR/builder/MetricsExpander.js"
-section "ATLAS POSITIONING CLASS"                              "$SRC_DIR/runtime/AtlasPositioning.js"
-section "ATLAS IMAGE CLASS"                                    "$SRC_DIR/runtime/AtlasImage.js"
-section "ATLAS DATA CLASS"                                     "$SRC_DIR/runtime/AtlasData.js"
-section "ATLAS CELL DIMENSIONS UTILITY"                        "$SRC_DIR/utils/AtlasCellDimensions.js"
-section "QOI DECODER LIBRARY"                                  "$LIB_DIR/QOIDecode.js"
-section "ATLAS DATA STORE"                                     "$SRC_DIR/runtime/AtlasDataStore.js"
-section "METRICS BUNDLE STORE"                                 "$SRC_DIR/runtime/MetricsBundleStore.js"
-section "BUNDLE CODEC"                                         "$SRC_DIR/runtime/BundleCodec.js"
-section "POSITIONING BUNDLE STORE"                             "$SRC_DIR/runtime/PositioningBundleStore.js"
-section "FONT METRICS STORE"                                   "$SRC_DIR/runtime/FontMetricsStore.js"
-section "FONT LOADER BASE CLASS"                               "$SRC_DIR/runtime/FontLoaderBase.js"
-section "FONT LOADER - NODE.JS PLATFORM IMPLEMENTATION"        "$SRC_DIR/platform/FontLoaderNode.js"
-section "PNG ENCODING OPTIONS"                                 "$LIB_DIR/PngEncodingOptions.js"
-section "PNG ENCODER"                                          "$LIB_DIR/PngEncoder.js"
+section "$OUTPUT_FILE" "EXPANSION UTILITY - MetricsExpander.js"        "$SRC_DIR/builder/MetricsExpander.js"
+section "$OUTPUT_FILE" "ATLAS POSITIONING CLASS"                       "$SRC_DIR/runtime/AtlasPositioning.js"
+section "$OUTPUT_FILE" "ATLAS IMAGE CLASS"                             "$SRC_DIR/runtime/AtlasImage.js"
+section "$OUTPUT_FILE" "ATLAS DATA CLASS"                              "$SRC_DIR/runtime/AtlasData.js"
+section "$OUTPUT_FILE" "ATLAS CELL DIMENSIONS UTILITY"                 "$SRC_DIR/utils/AtlasCellDimensions.js"
+section "$OUTPUT_FILE" "QOI DECODER LIBRARY"                           "$LIB_DIR/QOIDecode.js"
+section "$OUTPUT_FILE" "ATLAS DATA STORE"                              "$SRC_DIR/runtime/AtlasDataStore.js"
+section "$OUTPUT_FILE" "METRICS BUNDLE STORE"                          "$SRC_DIR/runtime/MetricsBundleStore.js"
+section "$OUTPUT_FILE" "BUNDLE CODEC"                                  "$SRC_DIR/runtime/BundleCodec.js"
+section "$OUTPUT_FILE" "POSITIONING BUNDLE STORE"                      "$SRC_DIR/runtime/PositioningBundleStore.js"
+section "$OUTPUT_FILE" "FONT METRICS STORE"                            "$SRC_DIR/runtime/FontMetricsStore.js"
+section "$OUTPUT_FILE" "FONT LOADER BASE CLASS"                        "$SRC_DIR/runtime/FontLoaderBase.js"
+section "$OUTPUT_FILE" "FONT LOADER - NODE.JS PLATFORM IMPLEMENTATION" "$SRC_DIR/platform/FontLoaderNode.js"
+section "$OUTPUT_FILE" "PNG ENCODING OPTIONS"                          "$LIB_DIR/PngEncodingOptions.js"
+section "$OUTPUT_FILE" "PNG ENCODER"                                   "$LIB_DIR/PngEncoder.js"
 
 # Helpers shared by all Node demos / benchmarks (getStatusName, measure*).
-section "DEMO HELPERS"                                         "$SRC_DIR/node/_demo-helpers.js"
+section "$OUTPUT_FILE" "DEMO HELPERS"                                  "$SRC_DIR/node/_demo-helpers.js"
 
 # Main execution (strip first line: source has its own //-comment header)
-section "MAIN EXECUTION - $DEMO_DESC"                          "$SRC_DIR/node/$MAIN_FILE" yes
+section "$OUTPUT_FILE" "MAIN EXECUTION - $DEMO_DESC"                   "$SRC_DIR/node/$MAIN_FILE" yes
 
 chmod +x "$OUTPUT_FILE"
 

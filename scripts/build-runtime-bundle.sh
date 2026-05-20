@@ -99,17 +99,6 @@ NODE_SPECIFIC_FILES=(
   "$SRC_DIR/platform/FontLoaderNode.js"
 )
 
-# Function to verify files exist
-verify_files() {
-  local files=("$@")
-  for file in "${files[@]}"; do
-    if [[ ! -f "$file" ]]; then
-      echo "ERROR: Required source file not found: $file"
-      exit 1
-    fi
-  done
-}
-
 # Function to add file header
 add_file_header() {
   local output_file="$1"

@@ -98,25 +98,6 @@ fi
 verify_files "${FILES_TO_CHECK[@]}"
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] All source files found ✓"
 
-# Helper: append a //-banner + cat to $1 (output file).
-section() {
-  local out="$1"
-  local title="$2"
-  local file="$3"
-  local strip_first_line="${4:-no}"
-  {
-    echo "// ============================================================================"
-    echo "// $title"
-    echo "// ============================================================================"
-    if [[ "$strip_first_line" == "yes" ]]; then
-      tail -n +2 "$file"
-    else
-      cat "$file"
-    fi
-    echo ""
-  } >> "$out"
-}
-
 # ==========================================================================
 # UNBUNDLED variant — all source files concatenated into one self-contained
 # executable. No external requires.
