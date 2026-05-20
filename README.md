@@ -6,7 +6,6 @@
 
   **Documentation Navigation:**
   - **System Architecture** → See docs/ARCHITECTURE.md for detailed design information
-  - **Development with Claude** → See docs/CLAUDE.md for Claude-specific development guidance
   - **Automation Scripts** → See scripts/README.md for pipeline documentation
 
 ## Problem Statement

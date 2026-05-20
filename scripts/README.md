@@ -1036,5 +1036,4 @@ Test the pipeline without monitoring:
 For related information, see:
 - **API usage and examples** → README.md
 - **System architecture and design** → docs/ARCHITECTURE.md
-- **Claude development workflow tips** → docs/CLAUDE.md
 - **Font assets building process** → README.md (Font Assets Building section)
