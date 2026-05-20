@@ -1232,7 +1232,7 @@
         return;
       }
 
-      lru = new AtlasLRU(parseInt(K_INPUT.value, 10));
+      lru = new AtlasLRU(parseInt(K_INPUT.value, 10), { isFileProtocol });
 
       statusEl.textContent =
         `DPR=${DPR_INPUT.value}, ${candidates.length} candidate fonts, total registry ${FontManifest.count()}`;

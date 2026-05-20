@@ -14,7 +14,11 @@
 //   the path directly.
 //
 // PUBLIC API:
-//   new AtlasLRU(capacity)
+//   new AtlasLRU(capacity, loadOptions = {})
+//                            — `loadOptions` is forwarded as the second
+//                              argument to every BitmapText.loadFont call.
+//                              Typical usage: `new AtlasLRU(K, { isFileProtocol })`
+//                              to thread the file:// flag through.
 //   request(idString)        — load if missing + bump recency. Returns a
 //                              Promise resolving when the atlas is resident
 //                              ('loaded' | 'evicted-during-load'). Triggers
@@ -43,8 +47,11 @@
 // DEPENDENCIES IN SCOPE AT RUNTIME:
 //   • BitmapText (from dist/bitmaptext{,-node}.min.js)
 //   • performance.now()
-//   • (optional) isFileProtocol — referenced as a load option; the runtime
-//     loader tolerates undefined.
+//
+// No implicit globals — load options (including `isFileProtocol` for file://
+// contexts) are passed in at construction and stored as `this.loadOptions`.
+// This lets the class live at top-level (global) scope without reaching into
+// the calling page's IIFE for variables it can't see.
 
 // Pin window — never evict freshly-touched / just-loaded entries.
 const PIN_GRACE_MS = 250;
@@ -52,8 +59,9 @@ const PIN_GRACE_MS = 250;
 const LOAD_HISTORY_CAP = 50;
 
 class AtlasLRU {
-  constructor(capacity) {
+  constructor(capacity, loadOptions = {}) {
     this.capacity     = capacity;
+    this.loadOptions  = loadOptions; // forwarded verbatim to BitmapText.loadFont
     this.entries      = new Map();   // idString -> entry record (see below)
     this.pendingCount = 0;
     this.reloadCount  = 0;           // diagnostic: how many times we re-loaded an evicted atlas
@@ -95,7 +103,7 @@ class AtlasLRU {
 
     // Reserve and kick off the load.
     const tStart = performance.now();
-    const promise = BitmapText.loadFont(idString, { isFileProtocol })
+    const promise = BitmapText.loadFont(idString, this.loadOptions)
       .then(() => {
         const x = this.entries.get(idString);
         if (!x) {
