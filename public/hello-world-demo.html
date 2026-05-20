@@ -59,12 +59,15 @@
   <script src="../src/runtime/BundleCodec.js"></script>
   <script src="../src/runtime/PositioningBundleStore.js"></script>
   <script src="../src/runtime/FontMetricsStore.js"></script>
-  <!-- Font loader classes for loading font assets -->
-  <script src="../src/runtime/FontLoaderBase.js"></script>
-  <script src="../src/platform/FontLoaderBrowser.js"></script>
-  <!-- Main bitmap text rendering engine (static class) -->
+  <!-- Main bitmap text rendering engine (static class) — must load BEFORE
+       the platform font loader so the loader's self-registration footer
+       can call BitmapText.setFontLoader(...). -->
   <script src="../src/runtime/BitmapText.js"></script>
   <script src="../src/runtime/BitmapTextRegistration.js"></script>
+  <!-- Font loader classes for loading font assets. FontLoaderBrowser's
+       script-end footer self-registers via BitmapText.setFontLoader. -->
+  <script src="../src/runtime/FontLoaderBase.js"></script>
+  <script src="../src/platform/FontLoaderBrowser.js"></script>
 
   <script>
     // Font properties for Arial normal normal 19 with pixel density 1
