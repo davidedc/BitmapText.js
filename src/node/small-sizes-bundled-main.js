@@ -69,7 +69,7 @@ async function main() {
     console.log('Configuring BitmapText with Canvas implementation...');
     BitmapText.configure({
       fontDirectory: './font-assets/',
-      canvasFactory: () => new Canvas()
+      canvasFactory: () => new BitmapTextCanvas()
     });
 
     // Load only size 9px - all smaller sizes will interpolate from this (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
@@ -97,7 +97,7 @@ async function main() {
 
     // Create output canvas (large enough for both sections)
     console.log('\nCreating canvas...');
-    const canvas = new Canvas();
+    const canvas = new BitmapTextCanvas();
     canvas.width = 800;
     canvas.height = 1100;
     const ctx = canvas.getContext('2d');

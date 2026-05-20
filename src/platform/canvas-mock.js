@@ -6,20 +6,28 @@
 //
 // DISTRIBUTION ROLE:
 // - Only included in Node.js distributions
-// - Excluded from browser bundles via build scripts
+// - Excluded from the runtime bundle via build scripts (consumers require it
+//   separately, or it gets concatenated into Node demos by build-node-demo.sh)
 // - Used as fallback when node-canvas is unavailable
 //
 // ARCHITECTURE:
-// - Three classes: Canvas, Context2D, and Image
+// - Three classes: BitmapTextCanvas, BitmapTextCanvasContext2D, BitmapTextCanvasImage
 // - Pure JavaScript pixel manipulation using Uint8ClampedArray
 // - No external dependencies (no node-canvas, no Sharp, no Jimp)
 // - Implements minimal Canvas API surface needed for font rendering
 //
+// CLASS NAMING — why the BitmapText prefix:
+//   The three classes are prefixed (rather than the obvious `Canvas`,
+//   `Context2D`, `Image`) so they can't collide with embedders' own classes
+//   of the same names when this file is concatenated into a single embedder
+//   bundle. `Image` in particular would shadow the browser's built-in `Image`
+//   global, so the prefix is non-negotiable.
+//
 // SUPPORTED CANVAS API SUBSET:
-// - Canvas: width, height properties, getContext('2d')
-// - Context2D: fillStyle, globalCompositeOperation, fillRect, clearRect,
-//   drawImage, createImageData, putImageData, getImageData
-// - Image: width, height, data properties
+// - BitmapTextCanvas: width, height properties, getContext('2d')
+// - BitmapTextCanvasContext2D: fillStyle, globalCompositeOperation, fillRect,
+//   clearRect, drawImage, createImageData, putImageData, getImageData
+// - BitmapTextCanvasImage: width, height, data properties
 //
 // LIMITATIONS COMPARED TO REAL CANVAS:
 // - No anti-aliasing or bilinear filtering (nearest-neighbor only)
@@ -37,18 +45,18 @@
 // - For production Node.js use, prefer node-canvas when available
 
 // ============================================
-// Canvas Class - Minimal Canvas Element Mock
+// BitmapTextCanvas Class - Minimal Canvas Element Mock
 // ============================================
 
 /**
- * Canvas - Minimal HTML Canvas element implementation
+ * BitmapTextCanvas - Minimal HTML Canvas element implementation
  *
  * Provides a basic canvas with width/height properties and pixel buffer.
  * The pixel buffer is a Uint8ClampedArray in RGBA format (4 bytes per pixel).
  *
- * @class Canvas
+ * @class BitmapTextCanvas
  */
-class Canvas {
+class BitmapTextCanvas {
   constructor() {
     this._width = 0;
     this._height = 0;
@@ -80,30 +88,30 @@ class Canvas {
   /**
    * Get rendering context (only '2d' is supported)
    * @param {string} type - Context type ('2d' is the only supported value)
-   * @returns {Context2D|null} 2D rendering context or null if unsupported type
+   * @returns {BitmapTextCanvasContext2D|null} 2D rendering context or null if unsupported type
    */
   getContext(type) {
     if (type === '2d') {
-      return new Context2D(this);
+      return new BitmapTextCanvasContext2D(this);
     }
     return null;
   }
 }
 
 // ============================================
-// Context2D Class - Canvas 2D Rendering Context
+// BitmapTextCanvasContext2D Class - Canvas 2D Rendering Context
 // ============================================
 
 /**
- * Context2D - Minimal CanvasRenderingContext2D implementation
+ * BitmapTextCanvasContext2D - Minimal CanvasRenderingContext2D implementation
  *
  * Provides basic 2D drawing operations for font rendering. Supports
  * rectangular operations, image drawing, and pixel data manipulation.
  * Does not support paths, text rendering, or advanced compositing.
  *
- * @class Context2D
+ * @class BitmapTextCanvasContext2D
  */
-class Context2D {
+class BitmapTextCanvasContext2D {
   constructor(canvas) {
     this.canvas = canvas;
     this.fillStyle = '#000000';
@@ -345,7 +353,7 @@ class Context2D {
    * This is faster but produces pixelated results when scaling.
    * Sufficient for bitmap font rendering where glyphs are drawn at original size.
    *
-   * @param {Image|Canvas} image - Source image or canvas
+   * @param {BitmapTextCanvasImage|BitmapTextCanvas} image - Source image or canvas
    * @param {number} sx - Source X (or dx in 3-arg form)
    * @param {number} sy - Source Y (or dy in 3-arg form)
    * @param {number} sw - Source width (or dw in 5-arg form)
@@ -557,21 +565,21 @@ class Context2D {
 }
 
 // ============================================
-// Image Class - Decoded Image Container
+// BitmapTextCanvasImage Class - Decoded Image Container
 // ============================================
 
 /**
- * Image - Simple container for decoded image pixel data
+ * BitmapTextCanvasImage - Simple container for decoded image pixel data
  *
  * Holds decoded image data in RGBA format. Unlike browser Image objects,
  * this does not support loading from URLs or file paths - pixel data
  * must be provided directly during construction.
  *
- * @class Image
+ * @class BitmapTextCanvasImage
  */
-class Image {
+class BitmapTextCanvasImage {
   /**
-   * Create a new Image with pixel data
+   * Create a new BitmapTextCanvasImage with pixel data
    * @param {number} width - Image width in pixels
    * @param {number} height - Image height in pixels
    * @param {Uint8ClampedArray} data - Pixel data in RGBA format (4 bytes per pixel)

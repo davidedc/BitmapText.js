@@ -27,7 +27,7 @@ async function main() {
 
   BitmapText.configure({
     fontDirectory: fontDirectory,
-    canvasFactory: () => new Canvas()
+    canvasFactory: () => new BitmapTextCanvas()
   });
 
   // Create font properties

@@ -33,7 +33,7 @@ async function main() {
     // When built, this file is in examples/node/dist/, so go up 3 levels to project root
     BitmapText.configure({
       fontDirectory: path.resolve(__dirname, '../../../font-assets/'),
-      canvasFactory: () => new Canvas()
+      canvasFactory: () => new BitmapTextCanvas()
     });
 
     // Load fonts using static API (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
@@ -50,7 +50,7 @@ async function main() {
     
     // Create output canvas
     console.log('Creating canvas and rendering...');
-    const canvas = new Canvas();
+    const canvas = new BitmapTextCanvas();
     canvas.width = 300;
     canvas.height = 120;  // Increased to fit both black and blue text
     const ctx = canvas.getContext('2d');

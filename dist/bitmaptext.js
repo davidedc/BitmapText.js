@@ -1060,13 +1060,14 @@ if (typeof StatusCode === 'undefined' || typeof SUCCESS_STATUS === 'undefined' |
 //   3. Create tight atlas from scanned data
 // - Cannot pass class reference: HTMLCanvasElement is NOT constructible
 //   (new HTMLCanvasElement() throws "Illegal constructor")
-// - Must pass factory function: () => new Canvas()
+// - Must pass factory function: () => new BitmapTextCanvas()
 // - Browser: via document.createElement('canvas')
-// - Node.js: Must configure with canvas-mock providing Canvas constructor
+// - Node.js: Must configure with canvas-mock providing BitmapTextCanvas constructor
+//   (or any Canvas-compatible class from node-canvas, skia-canvas, etc.)
 //
 // USAGE:
 // - Zero configuration for browser: Just call BitmapText.drawTextFromAtlas()
-// - Node.js: Optionally set canvas factory: BitmapText.setCanvasFactory(() => new Canvas())
+// - Node.js: Optionally set canvas factory: BitmapText.setCanvasFactory(() => new BitmapTextCanvas())
 // - Loading: BitmapText.loadFont(idString) or BitmapText.loadFonts([idStrings])
 // - Query: BitmapText.hasFont(idString), BitmapText.getLoadedFonts()
 //
@@ -1180,12 +1181,13 @@ class BitmapText {
    * WHY A FACTORY FUNCTION?
    * HTMLCanvasElement is not constructible in JavaScript - new HTMLCanvasElement()
    * throws "Illegal constructor". Browser uses document.createElement('canvas'),
-   * Node.js requires canvas-mock providing Canvas constructor.
+   * Node.js requires canvas-mock providing BitmapTextCanvas constructor (or
+   * any Canvas-compatible class from node-canvas, skia-canvas, etc.).
    *
    * @param {Function} factory - Function that returns a canvas instance
    * @example
    * // Node.js
-   * BitmapText.setCanvasFactory(() => new Canvas());
+   * BitmapText.setCanvasFactory(() => new BitmapTextCanvas());
    *
    * // Browser (custom implementation)
    * BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));

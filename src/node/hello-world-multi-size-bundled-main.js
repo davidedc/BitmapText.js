@@ -70,7 +70,7 @@ async function main() {
     console.log('Configuring BitmapText with Canvas implementation...');
     BitmapText.configure({
       fontDirectory: './font-assets/',
-      canvasFactory: () => new Canvas()
+      canvasFactory: () => new BitmapTextCanvas()
     });
 
     // Create IDStrings for all font configurations (Arial + BitmapTextInvariant for automatic font-invariant character fallback)
@@ -118,7 +118,7 @@ async function main() {
 
     // Create output canvas (larger to accommodate multiple text lines and columns)
     console.log('Creating canvas and rendering...');
-    const canvas = new Canvas();
+    const canvas = new BitmapTextCanvas();
     canvas.width = 700;
     canvas.height = 200;
     const ctx = canvas.getContext('2d');

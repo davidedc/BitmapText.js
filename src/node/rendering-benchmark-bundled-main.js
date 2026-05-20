@@ -47,7 +47,7 @@ require('../../../dist/bitmaptext-node.min.js');
  */
 function testBitmapText(blockCount, textColor) {
   return () => {
-    const canvas = new Canvas();
+    const canvas = new BitmapTextCanvas();
     canvas.width = 1200;
     canvas.height = 800;
     const ctx = canvas.getContext('2d');
@@ -103,7 +103,7 @@ async function main() {
 
   BitmapText.configure({
     fontDirectory: fontDirectory,
-    canvasFactory: () => new Canvas()
+    canvasFactory: () => new BitmapTextCanvas()
   });
 
   // Create font properties
