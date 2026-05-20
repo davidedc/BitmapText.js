@@ -5,13 +5,13 @@ Production-ready minified bundles for BitmapText.js bitmap text rendering librar
 ## 📦 Files
 
 ### Browser Bundle
-- **`bitmaptext.js`** - Unminified runtime (184KB, for debugging)
-- **`bitmaptext.min.js`** - Minified runtime (44KB, for production) ✨
+- **`bitmaptext.js`** - Unminified runtime (179KB, for debugging)
+- **`bitmaptext.min.js`** - Minified runtime (42KB, for production) ✨
 - **`bitmaptext.min.js.map`** - Source map for debugging minified code
 
 ### Node.js Bundle
-- **`bitmaptext-node.js`** - Unminified runtime (186KB, for debugging)
-- **`bitmaptext-node.min.js`** - Minified runtime (45KB, for production) ✨
+- **`bitmaptext-node.js`** - Unminified runtime (181KB, for debugging)
+- **`bitmaptext-node.min.js`** - Minified runtime (43KB, for production) ✨
 - **`bitmaptext-node.min.js.map`** - Source map for debugging minified code
 
 ---
@@ -151,8 +151,8 @@ You must provide separately:
 
 | Bundle | Unminified | Minified | Reduction |
 |--------|-----------|----------|-----------|
-| Browser | 184KB | **44KB** | 76% |
-| Node.js | 186KB | **45KB** | 76% |
+| Browser | 179KB | **42KB** | 77% |
+| Node.js | 181KB | **43KB** | 76% |
 
 **Note:** Font asset files are separate (metrics ~1-2KB each, atlases ~2-5KB each).
 
@@ -196,7 +196,7 @@ npm run build-bundle-node
 
 Each build creates:
 - **Unminified bundle** (.js) - For debugging with readable code
-- **Minified bundle** (.min.js) - For production use (~32-33KB)
+- **Minified bundle** (.min.js) - For production use (~42-43KB)
 - **Source map** (.min.js.map) - For debugging minified code
 
 ### When to Rebuild

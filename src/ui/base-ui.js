@@ -1,3 +1,7 @@
+// Background color signalling "ready / no error" — same green used by the
+// CSS body backgrounds in font-assets-builder.html and test-renderer*.html.
+const SUCCESS_BG_COLOR = '#d4ffd4';
+
 // Globals
 // TextProperties state
 let textPropertiesState = {
@@ -179,7 +183,7 @@ function setupGlyphUI() {
     // add a new button "reset background color" to reset the background color of the page after an error
     const resetBackgroundColorButton = createElement('button', 'reset-background-color-button', 'Reset background color', selectorsDiv);
     resetBackgroundColorButton.addEventListener('click', function() {
-        document.body.style.backgroundColor = '#d4ffd4';
+        document.body.style.backgroundColor = SUCCESS_BG_COLOR;
     });
 
 
