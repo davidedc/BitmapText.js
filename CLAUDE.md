@@ -24,6 +24,7 @@ The hard problem: each engine's text rasterizer (Skia, Core Text, etc.) anti-ali
 - `font-assets/` — generated atlas `.js` files (one per font/size/density) plus the single `metrics-bundle.js`. **Don't grep or enumerate this directory.** Read individual atlases by exact filename only. Metrics are not stored per-file — the bundle is the single source of truth.
 - `lib/` — vendored third-party codecs (QOI, PNG, WebP, JSZip, FileSaver). **Don't refactor.**
 - `public/` — browser-served HTML for the builder, demos, and `test-renderer.html` (hash verification page).
+- `src/utils/` — utilities NOT in the runtime bundle. Only `AtlasCellDimensions.js` ships in the bundle (it's listed in `COMMON_FILES`); the rest are importable embedder utilities exposed via `package.json:exports` (`./utils/*` wildcard). Includes `AtlasLRU.js`, the bounded-size atlas-cache wrapper the LRU demo uses — embedders/apps wanting a similar cache should import that, not re-implement.
 - `scripts/` — build/asset pipeline. `scripts/common.sh` is the shared bash helper library (`verify_files`, `section`, `$PROJECT_ROOT`, …); source it from new scripts instead of redefining helpers.
 - `test/`, `perf/` — reference-hash DB and perf harnesses.
 
