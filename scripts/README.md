@@ -274,23 +274,6 @@ npm run qoi-memory                                       # Using npm script
 - Displays compression ratios and memory savings
 - Identifies largest files by uncompressed size
 
-### 8. Metrics Bundle Builder
-```bash
-node scripts/build-metrics-bundle.js
-# or
-npm run build-metrics-bundle
-```
-
-**What it does:**
-- Reads any per-file `metrics-density-*.js` left in `font-assets/`. Note: the active build path (browser font-assets-builder via `src/automation/export-font-data.js`) emits `metrics-bundle.js` directly into its zip output, so this Node-side aggregator is a legacy alt-path retained for historical workflows.
-- Strips `pixelDensity` from `baseline[5]` (the bundle is density-agnostic — runtime injects density at expansion time)
-- Deduplicates density-1/density-2 pairs
-- Frames as JSON, deflate-raw compresses, base64-wraps in `BitmapText.rBundle("...")`
-- Writes `font-assets/metrics-bundle.js`
-
-**When to use:**
-- Mostly historical. Normal flow: drop `fontAssets.zip` from the builder into `~/Downloads/`, the watcher extracts the prebuilt bundle directly into `font-assets/`.
-
 ### 9. Distribution / Minimum-Set Workflow
 
 `font-assets/` is too large to commit (~800 MB full, ~72 MB minimum set). It is **not in the repo** — only `font-assets/.gitkeep` and `font-assets/README.md` are tracked. The asset bytes live in [GitHub Releases](https://github.com/davidedc/BitmapText.js/releases). Tag convention: `font-assets-YYYY-MM-DD`. Each release ships two assets — `font-assets-min.zip` and a matching `font-assets-min.zip.sha256` sidecar — so consumers can verify integrity without a separate hash transcription.

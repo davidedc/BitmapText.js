@@ -10,8 +10,9 @@ echo "Building All Node.js Demos"
 echo "======================================================================"
 echo ""
 
-# Get script directory
+# Get script directory + shared helpers ($PROJECT_ROOT, log, etc.).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 # Build standalone bundles (concatenate all dependencies). The parameterised
 # build-node-demo.sh covers all three variants.

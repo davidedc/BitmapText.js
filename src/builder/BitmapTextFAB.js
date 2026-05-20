@@ -49,9 +49,6 @@ class BitmapTextFAB extends BitmapText {
     }
   }
 
-  // Historical note: Nine character classification methods deleted as dead code in commit 5bf84de
-  // (Sept 2023) when system moved to spec-based kerning. Recoverable from git history if needed.
-
   /**
    * Get kerning correction from spec
    * @deprecated Use kerningCalculator.calculateCorrection() for direct access

@@ -34,7 +34,7 @@
   ### Testing Minification Strategies
   1. Generate per-font metrics with font-assets-builder.html (drop the resulting per-file metrics into font-assets/)
   2. Modify src/builder/MetricsMinifier.js with new strategy
-  3. Run `node scripts/build-metrics-bundle.js` (or `npm run build-metrics-bundle`) to rebuild font-assets/metrics-bundle.js
+  3. Regenerate `font-assets/metrics-bundle.js` by re-running the font-assets builder — `public/font-assets-builder.html` (interactive) or `scripts/automated-font-builder.js` (headless). Both paths emit `metrics-bundle.js` straight into the zip; drop it into `font-assets/` (the watcher does this automatically when the zip lands in `~/Downloads/`).
   4. Verify byte-identical FontMetrics output: `node scripts/verify-metrics-bundle.js` (compares hash to a snapshot baseline)
   5. Run all 6 Node demos: `npm run demo`
 
