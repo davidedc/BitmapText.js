@@ -11,7 +11,7 @@ The hard problem: each engine's text rasterizer (Skia, Core Text, etc.) anti-ali
 - Atlas formats on disk: authoring `.qoi` → delivery `.webp` → self-registering `.js` wrappers (so `file://` works).
 - One `font-assets/metrics-bundle.js` (~1.1 MB) carries every font's metrics — density-agnostic, deflate-raw + base64. Decoded on first `loadFont` via `DecompressionStream` (browser, Node ≥ 18) or `zlib.inflateRawSync` (Node ≤ 17). Replaced ~18 MB of per-file `metrics-density-*.js` files.
 - Dev tooling: Playwright + Puppeteer for headless build/hash CI; Python `http.server` for local serving.
-- Embedder integration surface: `BitmapText.configure({fontDirectory, canvasFactory, fontLoader})` plus the symmetric setters (`setFontDirectory`, `setCanvasFactory`, `setFontLoader`). Used by embedders (e.g. SWCanvas) and workers; standalone users never need to touch them — the platform loader self-registers automatically.
+- Embedder integration surface: `BitmapText.configure({fontDirectory, canvasFactory, fontLoader, atlasFormat})` plus the symmetric setters (`setFontDirectory`, `setCanvasFactory`, `setFontLoader`, `setAtlasFormat`). Used by embedders (e.g. SWCanvas) and workers; standalone users never need to touch them — the platform loader self-registers automatically.
 
 ## Repo map
 
@@ -49,6 +49,7 @@ The per-glyph loops inside `BitmapText.drawTextFromAtlas`, `BitmapText.measureTe
 - **Don't crack the 200-line bodies into a pipeline of named helpers.** They are intentionally long; they inline as one unit. Lifting shared SETUP into a prologue is fine; splitting the body is not.
 - Per-glyph placement reads from a single flat object: `atlasPositioning._placements[char]` returns `{xInAtlas, yInAtlas, tightWidth, tightHeight, dx, dy}`. **Don't reintroduce parallel char-keyed dicts** — that's what was collapsed in prior refactors.
 - **`Object` beats `Map`** for fixed-shape char-keyed dicts in this codebase; don't substitute.
+- Atlas storage format (`'imageElement'` vs `'imageData'`) is set once at startup via `BitmapText.setAtlasFormat(...)` and never per-glyph. Each deployed app sees one stable shape in `atlasImage.image`; V8 hidden-class stability holds per deploy. Setting the format after `loadFont` is undefined behaviour — see JSDoc on `setAtlasFormat`.
 
 Anything that conflicts with these rules is a perf regression even if it reads cleaner.
 

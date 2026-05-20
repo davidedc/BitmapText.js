@@ -1151,6 +1151,13 @@ class BitmapText {
   // Font loader (platform-specific, set at runtime)
   static _fontLoader = null;            // BitmapTextFontLoaderBrowser or BitmapTextFontLoaderNode
 
+  // Atlas storage format. Default is 'imageElement' (HTMLImageElement on
+  // Browser, canvas-mock-style Canvas on Node). Embedders without DOM (web
+  // workers, software canvases like SWCanvas) can opt into 'imageData' to
+  // store atlases as plain {width, height, data: Uint8ClampedArray}. See
+  // setAtlasFormat for the call-time contract.
+  static _atlasFormat = 'imageElement';
+
   // ============================================
   // Configuration API (Optional)
   // ============================================
@@ -1237,11 +1244,58 @@ class BitmapText {
   }
 
   /**
+   * Select how atlases are stored in AtlasDataStore.
+   *
+   * Two valid values:
+   *   - 'imageElement' (default) — atlases stored as the platform's native
+   *     image type: HTMLImageElement in Browser, canvas-mock-style Canvas
+   *     (or whatever the configured `canvasFactory` returns) in Node.
+   *   - 'imageData' — atlases stored as plain `{width, height, data:
+   *     Uint8ClampedArray}` objects. Enables embedders without DOM (web
+   *     workers, software canvases like SWCanvas) to consume the same
+   *     bundles. On Browser this triggers a one-time offscreen-canvas decode
+   *     at load time using `document.createElement('canvas')` directly (NOT
+   *     the configured canvasFactory — see ARCHITECTURE.md for rationale);
+   *     on Node it skips the canvas-mock putImageData round-trip and stores
+   *     the QOI-decoded pixels directly.
+   *
+   * CALL-TIME CONTRACT — IMPORTANT:
+   *   setAtlasFormat MUST be called before the first BitmapText.loadFont /
+   *   BitmapText.a / BitmapText.registerAtlas call. Setting it AFTER atlases
+   *   are registered results in mixed-shape storage in AtlasDataStore (some
+   *   entries 'imageElement'-shaped, others 'imageData'-shaped) — the user's
+   *   ctx.drawImage typically only accepts ONE of those shapes, so half the
+   *   atlases would render and half wouldn't. The simplest safe pattern is
+   *   "set once at boot, before any font work."
+   *
+   * Whichever format is chosen, the per-glyph hot loop is monomorphic per
+   * deploy: each app sees one stable shape in `atlasImage.image` and V8's
+   * hidden-class stability holds.
+   *
+   * @param {'imageElement'|'imageData'} format - Storage format selector
+   * @example
+   *   // Embedder boot (e.g. SWCanvas, web worker):
+   *   BitmapText.setAtlasFormat('imageData');
+   *   await BitmapText.loadFont(fontProps.idString);
+   *   BitmapText.drawTextFromAtlas(ctx, "Hello", 10, 50, fontProps);
+   */
+  static setAtlasFormat(format) {
+    if (format !== 'imageElement' && format !== 'imageData') {
+      throw new Error(
+        `BitmapText.setAtlasFormat: invalid format '${format}'. ` +
+        `Must be 'imageElement' or 'imageData'.`
+      );
+    }
+    BitmapText._atlasFormat = format;
+  }
+
+  /**
    * Configure multiple options at once
    * @param {Object} options - Configuration options
    * @param {string} [options.fontDirectory] - Font assets directory
    * @param {Function} [options.canvasFactory] - Canvas factory function
    * @param {Function} [options.fontLoader] - Platform font loader class (extends FontLoaderBase)
+   * @param {'imageElement'|'imageData'} [options.atlasFormat] - Atlas storage format (see setAtlasFormat for the call-time contract)
    */
   static configure(options = {}) {
     if (options.fontDirectory !== undefined) {
@@ -1252,6 +1306,9 @@ class BitmapText {
     }
     if (options.fontLoader !== undefined) {
       BitmapText.setFontLoader(options.fontLoader);
+    }
+    if (options.atlasFormat !== undefined) {
+      BitmapText.setAtlasFormat(options.atlasFormat);
     }
   }
 
@@ -4264,6 +4321,36 @@ class BitmapTextFontLoaderBrowser extends FontLoaderBase {
   static POSITIONING_BUNDLE_PREFIX = 'positioning-bundle-density-';
 
   // ============================================
+  // Atlas Format Conversion
+  // ============================================
+
+  /**
+   * Decode an HTMLImageElement into a plain {width, height, data} object
+   * via an offscreen canvas. Used when BitmapText._atlasFormat === 'imageData'.
+   *
+   * CRITICAL: uses `document.createElement('canvas')` directly, NOT
+   * `BitmapText.getCanvasFactory()()`. The configured canvasFactory is for
+   * OUTPUT canvases (the ones BitmapText draws into); embedders may have set
+   * it to a DOM-less canvas (e.g. SWCanvas) that can't accept HTMLImageElement
+   * via drawImage — exactly the case `setAtlasFormat('imageData')` is meant
+   * to support. The decode SOURCE must be a real browser canvas. This file
+   * is already browser-specific, so direct DOM access is fine here.
+   *
+   * @private
+   * @param {HTMLImageElement} img - Decoded image element
+   * @returns {{width: number, height: number, data: Uint8ClampedArray}}
+   */
+  static _htmlImageToImageData(img) {
+    const tmp = document.createElement('canvas');
+    tmp.width = img.naturalWidth || img.width;
+    tmp.height = img.naturalHeight || img.height;
+    const tmpCtx = tmp.getContext('2d');
+    tmpCtx.drawImage(img, 0, 0);
+    const imageData = tmpCtx.getImageData(0, 0, tmp.width, tmp.height);
+    return { width: imageData.width, height: imageData.height, data: imageData.data };
+  }
+
+  // ============================================
   // Browser-Specific Loading Implementation
   // ============================================
 
@@ -4409,8 +4496,11 @@ class BitmapTextFontLoaderBrowser extends FontLoaderBase {
               try { await img.decode(); } catch (_) { /* fall through */ }
             }
             const tDecoded = performance.now();
+            const atlasImage = (BitmapText._atlasFormat === 'imageData')
+              ? BitmapTextFontLoaderBrowser._htmlImageToImageData(img)
+              : img;
             // Atlas will be reconstructed now or later when metrics are available
-            await FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
+            await FontLoaderBase._loadAtlasFromPackage(idString, atlasImage, bitmapTextClass);
             console.log(
               `[atlas-fetch] ${idString} (file://): ` +
               `script=${(tImgOnload - tFetchStart).toFixed(1)}ms ` +
@@ -4465,8 +4555,11 @@ class BitmapTextFontLoaderBrowser extends FontLoaderBase {
             try { await img.decode(); } catch (_) { /* fall through */ }
           }
           const tDecoded = performance.now();
+          const atlasImage = (BitmapText._atlasFormat === 'imageData')
+            ? BitmapTextFontLoaderBrowser._htmlImageToImageData(img)
+            : img;
           // Atlas will be reconstructed now or later when metrics are available
-          await FontLoaderBase._loadAtlasFromPackage(idString, img, bitmapTextClass);
+          await FontLoaderBase._loadAtlasFromPackage(idString, atlasImage, bitmapTextClass);
           console.log(
             `[atlas-fetch] ${idString} (http): ` +
             `fetch=${(tImgOnload - tFetchStart).toFixed(1)}ms ` +

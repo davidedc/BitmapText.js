@@ -120,17 +120,34 @@ class BitmapTextFontLoaderNode extends FontLoaderBase {
         const qoiData = Uint8Array.from(atob(pkg.base64Data), c => c.charCodeAt(0));
         const decoded = QOIDecode(qoiData.buffer);
 
-        // Create canvas and draw (explicit double invocation: get factory, call factory)
-        const canvas = bitmapTextClass.getCanvasFactory()();
-        canvas.width = decoded.width;
-        canvas.height = decoded.height;
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.createImageData(decoded.width, decoded.height);
-        imageData.data.set(decoded.data);
-        ctx.putImageData(imageData, 0, 0);
+        let atlasImage;
+        if (BitmapText._atlasFormat === 'imageData') {
+          // Skip the canvas-mock putImageData round-trip — pass the raw
+          // decoded pixels straight to the base class. Saves one allocation
+          // and one full-buffer copy at every atlas load. Wrap in
+          // Uint8ClampedArray (the contract shape) without copying — same
+          // backing buffer, different typed view.
+          atlasImage = {
+            width: decoded.width,
+            height: decoded.height,
+            data: new Uint8ClampedArray(decoded.data.buffer, decoded.data.byteOffset, decoded.data.byteLength)
+          };
+        } else {
+          // Default 'imageElement' path: wrap in the configured canvas
+          // (canvas-mock by default; node-canvas / skia-canvas if the
+          // embedder overrode setCanvasFactory).
+          const canvas = bitmapTextClass.getCanvasFactory()();
+          canvas.width = decoded.width;
+          canvas.height = decoded.height;
+          const ctx = canvas.getContext('2d');
+          const imageData = ctx.createImageData(decoded.width, decoded.height);
+          imageData.data.set(decoded.data);
+          ctx.putImageData(imageData, 0, 0);
+          atlasImage = canvas;
+        }
 
-        // Wrap the canvas + look up positioning from the per-density bundle.
-        await FontLoaderBase._loadAtlasFromPackage(idString, canvas, bitmapTextClass);
+        // Wrap the atlas image + look up positioning from the per-density bundle.
+        await FontLoaderBase._loadAtlasFromPackage(idString, atlasImage, bitmapTextClass);
       }
     } catch (error) {
       console.warn(`Atlas loading error for ${atlasPath}: ${error.message}`);
