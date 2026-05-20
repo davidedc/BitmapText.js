@@ -87,7 +87,7 @@ If a change touches glyph generation, atlas layout, or metrics, regenerate via `
 - API surface, distribution options, full demo list, transform-behavior caveats → `README.md`
 - Static-class rationale, FAB extension model, font-invariant auto-redirect, transform-reset design → `docs/ARCHITECTURE.md`
 - JSON font-spec schema (for adding fonts/sizes/weights) → `docs/FONT_SET_FORMAT.md`
-- Asset pipeline (qoi → png → webp → js, optimize, watch) and required Homebrew tools → `scripts/README.md`
+- Asset pipeline (qoi → png → webp → js, optimize, watch), font-assets release/publish workflow (§ 9), and required Homebrew tools → `scripts/README.md`
 - Playwright automation (builder, hashes, screenshots) → `docs/PLAYWRIGHT_AUTOMATION.md`
 - Bundle layout and entry points → `dist/README.md`
 - Performance harnesses, profiling workflow → `perf/README.md`, `perf/profiling/README.md`

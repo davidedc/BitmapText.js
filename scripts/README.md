@@ -323,6 +323,45 @@ Total time end-to-end: ~10 min on a typical machine. Uses only `curl`, `unzip`, 
 
 **Requires:** `gh` (`brew install gh && gh auth login`), `zip`, `shasum`, `git`. Use `--dry-run` to inspect the staged artifacts and notes without pushing or uploading — that path doesn't need `gh`.
 
+**Manual upload (no `gh` installed).** `--dry-run` stops after step 6 and leaves three files in `/tmp/font-assets-release-<tag>/`:
+
+- `font-assets-min.zip` — the release artifact
+- `font-assets-min.zip.sha256` — the integrity sidecar
+- `release-notes.md` — paste into GitHub's description textbox verbatim
+
+Then on `https://github.com/davidedc/BitmapText.js/releases/new`:
+
+1. **Tag:** the planned name printed by `--dry-run` (e.g. `font-assets-2026-05-20`). GitHub creates the tag at the target commit when you publish.
+2. **Target:** `main` (or pin to a specific commit SHA if needed).
+3. **Title:** `font-assets minimum set (<tag>)` — matches the script's automated form.
+4. **Description:** paste the content of `release-notes.md`.
+5. **Files:** upload BOTH `font-assets-min.zip` AND `font-assets-min.zip.sha256`.
+6. **★ Tick "Set as the latest release."** Without this, the `releases/latest/download/font-assets-min.zip` URL — which `download-font-assets.sh` hits by default — keeps pointing at the previous "latest", so consumers never see the new release.
+
+**Verify after publish.** Three independent witnesses should agree on the SHA-256 — local staged zip, published sidecar (both URLs), and the bytes of the downloaded zip:
+
+```bash
+TAG="font-assets-2026-05-20"
+
+# 1. local staged zip
+shasum -a 256 /tmp/font-assets-release-${TAG}/font-assets-min.zip
+
+# 2. published sidecar from the tag-specific URL
+curl -sL https://github.com/davidedc/BitmapText.js/releases/download/${TAG}/font-assets-min.zip.sha256
+
+# 3. published sidecar from the `latest` alias — MUST match (2);
+#    if it doesn't, "Set as the latest release" wasn't ticked.
+curl -sL https://github.com/davidedc/BitmapText.js/releases/latest/download/font-assets-min.zip.sha256
+
+# 4. actual bytes of the downloaded zip (ground truth)
+curl -sL https://github.com/davidedc/BitmapText.js/releases/latest/download/font-assets-min.zip \
+  | shasum -a 256
+```
+
+All four hashes must match. If `(3)` lags behind `(2)`, fix the latest-release flag in GitHub's release-settings panel (no re-upload needed).
+
+**When to cut a new release.** Anytime the wire format of `metrics-bundle.js` or `positioning-bundle-density-*.js` changes — i.e., commits touching `src/builder/MetricsExpander.js`, `src/runtime/BundleCodec.js`, or the positioning-record encoder. Bundles are NOT re-derived by consumers' `rebuild-from-minimal.sh` (it only touches the atlas side); they ship as-is from the zip. A consumer who pulls an old release after a wire-format bump gets bundles their newer-source runtime can't decode — symptom: `Char stream length N does not match M` thrown from `MetricsExpander` on the first `loadFont`. Cut a new release whenever you would have had to bump a wire-format version number in a less-loose distribution model.
+
 #### 9.c Re-derive — `scripts/rebuild-from-minimal.sh`
 
 Used by `download-font-assets.sh` after unzipping. Can also be run directly when you already have the minimum set in place. Note: this script does NOT process `metrics-bundle.js` or `positioning-bundle-density-*.js` — those are shipped as-is in the zip and only need unzipping. It derives the per-atlas QOI + JS wrappers from the WebPs.
