@@ -12,6 +12,24 @@
 //
 // The generated JS files call BitmapText.registerAtlas() to register the base64 data.
 // Atlas positioning data is NOT included here — it ships in the per-density positioning bundle.
+//
+// VENDORING NOTES (for embedders consuming BitmapText.js as a vendor tree):
+//   - Zero project-local dependencies: only Node builtins (`fs`, `path`). Safe
+//     to vendor standalone; no `lib/`, no `src/`, no other `scripts/` files
+//     required.
+//   - Output contract: every generated `.js` file calls
+//       BitmapText.a(density, family, styleIdx, weightIdx, size, base64)
+//     where styleIdx is 0=normal / 1=italic / 2=oblique and weightIdx is
+//     0=normal / 1=bold / else numeric weight (as a number). The `.a` alias
+//     and these index conventions are universal invariants per CLAUDE.md
+//     and will not change.
+//   - CLI contract: `[directory] [--webp|--png|--qoi|--all]`. Stable since
+//     the predecessor `png-to-js-converter.js` was removed. No breaking
+//     changes will land without prior notice.
+//   - The QOI mode in particular needs NO codec library — it base64-encodes
+//     the raw QOI bytes; the decode happens at runtime inside the Node
+//     bundle (which carries QOIDecode). Same for WebP/PNG (decoded at
+//     runtime by the browser).
 
 const fs = require('fs');
 const path = require('path');

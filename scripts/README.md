@@ -159,16 +159,19 @@ from three near-identical scripts):
 node scripts/image-to-js-converter.js [directory] [options]
 ```
 **Options:**
-- `--png`: Process PNG files only (generates *-png.js files)
-- `--qoi`: Process QOI files only (generates *-qoi.js files)
-- `--all`: Process both PNG and QOI files (default)
+- `--webp`: Process WebP files only (generates `*-webp.js` files)
+- `--png`: Process PNG files only (generates `*-png.js` files)
+- `--qoi`: Process QOI files only (generates `*-qoi.js` files)
+- `--all`: Process WebP and QOI files (default)
 
 **Examples:**
 ```bash
-node scripts/image-to-js-converter.js --all           # Process all images in font-assets/
-node scripts/image-to-js-converter.js font-assets --png    # Process PNG files only
-node scripts/image-to-js-converter.js /path/to/images --qoi # Process QOI files only
+node scripts/image-to-js-converter.js --all                 # Process WebP + QOI in font-assets/
+node scripts/image-to-js-converter.js font-assets --webp    # WebP only (used by embedders for file:// demos)
+node scripts/image-to-js-converter.js /path/to/images --qoi # QOI only
 ```
+
+**Vendor-friendly:** zero project-local dependencies (pure Node `fs`/`path` builtins). Safe to vendor standalone into embedder trees alongside the runtime. See the file-top "VENDORING NOTES" comment block for the full contract (output format, CLI stability, alias guarantees).
 
 ### 5. PNG to WebP Converter Script
 ```bash
