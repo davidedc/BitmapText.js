@@ -1539,6 +1539,147 @@ class BitmapText {
   }
 
   /**
+   * Compute the ink bounding box that drawTextFromAtlas would paint, given
+   * the same arguments. Useful when an embedder needs to render text into an
+   * intermediate buffer at the smallest necessary size before compositing
+   * into a destination — see README.md "Embedder Integration" for the
+   * canonical "compute box, allocate intermediate, draw, blit" pattern.
+   *
+   * UNITS: x, y, and the returned box.{x,y,width,height} are all in CSS
+   * pixels (floats), matching drawTextFromAtlas's input convention.
+   * drawTextFromAtlas multiplies by fontProperties.pixelDensity internally
+   * to derive physical pixel positions; this method returns the un-scaled
+   * CSS-px box. Embedders who want PHYSICAL pixels — e.g. to size an
+   * intermediate canvas — multiply by pixelDensity themselves and apply
+   * Math.ceil at canvas allocation, per BitmapText's invariant 6
+   * ("position floats, draw integers").
+   *
+   * SINGLE SOURCE OF TRUTH: this method delegates to the same private
+   * helpers drawTextFromAtlas uses (#calculateBaselineOffsetToBottom,
+   * #calculateAlignmentOffsetToLeft) so the offset math stays consistent.
+   * If drawTextFromAtlas ever changes a sign convention or adds a baseline
+   * mode, this method's output tracks automatically — embedders don't have
+   * to re-derive formulas.
+   *
+   * @param {string} text - Text to measure
+   * @param {number} x - X position in CSS pixels (same convention as drawTextFromAtlas)
+   * @param {number} y - Y position in CSS pixels
+   * @param {FontProperties} fontProperties - Font configuration
+   * @param {TextProperties} [textProperties] - Text rendering configuration (optional)
+   * @returns {{box: {x: number, y: number, width: number, height: number}|null, status: Object}}
+   *   `box` in CSS-px floats, or null if measurement failed (status carries the reason).
+   *
+   * @example
+   *   // Embedder slow path: render to intermediate, blit to destination.
+   *   const { box, status } = BitmapText.computeInkBoundingBox(text, x, y, fp, tp);
+   *   if (status.code !== 0 || !box) return; // measurement failed
+   *   // Allocate intermediate at PHYSICAL pixel size:
+   *   const w_phys = Math.ceil(box.width  * fp.pixelDensity);
+   *   const h_phys = Math.ceil(box.height * fp.pixelDensity);
+   *   const inter = new MyEmbedderCanvas(w_phys, h_phys);
+   *   // Draw at the offset that lands ink at the intermediate's (0,0).
+   *   // (x - box.x, y - box.y) STAYS in CSS pixels — drawTextFromAtlas scales:
+   *   BitmapText.drawTextFromAtlas(inter.getContext('2d'), text,
+   *                                x - box.x, y - box.y, fp, tp);
+   *   // Blit intermediate to destination at box.{x,y} in destination space.
+   *   destCtx.drawImage(inter, 0, 0, w_phys, h_phys,
+   *                     box.x, box.y, box.width, box.height);
+   */
+  static computeInkBoundingBox(text, x, y, fontProperties, textProperties = null) {
+    if (!textProperties) textProperties = new TextProperties();
+
+    // 1) Public measureText is the single gate for all failure modes
+    //    (empty text → zero metrics + SUCCESS; missing font → NO_METRICS;
+    //    missing glyphs → PARTIAL_METRICS; size < 9 → interpolated fallback
+    //    or NO_METRICS). Propagate the status as-is so callers can branch.
+    const measureResult = BitmapText.measureText(text, fontProperties, textProperties);
+    if (measureResult.status.code !== 0 || !measureResult.metrics) {
+      return { box: null, status: measureResult.status };
+    }
+    const m = measureResult.metrics;
+
+    // 2) Empty text: measureText returned zero metrics + SUCCESS. Map to a
+    //    degenerate zero-area box at the caller's (x, y).
+    if (text.length === 0) {
+      return { box: { x, y, width: 0, height: 0 }, status: measureResult.status };
+    }
+
+    // 3) Resolve fontMetrics + chars — same prologue as drawTextFromAtlas
+    //    at BitmapText.js:557-585. measureText already validated these don't
+    //    fail; we need the actual references for first-char baseline lookup
+    //    AND for re-deriving actualBoundingBoxDescent (see step 6 comment).
+    let fontMetrics = FontMetricsStore.getFontMetrics(fontProperties);
+    if (BitmapText._shouldUseMinSize(fontProperties.fontSize)) {
+      fontMetrics = BitmapText.#lookupInterpolatedMetricsForSmallSize(fontProperties);
+    }
+    const renderContext = BitmapText.#resolveRenderContext(text, fontProperties);
+    const { invariantFontMetrics, hasInvariantFont, chars } = renderContext;
+
+    // 4) First-char baseline lookup — same pattern as drawTextFromAtlas:631-632.
+    const firstChar = chars.find(c => fontMetrics.hasGlyph(c)) || chars[0];
+    const characterMetricsForBaseline = fontMetrics.getCharacterMetrics(firstChar);
+
+    // 5) Offset math — same helpers drawTextFromAtlas uses at lines 633-647.
+    const baselineOffset_CssPx = characterMetricsForBaseline
+      ? BitmapText.#calculateBaselineOffsetToBottom(textProperties.textBaseline, characterMetricsForBaseline)
+      : 0;
+    const alignmentOffset_CssPx = textProperties.textAlign === 'left'
+      ? 0
+      : BitmapText.#calculateAlignmentOffsetToLeft(textProperties.textAlign, m.width);
+
+    // 6) measureText's actualBoundingBoxDescent is broken — it uses Math.min
+    //    starting at 0 against characterMetrics.actualBoundingBoxDescent which
+    //    is reported as a POSITIVE distance below baseline (standard Canvas
+    //    convention), so it always clamps to 0 and loses the descender info.
+    //    Recompute via Math.max over the resolved chars (mirroring the
+    //    font-switching pattern measureText uses for ascent). Bug pre-dates
+    //    Sprint 5; fixing it inside measureText would change measureText's
+    //    return shape which Sprint 5 is not allowed to touch.
+    let actualBoundingBoxDescent_CssPx = 0;
+    for (const c of chars) {
+      const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(c);
+      const fm = isInvariant ? invariantFontMetrics : fontMetrics;
+      const cm = fm && fm.getCharacterMetrics(c);
+      if (cm && cm.actualBoundingBoxDescent > actualBoundingBoxDescent_CssPx) {
+        actualBoundingBoxDescent_CssPx = cm.actualBoundingBoxDescent;
+      }
+    }
+
+    // 7) Compose the ink rectangle in CSS pixels (floats throughout — invariant 6).
+    //    The alphabetic baseline lands at:
+    //      alphaY = y + baselineOffset - fontBoundingBoxDescent
+    //    (BitmapText positions glyphs to 'bottom' baseline; alphabetic sits
+    //    fontBoundingBoxDescent above 'bottom'). actualBoundingBox{Left,Right}
+    //    are ink extents from the offset-corrected origin; actualBoundingBox
+    //    {Ascent,Descent} are ink extents from alphabetic baseline.
+    //
+    //    PHYSICAL-PIXEL NOTES FOR EMBEDDERS:
+    //    - To size an intermediate canvas: multiply by fp.pixelDensity and
+    //      Math.ceil at the integer boundary.
+    //         const w_phys = Math.ceil(box.width  * fp.pixelDensity);
+    //         const h_phys = Math.ceil(box.height * fp.pixelDensity);
+    //    - The (x - box.x, y - box.y) draw position passed back to
+    //      drawTextFromAtlas STAYS in CSS pixels (no scaling) —
+    //      drawTextFromAtlas multiplies internally. Don't double-scale.
+    const alphaY   = y + baselineOffset_CssPx - m.fontBoundingBoxDescent;
+    const inkLeft  = x + alignmentOffset_CssPx - m.actualBoundingBoxLeft;
+    const inkRight = x + alignmentOffset_CssPx + m.actualBoundingBoxRight;
+    const inkTop   = alphaY - m.actualBoundingBoxAscent;
+    // Standard Canvas convention: descent is a positive distance below baseline.
+    const inkBot   = alphaY + actualBoundingBoxDescent_CssPx;
+
+    return {
+      box: {
+        x: inkLeft,
+        y: inkTop,
+        width:  inkRight - inkLeft,
+        height: inkBot   - inkTop,
+      },
+      status: measureResult.status,
+    };
+  }
+
+  /**
    * Draw text using pre-rendered glyphs from atlas
    *
    * COORDINATE SYSTEM:

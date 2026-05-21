@@ -1335,6 +1335,18 @@ try {
   - `BitmapText.setCanvasFactory(factory)` — provide a custom factory for output canvases (the canvases BitmapText draws *into*). Useful when running in Node without `node-canvas`, or when targeting a software-canvas backend.
   - `BitmapText.setFontLoader(loaderClass)` — register a custom platform loader (extends `FontLoaderBase`). The Browser and Node platform files self-register their respective loaders (`BitmapTextFontLoaderBrowser` / `BitmapTextFontLoaderNode`) automatically when their environment is detected. Workers fall through to neither auto-registration footer — they must call `setFontLoader` explicitly.
   - `BitmapText.setAtlasFormat('imageElement' | 'imageData')` — opt into storing atlases as plain `{width, height, data: Uint8ClampedArray}` instead of the platform's native image type. Required for DOM-less embedders (web workers, software canvases). **Must be called once at boot, before any `loadFont`** — mixing formats in `AtlasDataStore` will break renders for half the atlases. See the JSDoc on `setAtlasFormat` for the full contract.
+  - `BitmapText.computeInkBoundingBox(text, x, y, fontProperties, textProperties)` — returns `{box: {x, y, width, height} | null, status}` (CSS-pixel floats) — the ink bounding box `drawTextFromAtlas` would paint with the same arguments. Designed for the "render to intermediate then blit" embedder pattern; encapsulates the alignment + baseline offset math `drawTextFromAtlas` applies internally so embedders don't have to re-derive it. Units match `drawTextFromAtlas` (CSS-px in, CSS-px out); embedders multiply by `fontProperties.pixelDensity` with `Math.ceil` to size physical-pixel buffers:
+
+    ```js
+    const { box, status } = BitmapText.computeInkBoundingBox(text, x, y, fp, tp);
+    if (status.code !== 0 || !box) return;
+    const w_phys = Math.ceil(box.width  * fp.pixelDensity);
+    const h_phys = Math.ceil(box.height * fp.pixelDensity);
+    const inter  = new EmbedderCanvas(w_phys, h_phys);
+    // (x - box.x, y - box.y) STAYS in CSS pixels — drawTextFromAtlas scales internally:
+    BitmapText.drawTextFromAtlas(inter.getContext('2d'), text, x - box.x, y - box.y, fp, tp);
+    destCtx.drawImage(inter, 0, 0, w_phys, h_phys, box.x, box.y, box.width, box.height);
+    ```
 
   See `CLAUDE.md` (project root) for the constraint set governing this surface — hot-path discipline, the universal invariants, and the three-gate verification methodology.
 

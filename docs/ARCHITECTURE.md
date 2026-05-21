@@ -798,6 +798,40 @@ BitmapText.configure({
 BitmapText.setCanvasFactory(() => new OffscreenCanvas(0, 0));
 ```
 
+## Embedder Extensibility Surface
+
+Standalone browser / Node consumers don't need any of this — the platform loaders self-register and the defaults work end-to-end. The four configure-keys / setters exist for embedders integrating BitmapText into rendering systems that don't look like a vanilla browser canvas (software canvases like SWCanvas, web workers without DOM, custom platforms, tests). They're intentionally additive — every key is independently optional, and the defaults are unchanged.
+
+```javascript
+BitmapText.configure({
+  fontDirectory,   // where to load atlas/metric files from
+  canvasFactory,   // factory for OUTPUT canvases BitmapText draws into
+  fontLoader,      // platform loader class (extends FontLoaderBase)
+  atlasFormat,     // 'imageElement' (default) | 'imageData'
+});
+```
+
+**Why `canvasFactory` and the browser path's atlas-decode source are different concerns.** When `setAtlasFormat('imageData')` is set, `BitmapTextFontLoaderBrowser` decodes the WebP `HTMLImageElement` into a plain `{width, height, data: Uint8ClampedArray}` object via an offscreen canvas at load time — but it does that decode with `document.createElement('canvas')` directly, **not** through the configured `canvasFactory`. The factory is for output canvases (the ones BitmapText paints text into); the decode source is a separate concern — it has to be a real DOM canvas because it has to accept an HTMLImageElement via `drawImage`. Embedders who set `canvasFactory` to a DOM-less canvas (SWCanvas, OffscreenCanvas-only worker contexts) — exactly the case `imageData` was added to support — would break if their factory's canvas was used for decode. Keeping the two sources separate makes the surface work for the embedder use case it's designed for.
+
+**Why `computeInkBoundingBox` exists.** `drawTextFromAtlas` applies alignment + baseline offsets internally before drawing, via two private static helpers (`#calculateBaselineOffsetToBottom`, `#calculateAlignmentOffsetToLeft`). Embedders implementing a "render to intermediate buffer, then composite" path (SWCanvas's slow path) need to know *where* the ink will land in destination space to size that buffer. They can't reach into BitmapText's private helpers, and re-implementing the math at the embedder is a maintenance trap — if BitmapText ever changes its offset conventions, every embedder silently desyncs. `computeInkBoundingBox` exposes the *result* of the offset math rather than the *primitives*, so the math stays single-source-of-truth.
+
+**CSS-pixel vs physical-pixel contract** (the one footgun this surface has). All public methods on the static class (`measureText`, `drawTextFromAtlas`, `computeInkBoundingBox`) take and return CSS pixels. `drawTextFromAtlas` multiplies internally by `fontProperties.pixelDensity` to derive physical-pixel positions for `drawImage`. Embedders sizing physical-pixel buffers do the multiply themselves with `Math.ceil` at the integer boundary (BitmapText's "position floats, draw integers" invariant). The full pattern for the render-to-intermediate embedder slow path:
+
+```javascript
+const { box, status } = BitmapText.computeInkBoundingBox(text, x, y, fp, tp);
+if (status.code !== 0 || !box) return;  // measurement failed
+// Allocate intermediate at PHYSICAL pixel size:
+const w_phys = Math.ceil(box.width  * fp.pixelDensity);
+const h_phys = Math.ceil(box.height * fp.pixelDensity);
+const inter  = new EmbedderCanvas(w_phys, h_phys);
+// (x - box.x, y - box.y) STAYS in CSS pixels — drawTextFromAtlas scales internally:
+BitmapText.drawTextFromAtlas(inter.getContext('2d'), text, x - box.x, y - box.y, fp, tp);
+// Blit intermediate to destination at box.{x,y} in destination space.
+destCtx.drawImage(inter, 0, 0, w_phys, h_phys, box.x, box.y, box.width, box.height);
+```
+
+Don't double-scale: passing `(x - box.x) * pixelDensity` to `drawTextFromAtlas` would cause the text to land at `(x - box.x) * pixelDensity * pixelDensity` in the intermediate, missing the target entirely on Retina displays.
+
   ## Data Flow
 
   ### Font Assets Building Phase
