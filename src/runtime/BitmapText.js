@@ -1253,11 +1253,20 @@ class BitmapText {
     // single caller (drawTextFromAtlas) so we don't redo #resolveInvariantFont here.
     const invariantAtlasData = invariantFontMetrics ?
       AtlasDataStore.getAtlasData(invariantFontProps) : null;
+    // Mirror drawTextFromAtlas's per-glyph branch — the caller has already
+    // validated the primary atlas (the if-isColoredText-&&-atlasValid guard
+    // at the entry to this batched path), so atlasValid is implicitly true
+    // for the primary font. Invariant atlas may not be loaded though, so
+    // we have to track it per-glyph and fall back to placeholder rectangles
+    // for invariant chars whose atlas isn't resident.
+    const invariantAtlasValid = invariantFontMetrics ?
+      BitmapText._isValidAtlas(invariantAtlasData) : false;
 
     // Track current font to minimize lookups
     let currentFontProps = fontProperties;
     let currentFontMetrics = fontMetrics;
     let currentAtlasData = atlasData;
+    let currentAtlasValid = true;  // caller validated primary; switches below may flip this
 
     // Calculate scratch canvas dimensions in physical pixels
     // CRITICAL: Use FONT bounding box (not actual text bounding box)
@@ -1345,31 +1354,55 @@ class BitmapText {
         currentFontProps = invariantFontProps;
         currentFontMetrics = invariantFontMetrics;
         currentAtlasData = invariantAtlasData;
+        currentAtlasValid = invariantAtlasValid;
       } else if (!isInvariant && currentFontProps !== fontProperties) {
         // Switch back to base font
         currentFontProps = fontProperties;
         currentFontMetrics = fontMetrics;
         currentAtlasData = atlasData;
+        currentAtlasValid = true;  // caller validated primary atlas
       }
 
       // One dict lookup per non-space glyph; pre-checking with hasPositioning
       // would redo the same lookup (it's `_placements[char] !== undefined`).
       // Spaces have no visual glyph and are skipped here; advancement still applies.
       if (currentChar !== ' ') {
-        const p = currentAtlasData.atlasPositioning._placements[currentChar];
-        if (p === undefined) {
+        if (!currentAtlasValid) {
+          // Active atlas isn't loaded (typical case: invariant atlas not yet
+          // resident, primary still warm). Mirror drawTextFromAtlas's
+          // per-glyph branch — draw a placeholder rectangle in textColor.
+          // We draw to the MAIN canvas, not the scratch canvas: #drawPlaceholderRectangle
+          // already accepts textColor as a parameter, so the rect comes out in
+          // the right colour without relying on the source-in tinting step
+          // (which would also work, but ties two unrelated mechanisms together).
+          // The scratch→main coordinate mapping mirrors the final drawImage at
+          // the end of this function.
           missingAtlasChars.add(currentChar);
           placeholdersUsed = true;
+          const characterMetrics = currentFontMetrics.getCharacterMetrics(currentChar);
+          if (characterMetrics) {
+            const placeholderPosition = {
+              x: Math.round(startPosition_PhysPx.x) + (position_PhysPx.x - actualBoundingBoxLeft_PhysPx),
+              y: Math.round(startPosition_PhysPx.y)
+            };
+            BitmapText.#drawPlaceholderRectangle(ctx, currentChar, placeholderPosition, characterMetrics, textProperties.textColor);
+          }
         } else {
-          const atlasImage = currentAtlasData.atlasImage.image;
-          BitmapText.#coloredGlyphCtx.drawImage(
-            atlasImage,
-            p.xInAtlas, p.yInAtlas,
-            p.tightWidth, p.tightHeight,
-            Math.round(position_PhysPx.x + p.dx),
-            Math.round(position_PhysPx.y + p.dy),
-            p.tightWidth, p.tightHeight
-          );
+          const p = currentAtlasData.atlasPositioning._placements[currentChar];
+          if (p === undefined) {
+            missingAtlasChars.add(currentChar);
+            placeholdersUsed = true;
+          } else {
+            const atlasImage = currentAtlasData.atlasImage.image;
+            BitmapText.#coloredGlyphCtx.drawImage(
+              atlasImage,
+              p.xInAtlas, p.yInAtlas,
+              p.tightWidth, p.tightHeight,
+              Math.round(position_PhysPx.x + p.dx),
+              Math.round(position_PhysPx.y + p.dy),
+              p.tightWidth, p.tightHeight
+            );
+          }
         }
       }
 

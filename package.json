@@ -49,6 +49,7 @@
     "verify-metrics-bundle": "node scripts/verify-metrics-bundle.js",
     "test-loader-injection": "node scripts/check-loader-injection.js",
     "test-atlas-format": "node scripts/check-atlas-format.js",
+    "test-batched-colored-placeholder": "node scripts/check-batched-colored-placeholder.js",
     "test-ink-bounding-box": "node scripts/check-ink-bounding-box.js",
     "test-embedder": "npm run test-loader-injection && npm run test-atlas-format && npm run test-ink-bounding-box",
     "smoke-test": "node scripts/playwright-smoke-loop.js",
