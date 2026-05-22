@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 #
-# Publish a font-assets minimum-set release to GitHub.
+# Publish a font-assets release to GitHub.
+#
+# Two assets on the same tag, atomically:
+#   - font-assets-min.zip       (~150 MB) — the full distribution set
+#   - font-assets-smoke-set.zip  (~10 KB) — 3-font fixture for embedders'
+#                                            Node-side tests (e.g. SWCanvas)
+# The smoke set is built by subsetting the same bundles + copying the
+# atlas .js files verbatim from font-assets/, so it is provably a literal
+# subset of the main asset on the same release.
 #
 # Hand-holds the maintainer through:
 #   1. Pre-flight checks (asset presence, gh installed + authed)
 #   2. Building font-assets-min.zip + .sha256 sidecar
-#   3. Generating release notes from a template
-#   4. Tagging HEAD as font-assets-YYYY-MM-DD (or --tag override)
-#   5. Pushing the tag and uploading via `gh release create`
+#   3. Building font-assets-smoke-set.zip + verifying it loads & renders
+#   4. Generating release notes from a template
+#   5. Tagging HEAD as font-assets-YYYY-MM-DD (or --tag override)
+#   6. Pushing the tag and uploading both assets via `gh release create`
 #
 # Use --dry-run to do everything except the tag push and gh release call.
 #
@@ -25,6 +34,8 @@ set -euo pipefail
 REPO_OWNER='davidedc'
 REPO_NAME='BitmapText.js'
 ASSET_NAME='font-assets-min.zip'
+SMOKE_ASSET_NAME='font-assets-smoke-set.zip'
+SMOKE_SPEC='font-sets/smoke-set.json'
 
 TAG=''
 DRY_RUN=0
@@ -81,6 +92,15 @@ DENSITIES=$(printf '%s\n' "$POSITIONING_BUNDLES" \
 echo "  metrics-bundle.js              : present"
 echo "  positioning-bundle-density-*   : $POSITIONING_COUNT ($DENSITIES)"
 echo "  atlas-*.webp                   : $WEBP_COUNT"
+
+# Smoke set: spec must exist (driven by the spec, so a missing spec = fatal).
+# Per-font presence in font-assets/ is checked by build-smoke-set.js later.
+if [ ! -f "$PROJECT_ROOT/$SMOKE_SPEC" ]; then
+    echo "ERROR: smoke-set spec missing: $SMOKE_SPEC" >&2
+    echo "       The smoke set is part of every release. Restore the spec or commit it before publishing." >&2
+    exit 1
+fi
+echo "  $SMOKE_SPEC : present"
 
 # Warn (don't fail) on uncommitted code changes.
 if ! git diff --quiet -- scripts/ src/ 2>/dev/null; then
@@ -177,58 +197,118 @@ SHA256=$(awk '{print $1}' "$STAGING/$ASSET_NAME.sha256")
 echo "  Zip               : $STAGING/$ASSET_NAME ($ZIP_HUMAN, $ZIP_BYTES bytes)"
 echo "  SHA-256           : $SHA256"
 
+# --- Smoke-set artifact ------------------------------------------------------
+#
+# Second asset on the same tag: a tiny, committable-to-repo, Node-loadable
+# fixture (~30 KB) containing 3 fonts as listed in font-sets/smoke-set.json.
+# Intended for embedders (e.g. SWCanvas) that need a real font in their
+# Node-side test suite without committing the full 157 MB font-assets/.
+#
+# The atlas .js files in the smoke set are byte-identical to the ones in the
+# main zip — `build-smoke-set.js` copies them verbatim and subsets the bundles
+# to match. So the smoke set is provably a strict subset of the main release.
+
+echo ""
+echo "=== Building smoke-set artifact ==="
+
+SMOKE_STAGING_DIR="$STAGING/smoke-set-stage"
+node "$SCRIPT_DIR/build-smoke-set.js" \
+    --spec="$PROJECT_ROOT/$SMOKE_SPEC" \
+    --source-dir="$PROJECT_ROOT/font-assets" \
+    --output-dir="$SMOKE_STAGING_DIR"
+
+echo ""
+echo "  Verifying smoke set (load + render gate)..."
+node "$SCRIPT_DIR/verify-smoke-set.js" --dir="$SMOKE_STAGING_DIR"
+
+( cd "$SMOKE_STAGING_DIR" && zip -q -9 "$STAGING/$SMOKE_ASSET_NAME" * )
+
+SMOKE_BYTES=$(wc -c < "$STAGING/$SMOKE_ASSET_NAME" | tr -d ' ')
+SMOKE_HUMAN=$(du -h "$STAGING/$SMOKE_ASSET_NAME" | awk '{print $1}')
+( cd "$STAGING" && shasum -a 256 "$SMOKE_ASSET_NAME" > "$SMOKE_ASSET_NAME.sha256" )
+SMOKE_SHA256=$(awk '{print $1}' "$STAGING/$SMOKE_ASSET_NAME.sha256")
+
+echo ""
+echo "  Smoke zip         : $STAGING/$SMOKE_ASSET_NAME ($SMOKE_HUMAN, $SMOKE_BYTES bytes)"
+echo "  Smoke SHA-256     : $SMOKE_SHA256"
+
 # --- Release notes -----------------------------------------------------------
 
 NOTES_FILE="$STAGING/release-notes.md"
-TITLE="font-assets minimum set ($TAG)"
+TITLE="font-assets ($TAG)"
 
 cat > "$NOTES_FILE" <<EOF
-# font-assets minimum set
+# font-assets
 
-Pre-rendered bitmap-font assets for [BitmapText.js](https://github.com/${REPO_OWNER}/${REPO_NAME}). This is the **minimum distribution set** — \`metrics-bundle.js\` + every \`positioning-bundle-density-*.js\` + every \`atlas-*.webp\` — from which the full \`font-assets/\` directory can be re-derived locally with one command.
+Pre-rendered bitmap-font assets for [BitmapText.js](https://github.com/${REPO_OWNER}/${REPO_NAME}). Two assets on this release:
 
-## What's inside
+| Asset | Size | For |
+|---|---|---|
+| \`${ASSET_NAME}\` | ${ZIP_HUMAN} | Standard distribution — \`metrics-bundle.js\` + every \`positioning-bundle-density-*.js\` + every \`atlas-*.webp\`; the full \`font-assets/\` directory is re-derived from this with one command |
+| \`${SMOKE_ASSET_NAME}\` | ${SMOKE_HUMAN} | Smoke fixture — 3 fonts at density-1 size 16, QOI \`.js\` wrappers only, committable to embedder repos (e.g. SWCanvas) for Node-side tests |
+
+## ${ASSET_NAME}
 
 - \`font-assets/metrics-bundle.js\` — single deflate-raw + base64 bundle of every font's metrics (density-agnostic)
 - \`font-assets/positioning-bundle-density-*.js\` — ${POSITIONING_COUNT} per-density bundle(s) of pre-computed atlas positioning (densities: ${DENSITIES}); required at runtime by \`_loadAtlasFromPackage\` — atlas loads fail without them
 - \`font-assets/atlas-*.webp\` — ${WEBP_COUNT} lossless WebP atlas images
 - $((WEBP_COUNT + 1 + POSITIONING_COUNT)) files total, ${ZIP_HUMAN} compressed
 
-## How to use
+How to use:
 
 \`\`\`bash
 ./scripts/download-font-assets.sh
 \`\`\`
 
-That one command fetches this release, verifies the SHA-256 sidecar, unzips into \`font-assets/\`, and runs \`./scripts/rebuild-from-minimal.sh\` to re-derive the QOI atlases and JS wrappers locally.
+That one command fetches this asset, verifies the SHA-256 sidecar, unzips into \`font-assets/\`, and runs \`./scripts/rebuild-from-minimal.sh\` to re-derive the QOI atlases and JS wrappers locally.
 
 Manual fallback:
 
 \`\`\`bash
-curl -L -o font-assets-min.zip \\
-  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/font-assets-min.zip
-unzip font-assets-min.zip
+curl -L -o ${ASSET_NAME} \\
+  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${ASSET_NAME}
+unzip ${ASSET_NAME}
 ./scripts/rebuild-from-minimal.sh
 \`\`\`
 
+Requirements: \`dwebp\` (\`brew install webp\`), \`terser\` (\`npm i -g terser\`), Node ≥ 12.
+
 See [\`scripts/README.md\`](https://github.com/${REPO_OWNER}/${REPO_NAME}/blob/main/scripts/README.md) sec 9 for the full distribution workflow.
 
-## Requirements
+## ${SMOKE_ASSET_NAME}
 
-- \`dwebp\` — \`brew install webp\` (macOS) or distro equivalent
-- \`terser\` — \`npm i -g terser\`
-- Node ≥ 12
+A tiny self-contained fixture for embedders running BitmapText in Node-side test suites who don't want to commit the full 157 MB \`font-assets/\` directory. Contents:
+
+- \`metrics-bundle.js\` + \`positioning-bundle-density-1.js\` — subsetted to the 3 fonts below
+- \`atlas-*-qoi.js\` — 3 QOI atlas wrappers (Node-loadable, no \`<script>\` injection needed)
+- \`smoke-set.json\` — the spec describing exactly what's in the zip (mirrors \`${SMOKE_SPEC}\` upstream)
+
+Fonts in the smoke set: \`Arial\` normal+normal size 16, \`Arial\` normal+bold size 16, \`BitmapTextInvariant\` normal+normal size 16. Atlas \`.js\` files are byte-identical to the ones in \`${ASSET_NAME}\` — the smoke set is a strict subset, safe to drop into a populated \`font-assets/\` without conflicts.
+
+Verified before publish: every font in the smoke set loads via \`BitmapText.loadFont\` and renders non-zero opaque pixels.
+
+Manual fetch:
+
+\`\`\`bash
+curl -L -o ${SMOKE_ASSET_NAME} \\
+  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${SMOKE_ASSET_NAME}
+unzip ${SMOKE_ASSET_NAME} -d ./font-assets/_smoke/
+\`\`\`
+
+Then in test setup: \`BitmapText.setFontDirectory('./font-assets/_smoke/')\` and \`await BitmapText.loadFont(...)\` for the 3 idStrings listed in \`smoke-set.json\`.
 
 ## Integrity
 
 \`\`\`
-SHA-256: ${SHA256}
+${ASSET_NAME}        SHA-256: ${SHA256}
+${SMOKE_ASSET_NAME}  SHA-256: ${SMOKE_SHA256}
 \`\`\`
 
 Verify after download:
 
 \`\`\`bash
-shasum -a 256 -c font-assets-min.zip.sha256
+shasum -a 256 -c ${ASSET_NAME}.sha256
+shasum -a 256 -c ${SMOKE_ASSET_NAME}.sha256
 \`\`\`
 EOF
 
@@ -243,6 +323,8 @@ if [ "$DRY_RUN" -eq 1 ]; then
     echo "Would upload:"
     echo "  $STAGING/$ASSET_NAME"
     echo "  $STAGING/$ASSET_NAME.sha256"
+    echo "  $STAGING/$SMOKE_ASSET_NAME"
+    echo "  $STAGING/$SMOKE_ASSET_NAME.sha256"
     echo "Notes: $NOTES_FILE"
     echo ""
     echo "Re-run without --dry-run to publish."
@@ -254,15 +336,19 @@ fi
 cat <<EOF
 
 === Ready to publish ===
-  Tag    : $TAG
-  Title  : $TITLE
-  Repo   : ${REPO_OWNER}/${REPO_NAME}
-  Assets : font-assets-min.zip ($ZIP_HUMAN), font-assets-min.zip.sha256
-  SHA-256: $SHA256
+  Tag         : $TAG
+  Title       : $TITLE
+  Repo        : ${REPO_OWNER}/${REPO_NAME}
+  Main asset  : ${ASSET_NAME} (${ZIP_HUMAN})  +  ${ASSET_NAME}.sha256
+  Smoke asset : ${SMOKE_ASSET_NAME} (${SMOKE_HUMAN})  +  ${SMOKE_ASSET_NAME}.sha256
+  SHA-256s    : ${SHA256}
+                ${SMOKE_SHA256}
 
 After publish the assets will be reachable at:
   https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${TAG}/${ASSET_NAME}
-  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${ASSET_NAME}  (if marked latest)
+  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${TAG}/${SMOKE_ASSET_NAME}
+  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${ASSET_NAME}        (if marked latest)
+  https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${SMOKE_ASSET_NAME}  (if marked latest)
 EOF
 
 printf "Proceed? [y/N] "
@@ -288,13 +374,18 @@ echo "  Creating GitHub release..."
 gh release create "$TAG" \
     "$STAGING/$ASSET_NAME" \
     "$STAGING/$ASSET_NAME.sha256" \
+    "$STAGING/$SMOKE_ASSET_NAME" \
+    "$STAGING/$SMOKE_ASSET_NAME.sha256" \
     --title "$TITLE" \
     --notes-file "$NOTES_FILE"
 
 echo ""
 echo "=== Published ==="
-echo "Specific tag : https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${TAG}/${ASSET_NAME}"
+echo "Main asset   : https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${TAG}/${ASSET_NAME}"
+echo "Smoke asset  : https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${TAG}/${SMOKE_ASSET_NAME}"
 echo "Latest alias : https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${ASSET_NAME}"
-echo "Verify       : shasum -a 256 -c ${ASSET_NAME}.sha256"
+echo "Latest smoke : https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${SMOKE_ASSET_NAME}"
+echo "Verify main  : shasum -a 256 -c ${ASSET_NAME}.sha256"
+echo "Verify smoke : shasum -a 256 -c ${SMOKE_ASSET_NAME}.sha256"
 echo ""
 echo "Staging dir kept at $STAGING (safe to delete)."

@@ -279,14 +279,24 @@ npm run qoi-memory                                       # Using npm script
 
 ### 9. Distribution / Minimum-Set Workflow
 
-`font-assets/` is too large to commit (~800 MB full, ~72 MB minimum set). It is **not in the repo** — only `font-assets/.gitkeep` and `font-assets/README.md` are tracked. The asset bytes live in [GitHub Releases](https://github.com/davidedc/BitmapText.js/releases). Tag convention: `font-assets-YYYY-MM-DD`. Each release ships two assets — `font-assets-min.zip` and a matching `font-assets-min.zip.sha256` sidecar — so consumers can verify integrity without a separate hash transcription.
+`font-assets/` is too large to commit (~800 MB full, ~72 MB minimum set). It is **not in the repo** — only `font-assets/.gitkeep` and `font-assets/README.md` are tracked. The asset bytes live in [GitHub Releases](https://github.com/davidedc/BitmapText.js/releases). Tag convention: `font-assets-YYYY-MM-DD`. Each release ships two zip assets (each with its own `.sha256` sidecar):
 
-**Minimum-set contents** (every release):
+- `font-assets-min.zip` (~60 MB) — the **standard distribution set**. Embedders and consumers grab this via `download-font-assets.sh`.
+- `font-assets-smoke-set.zip` (~10 KB) — a tiny **smoke fixture** for embedders that need a Node-loadable font in their test suite but don't want to commit the full `font-assets/`. Used by SWCanvas etc.; defined by `font-sets/smoke-set.json` (the source of truth for which fonts ship).
+
+The smoke set's atlas `.js` files are byte-identical to those derived from the standard distribution; its bundles are a strict subset of the standard bundles. So an embedder can drop smoke files into a populated `font-assets/` directory with zero conflicts.
+
+**Standard-set contents** (`font-assets-min.zip`, every release):
 - `metrics-bundle.js` — density-agnostic metrics (single file).
 - `positioning-bundle-density-*.js` — pre-computed per-glyph positioning, one file per density (currently 1 and 2). Required at runtime by `_loadAtlasFromPackage`; atlas loads throw without them. The rebuild step never regenerates these — they ship as-is.
 - `atlas-*.webp` — lossless WebP atlas images, one per (density, family, style, weight, size).
 
-The workflow has three scripts: one for consumers, one for maintainers, and the existing rebuilder used by both.
+**Smoke-set contents** (`font-assets-smoke-set.zip`, every release):
+- `metrics-bundle.js` + `positioning-bundle-density-1.js` — subsetted to the fonts in `font-sets/smoke-set.json`.
+- `atlas-*-qoi.js` — Node-loadable QOI atlas wrappers, one per font in the spec.
+- `smoke-set.json` — copy of the spec, so the zip is self-describing.
+
+The workflow has three scripts: one for consumers, one for maintainers (publishes both assets atomically), and the existing rebuilder used by both.
 
 #### 9.a Consume — `scripts/download-font-assets.sh`
 
@@ -315,31 +325,35 @@ Total time end-to-end: ~10 min on a typical machine. Uses only `curl`, `unzip`, 
 ```
 
 **What it does:**
-1. Pre-flight: confirms `metrics-bundle.js`, at least one `positioning-bundle-density-*.js`, and at least one `atlas-*.webp`; warns if `scripts/` or `src/` is dirty; checks that `gh` is installed and authed (skipped under `--dry-run`).
+1. Pre-flight: confirms `metrics-bundle.js`, at least one `positioning-bundle-density-*.js`, at least one `atlas-*.webp`, and `font-sets/smoke-set.json`; warns if `scripts/` or `src/` is dirty; checks that `gh` is installed and authed (skipped under `--dry-run`).
 2. Defensive cleanup: deletes any stale `atlas-*.png` intermediates so they can't sneak into the zip.
 3. Auto-tag `font-assets-$(date +%Y-%m-%d)` (or `--tag` override). If the tag already has a release, prompts for overwrite confirmation.
 4. Builds `font-assets-min.zip` via `find … -print | zip -@` (newline-safe; atlas filenames have spaces but never newlines). Includes `metrics-bundle.js`, every `positioning-bundle-density-*.js`, and every `atlas-*.webp`.
-5. Computes the SHA-256 sidecar from inside the staging dir so the file references just the basename (so `shasum -c` works for consumers).
-6. Generates release notes from a template parameterised with the tag, file count, and hash.
-7. Confirms with the user, then `git tag` + `git push origin <tag>` + `gh release create <tag> <zip> <sha256> --title … --notes-file …`.
-8. Prints both canonical URLs (specific-tag + `releases/latest/...`) on success.
+5. Builds `font-assets-smoke-set.zip` via `build-smoke-set.js` (subsets the bundles to the fonts in `font-sets/smoke-set.json`; copies the matching atlas `.js` wrappers verbatim; includes `smoke-set.json` itself for self-description).
+6. **Smoke gate:** `verify-smoke-set.js` loads every font in the staged smoke set via `BitmapText.loadFont` and renders one glyph each, asserting non-zero opaque pixels. Aborts the release if any font fails — a broken smoke set never ships.
+7. Computes SHA-256 sidecars from inside the staging dir so each file references just the basename (so `shasum -c` works for consumers).
+8. Generates release notes from a template parameterised with the tag, file counts, and both SHAs.
+9. Confirms with the user, then `git tag` + `git push origin <tag>` + `gh release create <tag> <main-zip> <main-sha> <smoke-zip> <smoke-sha> --title … --notes-file …`.
+10. Prints all canonical URLs (specific-tag + `releases/latest/...`, for both assets) on success.
 
-**Requires:** `gh` (`brew install gh && gh auth login`), `zip`, `shasum`, `git`. Use `--dry-run` to inspect the staged artifacts and notes without pushing or uploading — that path doesn't need `gh`.
+**Requires:** `gh` (`brew install gh && gh auth login`), `zip`, `shasum`, `git`, `node`. Use `--dry-run` to inspect the staged artifacts and notes without pushing or uploading — that path doesn't need `gh`.
 
-**Manual upload (no `gh` installed).** `--dry-run` stops after step 6 and leaves three files in `/tmp/font-assets-release-<tag>/`:
+**Manual upload (no `gh` installed).** `--dry-run` stops after step 8 and leaves five files in `/tmp/font-assets-release-<tag>/`:
 
-- `font-assets-min.zip` — the release artifact
-- `font-assets-min.zip.sha256` — the integrity sidecar
+- `font-assets-min.zip` — the standard release artifact
+- `font-assets-min.zip.sha256` — its integrity sidecar
+- `font-assets-smoke-set.zip` — the smoke fixture
+- `font-assets-smoke-set.zip.sha256` — its integrity sidecar
 - `release-notes.md` — paste into GitHub's description textbox verbatim
 
 Then on `https://github.com/davidedc/BitmapText.js/releases/new`:
 
 1. **Tag:** the planned name printed by `--dry-run` (e.g. `font-assets-2026-05-20`). GitHub creates the tag at the target commit when you publish.
 2. **Target:** `main` (or pin to a specific commit SHA if needed).
-3. **Title:** `font-assets minimum set (<tag>)` — matches the script's automated form.
+3. **Title:** `font-assets (<tag>)` — matches the script's automated form.
 4. **Description:** paste the content of `release-notes.md`.
-5. **Files:** upload BOTH `font-assets-min.zip` AND `font-assets-min.zip.sha256`.
-6. **★ Tick "Set as the latest release."** Without this, the `releases/latest/download/font-assets-min.zip` URL — which `download-font-assets.sh` hits by default — keeps pointing at the previous "latest", so consumers never see the new release.
+5. **Files:** upload ALL FOUR — `font-assets-min.zip`, `font-assets-min.zip.sha256`, `font-assets-smoke-set.zip`, `font-assets-smoke-set.zip.sha256`.
+6. **★ Tick "Set as the latest release."** Without this, the `releases/latest/download/...` URLs — which `download-font-assets.sh` (and any equivalent smoke-fetch script on embedder side) hit by default — keep pointing at the previous "latest", so consumers never see the new release.
 
 **Verify after publish.** Three independent witnesses should agree on the SHA-256 — local staged zip, published sidecar (both URLs), and the bytes of the downloaded zip:
 
