@@ -819,10 +819,16 @@
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       }
 
+      // Time the engine draw call (drawTextFromAtlas). The Black-text /
+      // direct-blit fast path and the per-glyph composite recolor slow
+      // path show up here as different averages; placeholder-rect paints
+      // (missing atlas) are also visible as a third regime.
+      const t0 = performance.now();
       BitmapText.drawTextFromAtlas(
         this.ctx, TEXT_CONTENT, this.paddingCssPx, this.baselineYCssPx,
         this.fontProps, this.textProps
       );
+      const tElapsed = performance.now() - t0;
 
       // Use hasAtlas() — not the status code — as the "needs repaint" signal. Status-code
       // branching would infinite-loop microtasks once primary loads but the invariant pair
@@ -831,7 +837,7 @@
       if (BitmapText.hasAtlas(this.idString) && BitmapText.hasAtlas(this.invariantIdString)) {
         this.wrapper.classList.remove('placeholder');
         this.hadAtlasOnce = true;
-        return;
+        return tElapsed;
       }
 
       this.wrapper.classList.add('placeholder');
@@ -843,6 +849,8 @@
       this.#requestBoth()
           .then(() => { if (this.alive) dirty.add(this); })
           .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
+
+      return tElapsed;
     }
 
     #requestBoth() {
@@ -881,6 +889,16 @@
 
   // Shared diagnostic counters.
   let totalSpawned = 0;
+
+  // Wall-clock accumulator for the `Draw µs/text` stat. Per-paint elapsed
+  // is returned by TextBox.paint() and summed here. updateStats() runs
+  // every frame (unlike SWCanvas's once-per-second throttle), so we
+  // sub-throttle the divide-and-reset to 1 Hz internally: averaging over
+  // every frame's 1-2 samples would be too noisy.
+  let drawUsAccum     = 0;
+  let drawUsFrames    = 0;
+  let drawUsT0        = performance.now();
+  let drawUsDisplayed = '—';
 
   // ---------- Slider wiring ----------
   //
@@ -1099,7 +1117,13 @@
         // snapshot. The textbox will re-enter dirty via its outstanding .then if
         // its loads are still pending; if not, it stays painted-or-frozen, which
         // is the same outcome as a successful paint that hit hasAtlas-true.
-        try { tb.paint(); }
+        try {
+          const tElapsed = tb.paint();
+          if (typeof tElapsed === 'number') {
+            drawUsAccum += tElapsed;
+            drawUsFrames++;
+          }
+        }
         catch (err) { console.error('drainDirty: paint() threw for', tb.idString, err); }
         painted++;
       } else {
@@ -1137,6 +1161,11 @@
   //   loadP95       95th-percentile wall-clock load time (fetch + decode
   //                 + reconstruction) over the last LOAD_HISTORY_CAP
   //                 loads. The single number behind per-load FPS spikes.
+  //   drawUs        Average wall-clock for `BitmapText.drawTextFromAtlas`
+  //                 calls in the last sampling window. Shows the
+  //                 fast-direct-blit (Black) vs slow-per-glyph-composite
+  //                 (any other colour) ratio when toggling Text color,
+  //                 and the placeholder-rect path under thrashing.
 
   const STAT_KEYS = [
     ['onScreen',      'On-screen'],
@@ -1149,6 +1178,7 @@
     ['reloadCount',   'Reloads'],
     ['totalSpawned',  'Spawned'],
     ['loadP95',       'Load p95'],
+    ['drawUs',        'Draw µs/text'],
   ];
 
   function buildStatsPanel() {
@@ -1180,6 +1210,18 @@
     setStat('totalSpawned',  `${totalSpawned}`);
     const ls = lru.loadStats();
     setStat('loadP95',       ls.n > 0 ? `${ls.p95.toFixed(0)}ms` : '—');
+
+    // Draw µs/text — re-average and reset once per second so the number is
+    // stable enough to read; updateStats itself runs every frame.
+    if (now - drawUsT0 >= 1000) {
+      drawUsDisplayed = drawUsFrames > 0
+        ? (drawUsAccum / drawUsFrames * 1000).toFixed(0)
+        : '—';
+      drawUsAccum  = 0;
+      drawUsFrames = 0;
+      drawUsT0     = now;
+    }
+    setStat('drawUs',        drawUsDisplayed);
   }
 
   function setStat(key, value, bad = false) {
