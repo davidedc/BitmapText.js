@@ -254,12 +254,13 @@
       </select>
     </label>
     <label>Text color
-      <select id="ctrl-color" title="Black takes the fast direct-blit path; any other color forces the per-glyph composite recolor path.">
-        <option value="000">#000 (fast)</option>
-        <option value="222">#222 (slow)</option>
+      <select id="ctrl-color" title="Black takes the fast direct-blit path; any non-black colour forces the per-glyph composite recolor path. 'Mixed' coin-flips per textbox.">
+        <option value="black">Black (fast)</option>
         <option value="random">Random (slow)</option>
+        <option value="mixed">Mixed (50% black, 50% random)</option>
       </select>
     </label>
+    <label><input type="checkbox" id="ctrl-transparent"> Transparent bg</label>
     <button id="ctrl-pause">Pause</button>
     <span class="status" id="ctrl-status"></span>
   </div>
@@ -444,15 +445,18 @@
   function pickTextProps() {
     const mode = COLOR_INPUT.value;
     let textColor;
-    if (mode === 'random') {
+    // 'mixed' coin-flips per textbox between black (fast direct-blit path)
+    // and a random HSL colour (slow per-glyph composite recolor path) so
+    // both paths run concurrently on the stage. The coin is baked into
+    // textProps at construction time, so each textbox keeps the same
+    // colour for its entire life — re-rolling per paint would flicker.
+    if (mode === 'random' || (mode === 'mixed' && Math.random() >= 0.5)) {
       // HSL with capped luminance. L=32% keeps every hue legible against
       // white — at higher L the yellow band (around hue 60°) washes out
       // because perceptual luminance of yellow is high even at moderate L.
       textColor = `hsl(${Math.floor(Math.random() * 360)}, 70%, 32%)`;
-    } else if (mode === '222') {
-      textColor = '#222222';
     } else {
-      textColor = '#000000';   // BitmapText fast path (direct atlas blit)
+      textColor = '#000000';   // 'black', or 'mixed' coin-flip heads
     }
     return new TextProperties({ ...TEXT_PROPERTIES_BASE, textColor });
   }
@@ -721,6 +725,10 @@
       this.expireAt  = performance.now() + lifetimeMs;
       this.hadAtlasOnce = false;        // diagnostic: did we ever paint with both atlases loaded?
       this.textProps = pickTextProps(); // frozen for the textbox's lifetime
+      // 'Transparent bg' is also frozen at spawn: a slider drag mid-life
+      // should not retroactively change the visual state of existing
+      // textboxes. Same per-textbox-baking pattern as textProps.
+      this.transparentBg = TRANSPARENT_INPUT.checked;
 
       // Single measureText on the full string — sizes canvas to fit every glyph including
       // the smiley (BitmapTextInvariant). With the smiley included, max(actualAscent) is
@@ -775,6 +783,11 @@
       // atlases are warm. Reserved outline geometry means the toggle is
       // pure color animation, no layout shift.
       this.wrapper.className = 'textbox placeholder';
+      // Transparent-bg mode: drop the wrapper's CSS-default white background
+      // so the stage shows through. Inline style outranks the .textbox class
+      // rule (and the .placeholder tint, as a side effect — the dashed
+      // outline still signals loading state regardless).
+      if (this.transparentBg) this.wrapper.style.background = 'transparent';
       this.wrapper.style.left = this.x + 'px';
       this.wrapper.style.top  = this.y + 'px';
       this.wrapper.appendChild(this.canvas);
@@ -794,10 +807,17 @@
     paint() {
       if (!this.alive) return;
 
-      // Clear, then draw. drawTextFromAtlas paints placeholder rectangles when atlas missing.
+      // Clear, then optionally fill white. With this.transparentBg set, the
+      // canvas's backing buffer is alpha=0 outside the glyph pixels, and the
+      // wrapper's inline `background: transparent` lets the stage show
+      // through. Otherwise paint white before the glyphs (default).
+      // drawTextFromAtlas paints placeholder rectangles when an atlas is
+      // missing, so the textbox is always visible either way.
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.fillStyle = '#fff';
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      if (!this.transparentBg) {
+        this.ctx.fillStyle = '#fff';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      }
 
       BitmapText.drawTextFromAtlas(
         this.ctx, TEXT_CONTENT, this.paddingCssPx, this.baselineYCssPx,
@@ -882,6 +902,7 @@
   const BUDGET_VAL   = document.getElementById('val-budget');
   const DPR_INPUT   = document.getElementById('ctrl-dpr');
   const COLOR_INPUT = document.getElementById('ctrl-color');
+  const TRANSPARENT_INPUT = document.getElementById('ctrl-transparent');
   const PAUSE_BTN   = document.getElementById('ctrl-pause');
 
   N_INPUT.oninput    = () => { N_VAL.textContent    = N_INPUT.value;    refreshWarn(); };
