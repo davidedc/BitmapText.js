@@ -51,6 +51,7 @@
     "test-atlas-format": "node scripts/check-atlas-format.js",
     "test-batched-colored-placeholder": "node scripts/check-batched-colored-placeholder.js",
     "test-missing-char-placeholder": "node scripts/check-missing-char-placeholder.js",
+    "test-color-parity": "node scripts/check-color-parity.js",
     "test-ink-bounding-box": "node scripts/check-ink-bounding-box.js",
     "test-embedder": "npm run test-loader-injection && npm run test-atlas-format && npm run test-ink-bounding-box",
     "smoke-test": "node scripts/playwright-smoke-loop.js",
