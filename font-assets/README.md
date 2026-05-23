@@ -1,38 +1,76 @@
 # font-assets/
 
-This directory holds the pre-rendered bitmap-font assets that the runtime loads. Its contents are **not committed to git** — the full set is ~800 MB and the published "minimum set" is ~72 MB. Both are distributed via [GitHub Releases](https://github.com/davidedc/BitmapText.js/releases).
+Pre-rendered bitmap-font assets that the BitmapText runtime loads. The
+files are content-addressed by font properties — a filename uniquely
+identifies what it contains.
 
-Only this README and a `.gitkeep` are tracked here, so the directory exists after a fresh clone.
+The asset bytes are NOT committed to the BitmapText.js repo (full set is
+~800 MB; minimum set ~72 MB). They're published as releases on the
+project. Only this README and a `.gitkeep` are tracked, so the directory
+exists after a fresh clone.
 
-## Quick start (consumer)
+## File layout
 
-From the repo root:
+**Bundles** (single files, cover all fonts):
 
-```bash
-./scripts/download-font-assets.sh
+- `metrics-bundle.js` — per-glyph metrics (advances, bounding boxes,
+  kerning) for every font. Deflate-raw + base64. Density-agnostic.
+- `positioning-bundle-density-{N}.js` — pre-computed per-glyph
+  positioning records for density N. One file per density (currently
+  `1`, `2`). Required at runtime — atlas loads fail without the matching
+  positioning bundle.
+
+**Atlases** (one per font + density + size):
+
+- `atlas-{idString}-qoi.js` — Node-loadable QOI wrapper (self-registers
+  via `BitmapText.a(...)`). Used by Node and by `file://` browsers.
+- `atlas-{idString}-webp.js` — browser `<script>`-loadable WebP wrapper.
+  Used by HTTP-served browsers.
+- `atlas-{idString}.qoi` / `.webp` — raw source files for the wrappers
+  above; not loaded directly by the runtime.
+
+## idString format
+
+```
+density-{D}-{Dfrac}-{family}-style-{normal|italic|oblique}-weight-{normal|bold|N}-size-{S}-{Sfrac}
 ```
 
-That script downloads the latest release (`font-assets-min.zip` from GitHub's stable `releases/latest/download/...` URL), verifies its SHA-256 against the published sidecar, unzips into this directory, and chains into `./scripts/rebuild-from-minimal.sh` to re-derive the QOI atlases and JS wrappers locally. Total time ≈10 min.
+Density and size use a dash instead of a decimal point: `1` → `1-0`,
+`1.5` → `1-5`. Examples:
 
-Pinning to a specific release: `./scripts/download-font-assets.sh --tag font-assets-2026-05-05`.
+- `density-1-0-Arial-style-normal-weight-normal-size-16-0`
+- `density-2-0-Courier New-style-italic-weight-bold-size-18-5`
 
-## Manual fallback
+Reverse-engineered from a filename, an embedder knows exactly which
+font's data it holds.
 
-If you'd rather not run a script, do it by hand:
+## How a glyph loads
 
-```bash
-curl -L -o font-assets-min.zip \
-  https://github.com/davidedc/BitmapText.js/releases/latest/download/font-assets-min.zip
-unzip font-assets-min.zip            # populates font-assets/
-./scripts/rebuild-from-minimal.sh    # ~10 min
-```
+1. Embedder calls `BitmapText.loadFont(idString)` (or `loadFonts([...])`).
+2. Runtime reads `atlas-{idString}-qoi.js` (Node) or `atlas-{idString}-webp.js`
+   (browser). The file self-registers via `BitmapText.a(...)` with its
+   base64-encoded image payload.
+3. Runtime resolves metrics from `metrics-bundle.js` and positioning
+   from the matching `positioning-bundle-density-{N}.js` (both lazily
+   decoded on first lookup).
+4. Each `drawTextFromAtlas` call blits via
+   `ctx.drawImage(atlas, srcRect, dstRect)` — one drawImage per glyph
+   for black text, batched through a scratch canvas for colored text.
 
-## Cutting a new release (maintainer)
+## Where these files come from
 
-After regenerating fonts, from the repo root:
+Published as releases on the BitmapText.js project:
+https://github.com/davidedc/BitmapText.js/releases
 
-```bash
-./scripts/publish-font-assets.sh
-```
+Each release ships two assets:
 
-The script builds the zip + SHA-256 sidecar, generates release notes, and (with `gh` installed and authenticated) creates the release. Tag pattern: `font-assets-YYYY-MM-DD`. See [`scripts/README.md`](../scripts/README.md) § 9 for the full workflow.
+- `font-assets-min.zip` — full set (~60 MB compressed). Requires a
+  local rebuild step to derive QOI atlases + JS wrappers from the
+  shipped WebP sources.
+- `font-assets-smoke-set.zip` — 3-font fixture for embedder Node-side
+  tests (~10 KB; self-describing via included `smoke-set.json`).
+
+For BitmapText maintainers: the download / rebuild / publish workflow
+is documented in `scripts/README.md` § 9 of the BitmapText.js repo.
+Embedders that vendor BitmapText typically only need the smoke-set
+fixture and ignore the full set entirely.
