@@ -89,6 +89,7 @@
     }
     .controls button:hover { background: #f3f3f3; }
     .controls button:active { background: #e8e8e8; }
+    .controls button.paused { background: #555; color: #fff; }
     .controls .status {
       color: #888;
       font-size: 12px;
@@ -247,7 +248,7 @@
     </label>
     <label>Pixel density
       <select id="ctrl-dpr">
-        <option value="auto">Auto</option>
+        <option value="auto" selected>Auto</option>
         <option value="1">1 only</option>
         <option value="2">2 only</option>
         <option value="both">Both (mix)</option>
@@ -545,7 +546,7 @@
 
   // Keys are stable identifiers used by both the state map and the pill DOM
   // elements (via `data-key`). Order is the order of pills in the panel.
-  const BUNDLE_KEYS = ['metrics', 'density-1', 'density-2'];
+  const BUNDLE_KEYS   = ['metrics', 'density-1', 'density-2'];
   const BUNDLE_LABELS = {
     'metrics':   'metrics-bundle.js',
     'density-1': 'positioning-bundle-density-1.js',
@@ -847,8 +848,8 @@
       // textbox (the LRU's natural API), but it no longer drives rendering — it
       // just enqueues. drainDirty() picks the textbox up on the next tick.
       this.#requestBoth()
-          .then(() => { if (this.alive) dirty.add(this); })
-          .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
+        .then(() => { if (this.alive) dirty.add(this); })
+        .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
 
       return tElapsed;
     }
@@ -891,14 +892,10 @@
   let totalSpawned = 0;
 
   // Wall-clock accumulator for the `Draw µs/text` stat. Per-paint elapsed
-  // is returned by TextBox.paint() and summed here. updateStats() runs
-  // every frame (unlike SWCanvas's once-per-second throttle), so we
-  // sub-throttle the divide-and-reset to 1 Hz internally: averaging over
-  // every frame's 1-2 samples would be too noisy.
-  let drawUsAccum     = 0;
-  let drawUsFrames    = 0;
-  let drawUsT0        = performance.now();
-  let drawUsDisplayed = '—';
+  // is returned by TextBox.paint() and summed here; updateStats() (throttled
+  // to once per second in the rAF tick) divides and resets.
+  let drawUsAccum  = 0;
+  let drawUsFrames = 0;
 
   // ---------- Slider wiring ----------
   //
@@ -934,6 +931,7 @@
   DPR_INPUT.onchange = handleConfigChange;
   PAUSE_BTN.onclick = () => {
     paused = !paused;
+    PAUSE_BTN.classList.toggle('paused', paused);
     PAUSE_BTN.textContent = paused ? 'Resume' : 'Pause';
   };
 
@@ -1198,6 +1196,7 @@
     }
 
     const resident = AtlasDataStore.size();
+    const avgDraw  = drawUsFrames > 0 ? (drawUsAccum / drawUsFrames * 1000).toFixed(0) : '—';
 
     setStat('onScreen',      `${onScreen.size} / ${N}`);
     setStat('resident',      `${resident} / ${K}`,    resident > K);
@@ -1211,17 +1210,11 @@
     const ls = lru.loadStats();
     setStat('loadP95',       ls.n > 0 ? `${ls.p95.toFixed(0)}ms` : '—');
 
-    // Draw µs/text — re-average and reset once per second so the number is
-    // stable enough to read; updateStats itself runs every frame.
-    if (now - drawUsT0 >= 1000) {
-      drawUsDisplayed = drawUsFrames > 0
-        ? (drawUsAccum / drawUsFrames * 1000).toFixed(0)
-        : '—';
-      drawUsAccum  = 0;
-      drawUsFrames = 0;
-      drawUsT0     = now;
-    }
-    setStat('drawUs',        drawUsDisplayed);
+    setStat('drawUs',        avgDraw);
+
+    // Reset the draw-µs accumulator each second.
+    drawUsAccum = 0;
+    drawUsFrames = 0;
   }
 
   function setStat(key, value, bad = false) {
@@ -1342,7 +1335,7 @@
           const barH = Math.max(1, Math.round((clamped / HIST_MAX_MS) * h));
           hctx.fillStyle = dur <= 17 ? '#4caf50'
                          : dur <= 33 ? '#ffa000'
-                         : '#e53935';
+                         :             '#e53935';
           hctx.fillRect(Math.floor(i * barW), h - barH, Math.max(1, Math.floor(barW)), barH);
         }
       }
@@ -1381,12 +1374,17 @@
       //                     consistent with what was just rendered.
       // In a real framework, this is the function whose body you'd merge
       // into your existing per-frame update loop.
+      let statsT0 = performance.now();
       const tick = () => {
         const now = performance.now();
         updateFps(now);
         reapExpired(now);
         drainDirty();
-        updateStats();
+        // Throttle stats refresh to once per second to keep DOM writes cheap.
+        if (now - statsT0 >= 1000) {
+          updateStats();
+          statsT0 = now;
+        }
         requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
