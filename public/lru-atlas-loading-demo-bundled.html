@@ -255,11 +255,22 @@
       </select>
     </label>
     <label>Text color
-      <select id="ctrl-color" title="Black takes the fast direct-blit path; any non-black colour forces the per-glyph composite recolor path. 'Mixed' coin-flips per textbox.">
+      <select id="ctrl-color" title="Black takes BitmapText's fast direct-blit path; any non-black colour forces the per-glyph composite recolor path. 'Mixed' coin-flips per textbox.">
         <option value="black">Black (fast)</option>
         <option value="random">Random (slow)</option>
         <option value="mixed">Mixed (50% black, 50% random)</option>
       </select>
+    </label>
+    <!-- Resize-sweep controls (shared across both demos). Sweep speed
+         oscillates each box's FONT SIZE; Preload ± keeps that many ladder
+         neighbours warm so the size change never flashes a placeholder. -->
+    <label>Sweep speed
+      <input id="ctrl-sweep" type="range" min="0" max="20" value="6">
+      <span id="val-sweep" class="value">6</span>
+    </label>
+    <label>Preload ±
+      <input id="ctrl-preload" type="range" min="0" max="6" value="2">
+      <span id="val-preload" class="value">2</span>
     </label>
     <label><input type="checkbox" id="ctrl-transparent"> Transparent bg</label>
     <button id="ctrl-pause">Pause</button>
@@ -710,11 +721,12 @@
     constructor(idString, lifetimeMs, lru) {
       this.idString  = idString;
       this.fontProps = FontProperties.fromIDString(idString);
+      this.pixelDensity = this.fontProps.pixelDensity;
       // The smiley ☺ in TEXT_CONTENT auto-redirects to BitmapTextInvariant — a separate
       // atlas at the same density+size, normal/normal. The textbox needs both atlases
       // before it can render the full string with real glyphs.
       const invariantProps = new FontProperties(
-        this.fontProps.pixelDensity,
+        this.pixelDensity,
         'BitmapTextInvariant',
         'normal',
         'normal',
@@ -731,51 +743,30 @@
       // textboxes. Same per-textbox-baking pattern as textProps.
       this.transparentBg = TRANSPARENT_INPUT.checked;
 
-      // Single measureText on the full string — sizes canvas to fit every glyph including
-      // the smiley (BitmapTextInvariant). With the smiley included, max(actualAscent) is
-      // dominated by the smiley glyph (which usually exceeds Latin cap height), so the
-      // canvas is naturally taller than a Latin-only line. Latin caps and the smiley
-      // share the alphabetic baseline; no choice of textBaseline can change that — they're
-      // all anchored typographically.
-      //
-      // Treatment: add ~10% of the font size as extra vertical breathing room and
-      // vertically center the rendered text inside the canvas. This makes the composition
-      // look intentional (centered with margin on all sides) rather than top-anchored
-      // with Latin glyphs visibly low against the edge.
-      const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, this.textProps);
-      const m = (measurement && measurement.metrics) || {
-        width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxDescent: 0,
-      };
-      const padding = 4;
-      const tightTextHeight = Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent);
-      const extraVertical   = Math.max(2, Math.ceil(this.fontProps.fontSize * 0.10));
-      const cssWidth  = Math.max(40, Math.ceil(m.width) + padding * 2);
-      const cssHeight = Math.max(20, padding + tightTextHeight + extraVertical + padding);
+      // Resize-sweep state: the box gently oscillates its FONT SIZE (a different
+      // atlas, not a transform scale) around its spawn size, snapped to the 0.5
+      // ladder. Amplitude/phase are baked per box; the rate is read live from
+      // the Sweep-speed slider. currentSize drives which atlas pair paint() needs.
+      this.baseSize    = this.fontProps.fontSize;
+      this.currentSize = this.baseSize;
+      this.ladder      = buildSizeLadder(this.pixelDensity);
+      this.sweepAmp    = 1 + Math.random() * 1.5;   // ±1.0–2.5px (gentle nudges)
+      this.sweepPhase  = Math.random();             // [0,1) — desync boxes
+      this._winSize    = null;                      // ±n window cache (size built for)
+      this._winN       = -1;                        // ±n window cache (n built for)
+      this._winIds     = [];
 
-      // Backing buffer is at physical pixels (cssSize × pixelDensity); CSS display stays at
-      // cssSize. Coordinates passed to drawTextFromAtlas are CSS pixels — the runtime scales
-      // by fontProperties.pixelDensity internally. Don't pre-multiply.
-      const dpr = this.fontProps.pixelDensity;
+      // Backing buffer is at physical pixels (cssSize × pixelDensity); CSS display
+      // stays at cssSize. _resizeForCurrentSize() measures the string at the current
+      // font size and sizes the canvas to fit (re-called on every sweep step).
       this.canvas = document.createElement('canvas');
-      this.canvas.width  = cssWidth  * dpr;
-      this.canvas.height = cssHeight * dpr;
-      this.canvas.style.width  = cssWidth  + 'px';
-      this.canvas.style.height = cssHeight + 'px';
-
       this.ctx = this.canvas.getContext('2d');
-      this.paddingCssPx = padding;
-      // textBaseline is 'bottom', so y_CssPx is the bottom of the em square (= alphabetic
-      // baseline + fontBoundingBoxDescent). Vertically center the rendered text by
-      // shifting the alphabetic baseline down by half of extraVertical. The tallest
-      // glyph then sits at y = padding + ⌊extraVertical/2⌋ from the canvas top, leaving
-      // matching whitespace below.
-      this.baselineYCssPx = padding + Math.floor(extraVertical / 2)
-                          + m.actualBoundingBoxAscent + m.fontBoundingBoxDescent;
+      this._resizeForCurrentSize();
 
       // Position: random within stage, biased away from edges.
       const stageRect = stage.getBoundingClientRect();
-      const maxX = Math.max(0, stageRect.width  - cssWidth);
-      const maxY = Math.max(0, stageRect.height - cssHeight);
+      const maxX = Math.max(0, stageRect.width  - this.cssW);
+      const maxY = Math.max(0, stageRect.height - this.cssH);
       this.x = Math.floor(Math.random() * maxX);
       this.y = Math.floor(Math.random() * maxY);
 
@@ -796,6 +787,73 @@
       // No dirty.add here: the spawn site owns the (onScreen, dirty) registration
       // pair so a constructor that throws partway can't leave a half-built textbox
       // pinned in dirty without ever appearing in onScreen.
+    }
+
+    // Rebuild fontProps + the two idStrings for a new font size (family/style/
+    // weight/density are invariant under a size change).
+    #applySize(size) {
+      this.currentSize = size;
+      this.fontProps = new FontProperties(
+        this.pixelDensity, this.fontProps.fontFamily,
+        this.fontProps.fontStyle, this.fontProps.fontWeight, size
+      );
+      this.idString = this.fontProps.idString;
+      this.invariantIdString = new FontProperties(
+        this.pixelDensity, 'BitmapTextInvariant', 'normal', 'normal', size
+      ).idString;
+    }
+
+    // Advance the font-size triangle wave; on a snapped-size change, apply it
+    // and return true so the caller re-fits + re-enqueues the box for repaint.
+    _advanceSweep(speed, dtMs) {
+      // slider units → ~cycles/sec: /40 keeps it a gentle drift (default 6 ≈
+      // one oscillation every ~7 s; max 20 ≈ every ~2 s).
+      this.sweepPhase += (dtMs / 1000) * (speed / 40);
+      const target = snapSize(this.baseSize + this.sweepAmp * triangleWave(this.sweepPhase), this.ladder);
+      if (target === this.currentSize) return false;
+      this.#applySize(target);
+      return true;
+    }
+
+    // Re-fit the DOM canvas to the current font size: one measureText, then size
+    // the backing buffer (physical px) + CSS box (logical) and recompute the
+    // centered baseline. Called at construction and on every sweep step.
+    _resizeForCurrentSize() {
+      // Single measureText on the full string — sizes canvas to fit every glyph including
+      // the smiley (BitmapTextInvariant). With the smiley included, max(actualAscent) is
+      // dominated by the smiley glyph (which usually exceeds Latin cap height), so the
+      // canvas is naturally taller than a Latin-only line. Latin caps and the smiley
+      // share the alphabetic baseline; no choice of textBaseline can change that — they're
+      // all anchored typographically.
+      //
+      // Treatment: add ~10% of the font size as extra vertical breathing room and
+      // vertically center the rendered text inside the canvas. This makes the composition
+      // look intentional (centered with margin on all sides) rather than top-anchored
+      // with Latin glyphs visibly low against the edge.
+      const measurement = BitmapText.measureText(TEXT_CONTENT, this.fontProps, this.textProps);
+      const m = (measurement && measurement.metrics) || {
+        width: 0, actualBoundingBoxAscent: 0, actualBoundingBoxDescent: 0, fontBoundingBoxDescent: 0,
+      };
+      const padding = 4;
+      const tightTextHeight = Math.ceil(m.actualBoundingBoxAscent + m.actualBoundingBoxDescent);
+      const extraVertical   = Math.max(2, Math.ceil(this.fontProps.fontSize * 0.10));
+      const cssWidth  = Math.max(40, Math.ceil(m.width) + padding * 2);
+      const cssHeight = Math.max(20, padding + tightTextHeight + extraVertical + padding);
+      const dpr = this.pixelDensity;
+      this.canvas.width  = cssWidth  * dpr;
+      this.canvas.height = cssHeight * dpr;
+      this.canvas.style.width  = cssWidth  + 'px';
+      this.canvas.style.height = cssHeight + 'px';
+      this.paddingCssPx = padding;
+      // textBaseline is 'bottom', so y_CssPx is the bottom of the em square (= alphabetic
+      // baseline + fontBoundingBoxDescent). Vertically center the rendered text by
+      // shifting the alphabetic baseline down by half of extraVertical. The tallest
+      // glyph then sits at y = padding + ⌊extraVertical/2⌋ from the canvas top, leaving
+      // matching whitespace below.
+      this.baselineYCssPx = padding + Math.floor(extraVertical / 2)
+                          + m.actualBoundingBoxAscent + m.fontBoundingBoxDescent;
+      this.cssW = cssWidth;
+      this.cssH = cssHeight;
     }
 
     // Render the textbox. drawTextFromAtlas always paints SOMETHING (real
@@ -835,21 +893,35 @@
       // branching would infinite-loop microtasks once primary loads but the invariant pair
       // is still missing (PARTIAL_ATLAS resolves immediately on every retry). Both atlases
       // need to be ready for the full visual.
-      if (BitmapText.hasAtlas(this.idString) && BitmapText.hasAtlas(this.invariantIdString)) {
+      // Sub-floor sizes (< the ladder min) have no atlas — the engine paints
+      // placeholders by design, so they're neither warm nor a "flash". `warm`
+      // therefore requires a renderable size with both atlases resident.
+      const renderable = this.currentSize >= this.ladder[0];
+      const warm = renderable
+        && BitmapText.hasAtlas(this.idString)
+        && BitmapText.hasAtlas(this.invariantIdString);
+      if (warm) {
         this.wrapper.classList.remove('placeholder');
         this.hadAtlasOnce = true;
+        // No lru.beingUsed() here for *passive* presence — but the sweep DOES
+        // keep the ±n window warm via sweepActiveBoxes (an active "use").
+        // Eviction empties the atlas store, not the canvas, so a painted box
+        // stays correct even if its atlas is later evicted.
         return tElapsed;
       }
 
       this.wrapper.classList.add('placeholder');
-      if (this.hadAtlasOnce) this.lru.reloadCount++;
 
-      // Route load completion onto the dirty queue. The promise stays inside the
-      // textbox (the LRU's natural API), but it no longer drives rendering — it
-      // just enqueues. drainDirty() picks the textbox up on the next tick.
-      this.#requestBoth()
-        .then(() => { if (this.alive) dirty.add(this); })
-        .catch(() => { /* one of the loads failed; textbox stays in placeholder mode */ });
+      // At/above the floor a non-warm paint is a preload-miss "flash" (the KPI)
+      // and a reload if we'd been warm before; kick the loads. Below the floor
+      // there's no atlas to fetch and placeholders are expected — count nothing.
+      if (renderable) {
+        if (this.hadAtlasOnce) this.lru.reloadCount++;
+        flashCount++;
+        this.#requestBoth()
+          .then(() => { if (this.alive) dirty.add(this); })
+          .catch(() => { /* a load failed; textbox stays in placeholder mode */ });
+      }
 
       return tElapsed;
     }
@@ -890,6 +962,10 @@
 
   // Shared diagnostic counters.
   let totalSpawned = 0;
+  // Cumulative placeholder-flash count: a render at a loadable size (≥ floor)
+  // whose atlas wasn't resident — the preload-miss KPI. Like reloadCount it's
+  // not reset per second; with the ±n window on it should stop climbing.
+  let flashCount = 0;
 
   // Wall-clock accumulator for the `Draw µs/text` stat. Per-paint elapsed
   // is returned by TextBox.paint() and summed here; updateStats() (throttled
@@ -917,6 +993,10 @@
   const BUDGET_VAL   = document.getElementById('val-budget');
   const DPR_INPUT   = document.getElementById('ctrl-dpr');
   const COLOR_INPUT = document.getElementById('ctrl-color');
+  const SWEEP_INPUT   = document.getElementById('ctrl-sweep');
+  const SWEEP_VAL     = document.getElementById('val-sweep');
+  const PRELOAD_INPUT = document.getElementById('ctrl-preload');
+  const PRELOAD_VAL   = document.getElementById('val-preload');
   const TRANSPARENT_INPUT = document.getElementById('ctrl-transparent');
   const PAUSE_BTN   = document.getElementById('ctrl-pause');
 
@@ -929,6 +1009,8 @@
   };
   BUDGET_INPUT.oninput = () => { BUDGET_VAL.textContent = BUDGET_INPUT.value; };
   DPR_INPUT.onchange = handleConfigChange;
+  SWEEP_INPUT.oninput   = () => { SWEEP_VAL.textContent   = SWEEP_INPUT.value; };
+  PRELOAD_INPUT.oninput = () => { PRELOAD_VAL.textContent = PRELOAD_INPUT.value; refreshWarn(); };
   PAUSE_BTN.onclick = () => {
     paused = !paused;
     PAUSE_BTN.classList.toggle('paused', paused);
@@ -938,11 +1020,14 @@
   function refreshWarn() {
     const N = parseInt(N_INPUT.value, 10);
     const K = parseInt(K_INPUT.value, 10);
-    // Each textbox holds up to 2 atlases warm (its primary font + the BitmapTextInvariant
-    // pair atlas needed for the smiley). Steady-state working-set ≈ 2N (with some sharing
-    // of the invariant atlas across textboxes at the same size).
-    if (K <= 2 * N) {
-      warnEl.textContent = `Warning: K (${K}) ≤ 2·N (${2 * N}) — each textbox needs up to 2 atlases (primary + BitmapTextInvariant pair). Thrashing expected. The cache invariant still holds.`;
+    const n = parseInt(PRELOAD_INPUT.value, 10);
+    // Each textbox keeps up to 2·(2n+1) atlases warm: its primary + the
+    // BitmapTextInvariant pair, across the ±n preload window. Steady-state
+    // working-set ≈ that × N (less, with invariant + neighbour sharing across
+    // boxes at the same size+density). At n=0 this is the original 2·N.
+    const perBox = 2 * (2 * n + 1);
+    if (K <= perBox * N) {
+      warnEl.textContent = `Warning: K (${K}) ≤ ${perBox}·N (${perBox * N}) — each textbox needs up to ${perBox} atlases (primary + BitmapTextInvariant pair, ±${n} preloaded sizes). Thrashing expected. The cache invariant still holds.`;
     } else {
       warnEl.textContent = '';
     }
@@ -1095,12 +1180,110 @@
     }
   }
 
-  // ---------- Dirty-set drain ----------
+  // ---------- Resize sweep: font-size oscillation + preload window ----------
+  //
+  //  The resize feature changes each box's FONT SIZE (a different atlas), not a
+  //  transform scale, across the 0.5-step ladder the assets register. To avoid
+  //  a placeholder flash when the size crosses into a neighbour, we keep the ±n
+  //  neighbours warm in the LRU. Metrics for every size are already resident
+  //  (one-time metrics bundle), so re-measuring at any size is free — only the
+  //  bitmap atlas lags, which is exactly what the window preloads.
 
-  // Snapshot-and-replace, then iterate. paint() may .then(() => dirty.add(this))
-  // when an atlas is still loading; those re-enqueues land in the *new* `dirty`
-  // and won't repaint within this tick. Budget leftovers also re-add into the
-  // new set, so they paint first next tick (FIFO across ticks).
+  // Sorted registered atlas sizes for a density (a uniform 0.5-step ladder,
+  // 9.0…96.0 in the shipped assets), derived from the manifest so the rails
+  // aren't hardcoded. Uniform across families → one per density; cached.
+  const _sizeLadderByDensity = new Map();
+  function buildSizeLadder(density) {
+    let ladder = _sizeLadderByDensity.get(density);
+    if (ladder) return ladder;
+    const prefix = `density-${density}-0-`;
+    const set = new Set();
+    for (const id of FontManifest.allFontIDs()) {
+      if (id.startsWith(prefix)) set.add(FontProperties.fromIDString(id).fontSize);
+    }
+    ladder = [...set].sort((a, b) => a - b);
+    _sizeLadderByDensity.set(density, ladder);
+    return ladder;
+  }
+
+  // Triangle wave in [-1, 1], period 1 in `phase`.
+  function triangleWave(phase) {
+    const f = phase - Math.floor(phase);
+    return 1 - 4 * Math.abs(f - 0.5);
+  }
+
+  // Snap a continuous size to the nearest 0.5 step, clamping the TOP to the
+  // ladder max (can't grow past it). Below the ladder min is allowed through —
+  // the floor case, where the engine paints placeholders (no atlas exists).
+  function snapSize(size, ladder) {
+    const max = ladder.length ? ladder[ladder.length - 1] : 96;
+    return Math.min(max, Math.round(size * 2) / 2);
+  }
+
+  // The ±n window of idStrings (primary + BitmapTextInvariant) around `size`,
+  // taken as ±n entries along the registered ladder. Clamps at both rails (a
+  // near-rail box just gets a shorter list); a sub-floor `size` yields the
+  // bottom-of-ladder entries it's approaching, so growing back across the floor
+  // doesn't flash. Every id is a real ladder entry, so loads never 404.
+  function windowIdsFor(density, family, style, weight, size, n) {
+    const ladder = buildSizeLadder(density);
+    if (!ladder.length) return [];
+    let lo = 0;
+    while (lo < ladder.length && ladder[lo] < size) lo++;   // first entry ≥ size
+    const start = Math.max(0, lo - n);
+    const end   = Math.min(ladder.length - 1, lo + n);
+    const ids = [];
+    for (let i = start; i <= end; i++) {
+      const s = ladder[i];
+      ids.push(new FontProperties(density, family, style, weight, s).idString);
+      ids.push(new FontProperties(density, 'BitmapTextInvariant', 'normal', 'normal', s).idString);
+    }
+    return ids;
+  }
+
+  // Called each rAF tick (between reapExpired and drainDirty). For every active
+  // box: advance its font-size wave and, on a 0.5-step change, re-fit + re-enter
+  // `dirty` (so it repaints at the new size — sweeping boxes are NOT a fixed
+  // point, but they re-enqueue only when the snapped size actually changes).
+  // Then keep its ±n window warm: lru.request() loads-if-missing AND bumps the
+  // 250 ms pin on a hit, so the window stays resident as the wave approaches it.
+  // Everything routes through the LRU, so Resident ≤ K still holds. Sweep speed
+  // 0 ⇒ this whole pass is a no-op (boxes stay static, as before the feature).
+  let lastSweepNow = performance.now();
+  function sweepActiveBoxes(now) {
+    const speed = parseFloat(SWEEP_INPUT.value);     // cycles/sec; 0 = off
+    const n     = parseInt(PRELOAD_INPUT.value, 10); // ± ladder steps; 0 = no preload
+    const dtMs  = Math.min(100, now - lastSweepNow); // clamp dt across tab-away gaps
+    lastSweepNow = now;
+    if (!lru || speed <= 0) return;
+    for (const tb of onScreen) {
+      if (tb._advanceSweep(speed, dtMs)) {
+        tb._resizeForCurrentSize();
+        dirty.add(tb);
+      }
+      if (n > 0) {
+        if (tb.currentSize !== tb._winSize || n !== tb._winN) {
+          tb._winIds = windowIdsFor(
+            tb.pixelDensity, tb.fontProps.fontFamily, tb.fontProps.fontStyle,
+            tb.fontProps.fontWeight, tb.currentSize, n
+          );
+          tb._winSize = tb.currentSize;
+          tb._winN = n;
+        }
+        for (const id of tb._winIds) lru.request(id).catch(() => {});
+      }
+    }
+  }
+
+  // ---------- Dirty-set drain ----------
+  //
+  //  Snapshot-and-replace, then iterate. paint() may .then(() =>
+  //  dirty.add(this)) when an atlas is still loading; those re-enqueues
+  //  land in the NEW `dirty` set and won't repaint within this tick.
+  //  Budget leftovers also re-add into the new set, so they paint first
+  //  next tick (FIFO across ticks). Pin window is refreshed on carried
+  //  entries so back-of-queue atlases don't get evicted while waiting.
+
   function drainDirty() {
     if (dirty.size === 0) return;
     const budget = parseInt(BUDGET_INPUT.value, 10);
@@ -1174,6 +1357,7 @@
     ['lruPinned',     'Pinned'],
     ['dirty',         'Dirty'],
     ['reloadCount',   'Reloads'],
+    ['flashes',       'Flashes'],
     ['totalSpawned',  'Spawned'],
     ['loadP95',       'Load p95'],
     ['drawUs',        'Draw µs/text'],
@@ -1188,6 +1372,7 @@
   function updateStats() {
     const N = parseInt(N_INPUT.value, 10);
     const K = parseInt(K_INPUT.value, 10);
+    const n = parseInt(PRELOAD_INPUT.value, 10);
     const now = performance.now();
 
     let pinned = 0;
@@ -1206,6 +1391,7 @@
     setStat('lruPinned',     `${pinned}`);
     setStat('dirty',         `${dirty.size}`);
     setStat('reloadCount',   `${lru.reloadCount}`);
+    setStat('flashes',       `${flashCount}`, n > 0 && flashCount > 0);
     setStat('totalSpawned',  `${totalSpawned}`);
     const ls = lru.loadStats();
     setStat('loadP95',       ls.n > 0 ? `${ls.p95.toFixed(0)}ms` : '—');
@@ -1256,14 +1442,16 @@
   refreshWarn();
   statusEl.textContent = 'Loading metrics bundle…';
 
-  // Filter candidate idStrings by selected DPR mode. Per the CLAUDE.md "DPR is a hard
-  // partition" rule, an *application* picks one DPR at startup. This demo deliberately
-  // exposes a "Both (mix)" option so curious users can see what happens — each textbox
-  // still has a single fontProperties.pixelDensity, the runtime renders each correctly,
-  // but on screen you'll see a mix of physical pixel densities. The mode→density rule
-  // lives in `neededDensitiesForMode` (see `// ---------- DPR resolution ----------`);
-  // this helper just derives prefixes from it so candidate selection and bundle
-  // pre-loading agree.
+  // Filter candidate idStrings by selected DPR mode. Per the CLAUDE.md "DPR is a
+  // hard partition" rule, an *application* picks one DPR at startup. This demo
+  // deliberately exposes a "Both (mix)" option so curious users can see what
+  // happens — each textbox still has a single fontProperties.pixelDensity, the
+  // runtime renders each correctly, but on screen you'll see a mix of physical
+  // pixel densities. The mode→density rule lives in `neededDensitiesForMode` (see
+  // `// ---------- DPR resolution ----------`); this helper just derives prefixes
+  // from it so candidate selection and bundle pre-loading agree. The fontSize >= 9
+  // filter is BitmapText's rasterization floor — sub-9 sizes render as
+  // placeholders, no value in spawning them.
   function pickCandidates(mode) {
     const prefixes = neededDensitiesForMode(mode).map(d => `density-${d}-0-`);
     return FontManifest.allFontIDs()
@@ -1366,6 +1554,9 @@
       //                     work would inflate the measurement)
       //   2. reapExpired  — destroy expired textboxes BEFORE we paint, so
       //                     the dirty drain never paints a dying textbox
+      //   2b. sweepActiveBoxes — advance each box's font-size wave (re-enters
+      //                     dirty on a 0.5-step change) and keep its ±n preload
+      //                     window warm via lru.request
       //   3. drainDirty   — paint up to `budget` textboxes from the queue;
       //                     leftovers and re-enqueues from .then microtasks
       //                     between frames carry into next tick
@@ -1379,6 +1570,7 @@
         const now = performance.now();
         updateFps(now);
         reapExpired(now);
+        sweepActiveBoxes(now);
         drainDirty();
         // Throttle stats refresh to once per second to keep DOM writes cheap.
         if (now - statsT0 >= 1000) {
