@@ -1102,6 +1102,13 @@ class BitmapText {
    * @private
    */
   static #computeAdvancement_CssPx_Float(fontMetrics, fontProperties, char, nextChar, textProperties, characterMetrics) {
+    // A char with no metrics in this font (e.g. an unsupported symbol like '→',
+    // especially when its atlas is also cold) reaches here with characterMetrics
+    // === undefined. Contribute zero advancement instead of crashing on
+    // characterMetrics.width.
+    if (!characterMetrics) {
+      return 0;
+    }
     let x_CssPx;
     if (char === " ") {
       const spaceOverride = fontMetrics.getSpaceAdvancementOverride();
