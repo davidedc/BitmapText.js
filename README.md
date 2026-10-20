@@ -266,7 +266,7 @@ Get up and running with the production-ready bundles in seconds.
 
 BitmapText.js includes automatic support for special Unicode font-invariant characters via the BitmapTextInvariant font:
 
-☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
+☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗➜⇄←→↑↓∸⍿☓⋯↔°
 
 ### Emoji Character Aliasing
 
@@ -843,7 +843,7 @@ For a middle ground between individual files and minified bundle, use the unmini
 
   **Font-Invariant Character Auto-Redirect:**
 
-  When rendering text, font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗) automatically use the BitmapTextInvariant font regardless of the specified base font. Modern emojis (😊😀😃😢) are also aliased to their symbol equivalents. To enable this:
+  When rendering text, font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗➜⇄←→↑↓∸⍿☓⋯↔°) automatically use the BitmapTextInvariant font regardless of the specified base font. Modern emojis (😊😀😃😢) are also aliased to their symbol equivalents. To enable this:
 
   1. Load both your text font AND BitmapTextInvariant at the same size
   2. Use font-invariant characters or emojis anywhere in your text

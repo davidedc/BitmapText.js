@@ -434,9 +434,9 @@ class BitmapText {
       BitmapText.#resolveRenderContext(text, fontProperties);
 
     // Fallback character metrics for chars not in either font's character set
-    // (e.g. '°' from latin1Exclusions). '?' is canonical: in FONT_SPECIFIC_CHARS,
+    // (e.g. '±' from latin1Exclusions). '?' is canonical: in FONT_SPECIFIC_CHARS,
     // so any standard font has it. May be null when the active base font is
-    // BitmapTextInvariant (18-char set without '?'); in that case missing chars
+    // BitmapTextInvariant (symbol-only set without '?'); in that case missing chars
     // contribute zero to the width — degenerate but rare. Converges measureText's
     // failure mode with the post-c338025 drawTextFromAtlas behaviour: a string
     // containing one unrecognized char no longer drops the entire measurement.
@@ -764,11 +764,11 @@ class BitmapText {
     const { invariantFontProps, invariantFontMetrics, hasInvariantFont, chars } =
       BitmapText.#resolveRenderContext(text, fontProperties);
 
-    // Fallback metrics for chars not in any atlas's character set (e.g. '°',
+    // Fallback metrics for chars not in any atlas's character set (e.g. '±',
     // '×' — excluded from FONT_SPECIFIC_CHARS' latin1Exclusions and not in
     // FONT_INVARIANT_CHARS). '?' is canonical: always in FONT_SPECIFIC_CHARS,
     // so any standard font atlas has it. May be null if the active font is
-    // BitmapTextInvariant (18-char set, no '?'); in that case the per-glyph
+    // BitmapTextInvariant (symbol-only set, no '?'); in that case the per-glyph
     // arms skip the placeholder for missing chars in that font (degenerate,
     // rare). Converges the "char absent from font" failure mode with c338025's
     // missing-atlas placeholder behaviour: every unrenderable glyph becomes a
@@ -877,7 +877,7 @@ class BitmapText {
         // still advances by a sensible amount instead of stalling at 0/NaN).
         let advChar = currentChar;
 
-        // FAST CHECK: Is this a font-invariant character? (string.includes on 18 chars = ~1-2ns)
+        // FAST CHECK: Is this a font-invariant character? (string.includes on the short invariant set = ~1-2ns)
         const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(currentChar);
 
         // Switch font ONLY if needed (avoids redundant assignments)
@@ -916,14 +916,14 @@ class BitmapText {
               // glyph. Two sub-cases share this arm:
               //   (a) char has metrics, atlas missing the glyph (rare — partial
               //       atlas) → use real characterMetrics for sizing.
-              //   (b) char not in font's character set (e.g. '°' from
+              //   (b) char not in font's character set (e.g. '±' from
               //       FONT_SPECIFIC_CHARS' latin1Exclusions) → no real metrics;
               //       fall back to '?' via fallbackCharacterMetrics for sizing,
               //       AND substitute '?' for advancement so layout flows.
               // Degenerate fall-through (BitmapTextInvariant base font + missing
               // char): no metrics, no fallback — draw nothing, advancement returns
               // NaN/0 and subsequent chars may pile up. Acceptable: caller is
-              // using a 18-char font for non-invariant text.
+              // using the symbol-only font for non-invariant text.
               missingAtlasChars.add(currentChar);
               placeholdersUsed = true;
               const realCm = currentFontMetrics.getCharacterMetrics(currentChar);
@@ -1431,7 +1431,7 @@ class BitmapText {
       // drawTextFromAtlas).
       let advChar = currentChar;
 
-      // FAST CHECK: Is this a font-invariant character? (string.includes on 18 chars = ~1-2ns)
+      // FAST CHECK: Is this a font-invariant character? (string.includes on the short invariant set = ~1-2ns)
       const isInvariant = hasInvariantFont && BitmapText.#isInvariantCharacter(currentChar);
 
       // Switch font ONLY if needed (avoids redundant assignments)
@@ -1480,7 +1480,7 @@ class BitmapText {
             // route the !currentAtlasValid arm above uses). Two sub-cases:
             //   (a) char has metrics, atlas missing the glyph (rare partial atlas)
             //       → real characterMetrics for sizing.
-            //   (b) char not in font's character set (e.g. '°' which is in
+            //   (b) char not in font's character set (e.g. '±' which is in
             //       FONT_SPECIFIC_CHARS' latin1Exclusions, or any non-Latin
             //       codepoint) → fallbackCharacterMetrics ('?') for sizing,
             //       AND substitute '?' for advancement so layout flows.

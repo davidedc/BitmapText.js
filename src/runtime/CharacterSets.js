@@ -34,13 +34,25 @@ class CharacterSets {
    * These Unicode characters render using monospaced Courier New metrics
    * regardless of the font specified in FontProperties.
    *
-   * Characters: ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗
+   * Characters: ☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗➜⇄←→↑↓∸⍿☓⋯↔°
+   *
+   * APPEND-ONLY: new characters go at the END, never sorted or prepended.
+   * The metrics record lists characters in this declared order, and its
+   * font-wide baseline is taken from the FIRST character
+   * (MetricsMinifier: characterSet[0]) — reordering would change every
+   * existing glyph's metrics record. Atlas positions are sorted data,
+   * regenerated with the image, so appending does not move existing pixels.
+   * Keep each character in only ONE of the two sets: the runtime redirects
+   * every character listed here to BitmapTextInvariant whenever that font is
+   * loaded, so a copy in FONT_SPECIFIC_CHARS would be rasterised into every
+   * font atlas and drawn only when the invariant font is absent ('°' is here,
+   * so it stays in latin1Exclusions).
    *
    * @type {string}
    * @static
    * @readonly
    */
-  static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
+  static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗➜⇄←→↑↓∸⍿☓⋯↔°';
 
   /**
    * Font family name for font-invariant characters.
@@ -245,7 +257,7 @@ class CharacterSets {
       172, // U+00AC ¬ - NOT SIGN (mathematical/logical, rarely used in text)
       174, // U+00AE ® - REGISTERED SIGN (use text "(R)" or proper legal formatting)
       175, // U+00AF ¯ - MACRON (standalone modifier, not useful without base char)
-      176, // U+00B0 ° - DEGREE SIGN (specialized symbol)
+      176, // U+00B0 ° - DEGREE SIGN (specialized symbol; drawn from FONT_INVARIANT_CHARS instead)
       177, // U+00B1 ± - PLUS-MINUS SIGN (mathematical)
       178, // U+00B2 ² - SUPERSCRIPT TWO (use proper superscript formatting)
       179, // U+00B3 ³ - SUPERSCRIPT THREE (use proper superscript formatting)

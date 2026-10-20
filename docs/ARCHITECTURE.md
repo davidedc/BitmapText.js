@@ -173,7 +173,7 @@ static resolveCharacter(char) {
 3. **Runtime Fast Symbol Detection** (src/runtime/BitmapText.js):
 ```javascript
 // Pre-defined symbol string
-static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗';
+static FONT_INVARIANT_CHARS = '☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗➜⇄←→↑↓∸⍿☓⋯↔°';
 
 // Fast detection using string.includes() (~1-2ns) after alias resolution
 static #isInvariantCharacter(char) {
@@ -230,7 +230,7 @@ BitmapText.drawTextFromAtlas(ctx, "Task done ✔", 10, 50, fontProps);
 - Symbol font only supports normal style/weight
 
 **Performance:**
-- Symbol detection: ~1-2ns per character (string.includes() on 18 chars)
+- Symbol detection: ~1-2ns per character (string.includes() on the short symbol string)
 - Font switching: Single pointer reassignment (no allocation)
 - Negligible impact on rendering hot loop
 
@@ -242,6 +242,11 @@ The symbols were selected for common UI/text needs:
 - Arrows/triangles: ▶▼▲◀
 - Check/cross: ✔✘
 - Math/arrow: ≠↗
+- Arrows: ➜⇄←→↑↓↔
+- Alignment/fit pictograms: ∸⍿☓⋯
+- Degree sign: ° (excluded from the font-specific set, so it is drawn here)
+
+New symbols are APPENDED to `FONT_INVARIANT_CHARS`, never sorted or prepended: the metrics record keeps the declared order and takes the font-wide baseline from the first character (`MetricsMinifier`, `characterSet[0]`).
 
   ### Component Organization
 ```

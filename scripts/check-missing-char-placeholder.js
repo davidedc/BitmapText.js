@@ -2,8 +2,8 @@
 //
 // Smoke test for the "char not in any atlas" fix.
 //
-// Pre-fix: drawTextFromAtlas(ctx, '45°', ...) renders ZERO pixels for the
-// entire string when '°' (U+00B0) is in neither the active font's
+// Pre-fix: drawTextFromAtlas(ctx, '45±', ...) renders ZERO pixels for the
+// entire string when '±' (U+00B1) is in neither the active font's
 // FONT_SPECIFIC_CHARS (it's in the latin1Exclusions set) nor
 // FONT_INVARIANT_CHARS. The whole-string-drop happens at the prologue
 // pre-pass in drawTextFromAtlas (#scanForMissingChars early-bail) — and
@@ -12,16 +12,16 @@
 //
 // Post-fix: both paths render real glyphs for the chars that DO exist
 // (4 and 5 via the atlas) AND a placeholder rectangle in textColor for
-// the missing char (°), sized using '?' character metrics as a fallback
+// the missing char (±), sized using '?' character metrics as a fallback
 // (always available in FONT_SPECIFIC_CHARS). Status is PARTIAL_ATLAS;
-// status.missingAtlasChars contains '°'. Converges the failure-mode
+// status.missingAtlasChars contains '±'. Converges the failure-mode
 // surface with c338025's missing-atlas placeholder behaviour.
 //
 // Asserts (three test cases):
 //   A. Per-glyph path (textColor === DEFAULT_TEXT_COLOR / '#000000'):
-//        drawTextFromAtlas(ctx, '45°', ...) does not throw;
+//        drawTextFromAtlas(ctx, '45±', ...) does not throw;
 //        status.code === PARTIAL_ATLAS;
-//        status.missingAtlasChars contains '°';
+//        status.missingAtlasChars contains '±';
 //        mainCanvasFillRectCalls >= 1 (placeholder rect drawn).
 //   B. Batched path (textColor !== DEFAULT_TEXT_COLOR — e.g. '#0000FF'):
 //        same four assertions.
@@ -162,11 +162,11 @@ function runOneCase(label, text, textColor, expectStatusCode, expectMissingChar)
   const fp = new FontProperties(1, 'Arial', 'normal', 'normal', 19);
   await BitmapText.loadFont(fp.idString);
 
-  console.log("Test A — per-glyph path (black text, '45°'):");
-  runOneCase('A', '45°', '#000000', StatusCode.PARTIAL_ATLAS, '°');
+  console.log("Test A — per-glyph path (black text, '45±'):");
+  runOneCase('A', '45±', '#000000', StatusCode.PARTIAL_ATLAS, '±');
 
-  console.log("\nTest B — batched path (colored text, '45°'):");
-  runOneCase('B', '45°', '#0000FF', StatusCode.PARTIAL_ATLAS, '°');
+  console.log("\nTest B — batched path (colored text, '45±'):");
+  runOneCase('B', '45±', '#0000FF', StatusCode.PARTIAL_ATLAS, '±');
 
   console.log("\nTest C — regression (no missing chars, both paths):");
   runOneCase('C-black', '45', '#000000', StatusCode.SUCCESS, null);

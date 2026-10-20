@@ -139,7 +139,7 @@ function checkOne(text, x, textAlign, fp) {
   //      potentially fractional after density multiplication).
   //  (5) The exact em-dash string from the SWCanvas regression report —
   //      ensures U+2014 (in Arial's character set) doesn't sneak through.
-  //  (6) Placeholder-rect cases ('45°', '1×1') — exercises the missing-
+  //  (6) Placeholder-rect cases ('45±', '1×1') — exercises the missing-
   //      char path added in the prior commit. Verifies that placeholder
   //      rect positions also match between paths.
   const cases = [
@@ -153,7 +153,7 @@ function checkOne(text, x, textAlign, fp) {
     { text: 'Hello, World! 42', x: 200, align: 'center' },
     { text: 'Hello, World! 42', x: 390, align: 'right' },
     { text: 'Red — slow path (recolor)', x: 10, align: 'left' },
-    { text: '45°', x: 10, align: 'left' },
+    { text: '45±', x: 10, align: 'left' },
     { text: '1×1', x: 10, align: 'left' },
   ];
 

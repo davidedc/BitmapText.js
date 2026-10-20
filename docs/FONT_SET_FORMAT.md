@@ -312,7 +312,7 @@ Creating the BitmapTextInvariant font for special Unicode font-invariant charact
 ```
 
 **Details**:
-- Generates BitmapTextInvariant font with Unicode font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗)
+- Generates BitmapTextInvariant font with Unicode font-invariant characters (☺☹♠♡♦♣│─├└▶▼▲◀✔✘≠↗➜⇄←→↑↓∸⍿☓⋯↔°)
 - Size range 9px to 72px in 0.5px increments
 - Both standard (1.0) and HiDPI (2.0) pixel densities
 - Renders using Courier New for monospacing (handled internally by GlyphFAB.js)
