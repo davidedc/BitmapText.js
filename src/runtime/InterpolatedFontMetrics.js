@@ -37,7 +37,11 @@ class InterpolatedFontMetrics {
     this.isInterpolatedMetrics = true;
   }
 
-  // Interpolate character metrics by scaling all values
+  // Interpolate character metrics by scaling all values. The pixel density is
+  // carried over unscaled: the placeholder rectangles drawn for a size under 9
+  // are sized and placed in physical pixels by it, so without it a density-2
+  // rectangle would come out at density-1 size
+  // (scripts/check-small-size-placeholder-density.js).
   getCharacterMetrics(char) {
     const origMetrics = this.baseFontMetrics.getCharacterMetrics(char);
     if (!origMetrics) return null;
@@ -49,7 +53,8 @@ class InterpolatedFontMetrics {
       actualBoundingBoxDescent: origMetrics.actualBoundingBoxDescent * this.interpolationFactor,
       fontBoundingBoxAscent: origMetrics.fontBoundingBoxAscent * this.interpolationFactor,
       fontBoundingBoxDescent: origMetrics.fontBoundingBoxDescent * this.interpolationFactor,
-      width: origMetrics.width * this.interpolationFactor
+      width: origMetrics.width * this.interpolationFactor,
+      pixelDensity: origMetrics.pixelDensity
     };
   }
 
